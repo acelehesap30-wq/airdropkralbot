@@ -2205,6 +2205,211 @@ body:not(.reduced-motion) .pvpActionPulseStrip[data-tone="critical"] {
   animation: pvpActionAlert 1100ms ease-in-out infinite;
 }
 
+.pvpLiveDuelStrip {
+  --duel-pressure: 0;
+  --duel-resolve: 0;
+  --duel-queue: 0;
+  --duel-drift: 0;
+  --duel-latency: 0;
+  margin-top: 10px;
+  border: 1px solid rgba(162, 186, 255, 0.2);
+  border-radius: 12px;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+  background:
+    radial-gradient(
+      120% 140% at 14% 6%,
+      rgba(61, 248, 194, calc(0.03 + (var(--duel-pressure) * 0.08))) 0%,
+      transparent 62%
+    ),
+    radial-gradient(
+      130% 180% at 92% 112%,
+      rgba(127, 214, 255, calc(0.02 + (var(--duel-resolve) * 0.1))) 0%,
+      transparent 68%
+    ),
+    linear-gradient(155deg, rgba(7, 14, 34, 0.86), rgba(5, 10, 26, 0.8));
+  box-shadow:
+    inset 0 1px 0 rgba(188, 209, 255, 0.06),
+    0 0 calc(10px + (var(--duel-pressure) * 14px)) rgba(127, 214, 255, calc(0.04 + (var(--duel-resolve) * 0.08)));
+  position: relative;
+  overflow: hidden;
+}
+
+.pvpLiveDuelStrip::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: calc(0.06 + (var(--duel-pressure) * 0.14) + (var(--duel-latency) * 0.08));
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 12px,
+      rgba(127, 214, 255, calc(0.02 + (var(--duel-resolve) * 0.06))) 12px 13px
+    );
+  transform: translateX(calc((var(--duel-drift) * 8px) - (var(--duel-queue) * 4px)));
+}
+
+.pvpLiveDuelStrip::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: calc(0.06 + (var(--duel-pressure) * 0.16));
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    rgba(255, 184, 92, calc(0.02 + (var(--duel-pressure) * 0.14))) 28%,
+    transparent 52%,
+    rgba(127, 214, 255, calc(0.02 + (var(--duel-resolve) * 0.12))) 76%,
+    transparent 100%
+  );
+}
+
+.pvpLiveDuelStrip[data-tone="advantage"] {
+  border-color: rgba(112, 255, 160, 0.42);
+  box-shadow: inset 0 1px 0 rgba(112, 255, 160, 0.12), 0 0 0 1px rgba(112, 255, 160, 0.08), 0 0 16px rgba(112, 255, 160, 0.1);
+}
+
+.pvpLiveDuelStrip[data-tone="pressure"] {
+  border-color: rgba(255, 184, 92, 0.5);
+  box-shadow: inset 0 1px 0 rgba(255, 184, 92, 0.14), 0 0 0 1px rgba(255, 184, 92, 0.09), 0 0 18px rgba(255, 184, 92, 0.14);
+}
+
+.pvpLiveDuelStrip[data-tone="critical"] {
+  border-color: rgba(255, 93, 125, 0.62);
+  box-shadow: inset 0 1px 0 rgba(255, 93, 125, 0.18), 0 0 0 1px rgba(255, 93, 125, 0.12), 0 0 22px rgba(255, 93, 125, 0.18);
+}
+
+body:not(.reduced-motion) .pvpLiveDuelStrip[data-tone="critical"] {
+  animation: pvpActionAlert 1050ms ease-in-out infinite;
+}
+
+.pvpLiveHead {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+}
+
+.pvpLiveTitle {
+  display: grid;
+  gap: 4px;
+}
+
+.pvpLiveChipGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(92px, auto));
+  gap: 6px;
+}
+
+.pvpLiveChip {
+  --chip-level: 0.18;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(162, 186, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(6, 12, 30, 0.7);
+  color: rgba(203, 226, 255, 0.92);
+  min-height: 24px;
+  padding: 4px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  transition: border-color 160ms ease, color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.pvpLiveChip::after {
+  content: "";
+  position: absolute;
+  inset: auto 4px 3px 4px;
+  height: 2px;
+  border-radius: 999px;
+  opacity: calc(0.18 + (var(--chip-level) * 0.76));
+  background: linear-gradient(90deg, rgba(61, 248, 194, 0.18), rgba(127, 214, 255, 0.9), rgba(255, 184, 92, 0.45));
+}
+
+.pvpLiveChip.neutral {
+  border-color: rgba(162, 186, 255, 0.18);
+}
+
+.pvpLiveChip.balanced {
+  border-color: rgba(127, 214, 255, 0.28);
+  color: rgba(210, 236, 255, 0.96);
+}
+
+.pvpLiveChip.advantage {
+  border-color: rgba(112, 255, 160, 0.34);
+  color: rgba(196, 255, 220, 0.95);
+}
+
+.pvpLiveChip.pressure {
+  border-color: rgba(255, 184, 92, 0.38);
+  color: rgba(255, 225, 169, 0.96);
+}
+
+.pvpLiveChip.critical {
+  border-color: rgba(255, 93, 125, 0.48);
+  color: rgba(255, 205, 217, 0.98);
+  box-shadow: 0 0 12px rgba(255, 93, 125, 0.14);
+}
+
+.pvpLiveBody {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: 10px;
+}
+
+.pvpLiveTelemetryCol {
+  display: grid;
+  gap: 4px;
+}
+
+.pvpLiveTelemetryCol .micro {
+  margin: 0;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(162, 186, 255, 0.1);
+  background: rgba(5, 10, 25, 0.44);
+}
+
+.pvpLiveMetersCol {
+  display: grid;
+  gap: 8px;
+}
+
+.pvpLiveMeterCard {
+  border: 1px solid rgba(162, 186, 255, 0.14);
+  border-radius: 10px;
+  padding: 8px;
+  background: rgba(6, 12, 30, 0.46);
+  display: grid;
+  gap: 6px;
+}
+
+.pvpLiveMeterHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pvpLiveMeterHead .micro {
+  margin: 0;
+}
+
+#pvpLivePressureMeter {
+  width: 0%;
+}
+
+#pvpLiveResolveMeter {
+  width: 0%;
+}
+
 @keyframes pvpActionKick {
   0% {
     transform: translateY(0) scale(1);
@@ -3316,10 +3521,23 @@ body[data-scene-mood="critical"] .meter > span {
   }
 
   .pvpMomentumStrip,
+  .pvpLiveDuelStrip,
   .pvpCadenceStrip,
   .pvpTheaterStrip,
   .pvpRadarStrip,
   .pvpObjectiveGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .pvpLiveHead {
+    grid-template-columns: 1fr;
+  }
+
+  .pvpLiveChipGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pvpLiveBody {
     grid-template-columns: 1fr;
   }
 

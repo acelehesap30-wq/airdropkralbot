@@ -469,6 +469,45 @@
             </div>
             <p id="pvpActionPulseHint" class="micro">Tick penceresi acildiginda dogru aksiyon butonu glow olur.</p>
           </section>
+          <section id="pvpLiveDuelStrip" class="pvpLiveDuelStrip" data-tone="neutral" data-status="idle">
+            <div class="pvpLiveHead">
+              <div class="pvpLiveTitle">
+                <p class="label">Live Duel Strip</p>
+                <p id="pvpLiveDuelLine" class="value">Score 0-0 | Combo 0-0 | TTL 0s</p>
+              </div>
+              <div class="pvpLiveChipGrid">
+                <span id="pvpLiveTransportChip" class="pvpLiveChip neutral">POLL</span>
+                <span id="pvpLiveTickChip" class="pvpLiveChip neutral">TICK 1000/800</span>
+                <span id="pvpLiveFlowChip" class="pvpLiveChip neutral">FLOW IDLE</span>
+                <span id="pvpLiveShadowChip" class="pvpLiveChip neutral">SHADOW WAIT</span>
+              </div>
+            </div>
+            <div class="pvpLiveBody">
+              <div class="pvpLiveTelemetryCol">
+                <p id="pvpLiveScoreDeltaLine" class="micro">Skor Delta 0 | Hamle 0-0</p>
+                <p id="pvpLiveComboDeltaLine" class="micro">Combo Delta 0 | Pattern neutral</p>
+                <p id="pvpLiveQueueDriftLine" class="micro">Queue 0 | Drift 0 | Reject 0</p>
+                <p id="pvpLiveLatencyWindowLine" class="micro">LAT 0ms | WND 800ms | Sync 0%</p>
+              </div>
+              <div class="pvpLiveMetersCol">
+                <div class="pvpLiveMeterCard">
+                  <div class="pvpLiveMeterHead">
+                    <span class="micro">Pressure Grid</span>
+                    <span class="micro">Q / Drift / Latency</span>
+                  </div>
+                  <div class="meter"><span id="pvpLivePressureMeter"></span></div>
+                </div>
+                <div class="pvpLiveMeterCard">
+                  <div class="pvpLiveMeterHead">
+                    <span class="micro">Resolve Gate</span>
+                    <span class="micro">Action chain progress</span>
+                  </div>
+                  <div class="meter"><span id="pvpLiveResolveMeter"></span></div>
+                </div>
+              </div>
+            </div>
+            <p id="pvpLiveDuelHint" class="micro">Duel baslatildiginda tick/window/queue drift burada canli akar.</p>
+          </section>
           <section class="pvpMomentumStrip">
             <div class="pvpMomentumCell">
               <p class="label">Momentum (Sen)</p>

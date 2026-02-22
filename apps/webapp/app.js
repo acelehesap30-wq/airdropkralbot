@@ -91,6 +91,9 @@
       sceneMood: "balanced",
       scenePostFxLevel: 0.9,
       sceneHudDensity: "full",
+      assetReadyCount: 0,
+      assetTotalCount: 0,
+      assetSceneMode: "LITE",
       manifestRevision: "local",
       manifestProvider: "fallback",
       perfTimer: null,
@@ -244,10 +247,16 @@
     const perfTier = String(state.ui.autoQualityMode || state.telemetry.perfTier || "normal").toUpperCase();
     const fps = Math.max(0, Math.round(asNum(state.telemetry.fpsAvg || 0)));
     const assetsText = String(byId("assetModeLine")?.textContent || "Assets: -");
-    const isLite = assetsText.toUpperCase().includes("LITE") || assetsText.toLowerCase().includes("fallback");
+    const telemetryReadyAssets = asNum(state.telemetry.assetReadyCount || 0);
+    const telemetryTotalAssets = asNum(state.telemetry.assetTotalCount || 0);
+    const telemetrySceneMode = String(state.telemetry.assetSceneMode || "").toUpperCase();
     const assetReadyMatch = assetsText.match(/Assets:\s*(\d+)\/(\d+)/i);
-    const readyAssets = assetReadyMatch ? asNum(assetReadyMatch[1]) : 0;
-    const totalAssets = assetReadyMatch ? Math.max(1, asNum(assetReadyMatch[2])) : 1;
+    const readyAssets = telemetryTotalAssets > 0 ? telemetryReadyAssets : assetReadyMatch ? asNum(assetReadyMatch[1]) : 0;
+    const totalAssets = telemetryTotalAssets > 0 ? Math.max(1, telemetryTotalAssets) : assetReadyMatch ? Math.max(1, asNum(assetReadyMatch[2])) : 1;
+    const isLite =
+      telemetrySceneMode
+        ? telemetrySceneMode.includes("LITE")
+        : assetsText.toUpperCase().includes("LITE") || assetsText.toLowerCase().includes("fallback");
     const assetRatio = clamp(readyAssets / totalAssets, 0, 1);
     const transport = String(state.v3.pvpTransport || "poll").toUpperCase();
     const pvpStatus = String(state.v3.pvpSession?.status || "idle").toLowerCase();
@@ -4211,7 +4220,185 @@
     renderPvpCadence(state.v3.pvpSession, state.v3.pvpTickMeta);
     renderPvpDuelTheater(state.v3.pvpSession, state.v3.pvpTickMeta);
     renderPvpCinematicDirector(state.v3.pvpSession, state.v3.pvpTickMeta);
+    renderPvpLiveDuelStrip(state.v3.pvpSession, state.v3.pvpTickMeta);
     renderPvpActionPulse(state.v3.pvpSession, state.v3.pvpTickMeta);
+  }
+
+  function setPvpLiveChipState(el, text, tone = "neutral") {
+    if (!el) {
+      return;
+    }
+    const safeTone = ["neutral", "balanced", "advantage", "pressure", "critical"].includes(String(tone))
+      ? String(tone)
+      : "neutral";
+    el.textContent = String(text || "-");
+    el.className = `pvpLiveChip ${safeTone}`;
+  }
+
+  function renderPvpLiveDuelStrip(session = state.v3.pvpSession, tickMeta = state.v3.pvpTickMeta) {
+    const root = byId("pvpLiveDuelStrip");
+    const line = byId("pvpLiveDuelLine");
+    const hint = byId("pvpLiveDuelHint");
+    const scoreDeltaLine = byId("pvpLiveScoreDeltaLine");
+    const comboDeltaLine = byId("pvpLiveComboDeltaLine");
+    const queueDriftLine = byId("pvpLiveQueueDriftLine");
+    const latencyWindowLine = byId("pvpLiveLatencyWindowLine");
+    const pressureMeter = byId("pvpLivePressureMeter");
+    const resolveMeter = byId("pvpLiveResolveMeter");
+    const transportChip = byId("pvpLiveTransportChip");
+    const tickChip = byId("pvpLiveTickChip");
+    const flowChip = byId("pvpLiveFlowChip");
+    const shadowChip = byId("pvpLiveShadowChip");
+    if (
+      !root ||
+      !line ||
+      !hint ||
+      !scoreDeltaLine ||
+      !comboDeltaLine ||
+      !queueDriftLine ||
+      !latencyWindowLine ||
+      !pressureMeter ||
+      !resolveMeter ||
+      !transportChip ||
+      !tickChip ||
+      !flowChip ||
+      !shadowChip
+    ) {
+      return;
+    }
+
+    const clearState = () => {
+      root.dataset.tone = "neutral";
+      root.dataset.status = "idle";
+      root.style.setProperty("--duel-pressure", "0");
+      root.style.setProperty("--duel-resolve", "0");
+      root.style.setProperty("--duel-queue", "0");
+      root.style.setProperty("--duel-drift", "0");
+      root.style.setProperty("--duel-latency", "0");
+      setPvpLiveChipState(transportChip, "POLL", "neutral");
+      setPvpLiveChipState(tickChip, "TICK 1000/800", "neutral");
+      setPvpLiveChipState(flowChip, "FLOW IDLE", "neutral");
+      setPvpLiveChipState(shadowChip, "SHADOW WAIT", "neutral");
+      animateTextSwap(line, "Score 0-0 | Combo 0-0 | TTL 0s");
+      animateTextSwap(scoreDeltaLine, "Skor Delta 0 | Hamle 0-0");
+      animateTextSwap(comboDeltaLine, "Combo Delta 0 | Pattern neutral");
+      animateTextSwap(queueDriftLine, "Queue 0 | Drift 0 | Reject 0");
+      animateTextSwap(latencyWindowLine, "LAT 0ms | WND 800ms | Sync 0%");
+      animateTextSwap(hint, "Duel baslatildiginda tick/window/queue drift burada canli akar.");
+      animateMeterWidth(pressureMeter, 0, 0.18);
+      animateMeterWidth(resolveMeter, 0, 0.18);
+      setMeterPalette(pressureMeter, "neutral");
+      setMeterPalette(resolveMeter, "neutral");
+    };
+
+    if (!session) {
+      clearState();
+      return;
+    }
+
+    const diagnostics = tickMeta?.diagnostics || tickMeta?.state_json?.diagnostics || {};
+    const transport = String(session.transport || tickMeta?.transport || state.v3.pvpTransport || "poll").toUpperCase();
+    const tickMs = Math.max(200, asNum(session.tick_ms || tickMeta?.tick_ms || state.v3.pvpTickMs || 1000));
+    const windowMs = clamp(asNum(session.action_window_ms || tickMeta?.action_window_ms || state.v3.pvpActionWindowMs || 800), 80, tickMs);
+    const latencyMs = Math.max(0, Math.round(asNum(diagnostics.latency_ms || state.telemetry.latencyAvgMs || 0)));
+    const queueSize = Math.max(0, asNum(state.v3.pvpQueue.length || 0));
+    const queueRatio = clamp(queueSize / 8, 0, 1);
+    const drift = asNum(diagnostics.score_drift || 0);
+    const driftRatio = clamp(Math.abs(drift) / 6, 0, 1);
+    const scoreSelf = asNum(session.score?.self || 0);
+    const scoreOpp = asNum(session.score?.opponent || 0);
+    const comboSelf = asNum(session.combo?.self || 0);
+    const comboOpp = asNum(session.combo?.opponent || 0);
+    const actionSelf = asNum(session.action_count?.self || 0);
+    const actionOpp = asNum(session.action_count?.opponent || 0);
+    const ttlSecLeft = Math.max(0, asNum(session.ttl_sec_left || 0));
+    const ttlRatio = clamp(ttlSecLeft / 60, 0, 1);
+    const windowRatio = clamp(windowMs / tickMs, 0, 1);
+    const latencyWindowRatio = clamp(latencyMs / Math.max(1, windowMs), 0, 1);
+    const resolveRatio = clamp(actionSelf / 6, 0, 1);
+    const syncRatio = clamp((windowMs - latencyMs) / Math.max(1, windowMs), 0, 1);
+    const urgency = String(diagnostics.urgency || state.arena?.pvpUrgency || "steady").toLowerCase();
+    const recommendation = String(diagnostics.recommendation || state.arena?.pvpRecommendation || "balanced").toLowerCase();
+    const scoreDelta = scoreSelf - scoreOpp;
+    const comboDelta = comboSelf - comboOpp;
+    const pressureRatio = clamp(queueRatio * 0.4 + driftRatio * 0.34 + latencyWindowRatio * 0.26, 0, 1);
+    const flowState =
+      pressureRatio >= 0.78
+        ? "BREAK"
+        : scoreDelta > 0 || comboDelta > 0
+          ? "PUSH"
+          : scoreDelta < 0 || comboDelta < 0
+            ? "RECOVER"
+            : "EVEN";
+    const shadow = tickMeta?.shadow || tickMeta?.state_json?.shadow || null;
+    const shadowAction = String(shadow?.input_action || shadow?.action || session.opponent_type || "shadow").toUpperCase();
+    const shadowOk = shadow ? Boolean(shadow.accepted) : null;
+    const shadowText = shadow ? `SH ${shadowAction} ${shadowOk ? "OK" : "MISS"}` : `OPP ${shadowAction}`;
+    const status = String(session.status || "active").toLowerCase();
+
+    let tone = "neutral";
+    if (status === "resolved") {
+      const outcome = String(session.result?.outcome_for_viewer || session.result?.outcome || "").toLowerCase();
+      tone = outcome === "win" ? "advantage" : outcome === "loss" ? "critical" : "pressure";
+    } else if (urgency === "critical" || pressureRatio >= 0.76 || ttlSecLeft <= 12) {
+      tone = "critical";
+    } else if (urgency === "pressure" || pressureRatio >= 0.46 || queueSize >= 4) {
+      tone = "pressure";
+    } else if (scoreDelta > 0 || comboDelta > 0 || resolveRatio >= 0.66) {
+      tone = "advantage";
+    }
+
+    root.dataset.tone = tone;
+    root.dataset.status = status || "active";
+    root.style.setProperty("--duel-pressure", pressureRatio.toFixed(3));
+    root.style.setProperty("--duel-resolve", resolveRatio.toFixed(3));
+    root.style.setProperty("--duel-queue", queueRatio.toFixed(3));
+    root.style.setProperty("--duel-drift", driftRatio.toFixed(3));
+    root.style.setProperty("--duel-latency", latencyWindowRatio.toFixed(3));
+
+    setPvpLiveChipState(
+      transportChip,
+      `${transport}${status === "active" ? " LIVE" : status === "resolved" ? " END" : ""}`,
+      status === "active" ? (tone === "critical" ? "critical" : tone === "pressure" ? "pressure" : "balanced") : "neutral"
+    );
+    setPvpLiveChipState(
+      tickChip,
+      `TICK ${Math.round(tickMs)}/${Math.round(windowMs)}`,
+      windowRatio >= 0.72 ? "advantage" : windowRatio >= 0.5 ? "pressure" : "critical"
+    );
+    setPvpLiveChipState(flowChip, `FLOW ${flowState}`, tone);
+    setPvpLiveChipState(
+      shadowChip,
+      shadowText,
+      shadowOk === null ? "neutral" : shadowOk ? "advantage" : "pressure"
+    );
+
+    animateTextSwap(
+      line,
+      `Score ${scoreSelf}-${scoreOpp} | Combo ${comboSelf}-${comboOpp} | TTL ${ttlSecLeft}s | ${recommendation.toUpperCase()}`
+    );
+    animateTextSwap(scoreDeltaLine, `Skor Delta ${scoreDelta >= 0 ? "+" : ""}${scoreDelta} | Hamle ${actionSelf}-${actionOpp}`);
+    animateTextSwap(comboDeltaLine, `Combo Delta ${comboDelta >= 0 ? "+" : ""}${comboDelta} | Pattern ${flowState}`);
+    animateTextSwap(
+      queueDriftLine,
+      `Queue ${queueSize} | Drift ${drift >= 0 ? "+" : ""}${Math.round(drift)} | Reject ${state.v3.pvpLastRejected ? 1 : 0}`
+    );
+    animateTextSwap(latencyWindowLine, `LAT ${latencyMs}ms | WND ${Math.round(windowMs)}ms | Sync ${Math.round(syncRatio * 100)}%`);
+
+    if (tone === "critical") {
+      animateTextSwap(hint, "Kritik baski: queue temizle, pencereye don, GUARD ile ritmi sabitle.");
+    } else if (tone === "pressure") {
+      animateTextSwap(hint, "Baski yukseliyor: expected aksiyona hizli donup drifti dusur.");
+    } else if (tone === "advantage") {
+      animateTextSwap(hint, "Avantaj sende: flow korunuyor, resolve penceresine zincir tası.");
+    } else {
+      animateTextSwap(hint, "Duel stabil: tick window + latency + queue dengesi korunuyor.");
+    }
+
+    animateMeterWidth(pressureMeter, pressureRatio * 100, 0.22);
+    setMeterPalette(pressureMeter, tone === "critical" ? "critical" : tone === "pressure" ? "aggressive" : tone === "advantage" ? "safe" : "balanced");
+    animateMeterWidth(resolveMeter, resolveRatio * 100, 0.22);
+    setMeterPalette(resolveMeter, resolveRatio >= 1 ? "safe" : resolveRatio >= 0.66 ? "balanced" : tone === "critical" ? "aggressive" : "neutral");
   }
 
   function renderPvpTickLine(session = state.v3.pvpSession, tickMeta = state.v3.pvpTickMeta) {
@@ -6047,6 +6234,7 @@
       renderPvpDuelTheater(null, null);
       renderPvpCinematicDirector(null, null);
       renderPvpRadar(null, null);
+      renderPvpLiveDuelStrip(null, null);
       renderPvpActionPulse(null, null);
       ensurePvpLiveLoop();
       renderTelemetryDeck(state.data || {});
@@ -6123,6 +6311,7 @@
     renderPvpDuelTheater(session, state.v3.pvpTickMeta);
     renderPvpCinematicDirector(session, state.v3.pvpTickMeta);
     renderPvpRadar(session, state.v3.pvpTickMeta);
+    renderPvpLiveDuelStrip(session, state.v3.pvpTickMeta);
     renderPvpActionPulse(session, state.v3.pvpTickMeta);
     ensurePvpLiveLoop();
     renderCombatHudPanel();
@@ -9499,6 +9688,10 @@
     const mixers = [];
     const profile = getQualityProfile();
     const manifest = await loadAssetManifest();
+    state.telemetry.manifestProvider = String(manifest?.source?.provider || (manifest ? "manifest_file" : "fallback"));
+    state.telemetry.manifestRevision = String(
+      manifest?.source?.revision || manifest?.manifest_revision || manifest?.revision || "local"
+    );
     const models = manifest?.models || {};
     const resolveModelEntry = (key) => {
       const entry = models[key];
@@ -9590,6 +9783,9 @@
     }, 0);
     const effectiveExpectedCount = Math.max(1, expectedAssetCount);
     const sceneMode = loadedAssetCount >= Math.max(2, expectedAssetCount) ? "PRO" : "LITE";
+    state.telemetry.assetReadyCount = loadedAssetCount;
+    state.telemetry.assetTotalCount = effectiveExpectedCount;
+    state.telemetry.assetSceneMode = sceneMode;
     setAssetModeLine(`Assets: ${loadedAssetCount}/${effectiveExpectedCount} ${sceneMode}`);
 
     const starsMaterial = new THREE.PointsMaterial({ color: 0xb2d5ff, size: profile.starSize });
