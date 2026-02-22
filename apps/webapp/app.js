@@ -63,6 +63,7 @@
       pvpLastAction: "",
       pvpLastActionAt: 0,
       pvpLastRejected: false,
+      pvpLastRejectReason: "",
       combatChain: [],
       combatEnergy: 0,
       pulseTone: "info",
@@ -3239,6 +3240,8 @@
     const tone = normalizePulseTone(state.v3.pulseTone || "info");
     const label = String(state.v3.pulseLabel || "NEXUS READY").slice(0, 26);
     const diagnostics = state.v3.pvpTickMeta?.diagnostics || {};
+    const ladderMetrics = state.v3.pvpLeaderboardMetrics || {};
+    const assetMetrics = state.admin.assetRuntimeMetrics || {};
     const queuePressure = clamp(asNum(diagnostics.queue_pressure || 0), 0, 1);
     const urgency = String(diagnostics.urgency || state.arena?.pvpUrgency || "steady").toLowerCase();
     const recommendation = String(diagnostics.recommendation || state.arena?.pvpRecommendation || "balanced").toUpperCase();
@@ -3288,11 +3291,16 @@
     const sceneHeatRatio = clamp(asNum(state.telemetry.combatHeat || 0), 0, 1);
     const threatRatio = clamp(asNum(state.telemetry.threatRatio || 0), 0, 1);
     const pvpPressureRatio = clamp(queuePressure * 0.58 + pressureRatio * 0.42, 0, 1);
+    const ladderPressureRatio = clamp(asNum(ladderMetrics.pressure || 0), 0, 1);
+    const ladderFreshnessRatio = clamp(asNum(ladderMetrics.freshnessRatio || 0), 0, 1);
+    const assetReadyRatio = clamp(asNum(assetMetrics.readyRatio || 1), 0, 1);
+    const assetSyncRatio = clamp(asNum(assetMetrics.syncRatio || 1), 0, 1);
+    const assetRiskRatio = clamp((1 - assetReadyRatio) * 0.62 + (1 - assetSyncRatio) * 0.38, 0, 1);
     const impulseRatio = clamp(asNum(state.arena?.cameraImpulse || 0) / 1.6, 0, 1);
     const overdriveTone =
-      pvpPressureRatio >= 0.78 || impulseRatio >= 0.7
+      pvpPressureRatio >= 0.78 || impulseRatio >= 0.7 || ladderPressureRatio >= 0.82
         ? "critical"
-        : pvpPressureRatio >= 0.52 || threatRatio >= 0.55
+        : pvpPressureRatio >= 0.52 || threatRatio >= 0.55 || assetRiskRatio >= 0.55
           ? "pressure"
           : pvpPressureRatio >= 0.3
             ? "advantage"
@@ -3305,16 +3313,23 @@
     };
     const overdriveLineText =
       `HEAT ${Math.round(sceneHeatRatio * 100)}% | THREAT ${Math.round(threatRatio * 100)}% | ` +
-      `PVP ${Math.round(pvpPressureRatio * 100)}% | CAM ${Math.round(impulseRatio * 100)}%`;
+      `PVP ${Math.round(pvpPressureRatio * 100)}% | LAD ${Math.round(ladderPressureRatio * 100)}% | CAM ${Math.round(
+        impulseRatio * 100
+      )}%`;
     const overdriveShiftedToCritical = state.ui.overdriveTone !== "critical" && overdriveTone === "critical";
     state.ui.overdriveTone = overdriveTone;
     const matrixSyncRatio = clamp(1 - Math.abs(syncDelta) / 100, 0, 1);
-    const matrixThermalRatio = clamp(sceneHeatRatio * 0.62 + threatRatio * 0.24 + pvpPressureRatio * 0.14, 0, 1);
+    const matrixThermalRatio = clamp(
+      sceneHeatRatio * 0.55 + threatRatio * 0.2 + pvpPressureRatio * 0.13 + assetRiskRatio * 0.12,
+      0,
+      1
+    );
     const matrixShieldBase = clamp(actionCounts.guard / Math.max(1, COMBAT_CHAIN_LIMIT), 0, 1);
     const matrixShieldRatio = clamp(matrixShieldBase * 0.62 + (expectedAction === "guard" ? 0.22 : 0.06) + (latestAccepted ? 0.1 : -0.08), 0, 1);
     const matrixClutchRatio = clamp(
       (1 - clamp(raidTtlSec / raidTtlBase, 0, 1)) * 0.35 +
-        pvpPressureRatio * 0.27 +
+        pvpPressureRatio * 0.23 +
+        ladderPressureRatio * 0.08 +
         (latestAccepted ? 0.16 : 0.34) +
         (latestAction && latestAction === expectedAction ? 0.14 : 0),
       0,
@@ -3330,7 +3345,9 @@
             : "steady";
     const matrixLineText =
       `SYNC ${Math.round(matrixSyncRatio * 100)}% | THERMAL ${Math.round(matrixThermalRatio * 100)}% | ` +
-      `SHIELD ${Math.round(matrixShieldRatio * 100)}% | CLUTCH ${Math.round(matrixClutchRatio * 100)}%`;
+      `SHIELD ${Math.round(matrixShieldRatio * 100)}% | CLUTCH ${Math.round(matrixClutchRatio * 100)}% | ASSET ${Math.round(
+        (1 - assetRiskRatio) * 100
+      )}%`;
     const matrixHintMap = {
       critical: "Clutch penceresi kritik: once guard ile yuku dengele, sonra resolve zincirine gir.",
       pressure: "Reaktor basinci yukseliyor: thermal yukunu dusurup queue driftini kapat.",
@@ -3359,7 +3376,9 @@
       state.v3.matrixScopeHistory = nextHistory.slice(0, 96);
     }
     if (matrixScopeLine) {
-      matrixScopeLine.textContent = `FLOW ${Math.round(matrixFlowRatio * 100)}% | Q ${Math.round(queuePressure * 100)}%`;
+      matrixScopeLine.textContent =
+        `FLOW ${Math.round(matrixFlowRatio * 100)}% | Q ${Math.round(queuePressure * 100)}% | ` +
+        `LAD ${Math.round(ladderPressureRatio * 100)}% | ASSET ${Math.round((1 - assetRiskRatio) * 100)}%`;
       matrixScopeLine.dataset.tone = matrixTone;
     }
     drawMatrixScopeCanvas(matrixScopeCanvas, {
@@ -3371,10 +3390,31 @@
     });
     const alertRows = [];
     if (latest && !latestAccepted) {
+      const rejectReason = String(state.v3.pvpLastRejectReason || "").replace(/_/g, " ").toUpperCase();
       alertRows.push({
-        label: "ACTION REJECT",
+        label: rejectReason ? `ACTION REJECT ${rejectReason.slice(0, 12)}` : "ACTION REJECT",
         tone: "critical",
-        hint: "Son hamle reject oldu. Beklenen aksiyona donup drifti sifirla."
+        hint: rejectReason
+          ? `Son hamle reject oldu (${rejectReason}). Beklenen aksiyona donup drifti sifirla.`
+          : "Son hamle reject oldu. Beklenen aksiyona donup drifti sifirla."
+      });
+    }
+    if (ladderPressureRatio >= 0.56) {
+      alertRows.push({
+        label: "LADDER HEAT",
+        tone: ladderPressureRatio >= 0.8 ? "critical" : "balanced",
+        hint:
+          `Liderlik hattı aktif (${Math.round(ladderPressureRatio * 100)}%). ` +
+          `Spread ${Math.round(asNum(ladderMetrics.spread || 0))} / 24h ${Math.round(asNum(ladderMetrics.total24h || 0))} mac.`
+      });
+    }
+    if (assetRiskRatio >= 0.34) {
+      alertRows.push({
+        label: "ASSET SYNC",
+        tone: assetRiskRatio >= 0.65 ? "critical" : "aggressive",
+        hint:
+          `Asset sync riski: ready ${Math.round(assetReadyRatio * 100)}%, sync ${Math.round(assetSyncRatio * 100)}%. ` +
+          "Lite scene fallback devreye girebilir."
       });
     }
     if (pvpPressureRatio >= 0.7) {
@@ -3619,7 +3659,14 @@
           alertSecondaryTone: String(alertSecondary?.tone || "balanced"),
           alertTertiaryLabel: String(alertTertiary?.label || "RAID SAFE"),
           alertTertiaryTone: String(alertTertiary?.tone || "safe"),
-          alertHintText
+          alertHintText,
+          ladderTone: String(ladderMetrics.tone || "neutral"),
+          ladderPressurePct: Math.round(ladderPressureRatio * 100),
+          ladderFreshnessPct: Math.round(ladderFreshnessRatio * 100),
+          assetTone: String(assetMetrics.tone || "neutral"),
+          assetRiskPct: Math.round(assetRiskRatio * 100),
+          assetReadyPct: Math.round(assetReadyRatio * 100),
+          assetSyncPct: Math.round(assetSyncRatio * 100)
         });
         if (handled) {
           return;
@@ -3646,11 +3693,15 @@
       panelRoot.dataset.matrix = matrixTone;
       panelRoot.dataset.expectedAction = expectedAction || "auto";
       panelRoot.dataset.latestAccepted = latestAccepted ? "1" : "0";
+      panelRoot.dataset.ladderTone = String(ladderMetrics.tone || "neutral");
+      panelRoot.dataset.assetTone = String(assetMetrics.tone || "neutral");
       panelRoot.style.setProperty("--combat-panel-queue", queuePressure.toFixed(3));
       panelRoot.style.setProperty("--combat-panel-pressure", pressureRatio.toFixed(3));
       panelRoot.style.setProperty("--combat-panel-boss", bossPressure.toFixed(3));
       panelRoot.style.setProperty("--combat-panel-sync", clamp((syncDelta + 100) / 200, 0, 1).toFixed(3));
       panelRoot.style.setProperty("--combat-panel-overdrive", clamp(pvpPressureRatio * 0.7 + impulseRatio * 0.3, 0, 1).toFixed(3));
+      panelRoot.style.setProperty("--combat-panel-ladder", ladderPressureRatio.toFixed(3));
+      panelRoot.style.setProperty("--combat-panel-asset", assetRiskRatio.toFixed(3));
     }
     if (chainLine) {
       const last = chain[0];
@@ -4349,6 +4400,8 @@
     const shadowOk = shadow ? Boolean(shadow.accepted) : null;
     const shadowText = shadow ? `SH ${shadowAction} ${shadowOk ? "OK" : "MISS"}` : `OPP ${shadowAction}`;
     const status = String(session.status || "active").toLowerCase();
+    const recentReject = Boolean(state.v3.pvpLastRejected) && Date.now() - asNum(state.v3.pvpLastActionAt || 0) < 2400;
+    const recentRejectReason = String(state.v3.pvpLastRejectReason || "").toUpperCase().replace(/_/g, " ").slice(0, 18);
 
     let tone = "neutral";
     if (status === "resolved") {
@@ -4395,11 +4448,15 @@
     animateTextSwap(comboDeltaLine, `Combo Delta ${comboDelta >= 0 ? "+" : ""}${comboDelta} | Pattern ${flowState}`);
     animateTextSwap(
       queueDriftLine,
-      `Queue ${queueSize} | Drift ${drift >= 0 ? "+" : ""}${Math.round(drift)} | Reject ${state.v3.pvpLastRejected ? 1 : 0}`
+      `Queue ${queueSize} | Drift ${drift >= 0 ? "+" : ""}${Math.round(drift)} | Reject ${
+        state.v3.pvpLastRejected ? 1 : 0
+      }${recentRejectReason ? ` | ${recentRejectReason}` : ""}`
     );
     animateTextSwap(latencyWindowLine, `LAT ${latencyMs}ms | WND ${Math.round(windowMs)}ms | Sync ${Math.round(syncRatio * 100)}%`);
 
-    if (tone === "critical") {
+    if (recentReject && recentRejectReason) {
+      animateTextSwap(hint, `Reject nedeni: ${recentRejectReason}. Expected aksiyona donup queue driftini temizle.`);
+    } else if (tone === "critical") {
       animateTextSwap(hint, "Kritik baski: queue temizle, pencereye don, GUARD ile ritmi sabitle.");
     } else if (tone === "pressure") {
       animateTextSwap(hint, "Baski yukseliyor: expected aksiyona hizli donup drifti dusur.");
@@ -6195,6 +6252,7 @@
     if (!session) {
       strip.dataset.tone = "neutral";
       strip.dataset.reject = "0";
+      strip.dataset.rejectReason = "";
       stateBadge.textContent = "IDLE";
       stateBadge.className = "badge info";
       line.textContent = "Expected - | Queue 0 | Drift 0%";
@@ -6222,6 +6280,8 @@
     const phaseRatio = clamp(asNum(tickMeta?.phase_ratio || tickMeta?.phaseRatio || 0), 0, 1);
     const pressure = clamp((1 - windowRatio) * 0.52 + driftRatio * 0.3 + clamp(queueSize / 8, 0, 1) * 0.18, 0, 1);
     const recentReject = Boolean(state.v3.pvpLastRejected) && Date.now() - asNum(state.v3.pvpLastActionAt || 0) < 2200;
+    const rejectReasonRaw = String(state.v3.pvpLastRejectReason || "").toLowerCase();
+    const rejectReasonLabel = rejectReasonRaw ? rejectReasonRaw.replace(/_/g, " ").toUpperCase() : "REJECT";
     const tone = recentReject ? "critical" : pressure >= 0.72 ? "critical" : pressure >= 0.42 ? "pressure" : "advantage";
     const hueByAction = { strike: 350, guard: 146, charge: 204 };
     const focusHue = hueByAction[expectedAction] ?? 214;
@@ -6229,6 +6289,7 @@
     strip.dataset.tone = tone;
     strip.dataset.reject = recentReject ? "1" : "0";
     strip.dataset.expectedAction = expectedAction || "none";
+    strip.dataset.rejectReason = recentReject && rejectReasonRaw ? rejectReasonRaw.slice(0, 24) : "";
     strip.style.setProperty("--pulse-hue", String(focusHue));
     strip.style.setProperty("--pulse-pressure", pressure.toFixed(3));
     strip.style.setProperty("--pulse-window", windowRatio.toFixed(3));
@@ -6238,10 +6299,12 @@
     strip.style.setProperty("--pulse-kick", (recentReject ? 1 : clamp(phaseRatio * 0.65 + pressure * 0.35, 0, 1)).toFixed(3));
     stateBadge.textContent = tone === "critical" ? "CRITICAL" : tone === "pressure" ? "PRESSURE" : "FLOW";
     stateBadge.className = tone === "critical" ? "badge warn" : tone === "pressure" ? "badge" : "badge info";
-    line.textContent = `Expected ${expectedAction.toUpperCase()} | Queue ${queueSize} | Drift ${Math.round(driftRatio * 100)}%`;
+    line.textContent = `Expected ${expectedAction.toUpperCase()} | Queue ${queueSize} | Drift ${Math.round(driftRatio * 100)}%${
+      recentReject && rejectReasonRaw ? ` | ${rejectReasonLabel}` : ""
+    }`;
     hint.textContent =
       recentReject
-        ? "Son aksiyon reject edildi: expected aksiyona don ve queue temizle."
+        ? `Son aksiyon reject edildi (${rejectReasonLabel}): expected aksiyona don ve queue temizle.`
         : tone === "critical"
         ? "Pencere dar: GUARD ve denge hamleleriyle queue baskisini dusur."
         : tone === "pressure"
@@ -6267,7 +6330,13 @@
     );
     setPulseChip(
       flowChip,
-      recentReject ? "FLOW REJECT" : tone === "critical" ? "FLOW SPIKE" : tone === "pressure" ? "FLOW WATCH" : "FLOW LOCK",
+      recentReject
+        ? `FLOW ${rejectReasonRaw ? rejectReasonLabel.slice(0, 12) : "REJECT"}`
+        : tone === "critical"
+          ? "FLOW SPIKE"
+          : tone === "pressure"
+            ? "FLOW WATCH"
+            : "FLOW LOCK",
       recentReject ? "critical" : tone === "critical" ? "critical" : tone === "pressure" ? "pressure" : "advantage",
       1 - pressure
     );
@@ -6599,6 +6668,7 @@
       state.v3.pvpLastAction = inputAction;
       state.v3.pvpLastActionAt = Date.now();
       state.v3.pvpLastRejected = !Boolean(data.action.accepted);
+      state.v3.pvpLastRejectReason = data.action.accepted ? "" : String(data.action.reject_reason || "");
       appendPvpTimelineEntry({
         key: `${String(data.session?.session_ref || session.session_ref)}:action:${asNum(data.action.action_seq || 0)}`,
         tone: data.action.accepted ? "action" : "reject",
@@ -6656,6 +6726,7 @@
     state.v3.pvpLastAction = String(action || "").toLowerCase();
     state.v3.pvpLastActionAt = Date.now();
     state.v3.pvpLastRejected = false;
+    state.v3.pvpLastRejectReason = "";
     state.v3.pvpQueue.push({
       action: String(action || "").toLowerCase(),
       queuedAt: Date.now()
@@ -8308,6 +8379,19 @@
     state.telemetry.assetSceneMode = missing > 0 ? "LITE" : "PRO";
     state.telemetry.manifestRevision = manifestRevision || state.telemetry.manifestRevision;
     state.telemetry.manifestProvider = sourceMode;
+    state.admin.assetRuntimeMetrics = {
+      total,
+      ready,
+      missing,
+      readyRatio,
+      syncRatio,
+      dbReadyRatio,
+      dbRows: dbRows.length,
+      dbReady,
+      manifestRevision,
+      sourceMode,
+      tone
+    };
     renderSceneStatusDeck();
     const now = Date.now();
     const assetSignalKey = `${manifestRevision}:${ready}:${missing}:${dbRows.length}`;
@@ -8820,11 +8904,20 @@
     const comboPeak = Math.max(simCombo, pvpCombo);
     const comboHeat = clamp(comboPeak / 10, 0, 1);
     const queuePressure = clamp(asNum(state.v3.pvpQueue.length) / 10, 0, 1);
+    const ladderMetrics = state.v3.pvpLeaderboardMetrics || {};
+    const assetMetrics = state.admin.assetRuntimeMetrics || {};
+    const ladderPressure = clamp(asNum(ladderMetrics.pressure || 0), 0, 1);
+    const assetRisk = clamp(
+      (1 - clamp(asNum(assetMetrics.readyRatio || 1), 0, 1)) * 0.62 +
+        (1 - clamp(asNum(assetMetrics.syncRatio || 1), 0, 1)) * 0.38,
+      0,
+      1
+    );
     const tickMs = Math.max(1, asNum(state.v3.pvpTickMs || 1000));
     const latency = asNum(state.telemetry.latencyAvgMs || 0);
     const actionWindowMs = Math.max(1, asNum(state.v3.pvpActionWindowMs || 800));
     const windowRatio = clamp((actionWindowMs - latency) / actionWindowMs, 0, 1);
-    const anomaly = clamp((threat * 0.68 + queuePressure * 0.22 + (1 - windowRatio) * 0.3), 0, 1);
+    const anomaly = clamp(threat * 0.55 + queuePressure * 0.18 + (1 - windowRatio) * 0.2 + ladderPressure * 0.07 + assetRisk * 0.08, 0, 1);
     const comboTone = comboHeat >= 0.8 ? "critical" : comboHeat >= 0.55 ? "aggressive" : comboHeat >= 0.28 ? "balanced" : "safe";
     const windowTone =
       windowRatio >= 0.78 ? "safe" : windowRatio >= 0.52 ? "balanced" : windowRatio >= 0.28 ? "aggressive" : "critical";
@@ -8924,7 +9017,9 @@
     const anomalyLine = byId("anomalyPulseLine");
     if (anomalyLine) {
       const anomalyTone = anomaly >= 0.78 ? "CRITICAL" : anomaly >= 0.48 ? "VOLATILE" : "STABLE";
-      anomalyLine.textContent = `${anomalyTone} | Risk ${Math.round(threat * 100)}%`;
+      anomalyLine.textContent =
+        `${anomalyTone} | Risk ${Math.round(threat * 100)}% | ` +
+        `Ladder ${Math.round(ladderPressure * 100)}% | Asset ${Math.round((1 - assetRisk) * 100)}%`;
       anomalyLine.dataset.tone = anomalyTone.toLowerCase();
     }
     const anomalyMeter = byId("anomalyPulseMeter");

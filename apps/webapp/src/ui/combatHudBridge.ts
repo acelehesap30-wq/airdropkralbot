@@ -86,6 +86,13 @@ type CombatHudPayload = {
   alertTertiaryLabel: string;
   alertTertiaryTone: string;
   alertHintText: string;
+  ladderTone?: string;
+  ladderPressurePct?: number;
+  ladderFreshnessPct?: number;
+  assetTone?: string;
+  assetRiskPct?: number;
+  assetReadyPct?: number;
+  assetSyncPct?: number;
 };
 
 type CombatHudBridge = {
@@ -228,6 +235,8 @@ function render(payload: CombatHudPayload): boolean {
   panelRoot.dataset.matrix = String(payload.matrixTone || "steady");
   panelRoot.dataset.expectedAction = String(payload.expectedAction || "auto");
   panelRoot.dataset.latestAccepted = payload.latestAccepted === false ? "0" : "1";
+  panelRoot.dataset.ladderTone = String(payload.ladderTone || "neutral");
+  panelRoot.dataset.assetTone = String(payload.assetTone || "neutral");
   panelRoot.style.setProperty("--combat-panel-queue", (clamp(asNum(payload.queuePressurePct) / 100, 0, 1)).toFixed(3));
   panelRoot.style.setProperty("--combat-panel-pressure", (clamp(asNum(payload.pressureRatioPct) / 100, 0, 1)).toFixed(3));
   panelRoot.style.setProperty("--combat-panel-boss", (clamp(asNum(payload.bossMeterPct) / 100, 0, 1)).toFixed(3));
@@ -236,6 +245,8 @@ function render(payload: CombatHudPayload): boolean {
     "--combat-panel-overdrive",
     clamp((asNum(payload.overdrivePvpPct) / 100) * 0.7 + (asNum(payload.overdriveImpulsePct) / 100) * 0.3, 0, 1).toFixed(3)
   );
+  panelRoot.style.setProperty("--combat-panel-ladder", clamp(asNum(payload.ladderPressurePct) / 100, 0, 1).toFixed(3));
+  panelRoot.style.setProperty("--combat-panel-asset", clamp(asNum(payload.assetRiskPct) / 100, 0, 1).toFixed(3));
 
   chainLine.textContent = String(payload.chainLineText || "CHAIN IDLE");
   chainTrail.innerHTML = "";
