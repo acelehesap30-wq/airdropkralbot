@@ -49,6 +49,9 @@
       pvpLiveTimer: null,
       pvpLiveErrors: 0,
       pvpLeaderboard: [],
+      pvpLeaderboardMeta: null,
+      pvpLeaderboardPulseKey: "",
+      pvpLeaderboardPulseAt: 0,
       pvpTimelineSessionRef: "",
       pvpTimeline: [],
       pvpReplay: [],
@@ -235,6 +238,17 @@
     el.textContent = String(text || "-");
     el.classList.remove("tone-neutral", "tone-safe", "tone-balanced", "tone-pressure", "tone-critical");
     el.classList.add(`tone-${String(tone || "neutral")}`);
+    el.style.setProperty("--chip-level", clamp(asNum(level), 0, 1).toFixed(3));
+  }
+
+  function setLiveStatusChip(id, text, tone = "neutral", level = 0.18) {
+    const el = byId(id);
+    if (!el) {
+      return;
+    }
+    el.textContent = String(text || "-");
+    el.classList.remove("neutral", "balanced", "advantage", "pressure", "critical");
+    el.classList.add(String(tone || "neutral"));
     el.style.setProperty("--chip-level", clamp(asNum(level), 0, 1).toFixed(3));
   }
 
@@ -5958,7 +5972,133 @@
     });
   }
 
-  function renderPvpLeaderboard(list = []) {
+  function applyPvpLeaderboardSceneSignal(metrics = {}) {
+    if (!metrics || typeof metrics !== "object") {
+      return;
+    }
+    const pressure = clamp(asNum(metrics.pressure || 0), 0, 1);
+    const activity = clamp(asNum(metrics.activityRatio || 0), 0, 1);
+    const freshness = clamp(asNum(metrics.freshnessRatio || 0), 0, 1);
+    const tone = String(metrics.tone || "balanced");
+    if (state.arena) {
+      const duelActive = String(state.v3?.pvpSession?.status || "").toLowerCase() === "active";
+      if (!duelActive) {
+        const targetPressure = clamp(pressure * 0.72 + activity * 0.12, 0, 1);
+        const prevPressure = clamp(asNum(state.arena.pvpPressure ?? 0.22), 0, 1);
+        state.arena.pvpPressure = prevPressure * 0.74 + targetPressure * 0.26;
+      }
+      state.arena.scenePulseAmbient = Math.min(
+        3,
+        asNum(state.arena.scenePulseAmbient || 0) + activity * 0.12 + pressure * 0.08 + (1 - freshness) * 0.03
+      );
+      state.arena.pvpCinematicIntensity = Math.min(
+        1.8,
+        asNum(state.arena.pvpCinematicIntensity || 0) + activity * 0.05 + pressure * 0.07
+      );
+    }
+
+    const topUser = String(metrics.topUser || "none");
+    const pulseKey = [topUser, Math.round(asNum(metrics.spread || 0)), Math.round(activity * 10), tone].join(":");
+    const now = Date.now();
+    if (pulseKey === state.v3.pvpLeaderboardPulseKey && now - asNum(state.v3.pvpLeaderboardPulseAt || 0) < 9000) {
+      return;
+    }
+    if (now - asNum(state.v3.pvpLeaderboardPulseAt || 0) < 3200) {
+      return;
+    }
+    state.v3.pvpLeaderboardPulseKey = pulseKey;
+    state.v3.pvpLeaderboardPulseAt = now;
+    const pulseTone = tone === "critical" ? "aggressive" : tone === "pressure" ? "balanced" : tone === "advantage" ? "safe" : "info";
+    triggerArenaPulse(pulseTone, {
+      label: `LADDER ${String(metrics.lineTag || "SYNC").toUpperCase().slice(0, 22)}`
+    });
+  }
+
+  function renderPvpLeaderboardStrip(list = [], meta = state.v3.pvpLeaderboardMeta) {
+    const strip = byId("pvpLeaderboardStrip");
+    const badge = byId("pvpLeaderBadge");
+    const line = byId("pvpLeaderLine");
+    const heatMeter = byId("pvpLeaderHeatMeter");
+    const freshMeter = byId("pvpLeaderFreshMeter");
+    if (!strip || !badge || !line || !heatMeter || !freshMeter) {
+      return;
+    }
+    const rows = Array.isArray(list) ? list : [];
+    if (!rows.length) {
+      strip.dataset.tone = "neutral";
+      badge.textContent = "BOARD";
+      badge.className = "badge info";
+      line.textContent = "Liderlik verisi bekleniyor.";
+      setLiveStatusChip("pvpLeaderSpreadChip", "SPREAD 0", "neutral", 0.12);
+      setLiveStatusChip("pvpLeaderVolumeChip", "24H 0", "neutral", 0.12);
+      setLiveStatusChip("pvpLeaderFreshChip", "FRESH --", "neutral", 0.12);
+      setLiveStatusChip("pvpLeaderTransportChip", `TR ${(meta && meta.transport) || "poll"}`, "neutral", 0.12);
+      animateMeterWidth(heatMeter, 0, 0.22);
+      animateMeterWidth(freshMeter, 0, 0.22);
+      setMeterPalette(heatMeter, "neutral");
+      setMeterPalette(freshMeter, "neutral");
+      return;
+    }
+
+    const top = rows[0] || {};
+    const second = rows[1] || {};
+    const topRating = asNum(top.rating || 1000);
+    const secondRating = asNum(second.rating || topRating);
+    const spread = Math.max(0, topRating - secondRating);
+    const total24h = rows.reduce((sum, row) => sum + asNum(row.matches_24h || 0), 0);
+    const totalMatches = rows.reduce((sum, row) => sum + asNum(row.matches_total || 0), 0);
+    const latestTs = rows
+      .map((row) => (row.last_match_at ? new Date(row.last_match_at).getTime() : 0))
+      .filter((value) => Number.isFinite(value) && value > 0)
+      .sort((a, b) => b - a)[0] || 0;
+    const ageMin = latestTs > 0 ? Math.max(0, (Date.now() - latestTs) / 60000) : 999;
+    const freshnessRatio = latestTs > 0 ? clamp(1 - ageMin / 120, 0, 1) : 0;
+    const activityRatio = clamp(total24h / 60, 0, 1);
+    const closeRatio = clamp(1 - spread / 80, 0, 1);
+    const pressure = clamp(closeRatio * 0.58 + activityRatio * 0.28 + (1 - freshnessRatio) * 0.14, 0, 1);
+    const tone =
+      spread <= 8 && total24h >= 6
+        ? "critical"
+        : pressure >= 0.6
+          ? "pressure"
+          : spread >= 80 && freshnessRatio >= 0.35
+            ? "advantage"
+            : "balanced";
+    const transport = String((meta && meta.transport) || state.v3.pvpTransport || "poll").toUpperCase();
+    const serverTickAgoSec = asNum(meta && meta.server_tick) > 0 ? Math.max(0, (Date.now() - asNum(meta.server_tick)) / 1000) : 0;
+    const lineTag = spread <= 12 ? "close race" : spread >= 100 ? "leader gap" : "mid spread";
+
+    strip.dataset.tone = tone;
+    strip.style.setProperty("--leader-pressure", pressure.toFixed(3));
+    badge.textContent = tone === "critical" ? "LADDER HOT" : tone === "pressure" ? "LADDER LIVE" : "LADDER";
+    badge.className = tone === "critical" ? "badge warn" : tone === "pressure" ? "badge" : "badge info";
+    line.textContent =
+      `#1 ${String(top.public_name || "u")} | spread ${spread} | 24h ${total24h} mac | ${lineTag} | ${transport} ${serverTickAgoSec > 0 ? `| ${Math.round(serverTickAgoSec)}s` : ""}`;
+    setLiveStatusChip("pvpLeaderSpreadChip", `SPREAD ${spread}`, spread <= 12 ? "critical" : spread <= 32 ? "pressure" : "advantage", closeRatio);
+    setLiveStatusChip("pvpLeaderVolumeChip", `24H ${total24h}`, total24h >= 12 ? "critical" : total24h >= 4 ? "pressure" : "balanced", activityRatio);
+    setLiveStatusChip("pvpLeaderFreshChip", latestTs > 0 ? `FRESH ${Math.max(0, Math.round(ageMin))}m` : "FRESH --", freshnessRatio < 0.2 ? "critical" : freshnessRatio < 0.45 ? "pressure" : "advantage", freshnessRatio);
+    setLiveStatusChip("pvpLeaderTransportChip", `TR ${transport}`, transport === "WS" ? "advantage" : "balanced", transport === "WS" ? 0.92 : 0.42);
+
+    animateMeterWidth(heatMeter, pressure * 100, 0.24);
+    animateMeterWidth(freshMeter, freshnessRatio * 100, 0.24);
+    setMeterPalette(heatMeter, tone === "critical" ? "critical" : tone === "pressure" ? "aggressive" : "balanced");
+    setMeterPalette(freshMeter, freshnessRatio < 0.2 ? "critical" : freshnessRatio < 0.45 ? "aggressive" : "safe");
+
+    state.v3.pvpLeaderboardMetrics = {
+      topUser: String(top.public_name || `u${asNum(top.user_id || 0)}`),
+      spread,
+      total24h,
+      totalMatches,
+      freshnessRatio,
+      activityRatio,
+      pressure,
+      tone,
+      lineTag
+    };
+    applyPvpLeaderboardSceneSignal(state.v3.pvpLeaderboardMetrics);
+  }
+
+  function renderPvpLeaderboard(list = [], meta = state.v3.pvpLeaderboardMeta) {
     const host = byId("pvpBoardList");
     if (!host) {
       return;
@@ -5966,6 +6106,7 @@
     const rows = Array.isArray(list) ? list : [];
     if (!rows.length) {
       host.innerHTML = `<li class="muted">Liderlik verisi henuz yok.</li>`;
+      renderPvpLeaderboardStrip([], meta);
       return;
     }
     host.innerHTML = rows
@@ -5986,6 +6127,7 @@
         `;
       })
       .join("");
+    renderPvpLeaderboardStrip(rows, meta);
   }
 
   function setPvpPanelState(status = "idle", outcome = "") {
@@ -6580,8 +6722,13 @@
     renewAuth(payload);
     const data = payload.data || {};
     const list = Array.isArray(data.leaderboard) ? data.leaderboard : [];
+    state.v3.pvpLeaderboardMeta = {
+      transport: String(data.transport || state.v3.pvpTransport || "poll"),
+      server_tick: asNum(data.server_tick || Date.now()),
+      limit: list.length
+    };
     state.v3.pvpLeaderboard = list;
-    renderPvpLeaderboard(list);
+    renderPvpLeaderboard(list, state.v3.pvpLeaderboardMeta);
     return list;
   }
 
@@ -8061,6 +8208,7 @@
     const revision = String(manifest.manifest_revision || manifest.revision || "local");
     const updatedAt = formatRuntimeTime(manifest.updated_at || manifest.generated_at);
     revisionLine.textContent = `Manifest: ${revision} | updated ${updatedAt}`;
+    renderAdminAssetRuntimeStrip(payload);
 
     if (!list) {
       return;
@@ -8106,6 +8254,70 @@
       item.appendChild(stateChip);
       list.appendChild(item);
     });
+  }
+
+  function renderAdminAssetRuntimeStrip(assetsData) {
+    const host = byId("adminAssetRuntimeStrip");
+    if (!host) {
+      return;
+    }
+    const payload = assetsData && typeof assetsData === "object" ? assetsData : {};
+    const summary = payload.summary || {};
+    const localRows = Array.isArray(payload?.local_manifest?.rows) ? payload.local_manifest.rows : [];
+    const dbRows = Array.isArray(payload?.db_registry) ? payload.db_registry : [];
+    const activeManifest = payload.active_manifest || payload.local_manifest || {};
+    const total = Math.max(1, asNum(summary.total_assets || localRows.length || 0));
+    const ready = asNum(summary.ready_assets || localRows.filter((row) => row.exists).length || 0);
+    const missing = Math.max(0, asNum(summary.missing_assets || (total - ready)));
+    const readyRatio = clamp(ready / total, 0, 1);
+    const dbReady = dbRows.filter((row) => String(row.load_status || "").toLowerCase() === "ready").length;
+    const syncRatio = clamp(dbRows.length / total, 0, 1);
+    const dbReadyRatio = dbRows.length ? clamp(dbReady / Math.max(1, dbRows.length), 0, 1) : 0;
+    const manifestRevision = String(activeManifest.manifest_revision || activeManifest.revision || "local");
+    const sourceMode = payload.active_manifest ? "registry" : payload.local_manifest ? "local" : "unknown";
+    const tone = missing > 0 ? (missing >= 2 ? "critical" : "pressure") : syncRatio < 0.9 || dbReadyRatio < 0.8 ? "pressure" : "advantage";
+    const stateChip = byId("adminAssetSourceChip");
+    const readyChip = byId("adminAssetReadyChip");
+    const syncChip = byId("adminAssetSyncChip");
+    const revChip = byId("adminAssetRevisionChip");
+    const readyMeter = byId("adminAssetReadyMeter");
+    const syncMeter = byId("adminAssetSyncMeter");
+    const signalLine = byId("adminAssetSignalLine");
+    host.dataset.tone = tone;
+    host.style.setProperty("--asset-ready", readyRatio.toFixed(3));
+    host.style.setProperty("--asset-sync", syncRatio.toFixed(3));
+    setLiveStatusChip("adminAssetSourceChip", `SRC ${String(sourceMode).toUpperCase()}`, tone === "critical" ? "critical" : tone === "pressure" ? "pressure" : "advantage", sourceMode === "registry" ? 0.9 : 0.4);
+    setLiveStatusChip("adminAssetReadyChip", `READY ${ready}/${total}`, missing > 0 ? (missing >= 2 ? "critical" : "pressure") : "advantage", readyRatio);
+    setLiveStatusChip("adminAssetSyncChip", `SYNC ${dbRows.length}/${total}`, syncRatio < 0.75 ? "critical" : syncRatio < 0.95 ? "pressure" : "balanced", syncRatio);
+    const revShort = manifestRevision.length > 10 ? manifestRevision.slice(0, 10) : manifestRevision;
+    setLiveStatusChip("adminAssetRevisionChip", `REV ${revShort}`, sourceMode === "registry" ? "balanced" : "neutral", 0.35);
+    if (readyMeter) {
+      animateMeterWidth(readyMeter, readyRatio * 100, 0.24);
+      setMeterPalette(readyMeter, missing > 0 ? "aggressive" : "safe");
+    }
+    if (syncMeter) {
+      animateMeterWidth(syncMeter, Math.max(syncRatio, dbReadyRatio) * 100, 0.24);
+      setMeterPalette(syncMeter, syncRatio < 0.85 ? "aggressive" : "balanced");
+    }
+    if (signalLine) {
+      signalLine.textContent =
+        `DB ${dbRows.length} kayit | DB READY ${dbReady}/${Math.max(dbRows.length, 1)} | missing ${missing} | source ${sourceMode}`;
+    }
+    state.telemetry.assetReadyCount = ready;
+    state.telemetry.assetTotalCount = total;
+    state.telemetry.assetSceneMode = missing > 0 ? "LITE" : "PRO";
+    state.telemetry.manifestRevision = manifestRevision || state.telemetry.manifestRevision;
+    state.telemetry.manifestProvider = sourceMode;
+    renderSceneStatusDeck();
+    const now = Date.now();
+    const assetSignalKey = `${manifestRevision}:${ready}:${missing}:${dbRows.length}`;
+    if (assetSignalKey !== state.admin.lastAssetSignalKey && now - asNum(state.admin.lastAssetSignalAt || 0) > 2500) {
+      state.admin.lastAssetSignalKey = assetSignalKey;
+      state.admin.lastAssetSignalAt = now;
+      triggerArenaPulse(missing > 0 ? "aggressive" : "info", {
+        label: missing > 0 ? `ASSET MISS ${missing}` : `ASSET SYNC ${ready}/${total}`
+      });
+    }
   }
 
   async function fetchAdminSummary() {

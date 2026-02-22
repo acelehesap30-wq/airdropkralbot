@@ -3094,6 +3094,171 @@ body:not(.reduced-motion) .timelineNode[data-flow="reject"] {
   color: #ffc0cf;
 }
 
+.panelHead.compact {
+  gap: 8px;
+  align-items: center;
+}
+
+.panelHead.compact h4 {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.pvpLeaderboardStrip {
+  --leader-pressure: 0;
+  margin-top: 10px;
+  border: 1px solid rgba(162, 186, 255, 0.18);
+  border-radius: 12px;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+  background:
+    radial-gradient(
+      120% 140% at 10% 0%,
+      rgba(127, 214, 255, calc(0.03 + (var(--leader-pressure) * 0.1))) 0%,
+      transparent 60%
+    ),
+    linear-gradient(145deg, rgba(8, 14, 34, 0.82), rgba(6, 11, 29, 0.8));
+  position: relative;
+  overflow: hidden;
+}
+
+.pvpLeaderboardStrip::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: calc(0.03 + (var(--leader-pressure) * 0.18));
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgba(255, 184, 92, 0.09) 24%,
+    transparent 48%,
+    rgba(127, 214, 255, 0.12) 72%,
+    transparent 100%
+  );
+}
+
+.pvpLeaderboardStrip[data-tone="advantage"] {
+  border-color: rgba(112, 255, 160, 0.34);
+}
+
+.pvpLeaderboardStrip[data-tone="pressure"] {
+  border-color: rgba(255, 184, 92, 0.42);
+  box-shadow: 0 0 14px rgba(255, 184, 92, 0.1);
+}
+
+.pvpLeaderboardStrip[data-tone="critical"] {
+  border-color: rgba(255, 93, 125, 0.52);
+  box-shadow: 0 0 18px rgba(255, 93, 125, 0.14);
+}
+
+body:not(.reduced-motion) .pvpLeaderboardStrip[data-tone="critical"] {
+  animation: pvpActionAlert 1150ms ease-in-out infinite;
+}
+
+.pvpLeaderTop {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+}
+
+.pvpLeaderChipRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(90px, auto));
+  gap: 6px;
+  align-content: start;
+}
+
+.pvpLeaderMeterGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.pvpLeaderMeterCard {
+  border: 1px solid rgba(162, 186, 255, 0.16);
+  border-radius: 10px;
+  padding: 8px;
+  background: rgba(7, 13, 31, 0.66);
+  display: grid;
+  gap: 5px;
+}
+
+.pvpLeaderMeterCard .micro {
+  margin: 0;
+}
+
+.adminAssetRuntimeStrip {
+  --asset-ready: 0;
+  --asset-sync: 0;
+  margin-top: 6px;
+  border: 1px solid rgba(162, 186, 255, 0.16);
+  border-radius: 12px;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+  background:
+    radial-gradient(
+      130% 140% at 12% 0%,
+      rgba(61, 248, 194, calc(0.02 + (var(--asset-ready) * 0.08))) 0%,
+      transparent 62%
+    ),
+    radial-gradient(
+      120% 140% at 92% 100%,
+      rgba(127, 214, 255, calc(0.02 + (var(--asset-sync) * 0.08))) 0%,
+      transparent 66%
+    ),
+    rgba(7, 13, 31, 0.72);
+}
+
+.adminAssetRuntimeStrip[data-tone="pressure"] {
+  border-color: rgba(255, 184, 92, 0.36);
+}
+
+.adminAssetRuntimeStrip[data-tone="critical"] {
+  border-color: rgba(255, 93, 125, 0.46);
+  box-shadow: 0 0 14px rgba(255, 93, 125, 0.12);
+}
+
+.adminAssetRuntimeHead {
+  display: grid;
+  gap: 6px;
+}
+
+.adminAssetRuntimeHead .label {
+  margin: 0;
+}
+
+.adminAssetRuntimeChips {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.adminAssetRuntimeMeters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.adminAssetMeterCard {
+  border: 1px solid rgba(162, 186, 255, 0.16);
+  border-radius: 10px;
+  padding: 8px;
+  background: rgba(6, 12, 29, 0.65);
+  display: grid;
+  gap: 5px;
+}
+
+.adminAssetMeterCard .micro,
+#adminAssetSignalLine {
+  margin: 0;
+}
+
 .pvpBoard {
   list-style: none;
   padding: 0;
@@ -3439,6 +3604,15 @@ body[data-scene-mood="critical"] .meter > span {
   }
 
   .pvpTheaterStrip {
+    grid-template-columns: 1fr;
+  }
+
+  .pvpLeaderTop {
+    grid-template-columns: 1fr;
+  }
+
+  .pvpLeaderMeterGrid,
+  .adminAssetRuntimeMeters {
     grid-template-columns: 1fr;
   }
 

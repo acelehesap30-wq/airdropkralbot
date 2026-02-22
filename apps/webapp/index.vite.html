@@ -618,6 +618,33 @@
               </div>
             </div>
           </section>
+          <section id="pvpLeaderboardStrip" class="pvpLeaderboardStrip" data-tone="neutral">
+            <div class="pvpLeaderTop">
+              <div>
+                <div class="panelHead compact">
+                  <h4>PvP Ladder Pulse</h4>
+                  <span id="pvpLeaderBadge" class="badge info">BOARD</span>
+                </div>
+                <p id="pvpLeaderLine" class="micro">Liderlik verisi bekleniyor.</p>
+              </div>
+              <div class="pvpLeaderChipRow">
+                <span id="pvpLeaderSpreadChip" class="pvpLiveChip neutral">SPREAD 0</span>
+                <span id="pvpLeaderVolumeChip" class="pvpLiveChip neutral">24H 0</span>
+                <span id="pvpLeaderFreshChip" class="pvpLiveChip neutral">FRESH --</span>
+                <span id="pvpLeaderTransportChip" class="pvpLiveChip neutral">TR POLL</span>
+              </div>
+            </div>
+            <div class="pvpLeaderMeterGrid">
+              <div class="pvpLeaderMeterCard">
+                <p class="micro">Heat / Pressure</p>
+                <div class="meter"><span id="pvpLeaderHeatMeter"></span></div>
+              </div>
+              <div class="pvpLeaderMeterCard">
+                <p class="micro">Freshness</p>
+                <div class="meter"><span id="pvpLeaderFreshMeter"></span></div>
+              </div>
+            </div>
+          </section>
           <ul id="pvpBoardList" class="pvpBoard"></ul>
         </article>
 
@@ -819,6 +846,28 @@
             <p id="adminQueue" class="micro">Queue: -</p>
             <p id="adminAssetSummary" class="micro">Assets: -</p>
             <p id="adminManifestRevision" class="micro">Manifest: -</p>
+            <section id="adminAssetRuntimeStrip" class="adminAssetRuntimeStrip" data-tone="neutral">
+              <div class="adminAssetRuntimeHead">
+                <p class="label">Asset Runtime Pulse</p>
+                <div class="adminAssetRuntimeChips">
+                  <span id="adminAssetSourceChip" class="pvpLiveChip neutral">SRC -</span>
+                  <span id="adminAssetReadyChip" class="pvpLiveChip neutral">READY 0/0</span>
+                  <span id="adminAssetSyncChip" class="pvpLiveChip neutral">SYNC 0/0</span>
+                  <span id="adminAssetRevisionChip" class="pvpLiveChip neutral">REV -</span>
+                </div>
+              </div>
+              <div class="adminAssetRuntimeMeters">
+                <div class="adminAssetMeterCard">
+                  <p class="micro">Ready Ratio</p>
+                  <div class="meter"><span id="adminAssetReadyMeter"></span></div>
+                </div>
+                <div class="adminAssetMeterCard">
+                  <p class="micro">Registry Sync</p>
+                  <div class="meter"><span id="adminAssetSyncMeter"></span></div>
+                </div>
+              </div>
+              <p id="adminAssetSignalLine" class="micro">DB/local asset durumu bekleniyor.</p>
+            </section>
             <ul id="adminAssetList" class="adminAssetList">
               <li class="muted">Asset listesi bekleniyor</li>
             </ul>
