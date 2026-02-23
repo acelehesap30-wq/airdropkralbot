@@ -86,6 +86,8 @@ type CombatHudPayload = {
   alertTertiaryLabel: string;
   alertTertiaryTone: string;
   alertHintText: string;
+  rejectCategory?: string;
+  rejectTone?: string;
   ladderTone?: string;
   ladderPressurePct?: number;
   ladderFreshnessPct?: number;
@@ -235,6 +237,8 @@ function render(payload: CombatHudPayload): boolean {
   panelRoot.dataset.matrix = String(payload.matrixTone || "steady");
   panelRoot.dataset.expectedAction = String(payload.expectedAction || "auto");
   panelRoot.dataset.latestAccepted = payload.latestAccepted === false ? "0" : "1";
+  panelRoot.dataset.rejectCategory = String(payload.rejectCategory || "none");
+  panelRoot.dataset.rejectTone = String(payload.rejectTone || "neutral");
   panelRoot.dataset.ladderTone = String(payload.ladderTone || "neutral");
   panelRoot.dataset.assetTone = String(payload.assetTone || "neutral");
   panelRoot.style.setProperty("--combat-panel-queue", (clamp(asNum(payload.queuePressurePct) / 100, 0, 1)).toFixed(3));
