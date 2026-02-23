@@ -3268,6 +3268,100 @@ body:not(.reduced-motion) .pvpLeaderboardStrip[data-tone="critical"] {
   margin: 0;
 }
 
+.assetManifestStrip {
+  --manifest-ready: 0;
+  --manifest-integrity: 0;
+  --manifest-risk: 0;
+  margin-top: 10px;
+  border: 1px solid rgba(162, 186, 255, 0.16);
+  border-radius: 12px;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+  background:
+    radial-gradient(
+      120% 140% at 10% 0%,
+      rgba(61, 248, 194, calc(0.02 + (var(--manifest-ready) * 0.08))) 0%,
+      transparent 62%
+    ),
+    radial-gradient(
+      120% 140% at 92% 100%,
+      rgba(255, 184, 92, calc(0.02 + (var(--manifest-risk) * 0.1))) 0%,
+      transparent 66%
+    ),
+    linear-gradient(145deg, rgba(8, 14, 34, 0.8), rgba(6, 11, 29, 0.78));
+  position: relative;
+  overflow: hidden;
+}
+
+.assetManifestStrip::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: calc(0.03 + (var(--manifest-risk) * 0.16));
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgba(255, 93, 125, 0.08) 28%,
+    transparent 54%,
+    rgba(127, 214, 255, 0.08) 80%,
+    transparent 100%
+  );
+}
+
+.assetManifestStrip[data-tone="advantage"] {
+  border-color: rgba(112, 255, 160, 0.3);
+}
+
+.assetManifestStrip[data-tone="pressure"] {
+  border-color: rgba(255, 184, 92, 0.38);
+  box-shadow: 0 0 14px rgba(255, 184, 92, 0.08);
+}
+
+.assetManifestStrip[data-tone="critical"] {
+  border-color: rgba(255, 93, 125, 0.46);
+  box-shadow: 0 0 16px rgba(255, 93, 125, 0.12);
+}
+
+body:not(.reduced-motion) .assetManifestStrip[data-tone="critical"] {
+  animation: pvpActionAlert 1350ms ease-in-out infinite;
+}
+
+.assetManifestTop {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+}
+
+.assetManifestChipRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(92px, auto));
+  gap: 6px;
+  align-content: start;
+}
+
+.assetManifestMeterGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.assetManifestMeterCard {
+  border: 1px solid rgba(162, 186, 255, 0.16);
+  border-radius: 10px;
+  padding: 8px;
+  background: rgba(7, 13, 31, 0.64);
+  display: grid;
+  gap: 5px;
+}
+
+.assetManifestMeterCard .micro,
+#assetManifestHint {
+  margin: 0;
+}
+
 .adminAssetRuntimeStrip {
   --asset-ready: 0;
   --asset-sync: 0;
@@ -3736,6 +3830,21 @@ body[data-scene-mood="critical"] .meter > span {
 
   .sceneStatusDeck {
     max-width: 100%;
+  }
+
+  .assetManifestTop,
+  .pvpLeaderTop {
+    grid-template-columns: 1fr;
+  }
+
+  .assetManifestChipRow,
+  .pvpLeaderChipRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .assetManifestMeterGrid,
+  .pvpLeaderMeterGrid {
+    grid-template-columns: 1fr;
   }
 
   .pvpActionPulseTelemetry {

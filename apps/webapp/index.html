@@ -538,6 +538,34 @@
               </div>
             </div>
           </section>
+          <section id="assetManifestStrip" class="assetManifestStrip" data-tone="neutral">
+            <div class="assetManifestTop">
+              <div>
+                <div class="panelHead compact">
+                  <h4>Asset Manifest Pulse</h4>
+                  <span id="assetManifestBadge" class="badge info">MANIFEST</span>
+                </div>
+                <p id="assetManifestLine" class="micro">Aktif asset manifest verisi bekleniyor.</p>
+              </div>
+              <div class="assetManifestChipRow">
+                <span id="assetManifestSourceChip" class="pvpLiveChip neutral">SRC WAIT</span>
+                <span id="assetManifestRevisionChip" class="pvpLiveChip neutral">REV --</span>
+                <span id="assetManifestReadyChip" class="pvpLiveChip neutral">READY --</span>
+                <span id="assetManifestIntegrityChip" class="pvpLiveChip neutral">INT --</span>
+              </div>
+            </div>
+            <div class="assetManifestMeterGrid">
+              <div class="assetManifestMeterCard">
+                <p class="micro">Ready / Local Exists</p>
+                <div class="meter"><span id="assetManifestReadyMeter"></span></div>
+              </div>
+              <div class="assetManifestMeterCard">
+                <p class="micro">Integrity / Revision Health</p>
+                <div class="meter"><span id="assetManifestIntegrityMeter"></span></div>
+              </div>
+            </div>
+            <p id="assetManifestHint" class="micro">Registry tablolari yoksa local/procedural fallback calismaya devam eder.</p>
+          </section>
           <ul id="pvpBoardList" class="pvpBoard"></ul>
         </article>
 

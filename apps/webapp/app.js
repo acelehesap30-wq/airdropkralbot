@@ -52,6 +52,10 @@
       pvpLeaderboardMeta: null,
       pvpLeaderboardPulseKey: "",
       pvpLeaderboardPulseAt: 0,
+      assetManifestMeta: null,
+      assetManifestTimer: null,
+      assetManifestPulseKey: "",
+      assetManifestPulseAt: 0,
       pvpTimelineSessionRef: "",
       pvpTimeline: [],
       pvpReplay: [],
@@ -263,6 +267,7 @@
     const fps = Math.max(0, Math.round(asNum(state.telemetry.fpsAvg || 0)));
     const assetsText = String(byId("assetModeLine")?.textContent || "Assets: -");
     const assetRuntime = state.admin?.assetRuntimeMetrics || {};
+    const manifestMeta = state.v3?.assetManifestMeta || {};
     const telemetryReadyAssets = asNum(state.telemetry.assetReadyCount || 0);
     const telemetryTotalAssets = asNum(state.telemetry.assetTotalCount || 0);
     const telemetrySceneMode = String(state.telemetry.assetSceneMode || "").toUpperCase();
@@ -276,13 +281,18 @@
     const assetRatio = clamp(readyAssets / totalAssets, 0, 1);
     const transport = String(state.v3.pvpTransport || "poll").toUpperCase();
     const pvpStatus = String(state.v3.pvpSession?.status || "idle").toLowerCase();
-    const manifestRevision = String(assetRuntime.manifestRevision || state.telemetry.manifestRevision || "local");
+    const manifestRevision = String(
+      assetRuntime.manifestRevision || manifestMeta.manifestRevision || state.telemetry.manifestRevision || "local"
+    );
     const manifestShort = manifestRevision.length > 10 ? manifestRevision.slice(0, 10) : manifestRevision;
-    const manifestSource = String(assetRuntime.sourceMode || state.telemetry.manifestProvider || "fallback");
+    const manifestSource = String(
+      assetRuntime.sourceMode || manifestMeta.sourceMode || state.telemetry.manifestProvider || "fallback"
+    );
     const pressureRatio = clamp(asNum(state.telemetry.combatHeat || 0) * 0.45 + asNum(state.telemetry.threatRatio || 0) * 0.55, 0, 1);
-    const assetSyncRatio = clamp(asNum(assetRuntime.syncRatio || 1), 0, 1);
-    const assetReadyRatio = clamp(asNum(assetRuntime.readyRatio || assetRatio), 0, 1);
-    const assetRuntimeTone = String(assetRuntime.tone || (isLite ? "pressure" : "balanced")).toLowerCase();
+    const manifestSyncRatio = clamp(asNum(manifestMeta.integrityRatio || 1), 0, 1);
+    const assetSyncRatio = clamp(asNum(assetRuntime.syncRatio || manifestSyncRatio || 1), 0, 1);
+    const assetReadyRatio = clamp(asNum(assetRuntime.readyRatio || manifestMeta.readyRatio || assetRatio), 0, 1);
+    const assetRuntimeTone = String(assetRuntime.tone || manifestMeta.tone || (isLite ? "pressure" : "balanced")).toLowerCase();
     const perfTone =
       fps > 0 && fps < 28
         ? "critical"
@@ -6140,6 +6150,10 @@
       clearTimeout(state.v3.quoteTimer);
       state.v3.quoteTimer = null;
     }
+    if (state.v3.assetManifestTimer) {
+      clearTimeout(state.v3.assetManifestTimer);
+      state.v3.assetManifestTimer = null;
+    }
     if (state.telemetry.perfTimer) {
       clearTimeout(state.telemetry.perfTimer);
       state.telemetry.perfTimer = null;
@@ -6210,6 +6224,250 @@
     triggerArenaPulse(pulseTone, {
       label: `LADDER ${String(metrics.lineTag || "SYNC").toUpperCase().slice(0, 22)}`
     });
+  }
+
+  function applyAssetManifestSceneSignal(metrics = {}) {
+    if (!metrics || typeof metrics !== "object") {
+      return;
+    }
+    const readyRatio = clamp(asNum(metrics.readyRatio || 0), 0, 1);
+    const integrityRatio = clamp(asNum(metrics.integrityRatio || 0), 0, 1);
+    const missingRatio = clamp(asNum(metrics.missingRatio || 0), 0, 1);
+    const tone = String(metrics.tone || "balanced");
+    if (state.arena) {
+      state.arena.assetManifestReadyRatio = readyRatio;
+      state.arena.assetManifestIntegrityRatio = integrityRatio;
+      state.arena.assetManifestMissingRatio = missingRatio;
+      state.arena.assetManifestTone = tone;
+      state.arena.scenePulseAmbient = Math.min(
+        3.4,
+        asNum(state.arena.scenePulseAmbient || 0) + (1 - integrityRatio) * 0.16 + missingRatio * 0.22
+      );
+      state.arena.pvpCinematicIntensity = Math.min(
+        2.1,
+        asNum(state.arena.pvpCinematicIntensity || 0) + missingRatio * 0.12 + (1 - integrityRatio) * 0.08
+      );
+      state.arena.assetRisk = clamp(
+        Math.max(asNum(state.arena.assetRisk || 0), missingRatio * 0.58 + (1 - integrityRatio) * 0.42),
+        0,
+        1
+      );
+    }
+    const pulseKey = [
+      String(metrics.manifestRevision || "rev"),
+      Math.round(readyRatio * 100),
+      Math.round(integrityRatio * 100),
+      Math.round(missingRatio * 100),
+      tone
+    ].join(":");
+    const now = Date.now();
+    if (pulseKey === state.v3.assetManifestPulseKey && now - asNum(state.v3.assetManifestPulseAt || 0) < 12000) {
+      return;
+    }
+    if (now - asNum(state.v3.assetManifestPulseAt || 0) < 3200) {
+      return;
+    }
+    state.v3.assetManifestPulseKey = pulseKey;
+    state.v3.assetManifestPulseAt = now;
+    const pulseTone =
+      tone === "critical" ? "aggressive" : tone === "pressure" ? "balanced" : tone === "advantage" ? "safe" : "info";
+    triggerArenaPulse(pulseTone, {
+      label:
+        tone === "critical"
+          ? `ASSET INTEGRITY ${Math.round(integrityRatio * 100)}`
+          : `MANIFEST ${String(metrics.sourceMode || "sync").toUpperCase()}`
+    });
+  }
+
+  function renderPublicAssetManifestStrip(metaInput = state.v3.assetManifestMeta) {
+    const host = byId("assetManifestStrip");
+    const badge = byId("assetManifestBadge");
+    const line = byId("assetManifestLine");
+    const hint = byId("assetManifestHint");
+    const readyMeter = byId("assetManifestReadyMeter");
+    const integrityMeter = byId("assetManifestIntegrityMeter");
+    if (!host || !badge || !line || !hint || !readyMeter || !integrityMeter) {
+      return;
+    }
+
+    const meta = metaInput && typeof metaInput === "object" ? metaInput : null;
+    if (!meta || meta.available === false) {
+      host.dataset.tone = "neutral";
+      badge.textContent = "MANIFEST";
+      badge.className = "badge info";
+      line.textContent = "Aktif asset manifest verisi bekleniyor.";
+      hint.textContent = "Registry tablolari yoksa local/procedural fallback calismaya devam eder.";
+      setLiveStatusChip("assetManifestSourceChip", "SRC WAIT", "neutral", 0.12);
+      setLiveStatusChip("assetManifestRevisionChip", "REV --", "neutral", 0.12);
+      setLiveStatusChip("assetManifestReadyChip", "READY --", "neutral", 0.12);
+      setLiveStatusChip("assetManifestIntegrityChip", "INT --", "neutral", 0.12);
+      animateMeterWidth(readyMeter, 0, 0.18);
+      animateMeterWidth(integrityMeter, 0, 0.18);
+      setMeterPalette(readyMeter, "neutral");
+      setMeterPalette(integrityMeter, "neutral");
+      return;
+    }
+
+    const tone = String(meta.tone || "balanced");
+    const readyRatio = clamp(asNum(meta.readyRatio || 0), 0, 1);
+    const integrityRatio = clamp(asNum(meta.integrityRatio || 0), 0, 1);
+    const total = Math.max(0, asNum(meta.totalEntries || 0));
+    const ready = Math.max(0, asNum(meta.readyEntries || 0));
+    const missing = Math.max(0, asNum(meta.missingEntries || 0));
+    const integrityBad = Math.max(0, asNum(meta.integrityBadEntries || 0));
+    const integrityUnknown = Math.max(0, asNum(meta.integrityUnknownEntries || 0));
+    const revision = String(meta.manifestRevision || "local");
+    const sourceMode = String(meta.sourceMode || "fallback");
+    const sourceShort = sourceMode.toUpperCase().slice(0, 8);
+    const hashShort = String(meta.hashShort || "--").slice(0, 10);
+    const revShort = revision.length > 12 ? revision.slice(0, 12) : revision;
+    const activated = meta.activatedAt ? formatRuntimeTime(meta.activatedAt) : "--";
+
+    host.dataset.tone = tone;
+    host.style.setProperty("--manifest-ready", readyRatio.toFixed(3));
+    host.style.setProperty("--manifest-integrity", integrityRatio.toFixed(3));
+    host.style.setProperty("--manifest-risk", clamp(1 - (readyRatio * 0.55 + integrityRatio * 0.45), 0, 1).toFixed(3));
+
+    badge.textContent =
+      tone === "critical" ? "MANIFEST RISK" : tone === "pressure" ? "MANIFEST WATCH" : "MANIFEST LIVE";
+    badge.className = tone === "critical" ? "badge warn" : tone === "pressure" ? "badge" : "badge info";
+    line.textContent =
+      `REV ${revision} | SRC ${sourceMode} | READY ${ready}/${Math.max(total, 1)} | INT ${Math.round(integrityRatio * 100)}% | ACT ${activated}`;
+    hint.textContent =
+      missing > 0
+        ? `Missing ${missing} asset | integrity bad ${integrityBad} | unknown ${integrityUnknown}. Lite scene fallback devrede kalabilir.`
+        : integrityBad > 0
+          ? `Integrity mismatch ${integrityBad}. Revision ${revShort} / ${hashShort} takipte.`
+          : `Manifest senkron: ${sourceMode} | hash ${hashShort} | ${Math.max(total, 0)} entry.`;
+
+    setLiveStatusChip("assetManifestSourceChip", `SRC ${sourceShort}`, sourceMode.includes("registry") ? "advantage" : "balanced", sourceMode.includes("registry") ? 0.9 : 0.45);
+    setLiveStatusChip("assetManifestRevisionChip", `REV ${revShort}`, tone === "critical" ? "pressure" : "balanced", 0.38);
+    setLiveStatusChip("assetManifestReadyChip", `READY ${ready}/${Math.max(total, 1)}`, missing > 0 ? (missing >= 2 ? "critical" : "pressure") : "advantage", readyRatio);
+    setLiveStatusChip("assetManifestIntegrityChip", `INT ${Math.round(integrityRatio * 100)}%`, integrityRatio < 0.7 ? "critical" : integrityRatio < 0.92 ? "pressure" : "advantage", integrityRatio);
+    animateMeterWidth(readyMeter, readyRatio * 100, 0.22);
+    animateMeterWidth(integrityMeter, integrityRatio * 100, 0.22);
+    setMeterPalette(readyMeter, missing > 0 ? "aggressive" : "safe");
+    setMeterPalette(integrityMeter, integrityRatio < 0.7 ? "critical" : integrityRatio < 0.92 ? "aggressive" : "safe");
+  }
+
+  function ingestActiveAssetManifestMeta(manifestPayload) {
+    const data = manifestPayload && typeof manifestPayload === "object" ? manifestPayload : {};
+    const revision = data.active_revision && typeof data.active_revision === "object" ? data.active_revision : null;
+    const entries = Array.isArray(data.entries) ? data.entries : [];
+    const totalEntries = entries.length;
+    const readyEntries = entries.filter((row) => row && row.exists_local === true).length;
+    const missingEntries = Math.max(0, totalEntries - readyEntries);
+    const integrityBuckets = entries.reduce(
+      (acc, row) => {
+        const raw = String(row?.integrity_status || "").toLowerCase();
+        if (!raw) {
+          acc.unknown += 1;
+        } else if (/(ok|pass|ready|valid|verified)/.test(raw)) {
+          acc.ok += 1;
+        } else if (/(missing|mismatch|fail|error|bad)/.test(raw)) {
+          acc.bad += 1;
+        } else {
+          acc.unknown += 1;
+        }
+        return acc;
+      },
+      { ok: 0, bad: 0, unknown: 0 }
+    );
+    const integrityKnownTotal = Math.max(0, integrityBuckets.ok + integrityBuckets.bad);
+    const integrityRatio =
+      totalEntries > 0
+        ? integrityKnownTotal > 0
+          ? clamp(integrityBuckets.ok / integrityKnownTotal, 0, 1)
+          : readyEntries > 0
+            ? clamp(readyEntries / Math.max(1, totalEntries), 0, 1)
+            : 0
+        : 0;
+    const readyRatio = totalEntries > 0 ? clamp(readyEntries / totalEntries, 0, 1) : 0;
+    const missingRatio = totalEntries > 0 ? clamp(missingEntries / totalEntries, 0, 1) : 0;
+    const sourceMode = String(revision?.source || (data.available ? "registry" : "fallback") || "fallback");
+    const manifestRevision = String(revision?.manifest_revision || data.manifest_revision || "local");
+    const manifestHash = String(revision?.manifest_hash || "");
+    const tone =
+      missingEntries >= 2 || (totalEntries > 0 && integrityRatio < 0.62)
+        ? "critical"
+        : missingEntries > 0 || (totalEntries > 0 && integrityRatio < 0.9)
+          ? "pressure"
+          : totalEntries > 0
+            ? "advantage"
+            : "balanced";
+    const metrics = {
+      available: data.available !== false,
+      sourceMode,
+      manifestRevision,
+      manifestHash,
+      hashShort: manifestHash ? manifestHash.slice(0, 10) : "--",
+      activatedAt: revision?.activated_at || revision?.updated_at || revision?.created_at || null,
+      totalEntries,
+      readyEntries,
+      missingEntries,
+      missingRatio,
+      integrityOkEntries: integrityBuckets.ok,
+      integrityBadEntries: integrityBuckets.bad,
+      integrityUnknownEntries: integrityBuckets.unknown,
+      integrityRatio,
+      readyRatio,
+      tone
+    };
+    state.v3.assetManifestMeta = metrics;
+    if (!state.admin.assetRuntimeMetrics) {
+      state.telemetry.assetReadyCount = readyEntries;
+      state.telemetry.assetTotalCount = totalEntries;
+      state.telemetry.manifestRevision = manifestRevision || state.telemetry.manifestRevision;
+      state.telemetry.manifestProvider = sourceMode || state.telemetry.manifestProvider;
+      if (totalEntries > 0) {
+        state.telemetry.assetSceneMode = missingEntries > 0 || integrityRatio < 0.9 ? "LITE" : "PRO";
+      }
+    }
+    if (state.arena) {
+      state.arena.assetManifestRevision = manifestRevision;
+      state.arena.assetSourceMode = sourceMode;
+    }
+    renderPublicAssetManifestStrip(metrics);
+    renderSceneStatusDeck();
+    applyAssetManifestSceneSignal(metrics);
+    return metrics;
+  }
+
+  async function fetchActiveAssetManifestMeta() {
+    const query = new URLSearchParams({
+      ...state.auth,
+      include_entries: "1",
+      limit: "200"
+    }).toString();
+    const t0 = performance.now();
+    const res = await fetch(`/webapp/api/assets/manifest/active?${query}`, { cache: "no-store" });
+    markLatency(performance.now() - t0);
+    const payload = await res.json();
+    if (!res.ok || !payload.success) {
+      const error = new Error(payload.error || `asset_manifest_active_failed:${res.status}`);
+      error.code = res.status;
+      throw error;
+    }
+    renewAuth(payload);
+    return ingestActiveAssetManifestMeta(payload.data || {});
+  }
+
+  function scheduleAssetManifestRefresh(force = false) {
+    if (state.v3.assetManifestTimer) {
+      clearTimeout(state.v3.assetManifestTimer);
+      state.v3.assetManifestTimer = null;
+    }
+    const delay = force ? 1400 : 45000;
+    state.v3.assetManifestTimer = setTimeout(async () => {
+      state.v3.assetManifestTimer = null;
+      try {
+        await fetchActiveAssetManifestMeta();
+      } catch (_) {
+        // keep last manifest metrics; no hard failure
+      } finally {
+        scheduleAssetManifestRefresh(false);
+      }
+    }, delay);
   }
 
   function renderPvpLeaderboardStrip(list = [], meta = state.v3.pvpLeaderboardMeta) {
@@ -8667,6 +8925,16 @@
     renewAuth(payload);
     state.admin.assets = payload.data || null;
     renderAdminAssetStatus(state.admin.assets);
+    if (payload?.data?.active_manifest) {
+      const activeManifestData = {
+        available: true,
+        active_revision: payload.data.active_manifest,
+        entries: []
+      };
+      ingestActiveAssetManifestMeta(activeManifestData);
+    } else {
+      fetchActiveAssetManifestMeta().catch(() => {});
+    }
     return state.admin.assets;
   }
 
@@ -8674,6 +8942,14 @@
     const payload = await postAdmin("/webapp/api/admin/assets/reload");
     state.admin.assets = payload || null;
     renderAdminAssetStatus(state.admin.assets);
+    if (payload?.active_manifest) {
+      ingestActiveAssetManifestMeta({
+        available: true,
+        active_revision: payload.active_manifest,
+        entries: []
+      });
+    }
+    fetchActiveAssetManifestMeta().catch(() => {});
     return state.admin.assets;
   }
 
@@ -9677,8 +9953,15 @@
         throw err;
       }
     }
+    try {
+      await fetchActiveAssetManifestMeta();
+    } catch (err) {
+      console.warn("asset-manifest-bootstrap-sync-failed", err);
+      renderPublicAssetManifestStrip(null);
+    }
     schedulePerfProfile(true);
     scheduleSceneProfileSync(true);
+    scheduleAssetManifestRefresh(true);
   }
 
   async function rerollTasks() {
