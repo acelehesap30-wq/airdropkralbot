@@ -135,6 +135,14 @@ function delay(ms) {
 const WEBAPP_VERSION_STARTUP_TS = String(Date.now());
 const WEBAPP_VERSION_CACHE_TTL_MS = 60_000;
 const WEBAPP_BOOTSTRAP_CACHE_TTL_MS = 45_000;
+const BOT_CRITICAL_FLAG_KEYS = [
+  "WEBAPP_TS_BUNDLE_ENABLED",
+  "WEBAPP_V3_ENABLED",
+  "ARENA_AUTH_ENABLED",
+  "RAID_AUTH_ENABLED",
+  "TOKEN_CURVE_ENABLED",
+  "TOKEN_AUTO_APPROVE_ENABLED"
+];
 const WEBAPP_VERSION_CACHE = {
   value: "",
   source: "",
@@ -738,7 +746,7 @@ function buildStartKeyboard() {
       [Markup.button.callback("Arena 3D Ac", "OPEN_PLAY")],
       [Markup.button.callback("Onboard", "OPEN_ONBOARD"), Markup.button.callback("Gorev Al", "OPEN_TASKS")],
       [Markup.button.callback("Cuzdan", "OPEN_WALLET"), Markup.button.callback("Durum", "OPEN_STATUS")],
-      [Markup.button.callback("Daha Fazla", "OPEN_MORE_MENU"), Markup.button.callback("Hizli Rehber", "OPEN_GUIDE")]
+      [Markup.button.callback("Daha Fazla", "OPEN_MORE_MENU")]
     ],
     { columns: 2 }
   );
@@ -747,15 +755,88 @@ function buildStartKeyboard() {
 function buildMoreMenuKeyboard() {
   return Markup.inlineKeyboard(
     [
+      [Markup.button.callback("Hizli Rehber", "OPEN_GUIDE"), Markup.button.callback("Ana Launcher", "OPEN_HOME_MENU")],
       [Markup.button.callback("Misyonlar", "OPEN_MISSIONS"), Markup.button.callback("Gunluk", "OPEN_DAILY")],
       [Markup.button.callback("Kingdom", "OPEN_KINGDOM"), Markup.button.callback("Nexus", "OPEN_NEXUS")],
       [Markup.button.callback("Arena Raid", "OPEN_ARENA_RANK"), Markup.button.callback("War Room", "OPEN_WAR")],
       [Markup.button.callback("Sezon", "OPEN_SEASON"), Markup.button.callback("Dukkan", "OPEN_SHOP")],
-      [Markup.button.callback("Token", "OPEN_TOKEN"), Markup.button.callback("Cekim", "OPEN_PAYOUT")],
-      [Markup.button.callback("Ana Launcher", "OPEN_HOME_MENU")]
+      [Markup.button.callback("Token", "OPEN_TOKEN"), Markup.button.callback("Cekim", "OPEN_PAYOUT")]
     ],
     { columns: 2 }
   );
+}
+
+async function readLatestReleaseMarkerSummary(db) {
+  try {
+    const hasTable = await db
+      .query(`SELECT to_regclass('public.release_markers') IS NOT NULL AS ok;`)
+      .then((res) => Boolean(res.rows?.[0]?.ok))
+      .catch(() => false);
+    if (!hasTable) {
+      return null;
+    }
+    const row = await db
+      .query(
+        `SELECT release_ref, git_revision, created_at
+         FROM release_markers
+         ORDER BY created_at DESC, id DESC
+         LIMIT 1;`
+      )
+      .then((res) => res.rows?.[0] || null);
+    if (!row) return null;
+    return {
+      releaseRef: String(row.release_ref || ""),
+      gitRevision: String(row.git_revision || ""),
+      createdAt: row.created_at || null
+    };
+  } catch (err) {
+    if (String(err?.code || "") === "42P01") {
+      return null;
+    }
+    throw err;
+  }
+}
+
+async function readBotFeatureFlagSummary(db) {
+  const sourceMode = String(process.env.FLAG_SOURCE_MODE || "env_locked").trim().toLowerCase() || "env_locked";
+  const rowsByKey = new Map();
+  try {
+    const hasTable = await db
+      .query(`SELECT to_regclass('public.feature_flags') IS NOT NULL AS ok;`)
+      .then((res) => Boolean(res.rows?.[0]?.ok))
+      .catch(() => false);
+    if (hasTable) {
+      const res = await db.query(
+        `SELECT flag_key, enabled
+         FROM feature_flags
+         WHERE flag_key = ANY($1::text[]);`,
+        [BOT_CRITICAL_FLAG_KEYS]
+      );
+      for (const row of res.rows || []) {
+        rowsByKey.set(String(row.flag_key || ""), Boolean(row.enabled));
+      }
+    }
+  } catch (err) {
+    if (String(err?.code || "") !== "42P01") {
+      throw err;
+    }
+  }
+
+  const critical = BOT_CRITICAL_FLAG_KEYS.map((key) => {
+    const envEnabled = String(process.env[key] || "0").trim() === "1";
+    const dbEnabled = rowsByKey.has(key) ? Boolean(rowsByKey.get(key)) : null;
+    const effective = sourceMode === "env_locked" ? envEnabled : dbEnabled == null ? envEnabled : dbEnabled;
+    return {
+      key,
+      enabled: Boolean(effective),
+      env_enabled: envEnabled,
+      db_enabled: dbEnabled
+    };
+  });
+  return {
+    sourceMode,
+    critical
+  };
 }
 
 function buildGuideKeyboard() {
@@ -2210,10 +2291,14 @@ async function sendAdminLive(ctx, pool, appConfig) {
     const runtime =
       (await botRuntimeStore.getRuntimeState(db, appConfig.runtimeStateKey).catch(() => null)) ||
       (await botRuntimeStore.getRuntimeState(db, botRuntimeStore.DEFAULT_STATE_KEY).catch(() => null));
+    const release = await readLatestReleaseMarkerSummary(db);
+    const flags = await readBotFeatureFlagSummary(db);
     return {
       snapshot,
       metrics,
       runtime,
+      release,
+      flags,
       webappUrl: appConfig.webappPublicUrl || ""
     };
   });

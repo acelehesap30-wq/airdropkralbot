@@ -27,14 +27,12 @@ function formatStart(profile, balances, season, anomaly, contract) {
     : "";
   return (
     `*AirdropKralBot // Launcher*\n` +
-    `Kral: *${publicName}*\n` +
-    `Kingdom: *Tier ${profile.kingdom_tier}*\n` +
-    `Streak: *${profile.current_streak} gun*\n` +
-    `Bakiye: *${sc} SC / ${hc} HC / ${rc} RC*${seasonLine}${anomalyLine}${contractLine}\n\n` +
-    `*Hizli Giris*\n` +
-    `1) Arena 3D Ac\n` +
-    `2) Gorev Al -> Bitir -> Reveal\n` +
-    `3) Cuzdan + Token panelinden ekonomiyi takip et\n\n` +
+    `Kral: *${publicName}* | Tier *${profile.kingdom_tier}*\n` +
+    `Streak: *${profile.current_streak} gun* | Bakiye: *${sc} SC / ${hc} HC / ${rc} RC*${seasonLine}${anomalyLine}${contractLine}\n\n` +
+    `*Neden burada?* Gorev -> Finish -> Reveal dongusu ile ilerlersin; sezon, rank ve token paneli ustune kurulur.\n\n` +
+    `*Ilk 2 adim*\n` +
+    `1) *Arena 3D Ac* (ana panel)\n` +
+    `2) *Onboard* (3 adim hizli kurulum)\n\n` +
     `Hud: ${progressBar(profile.current_streak, 14, 14)}\n` +
     `Kisayol: /play | /onboard | /tasks | /wallet`
   );
@@ -89,20 +87,21 @@ function formatOnboard(payload = {}) {
   const season = payload.season || {};
   const token = payload.token || {};
   const symbol = String(token.symbol || "NXT").toUpperCase();
+  const remaining = Math.max(0, Number(daily.dailyCap || 0) - Number(daily.tasksDone || 0));
   return (
-    `*AirdropKralBot Onboard*\n` +
-    `Kral: *${escapeMarkdown(profile.public_name || "oyuncu")}* | Tier *${profile.kingdom_tier || 0}*\n` +
-    `Bakiye: *${Number(balances.SC || 0)} SC / ${Number(balances.HC || 0)} HC / ${Number(balances.RC || 0)} RC*\n` +
-    `Sezon: *S${Number(season.seasonId || 0)}* - ${Number(season.daysLeft || 0)} gun\n\n` +
-    `*3 adimda basla*\n` +
-    `1) /tasks -> bir gorev sec\n` +
-    `2) /finish dengeli -> denemeyi kapat\n` +
-    `3) /reveal -> odulu ac\n\n` +
-    `*Ekonomi ozeti*\n` +
-    `Gunluk cap: *${Number(daily.tasksDone || 0)}/${Number(daily.dailyCap || 0)}*\n` +
-    `Bugun kazanilan: *${Number(daily.scEarned || 0)} SC*\n` +
-    `Token: *${Number(token.balance || 0).toFixed(4)} ${symbol}* | Spot *$${Number(token.spotUsd || 0).toFixed(8)}*\n\n` +
-    `Kisayol: /play (Nexus), /wallet, /missions, /token`
+    `*Onboard // 3 Adim*\n` +
+    `Kral: *${escapeMarkdown(profile.public_name || "oyuncu")}* | Tier *${profile.kingdom_tier || 0}* | Sezon *S${Number(
+      season.seasonId || 0
+    )}* (${Number(season.daysLeft || 0)} gun)\n` +
+    `Bakiye: *${Number(balances.SC || 0)} SC / ${Number(balances.HC || 0)} HC / ${Number(balances.RC || 0)} RC*\n\n` +
+    `1) */tasks* ile gorev sec\n` +
+    `2) */finish dengeli* ile denemeyi kapat\n` +
+    `3) */reveal* ile odulu ac\n\n` +
+    `*Bugun* ${Number(daily.tasksDone || 0)}/${Number(daily.dailyCap || 0)} gorev | Kalan: *${remaining}*\n` +
+    `SC bugun: *${Number(daily.scEarned || 0)}* | Token: *${Number(token.balance || 0).toFixed(4)} ${symbol}* (@ $${Number(
+      token.spotUsd || 0
+    ).toFixed(8)})\n\n` +
+    `Sonra: */play* (Nexus panel) -> */wallet* -> */token*`
   );
 }
 
@@ -908,6 +907,22 @@ function formatAdminLive(payload = {}) {
   const runtimeMode = String(runtime.mode || "unknown");
   const runtimeAlive = runtime.alive ? "ON" : "OFF";
   const runtimeLock = runtime.lock_acquired ? "LOCK" : "NOLOCK";
+  const release = payload.release || {};
+  const flags = payload.flags || {};
+  const releaseShort = String(release.gitRevision || "").slice(0, 7) || "-";
+  const flagSource = String(flags.sourceMode || "env_locked");
+  const flagLine = Array.isArray(flags.critical)
+    ? flags.critical.map((x) => `${x.key}:${x.enabled ? "1" : "0"}`).join(" ")
+    : "";
+  const nextAction = freeze.freeze
+    ? "Next: /admin_freeze off"
+    : payoutQueue > 0
+      ? "Next: /admin_payouts"
+      : tokenQueue > 0
+        ? "Next: /admin_tokens"
+        : gate.allowed
+          ? "Next: /admin_metrics veya /play"
+          : "Next: /admin_token_gate (gate kapali)";
 
   return (
     `*Admin Live*\n` +
@@ -921,9 +936,12 @@ function formatAdminLive(payload = {}) {
     ).toFixed(2)}*\n` +
     `Gate: *${gate.allowed ? "OPEN" : "LOCKED"}* (${Number(gate.current || 0).toFixed(2)} / ${Number(gate.min || 0).toFixed(2)})\n\n` +
     `Bot Runtime: *${runtimeAlive}* | *${runtimeLock}* | *${escapeMarkdown(runtimeMode)}* | HB *${escapeMarkdown(hb)}*\n` +
+    `Release: *${escapeMarkdown(releaseShort)}* | Flags: *${escapeMarkdown(flagSource)}*\n` +
+    (flagLine ? `Critical: \`${escapeMarkdown(flagLine)}\`\n` : "") +
     `24s: users *${Number(metrics.users_active_24h || 0)}* | reveal *${Number(metrics.reveals_24h || 0)}* | token *$${Number(
       metrics.token_usd_volume_24h || 0
     ).toFixed(2)}*\n\n` +
+    `${escapeMarkdown(nextAction)}\n` +
     (webappUrl ? `WebApp: ${escapeMarkdown(webappUrl)}\n` : "") +
     `Komutlar: /admin, /admin_payouts, /admin_tokens, /admin_metrics`
   );
