@@ -501,6 +501,83 @@ async function hasReleaseMarkersTable(db) {
   return Boolean(check.rows?.[0]?.ok);
 }
 
+async function hasTable(db, tableName) {
+  const normalized = String(tableName || "").trim().toLowerCase();
+  if (!/^[a-z0-9_]+$/.test(normalized)) {
+    return false;
+  }
+  const result = await db.query(`SELECT to_regclass($1) IS NOT NULL AS ok;`, [`public.${normalized}`]);
+  return Boolean(result.rows?.[0]?.ok);
+}
+
+async function readSchemaHead(db) {
+  try {
+    const result = await db.query(
+      `SELECT filename, applied_at
+       FROM schema_migrations
+       ORDER BY applied_at DESC, filename DESC
+       LIMIT 1;`
+    );
+    const row = result.rows?.[0] || null;
+    return {
+      available: true,
+      filename: row?.filename || "",
+      applied_at: row?.applied_at || null
+    };
+  } catch (err) {
+    if (err.code === "42P01") {
+      return {
+        available: false,
+        filename: "",
+        applied_at: null
+      };
+    }
+    throw err;
+  }
+}
+
+function pickCriticalRuntimeFlags(flags) {
+  const subset = {};
+  for (const key of Array.from(CRITICAL_ENV_LOCKED_FLAGS.values())) {
+    subset[key] = Boolean(flags?.[key]);
+  }
+  subset.PVP_WS_ENABLED = Boolean(flags?.PVP_WS_ENABLED);
+  return subset;
+}
+
+function summarizeAssetMode({ sceneMode = "", manifestSummary = null, runtimeAssetSummary = null } = {}) {
+  const scene = String(sceneMode || "").toLowerCase();
+  if (scene === "minimal") {
+    return "lite";
+  }
+
+  const manifestTotal = Number(manifestSummary?.total_assets || manifestSummary?.total || 0);
+  const manifestReady = Number(manifestSummary?.ready_assets || manifestSummary?.ready || 0);
+  const integrityRatio = Number(manifestSummary?.integrity_ratio || 0);
+  const runtimeTotal = Number(runtimeAssetSummary?.total_assets || 0);
+  const runtimeReady = Number(runtimeAssetSummary?.ready_assets || 0);
+
+  const total = Math.max(manifestTotal, runtimeTotal);
+  const ready = Math.max(manifestReady, runtimeReady);
+
+  if (total <= 0) {
+    return scene === "lite" ? "lite" : "procedural";
+  }
+  if (ready <= 0) {
+    return "procedural";
+  }
+  if (ready < total) {
+    return "mixed";
+  }
+  if (integrityRatio > 0 && integrityRatio < 0.999) {
+    return "mixed";
+  }
+  if (scene === "lite") {
+    return "lite";
+  }
+  return "glb";
+}
+
 async function readActiveEconomyVersion(db) {
   try {
     const result = await db.query(
@@ -1449,6 +1526,318 @@ async function readActiveAssetManifest(db, opts = {}) {
         active_revision: fallbackState,
         entries: []
       };
+    }
+    throw err;
+  }
+}
+
+function summarizeActiveAssetManifest(activeManifest) {
+  const entries = Array.isArray(activeManifest?.entries) ? activeManifest.entries : [];
+  const total = entries.length;
+  const ready = entries.filter((row) => row.exists_local !== false).length;
+  const integrityOk = entries.filter((row) => String(row.integrity_status || "").toLowerCase() === "ok").length;
+  return {
+    available: Boolean(activeManifest?.available),
+    active_revision:
+      activeManifest?.active_revision?.manifest_revision ||
+      activeManifest?.active_revision?.state_json?.manifest_revision ||
+      activeManifest?.active_revision?.state_json?.active_revision ||
+      "",
+    total_assets: total,
+    ready_assets: ready,
+    missing_assets: Math.max(0, total - ready),
+    integrity_ok_assets: integrityOk,
+    integrity_ratio: total > 0 ? Number((integrityOk / total).toFixed(4)) : 0
+  };
+}
+
+function classifyKeywordFinding(filePath, lineText) {
+  const p = String(filePath || "").replace(/\\/g, "/").toLowerCase();
+  const line = String(lineText || "").toLowerCase();
+  if (p.includes("/test/") || p.endsWith(".test.js") || p.endsWith(".spec.js")) {
+    return "test_only";
+  }
+  if (line.includes("placeholder") || line.includes("orn:") || line.includes("veya hash")) {
+    return "ui_placeholder";
+  }
+  return "runtime_risk";
+}
+
+function derivePhaseAuditStatus({ dependency, flagsMeta, variant, botRuntimeHealth }) {
+  const findings = [];
+  const dep = dependency || {};
+  const deps = dep.dependencies || {};
+  const flags = flagsMeta?.flags || {};
+  const runtime = botRuntimeHealth || dep.bot_runtime || {};
+  const sourceMode = String(flagsMeta?.source_mode || "env_locked");
+  const bundleMode = String(variant?.source || "unknown");
+
+  const addFinding = (finding_key, status, severity, finding_json) => {
+    findings.push({ finding_key, status, severity, finding_json: finding_json || {} });
+  };
+
+  if (dep.ok && dep.db) {
+    addFinding("db_health", "pass", "info", { db: true });
+  } else {
+    addFinding("db_health", "fail", "critical", { db: Boolean(dep.db), reason: dep.reason || "" });
+  }
+
+  if (bundleMode === "dist") {
+    addFinding("webapp_bundle_mode", "pass", "info", { bundle_mode: bundleMode });
+  } else {
+    addFinding("webapp_bundle_mode", "warn", "warn", { bundle_mode: bundleMode });
+  }
+
+  const criticalFlagKeys = Array.from(CRITICAL_ENV_LOCKED_FLAGS.values());
+  const disabledCritical = criticalFlagKeys.filter((key) => !Boolean(flags[key]));
+  if (disabledCritical.length === 0) {
+    addFinding("critical_flags", "pass", "info", { source_mode: sourceMode, disabled: [] });
+  } else {
+    addFinding("critical_flags", "warn", "warn", {
+      source_mode: sourceMode,
+      disabled: disabledCritical
+    });
+  }
+
+  if (Boolean(runtime.alive) && Boolean(runtime.lock_acquired)) {
+    addFinding("bot_runtime_lock", "pass", "info", {
+      alive: true,
+      lock_acquired: true,
+      mode: String(runtime.mode || "")
+    });
+  } else {
+    addFinding("bot_runtime_lock", "fail", "critical", {
+      alive: Boolean(runtime.alive),
+      lock_acquired: Boolean(runtime.lock_acquired),
+      mode: String(runtime.mode || ""),
+      reason: String(runtime.reason || "")
+    });
+  }
+
+  const requiredDeps = [
+    "arena_session_tables",
+    "raid_session_tables",
+    "pvp_session_tables",
+    "token_market_tables",
+    "queue_tables",
+    "release_markers"
+  ];
+  const missingDeps = requiredDeps.filter((key) => !Boolean(deps[key]));
+  if (missingDeps.length === 0) {
+    addFinding("schema_runtime_core", "pass", "info", { missing: [] });
+  } else {
+    addFinding("schema_runtime_core", "warn", "warn", { missing: missingDeps });
+  }
+
+  const hasFail = findings.some((f) => f.status === "fail");
+  const hasWarn = findings.some((f) => f.status === "warn");
+  return {
+    phase_status: hasFail ? "fail" : hasWarn ? "partial" : "pass",
+    findings
+  };
+}
+
+async function buildPhaseStatusAuditSnapshot(db, opts = {}) {
+  const [dependency, flagsMeta, variant, runtimeState, schemaHead, latestRelease] = await Promise.all([
+    dependencyHealth(),
+    loadFeatureFlags(db, { withMeta: true }),
+    resolveWebAppVariant(db),
+    readBotRuntimeState(db, { stateKey: botRuntimeStore.DEFAULT_STATE_KEY, limit: 20 }),
+    readSchemaHead(db),
+    hasReleaseMarkersTable(db).then((exists) => (exists ? readLatestReleaseMarker(db) : null)).catch(() => null)
+  ]);
+  const botRuntimeHealth = projectBotRuntimeHealth(runtimeState);
+  const activeManifest = await readActiveAssetManifest(db, { includeEntries: true, entryLimit: 256 }).catch((err) => {
+    if (err?.code === "42P01") {
+      return { available: false, active_revision: null, entries: [] };
+    }
+    throw err;
+  });
+  const manifestSummary = summarizeActiveAssetManifest(activeManifest);
+  const phaseEval = derivePhaseAuditStatus({
+    dependency,
+    flagsMeta,
+    variant,
+    botRuntimeHealth
+  });
+  const releaseRef = String(opts.release_ref || latestRelease?.release_ref || "");
+  const gitRevision = String(opts.git_revision || latestRelease?.git_revision || RELEASE_GIT_REVISION || "");
+  const phaseName = String(opts.phase_name || "V3.6");
+  const bundleMode = String(variant?.source || "unknown");
+  const snapshotJson = {
+    phase_name: phaseName,
+    release_ref: releaseRef,
+    git_revision: gitRevision,
+    flag_source_mode: String(flagsMeta?.source_mode || "env_locked"),
+    runtime_flags_effective: pickCriticalRuntimeFlags(flagsMeta?.flags || {}),
+    bundle_mode: bundleMode,
+    dependency_health: dependency,
+    bot_runtime: {
+      state_key: runtimeState?.state_key || botRuntimeStore.DEFAULT_STATE_KEY,
+      health: botRuntimeHealth
+    },
+    schema_head: schemaHead,
+    webapp_variant: {
+      source: bundleMode,
+      root_dir: variant?.rootDir || "",
+      index_path: variant?.indexPath || ""
+    },
+    asset_manifest: manifestSummary,
+    latest_release: latestRelease
+      ? {
+          release_ref: latestRelease.release_ref,
+          git_revision: latestRelease.git_revision,
+          deploy_id: latestRelease.deploy_id,
+          environment: latestRelease.environment,
+          config_version: Number(latestRelease.config_version || 0),
+          created_at: latestRelease.created_at
+        }
+      : null
+  };
+  return {
+    phase_name: phaseName,
+    phase_status: phaseEval.phase_status,
+    release_ref: releaseRef,
+    git_revision: gitRevision,
+    flag_source_mode: String(flagsMeta?.source_mode || "env_locked"),
+    bundle_mode: bundleMode,
+    bot_alive: Boolean(botRuntimeHealth.alive),
+    bot_lock_acquired: Boolean(botRuntimeHealth.lock_acquired),
+    schema_head: String(schemaHead || ""),
+    snapshot_json: snapshotJson,
+    findings: phaseEval.findings,
+    dependency_health: dependency,
+    feature_flags: flagsMeta,
+    runtime_state: runtimeState,
+    bot_runtime_health: botRuntimeHealth,
+    active_manifest: activeManifest,
+    manifest_summary: manifestSummary,
+    latest_release: latestRelease
+  };
+}
+
+async function insertRuntimeAuditSnapshot(db, payload = {}) {
+  try {
+    const hasSnapshots = await hasTable(db, "runtime_audit_snapshots");
+    const hasFindings = await hasTable(db, "runtime_audit_findings");
+    if (!hasSnapshots || !hasFindings) {
+      return null;
+    }
+    const inserted = await db.query(
+      `INSERT INTO runtime_audit_snapshots (
+         audit_scope,
+         phase_name,
+         release_ref,
+         git_revision,
+         flag_source_mode,
+         webapp_bundle_mode,
+         bot_alive,
+         bot_lock_acquired,
+         schema_head,
+         snapshot_json,
+         created_by
+       )
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11)
+       RETURNING id;`,
+      [
+        String(payload.audit_scope || "phase_status"),
+        String(payload.phase_name || "V3.6"),
+        String(payload.release_ref || ""),
+        String(payload.git_revision || ""),
+        String(payload.flag_source_mode || "env_locked"),
+        String(payload.webapp_bundle_mode || ""),
+        Boolean(payload.bot_alive),
+        Boolean(payload.bot_lock_acquired),
+        String(payload.schema_head || ""),
+        JSON.stringify(payload.snapshot_json || {}),
+        Number(payload.created_by || 0)
+      ]
+    );
+    const snapshotId = Number(inserted.rows?.[0]?.id || 0);
+    const findings = Array.isArray(payload.findings) ? payload.findings : [];
+    for (const finding of findings) {
+      await db.query(
+        `INSERT INTO runtime_audit_findings (
+           snapshot_id, finding_key, severity, status, finding_json
+         )
+         VALUES ($1,$2,$3,$4,$5::jsonb)
+         ON CONFLICT (snapshot_id, finding_key)
+         DO UPDATE SET
+           severity = EXCLUDED.severity,
+           status = EXCLUDED.status,
+           finding_json = EXCLUDED.finding_json;`,
+        [
+          snapshotId,
+          String(finding.finding_key || "unknown"),
+          String(finding.severity || "info"),
+          String(finding.status || "pass"),
+          JSON.stringify(finding.finding_json || {})
+        ]
+      );
+    }
+    return snapshotId || null;
+  } catch (err) {
+    if (err.code === "42P01") {
+      return null;
+    }
+    throw err;
+  }
+}
+
+async function upsertReleasePhaseAlignment(db, payload = {}) {
+  try {
+    const exists = await hasTable(db, "release_phase_alignment");
+    if (!exists) {
+      return null;
+    }
+    const releaseRef = String(payload.release_ref || payload.releaseRef || "");
+    const phaseName = String(payload.phase_name || payload.phaseName || "V3.6");
+    if (!releaseRef) {
+      return null;
+    }
+    const result = await db.query(
+      `INSERT INTO release_phase_alignment (
+         release_ref,
+         git_revision,
+         phase_name,
+         phase_status,
+         flag_source_mode,
+         bundle_mode,
+         bot_alive,
+         bot_lock_acquired,
+         acceptance_json,
+         created_by
+       )
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10)
+       ON CONFLICT (release_ref, phase_name)
+       DO UPDATE SET
+         git_revision = EXCLUDED.git_revision,
+         phase_status = EXCLUDED.phase_status,
+         flag_source_mode = EXCLUDED.flag_source_mode,
+         bundle_mode = EXCLUDED.bundle_mode,
+         bot_alive = EXCLUDED.bot_alive,
+         bot_lock_acquired = EXCLUDED.bot_lock_acquired,
+         acceptance_json = EXCLUDED.acceptance_json,
+         created_at = now(),
+         created_by = EXCLUDED.created_by
+       RETURNING *;`,
+      [
+        releaseRef,
+        String(payload.git_revision || payload.gitRevision || ""),
+        phaseName,
+        String(payload.phase_status || payload.phaseStatus || "partial"),
+        String(payload.flag_source_mode || payload.flagSourceMode || "env_locked"),
+        String(payload.bundle_mode || payload.bundleMode || ""),
+        Boolean(payload.bot_alive ?? payload.botAlive),
+        Boolean(payload.bot_lock_acquired ?? payload.botLockAcquired),
+        JSON.stringify(payload.acceptance_json || payload.acceptance || {}),
+        Number(payload.created_by || payload.createdBy || 0)
+      ]
+    );
+    return result.rows?.[0] || null;
+  } catch (err) {
+    if (err.code === "42P01") {
+      return null;
     }
     throw err;
   }
@@ -2601,6 +2990,13 @@ fastify.get("/webapp/api/bootstrap", async (request, reply) => {
       throw err;
     });
     const featureFlags = await loadFeatureFlags(client, { withMeta: true });
+    const activeManifest = await readActiveAssetManifest(client, { includeEntries: true, entryLimit: 256 }).catch((err) => {
+      if (err.code === "42P01") {
+        return { available: false, active_revision: null, entries: [] };
+      }
+      throw err;
+    });
+    const manifestSummary = summarizeActiveAssetManifest(activeManifest);
     const isAdmin = isAdminTelegramId(auth.uid);
     let adminSummary = null;
     if (isAdmin) {
@@ -2615,6 +3011,15 @@ fastify.get("/webapp/api/bootstrap", async (request, reply) => {
     }
     const webappVersionState = await resolveWebAppVersion(client);
     const webappLaunchUrl = buildVersionedWebAppUrl(WEBAPP_PUBLIC_URL, webappVersionState.version);
+    const effectiveSceneMode = String(
+      (sceneProfile && sceneProfile.scene_mode) ||
+        (uiPrefs?.ui_mode === "minimal" ? "minimal" : uiPrefs?.ui_mode === "standard" ? "lite" : "pro")
+    ).toLowerCase();
+    const assetMode = summarizeAssetMode({
+      sceneMode: effectiveSceneMode,
+      manifestSummary
+    });
+    const transport = Boolean(PVP_WS_ENABLED && featureFlags.flags?.PVP_WS_ENABLED) ? "ws" : "poll";
 
     const missionReady = missions.filter((m) => m.completed && !m.claimed).length;
     const missionOpen = missions.filter((m) => !m.claimed).length;
@@ -2654,15 +3059,14 @@ fastify.get("/webapp/api/bootstrap", async (request, reply) => {
           source_json: featureFlags.source_json || {},
           env_forced: Boolean(featureFlags.env_forced)
         },
+        runtime_flags_effective: pickCriticalRuntimeFlags(featureFlags.flags),
         webapp_version: webappVersionState.version,
         webapp_launch_url: webappLaunchUrl,
         webapp_version_source: webappVersionState.source,
+        asset_mode: assetMode,
+        transport,
         scene_profile: sceneProfile || buildDefaultSceneProfile({ userId: profile.user_id, sceneKey: "nexus_arena" }),
-        scene_mode:
-          String(
-            (sceneProfile && sceneProfile.scene_mode) ||
-              (uiPrefs?.ui_mode === "minimal" ? "minimal" : uiPrefs?.ui_mode === "standard" ? "lite" : "pro")
-          ).toLowerCase(),
+        scene_mode: effectiveSceneMode,
         perf_profile: perfProfile,
         ui_prefs:
           uiPrefs || {
@@ -7930,6 +8334,230 @@ fastify.get("/admin/runtime/deploy/status", async (request, reply) => {
   }
 });
 
+fastify.get(
+  "/admin/runtime/audit/phase-status",
+  {
+    schema: {
+      querystring: {
+        type: "object",
+        properties: {
+          persist: { anyOf: [{ type: "boolean" }, { type: "string" }] },
+          phase_name: { type: "string", maxLength: 64 },
+          release_ref: { type: "string", maxLength: 128 },
+          git_revision: { type: "string", maxLength: 200 }
+        }
+      }
+    }
+  },
+  async (request, reply) => {
+    const actorId = parseAdminId(request);
+    const persistRaw = request.query?.persist;
+    const persist =
+      persistRaw === true ||
+      String(persistRaw || "")
+        .trim()
+        .toLowerCase() === "1" ||
+      String(persistRaw || "")
+        .trim()
+        .toLowerCase() === "true";
+    const client = await pool.connect();
+    try {
+      const snapshot = await buildPhaseStatusAuditSnapshot(client, {
+        phase_name: request.query?.phase_name || "V3.6",
+        release_ref: request.query?.release_ref || "",
+        git_revision: request.query?.git_revision || ""
+      });
+
+      let runtimeAuditSnapshotId = null;
+      let phaseAlignment = null;
+      if (persist) {
+        await client.query("BEGIN");
+        runtimeAuditSnapshotId = await insertRuntimeAuditSnapshot(client, {
+          audit_scope: "phase_status",
+          phase_name: snapshot.phase_name,
+          release_ref: snapshot.release_ref,
+          git_revision: snapshot.git_revision,
+          flag_source_mode: snapshot.flag_source_mode,
+          webapp_bundle_mode: snapshot.bundle_mode,
+          bot_alive: snapshot.bot_alive,
+          bot_lock_acquired: snapshot.bot_lock_acquired,
+          schema_head: snapshot.schema_head,
+          snapshot_json: snapshot.snapshot_json,
+          findings: snapshot.findings,
+          created_by: actorId
+        });
+        phaseAlignment = await upsertReleasePhaseAlignment(client, {
+          release_ref: snapshot.release_ref,
+          git_revision: snapshot.git_revision,
+          phase_name: snapshot.phase_name,
+          phase_status: snapshot.phase_status,
+          flag_source_mode: snapshot.flag_source_mode,
+          bundle_mode: snapshot.bundle_mode,
+          bot_alive: snapshot.bot_alive,
+          bot_lock_acquired: snapshot.bot_lock_acquired,
+          acceptance_json: {
+            findings_count: Array.isArray(snapshot.findings) ? snapshot.findings.length : 0,
+            dependency_ok: Boolean(snapshot.dependency_health?.ok),
+            critical_flags: pickCriticalRuntimeFlags(snapshot.feature_flags?.flags || {})
+          },
+          created_by: actorId
+        });
+        await client.query("COMMIT");
+      }
+
+      reply.send({
+        success: true,
+        data: {
+          actor_admin_id: Number(actorId || 0),
+          configured_admin_id: Number(ADMIN_TELEGRAM_ID || 0),
+          is_admin: isAdminTelegramId(actorId),
+          phase_name: snapshot.phase_name,
+          phase_status: snapshot.phase_status,
+          release_ref: snapshot.release_ref,
+          git_revision: snapshot.git_revision,
+          flag_source_mode: snapshot.flag_source_mode,
+          bundle_mode: snapshot.bundle_mode,
+          bot_alive: snapshot.bot_alive,
+          bot_lock_acquired: snapshot.bot_lock_acquired,
+          schema_head: snapshot.schema_head,
+          persisted: persist,
+          runtime_audit_snapshot_id: runtimeAuditSnapshotId,
+          phase_alignment: phaseAlignment
+            ? {
+                release_ref: phaseAlignment.release_ref,
+                git_revision: phaseAlignment.git_revision,
+                phase_name: phaseAlignment.phase_name,
+                phase_status: phaseAlignment.phase_status,
+                created_at: phaseAlignment.created_at
+              }
+            : null,
+          findings: snapshot.findings,
+          snapshot: snapshot.snapshot_json
+        }
+      });
+    } catch (err) {
+      try {
+        await client.query("ROLLBACK");
+      } catch {}
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+);
+
+fastify.get("/admin/runtime/audit/data-integrity", async (request, reply) => {
+  const actorId = parseAdminId(request);
+  const client = await pool.connect();
+  try {
+    const [dependency, flagsMeta, variant, runtimeState, latestRelease, activeManifest, adminSummary] = await Promise.all([
+      dependencyHealth(),
+      loadFeatureFlags(client, { withMeta: true }),
+      resolveWebAppVariant(client),
+      readBotRuntimeState(client, { stateKey: botRuntimeStore.DEFAULT_STATE_KEY, limit: 10 }),
+      hasReleaseMarkersTable(client).then((exists) => (exists ? readLatestReleaseMarker(client) : null)).catch(() => null),
+      readActiveAssetManifest(client, { includeEntries: true, entryLimit: 256 }).catch((err) => {
+        if (err?.code === "42P01") {
+          return { available: false, active_revision: null, entries: [] };
+        }
+        throw err;
+      }),
+      configService
+        .getEconomyConfig(client)
+        .then((cfg) => buildAdminSummary(client, cfg))
+        .catch((err) => {
+          if (err?.code === "42P01") return null;
+          throw err;
+        })
+    ]);
+    const botRuntimeHealth = projectBotRuntimeHealth(runtimeState);
+    const manifestSummary = summarizeActiveAssetManifest(activeManifest);
+    const assetMode = summarizeAssetMode({
+      sceneMode: String(adminSummary?.scene_mode || ""),
+      manifestSummary,
+      runtimeAssetSummary: adminSummary?.assets?.runtime || null
+    });
+    const queueSummary = adminSummary?.queues || {};
+    const externalApiHealth = Array.isArray(queueSummary.external_api_health) ? queueSummary.external_api_health : [];
+    const tokenAutoDecisions = Array.isArray(queueSummary.token_auto_decisions) ? queueSummary.token_auto_decisions : [];
+    const truthMap = {
+      gameplay: {
+        source: "backend_authoritative",
+        arena_tables: Boolean(dependency?.dependencies?.arena_session_tables),
+        raid_tables: Boolean(dependency?.dependencies?.raid_session_tables),
+        pvp_tables: Boolean(dependency?.dependencies?.pvp_session_tables),
+        status:
+          dependency?.dependencies?.arena_session_tables &&
+          dependency?.dependencies?.raid_session_tables &&
+          dependency?.dependencies?.pvp_session_tables
+            ? "real"
+            : "partial"
+      },
+      treasury: {
+        source: "backend_authoritative+env_routing",
+        token_market_tables: Boolean(dependency?.dependencies?.token_market_tables),
+        treasury_ops_tables: Boolean(dependency?.dependencies?.treasury_ops_tables),
+        quote_trace_tables: Boolean(dependency?.dependencies?.oracle_tables),
+        provider_health_rows: externalApiHealth.length,
+        auto_decision_rows: tokenAutoDecisions.length,
+        route_chains: adminSummary?.token?.routing?.chains || [],
+        payout_gate_status: String(adminSummary?.token?.market?.payout_gate || ""),
+        status: dependency?.dependencies?.token_market_tables ? "real" : "partial"
+      },
+      webapp_ui: {
+        source: variant?.source === "dist" ? "vite_ts_bundle" : "legacy_runtime",
+        bundle_mode: String(variant?.source || "unknown"),
+        ts_bundle_enabled: Boolean(flagsMeta?.flags?.WEBAPP_TS_BUNDLE_ENABLED),
+        webapp_v3_enabled: Boolean(flagsMeta?.flags?.WEBAPP_V3_ENABLED),
+        status: variant?.source === "dist" ? "real" : "partial"
+      },
+      scene_assets: {
+        source: "manifest+registry+runtime",
+        asset_mode: assetMode,
+        manifest: manifestSummary,
+        runtime_assets: adminSummary?.assets?.runtime || null,
+        status:
+          assetMode === "glb" ? "real" : assetMode === "mixed" || assetMode === "lite" ? "mixed" : "procedural"
+      },
+      bot_runtime: {
+        source: "bot_runtime_state",
+        health: botRuntimeHealth,
+        status: botRuntimeHealth.alive && botRuntimeHealth.lock_acquired ? "real" : "degraded"
+      }
+    };
+
+    reply.send({
+      success: true,
+      data: {
+        actor_admin_id: Number(actorId || 0),
+        configured_admin_id: Number(ADMIN_TELEGRAM_ID || 0),
+        is_admin: isAdminTelegramId(actorId),
+        release_latest: latestRelease
+          ? {
+              release_ref: latestRelease.release_ref,
+              git_revision: latestRelease.git_revision,
+              created_at: latestRelease.created_at
+            }
+          : null,
+        dependency_health: dependency,
+        runtime_flags: {
+          source_mode: String(flagsMeta?.source_mode || "env_locked"),
+          env_forced: Boolean(flagsMeta?.env_forced),
+          effective_flags: flagsMeta?.flags || {}
+        },
+        truth_map: truthMap,
+        notes: [
+          "Gameplay/economy/treasury values are backend-authoritative.",
+          "Procedural fallback is allowed only for visual scene assets.",
+          "This endpoint summarizes runtime truth sources, not repo-wide keyword scans."
+        ]
+      }
+    });
+  } finally {
+    client.release();
+  }
+});
+
 fastify.get("/admin/release/latest", async (request, reply) => {
   const exists = await hasReleaseMarkersTable(pool);
   if (!exists) {
@@ -7964,16 +8592,87 @@ fastify.post(
     }
     const adminId = parseAdminId(request);
     const health = await dependencyHealth();
-    const marker = await captureReleaseMarker(pool, {
-      gitRevision: request.body?.git_revision || RELEASE_GIT_REVISION || "manual",
-      deployId: request.body?.deploy_id || RELEASE_DEPLOY_ID || "",
-      environment: request.body?.environment || RELEASE_ENV || "production",
-      configVersion: Number(request.body?.config_version || 0),
-      notes: request.body?.notes || "manual_release_marker",
-      createdBy: adminId,
-      health
-    });
-    reply.send({ success: true, data: marker });
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const marker = await captureReleaseMarker(client, {
+        gitRevision: request.body?.git_revision || RELEASE_GIT_REVISION || "manual",
+        deployId: request.body?.deploy_id || RELEASE_DEPLOY_ID || "",
+        environment: request.body?.environment || RELEASE_ENV || "production",
+        configVersion: Number(request.body?.config_version || 0),
+        notes: request.body?.notes || "manual_release_marker",
+        createdBy: adminId,
+        health
+      });
+
+      let auditSnapshot = null;
+      let auditSnapshotId = null;
+      let phaseAlignment = null;
+      if (marker) {
+        auditSnapshot = await buildPhaseStatusAuditSnapshot(client, {
+          release_ref: marker.release_ref,
+          git_revision: marker.git_revision,
+          phase_name: "V3.6"
+        });
+        auditSnapshotId = await insertRuntimeAuditSnapshot(client, {
+          audit_scope: "release_mark",
+          phase_name: auditSnapshot.phase_name,
+          release_ref: auditSnapshot.release_ref,
+          git_revision: auditSnapshot.git_revision,
+          flag_source_mode: auditSnapshot.flag_source_mode,
+          webapp_bundle_mode: auditSnapshot.bundle_mode,
+          bot_alive: auditSnapshot.bot_alive,
+          bot_lock_acquired: auditSnapshot.bot_lock_acquired,
+          schema_head: auditSnapshot.schema_head,
+          snapshot_json: auditSnapshot.snapshot_json,
+          findings: auditSnapshot.findings,
+          created_by: adminId
+        });
+        phaseAlignment = await upsertReleasePhaseAlignment(client, {
+          release_ref: marker.release_ref,
+          git_revision: marker.git_revision,
+          phase_name: auditSnapshot.phase_name,
+          phase_status: auditSnapshot.phase_status,
+          flag_source_mode: auditSnapshot.flag_source_mode,
+          bundle_mode: auditSnapshot.bundle_mode,
+          bot_alive: auditSnapshot.bot_alive,
+          bot_lock_acquired: auditSnapshot.bot_lock_acquired,
+          acceptance_json: {
+            release_marked: true,
+            findings_count: Array.isArray(auditSnapshot.findings) ? auditSnapshot.findings.length : 0,
+            critical_flags: pickCriticalRuntimeFlags(auditSnapshot.feature_flags?.flags || {})
+          },
+          created_by: adminId
+        });
+      }
+
+      await client.query("COMMIT");
+      reply.send({
+        success: true,
+        data: marker,
+        audit: auditSnapshot
+          ? {
+              phase_name: auditSnapshot.phase_name,
+              phase_status: auditSnapshot.phase_status,
+              runtime_audit_snapshot_id: auditSnapshotId,
+              phase_alignment: phaseAlignment
+                ? {
+                    release_ref: phaseAlignment.release_ref,
+                    git_revision: phaseAlignment.git_revision,
+                    phase_name: phaseAlignment.phase_name,
+                    phase_status: phaseAlignment.phase_status,
+                    created_at: phaseAlignment.created_at
+                  }
+                : null
+            }
+          : null
+      });
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 );
 

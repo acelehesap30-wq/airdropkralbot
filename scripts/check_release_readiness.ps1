@@ -7,6 +7,7 @@ param(
   [int]$WarmupWaitSec = 12,
   [switch]$SkipTests,
   [switch]$SkipWebAppBuild,
+  [switch]$SkipSystemAudit,
   [switch]$SkipMigrate,
   [switch]$SkipHealth,
   [switch]$SkipReleaseMarker,
@@ -207,6 +208,20 @@ try {
     }
   }
 
+  if (-not $SkipSystemAudit) {
+    Invoke-Step "Repo system audit (keywords/duplicates classification)" {
+      $auditArgs = @(
+        "-ExecutionPolicy", "Bypass",
+        "-File", (Join-Path $PSScriptRoot "check_system_audit.ps1")
+      )
+      $auditArgs += @("-Strict")
+      & powershell @auditArgs
+      if ($LASTEXITCODE -ne 0) {
+        throw "check_system_audit failed with exit code $LASTEXITCODE"
+      }
+    }
+  }
+
   if (-not $SkipMigrate) {
     Invoke-Step "Migration check" {
       & npm run migrate:node
@@ -324,6 +339,24 @@ try {
         throw "Latest release marker has empty git_revision. Run POST /admin/release/mark after deploy."
       }
       Write-Host ("[OK] release marker git_revision=" + $gitRevision) -ForegroundColor Green
+
+      $auditUri = $adminBase + "/runtime/audit/phase-status"
+      $auditRes = Invoke-WebRequestWithRetry -Uri $auditUri -Headers @{ Authorization = "Bearer $token" }
+      if ($auditRes.StatusCode -ne 200) {
+        throw "/admin/runtime/audit/phase-status status " + $auditRes.StatusCode
+      }
+      $auditPayload = Parse-JsonSafely -Raw $auditRes.Content
+      if (-not $auditPayload -or -not $auditPayload.success) {
+        throw "/admin/runtime/audit/phase-status payload invalid"
+      }
+      $phaseStatus = [string]$auditPayload.data.phase_status
+      if ([string]::IsNullOrWhiteSpace($phaseStatus)) {
+        throw "/admin/runtime/audit/phase-status missing phase_status"
+      }
+      if ($phaseStatus -eq "fail") {
+        throw "Runtime phase audit reported fail"
+      }
+      Write-Host ("[OK] runtime phase audit status=" + $phaseStatus) -ForegroundColor Green
     }
   }
 }
