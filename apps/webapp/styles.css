@@ -4394,6 +4394,163 @@ body:not(.reduced-motion) .adminProviderAlertStrip[data-tone="critical"] {
   margin: 0;
 }
 
+.tokenActionDirectorStrip {
+  --token-director-ready: 0;
+  --token-director-risk: 0;
+  margin-top: 8px;
+  border: 1px solid rgba(162, 186, 255, 0.16);
+  border-radius: 12px;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+  background:
+    radial-gradient(
+      130% 140% at 10% 0%,
+      rgba(61, 248, 194, calc(0.02 + (var(--token-director-ready) * 0.08))) 0%,
+      transparent 62%
+    ),
+    radial-gradient(
+      130% 140% at 94% 0%,
+      rgba(255, 93, 125, calc(0.02 + (var(--token-director-risk) * 0.09))) 0%,
+      transparent 62%
+    ),
+    radial-gradient(
+      120% 120% at 50% 100%,
+      rgba(255, 184, 92, calc(0.01 + (var(--token-director-risk) * 0.05))) 0%,
+      transparent 70%
+    ),
+    rgba(7, 13, 31, 0.76);
+}
+
+.tokenActionDirectorStrip[data-tone="critical"] {
+  border-color: rgba(255, 93, 125, 0.44);
+  box-shadow: 0 0 16px rgba(255, 93, 125, 0.1);
+}
+
+.tokenActionDirectorStrip[data-tone="pressure"] {
+  border-color: rgba(255, 184, 92, 0.34);
+}
+
+.tokenActionDirectorStrip[data-tone="advantage"] {
+  border-color: rgba(61, 248, 194, 0.28);
+}
+
+body:not(.reduced-motion) .tokenActionDirectorStrip[data-tone="critical"] {
+  animation: pvpActionAlert 1400ms ease-in-out infinite;
+}
+
+.tokenActionDirectorHead {
+  display: grid;
+  gap: 6px;
+}
+
+.tokenActionDirectorChipRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.tokenActionDirectorMeters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.tokenActionDirectorMeterCard {
+  border: 1px solid rgba(162, 186, 255, 0.15);
+  border-radius: 10px;
+  padding: 8px;
+  background: rgba(6, 12, 29, 0.64);
+  display: grid;
+  gap: 5px;
+}
+
+.tokenActionDirectorMeterCard .micro {
+  margin: 0;
+}
+
+.adminDecisionTraceStrip {
+  --decision-flow: 0;
+  --decision-risk: 0;
+  margin-top: 6px;
+  border: 1px solid rgba(162, 186, 255, 0.16);
+  border-radius: 12px;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+  background:
+    radial-gradient(
+      130% 130% at 10% 0%,
+      rgba(61, 248, 194, calc(0.015 + (var(--decision-flow) * 0.06))) 0%,
+      transparent 64%
+    ),
+    radial-gradient(
+      130% 130% at 90% 0%,
+      rgba(255, 93, 125, calc(0.02 + (var(--decision-risk) * 0.08))) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      120% 120% at 50% 100%,
+      rgba(255, 184, 92, calc(0.01 + (var(--decision-risk) * 0.05))) 0%,
+      transparent 70%
+    ),
+    rgba(7, 13, 31, 0.76);
+}
+
+.adminDecisionTraceStrip[data-tone="critical"] {
+  border-color: rgba(255, 93, 125, 0.46);
+  box-shadow: 0 0 16px rgba(255, 93, 125, 0.1);
+}
+
+.adminDecisionTraceStrip[data-tone="pressure"] {
+  border-color: rgba(255, 184, 92, 0.34);
+}
+
+.adminDecisionTraceStrip[data-tone="advantage"] {
+  border-color: rgba(61, 248, 194, 0.28);
+}
+
+body:not(.reduced-motion) .adminDecisionTraceStrip[data-tone="critical"] {
+  animation: pvpActionAlert 1200ms ease-in-out infinite;
+}
+
+.adminDecisionTraceHead {
+  display: grid;
+  gap: 6px;
+}
+
+.adminDecisionTraceChipRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.adminDecisionTraceMeters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.adminDecisionTraceMeterCard {
+  border: 1px solid rgba(162, 186, 255, 0.15);
+  border-radius: 10px;
+  padding: 8px;
+  background: rgba(6, 12, 29, 0.64);
+  display: grid;
+  gap: 5px;
+}
+
+.adminDecisionTraceMeterCard .micro,
+#adminDecisionTraceSignalLine {
+  margin: 0;
+}
+
+@media (max-width: 720px) {
+  .tokenActionDirectorChipRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .pvpBoard {
   list-style: none;
   padding: 0;

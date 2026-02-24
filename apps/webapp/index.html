@@ -743,6 +743,36 @@
               <li class="muted">Talep akisi yukleniyor...</li>
             </ul>
           </section>
+          <section id="tokenActionDirectorStrip" class="tokenActionDirectorStrip" data-tone="neutral">
+            <div class="tokenActionDirectorHead">
+              <div class="panelHead compact">
+                <h4>Token Action Director</h4>
+                <span id="tokenActionDirectorBadge" class="badge info">IDLE</span>
+              </div>
+              <p id="tokenActionDirectorLine" class="micro">Gercek quote / route / verify / queue verilerine gore sonraki adim hesaplanacak.</p>
+              <p id="tokenActionDirectorStepLine" class="micro">Next: quote al -> alim talebi -> odeme tx -> verify -> karar.</p>
+              <div class="tokenActionDirectorChipRow">
+                <span id="tokenActionDirectorNextChip" class="pvpLiveChip neutral">NEXT WAIT</span>
+                <span id="tokenActionDirectorGateChip" class="pvpLiveChip neutral">GATE -</span>
+                <span id="tokenActionDirectorRouteChip" class="pvpLiveChip neutral">ROUTE 0/0</span>
+                <span id="tokenActionDirectorVerifyChip" class="pvpLiveChip neutral">VERIFY -</span>
+                <span id="tokenActionDirectorQueueChip" class="pvpLiveChip neutral">QUEUE -</span>
+              </div>
+            </div>
+            <div class="tokenActionDirectorMeters">
+              <div class="tokenActionDirectorMeterCard">
+                <p class="micro">Readiness</p>
+                <div class="meter"><span id="tokenActionDirectorReadinessMeter"></span></div>
+              </div>
+              <div class="tokenActionDirectorMeterCard">
+                <p class="micro">Risk / Delay</p>
+                <div class="meter"><span id="tokenActionDirectorRiskMeter"></span></div>
+              </div>
+            </div>
+            <ul id="tokenActionDirectorList" class="tokenRouteList">
+              <li class="muted">Director verisi bekleniyor...</li>
+            </ul>
+          </section>
           <div class="tokenActions">
             <div class="tokenRow">
               <label for="tokenUsdInput" class="label">USD Alim Talebi</label>
@@ -955,6 +985,35 @@
               <p id="adminProviderSignalLine" class="micro">Provider telemetry bekleniyor.</p>
               <ul id="adminProviderAlertList" class="tokenRouteList">
                 <li class="muted">Provider ve auto decision kayitlari yukleniyor...</li>
+              </ul>
+            </section>
+            <section id="adminDecisionTraceStrip" class="adminDecisionTraceStrip" data-tone="neutral">
+              <div class="adminDecisionTraceHead">
+                <div class="panelHead compact">
+                  <h4>Decision Trace Segments</h4>
+                  <span id="adminDecisionTraceBadge" class="badge info">TRACE</span>
+                </div>
+                <p id="adminDecisionTraceLine" class="micro">Auto / manual karar izi ve risk segmentleri bekleniyor.</p>
+                <div class="adminDecisionTraceChipRow">
+                  <span id="adminDecisionApproveChip" class="pvpLiveChip neutral">APP 0</span>
+                  <span id="adminDecisionRejectChip" class="pvpLiveChip neutral">REJ 0</span>
+                  <span id="adminDecisionManualChip" class="pvpLiveChip neutral">MAN 0</span>
+                  <span id="adminDecisionRiskChip" class="pvpLiveChip neutral">RISK 0%</span>
+                </div>
+              </div>
+              <div class="adminDecisionTraceMeters">
+                <div class="adminDecisionTraceMeterCard">
+                  <p class="micro">Decision Flow</p>
+                  <div class="meter"><span id="adminDecisionFlowMeter"></span></div>
+                </div>
+                <div class="adminDecisionTraceMeterCard">
+                  <p class="micro">Risk / Manual Pressure</p>
+                  <div class="meter"><span id="adminDecisionRiskMeter"></span></div>
+                </div>
+              </div>
+              <p id="adminDecisionTraceSignalLine" class="micro">Reason segmentasyonu bekleniyor.</p>
+              <ul id="adminDecisionTraceList" class="tokenRouteList">
+                <li class="muted">Decision traces yukleniyor...</li>
               </ul>
             </section>
             <section id="adminAssetRuntimeStrip" class="adminAssetRuntimeStrip" data-tone="neutral">

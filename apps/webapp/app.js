@@ -809,6 +809,10 @@
     const ladder = state.v3?.pvpLeaderboardMetrics || {};
     const ladderPressure = clamp(asNum(ladder.pressure || state.arena?.ladderPressure || 0), 0, 1);
     const diagnostics = state.v3?.pvpTickMeta?.diagnostics || state.v3?.pvpTickMeta?.state_json?.diagnostics || {};
+    const tokenDirector = state.v3?.tokenDirectorMetrics || {};
+    const decisionTrace = state.admin?.decisionTraceMetrics || {};
+    const providerRuntime = state.admin?.providerRuntimeMetrics || {};
+    const treasuryRuntime = state.admin?.treasuryRuntimeMetrics || {};
     const tickMs = Math.max(220, asNum(state.v3?.pvpTickMs || state.v3?.pvpTickMeta?.tick_ms || 1000));
     const actionWindowMs = clamp(asNum(state.v3?.pvpActionWindowMs || state.v3?.pvpTickMeta?.action_window_ms || 800), 80, tickMs);
     const latencyMs = Math.max(0, asNum(diagnostics.latency_ms || state.telemetry?.latencyAvgMs || 0));
@@ -826,8 +830,36 @@
     );
     const integrityRatio = clamp(asNum(assetManifest.integrityRatio ?? assetRuntime.dbReadyRatio ?? assetRuntime.syncRatio ?? readyRatio), 0, 1);
     const assetRisk = clamp((1 - readyRatio) * 0.45 + (1 - integrityRatio) * 0.55, 0, 1);
+    const tokenDirectorStress = clamp(asNum((tokenDirector.riskRatio ?? state.arena?.tokenDirectorStress) || 0), 0, 1);
+    const tokenDirectorUrgency = clamp(asNum(tokenDirector.readinessRatio != null ? 1 - tokenDirector.readinessRatio : state.arena?.tokenDirectorUrgency || 0), 0, 1);
+    const tokenRouteRisk = clamp((1 - clamp(asNum(tokenDirector.routeCoverage ?? treasuryRuntime.routeCoverage ?? 0), 0, 1)) * 0.55 + (1 - clamp(asNum(tokenDirector.providerRatio ?? providerRuntime.providerRatio ?? 0), 0, 1)) * 0.45, 0, 1);
+    const decisionRiskPressure = clamp(asNum((decisionTrace.riskPressure ?? state.arena?.treasuryDecisionStress) || 0), 0, 1);
+    const decisionFlow = clamp(asNum(decisionTrace.decisionFlow ?? state.arena?.treasuryDecisionFlow ?? 1), 0, 1);
+    const providerTimeoutRatio = clamp(asNum(providerRuntime.timeoutRatio ?? 0), 0, 1);
+    const providerStaleRatio = clamp(asNum(providerRuntime.staleRatio ?? 0), 0, 1);
+    const treasuryQueuePressure = clamp(asNum(treasuryRuntime.queuePressure ?? tokenDirector.queuePressure ?? 0), 0, 1);
+    const treasuryStress = clamp(
+      tokenDirectorStress * 0.24 +
+        tokenDirectorUrgency * 0.14 +
+        decisionRiskPressure * 0.22 +
+        (1 - decisionFlow) * 0.12 +
+        providerTimeoutRatio * 0.12 +
+        providerStaleRatio * 0.08 +
+        treasuryQueuePressure * 0.08,
+      0,
+      1
+    );
     const burstLevel = clamp(resolveBurst * 0.42 + hitBurst * 0.32 + rejectShock * 0.18 + cameraImpulse * 0.08, 0, 1);
-    const stressLevel = clamp(rejectShock * 0.36 + ladderPressure * 0.18 + (1 - windowRatio) * 0.2 + assetRisk * 0.26, 0, 1);
+    const stressLevel = clamp(
+      rejectShock * 0.28 +
+        ladderPressure * 0.14 +
+        (1 - windowRatio) * 0.16 +
+        assetRisk * 0.2 +
+        treasuryStress * 0.22 +
+        tokenRouteRisk * 0.08,
+      0,
+      1
+    );
     const tone = stressLevel >= 0.72 ? "critical" : stressLevel >= 0.4 ? "pressure" : burstLevel >= 0.28 ? "advantage" : "neutral";
     root.dataset.tone = tone;
     root.dataset.intense = burstLevel >= 0.5 || stressLevel >= 0.55 ? "1" : "0";
@@ -846,7 +878,7 @@
     badge.className = tone === "critical" ? "badge warn" : tone === "pressure" ? "badge" : "badge info";
     animateTextSwap(
       line,
-      `Burst ${Math.round(burstLevel * 100)}% | Stress ${Math.round(stressLevel * 100)}% | wnd ${Math.round(windowRatio * 100)}% | ladder ${Math.round(ladderPressure * 100)}% | asset ${Math.round((1 - assetRisk) * 100)}%`
+      `Burst ${Math.round(burstLevel * 100)}% | Stress ${Math.round(stressLevel * 100)}% | wnd ${Math.round(windowRatio * 100)}% | ladder ${Math.round(ladderPressure * 100)}% | asset ${Math.round((1 - assetRisk) * 100)}% | treasury ${Math.round((1 - treasuryStress) * 100)}%`
     );
     animateMeterWidth(burstMeter, burstLevel * 100, 0.2);
     animateMeterWidth(stressMeter, stressLevel * 100, 0.22);
@@ -856,8 +888,14 @@
     if (state.arena) {
       const envBoost = clamp(burstLevel * 0.34 + stressLevel * 0.44 + assetRisk * 0.22, 0, 1);
       state.arena.pvpCinematicBoost = clamp(asNum(state.arena.pvpCinematicBoost ?? envBoost) * 0.78 + envBoost * 0.22, 0, 1.35);
+      state.arena.treasuryStress = treasuryStress;
+      state.arena.treasuryRouteRisk = tokenRouteRisk;
+      state.arena.treasuryQueuePressure = treasuryQueuePressure;
       if (stressLevel >= 0.72 || (rejectShock >= 0.52 && assetRisk >= 0.25)) {
         state.arena.scenePulseBridge = Math.min(3.2, asNum(state.arena.scenePulseBridge || 0) + 0.08 + stressLevel * 0.06);
+      }
+      if (treasuryStress >= 0.58 || tokenRouteRisk >= 0.58) {
+        state.arena.scenePulseReject = Math.min(3.2, asNum(state.arena.scenePulseReject || 0) + 0.04 + treasuryStress * 0.06);
       }
       if (resolveBurst >= 0.6) {
         state.arena.scenePulseCrate = Math.min(3.2, asNum(state.arena.scenePulseCrate || 0) + 0.08 + resolveBurst * 0.08);
@@ -9350,6 +9388,7 @@
       renderTreasuryPulse(state.data?.token || {}, null);
       renderTokenRouteRuntimeStrip(state.data?.token || {}, null);
       renderTokenTxLifecycleStrip(state.data?.token || {}, null);
+      renderTokenActionDirectorStrip(state.data?.token || {}, null);
       return;
     }
     const quote = await fetchTokenQuote(usd, chain);
@@ -9365,6 +9404,7 @@
     renderTreasuryPulse(state.data?.token || {}, quote);
     renderTokenRouteRuntimeStrip(state.data?.token || {}, quote);
     renderTokenTxLifecycleStrip(state.data?.token || {}, quote);
+    renderTokenActionDirectorStrip(state.data?.token || {}, quote);
   }
 
   function scheduleTokenQuote() {
@@ -9385,6 +9425,7 @@
           renderTreasuryPulse(state.data?.token || {}, null);
           renderTokenRouteRuntimeStrip(state.data?.token || {}, null);
           renderTokenTxLifecycleStrip(state.data?.token || {}, null);
+          renderTokenActionDirectorStrip(state.data?.token || {}, null);
           return;
         }
         showError(err);
@@ -9934,6 +9975,264 @@
     }
   }
 
+  function renderTokenActionDirectorStrip(token, quotePayload = null) {
+    const host = byId("tokenActionDirectorStrip");
+    if (!host) {
+      return;
+    }
+    const safe = token && typeof token === "object" ? token : {};
+    const quoteData = quotePayload && typeof quotePayload === "object" ? quotePayload : state.v3.tokenQuote || null;
+    const quote = quoteData?.quote || null;
+    const route = state.v3.tokenRouteMetrics || {};
+    const lifecycle = state.v3.tokenLifecycleMetrics || {};
+    const provider = state.admin.providerRuntimeMetrics || {};
+    const treasury = state.admin.treasuryRuntimeMetrics || {};
+    const queues = state.admin.queues && typeof state.admin.queues === "object" ? state.admin.queues : {};
+    const requests = Array.isArray(safe.requests) ? safe.requests : [];
+    const latest = requests[0] && typeof requests[0] === "object" ? requests[0] : null;
+    const txHash = String(latest?.tx_hash || "").trim();
+    const txSeen = Boolean(txHash);
+    const gateOpen =
+      quoteData?.payout_gate?.allowed === true ||
+      lifecycle.gateOpen === true ||
+      route.gateOpen === true ||
+      safe.payout_gate?.allowed === true;
+    const routeCoverage = clamp(asNum(route.routeCoverage ?? treasury.routeCoverage ?? 0), 0, 1);
+    const verifyConfidence = clamp(asNum(lifecycle.verifyConfidence ?? 0), 0, 1);
+    const providerRatio = clamp(asNum(provider.providerRatio ?? 0), 0, 1);
+    const timeoutRatio = clamp(asNum(provider.timeoutRatio ?? 0), 0, 1);
+    const staleRatio = clamp(asNum(provider.staleRatio ?? 0), 0, 1);
+    const queuePressure = clamp(asNum(treasury.queuePressure ?? 0), 0, 1);
+    const riskScore = clamp(asNum(state.data?.risk_score || 0), 0, 1);
+    const manualQueueCount = Array.isArray(queues.token_manual_queue) ? queues.token_manual_queue.length : Math.max(0, asNum(treasury.manualQueueCount || 0));
+    const autoDecisionCount = Array.isArray(queues.token_auto_decisions) ? queues.token_auto_decisions.length : Math.max(0, asNum(treasury.autoDecisionCount || 0));
+    const pendingPayoutCount = Array.isArray(queues.payout_queue) ? queues.payout_queue.length : Math.max(0, asNum(treasury.pendingPayoutCount || 0));
+    const latestStatus = String(lifecycle.status || latest?.status || "none").toLowerCase();
+    const autoPolicy = state.admin.summary?.token?.auto_policy || {};
+    const autoEnabled = autoPolicy.enabled === true;
+
+    let nextStepKey = "quote";
+    let nextStepLabel = "Quote Al";
+    let verifyStateLabel = "VERIFY WAIT";
+    if (!gateOpen) {
+      nextStepKey = "gate";
+      nextStepLabel = "Gate Acilmasini Bekle";
+      verifyStateLabel = "GATE LOCK";
+    } else if (!quote) {
+      nextStepKey = "quote";
+      nextStepLabel = "Quote Al / Zincir Sec";
+      verifyStateLabel = "VERIFY WAIT";
+    } else if (!latest) {
+      nextStepKey = "request";
+      nextStepLabel = "Alim Talebi Olustur";
+      verifyStateLabel = "REQ NEEDED";
+    } else if (latestStatus === "rejected" || latestStatus === "failed") {
+      nextStepKey = "review";
+      nextStepLabel = "Talep Gozden Gecir / Yeni Talep";
+      verifyStateLabel = "REJECTED";
+    } else if (!txSeen) {
+      nextStepKey = "tx";
+      nextStepLabel = "TX Hash Gonder";
+      verifyStateLabel = "TX WAIT";
+    } else if (latestStatus === "approved") {
+      nextStepKey = "settled";
+      nextStepLabel = "Settled / Yeni Quote";
+      verifyStateLabel = "SETTLED";
+    } else if (verifyConfidence < 0.6) {
+      nextStepKey = "verify";
+      nextStepLabel = "Verify / Quorum Bekle";
+      verifyStateLabel = "VERIFY LOW";
+    } else {
+      nextStepKey = "decision";
+      nextStepLabel = "Admin Karar / Auto Policy";
+      verifyStateLabel = "VERIFY OK";
+    }
+
+    const readinessRatio = clamp(
+      (gateOpen ? 0.26 : 0.04) +
+        routeCoverage * 0.2 +
+        (quote ? 0.12 : 0) +
+        (latest ? 0.12 : 0) +
+        (txSeen ? 0.12 : 0) +
+        verifyConfidence * 0.1 +
+        providerRatio * 0.04 +
+        (latestStatus === "approved" ? 0.12 : 0),
+      0,
+      1
+    );
+    const delayRisk = clamp(
+      timeoutRatio * 0.24 +
+        staleRatio * 0.16 +
+        queuePressure * 0.22 +
+        (1 - providerRatio) * 0.14 +
+        (1 - routeCoverage) * 0.08 +
+        (gateOpen ? 0 : 0.2) +
+        riskScore * 0.12 +
+        (manualQueueCount > 0 ? Math.min(0.14, manualQueueCount / 40) : 0),
+      0,
+      1
+    );
+    const tone =
+      nextStepKey === "gate" || latestStatus === "rejected" || delayRisk >= 0.74
+        ? "critical"
+        : delayRisk >= 0.46 || nextStepKey === "verify" || nextStepKey === "decision"
+          ? "pressure"
+          : readinessRatio >= 0.72
+            ? "advantage"
+            : "balanced";
+
+    host.dataset.tone = tone;
+    host.style.setProperty("--token-director-ready", readinessRatio.toFixed(3));
+    host.style.setProperty("--token-director-risk", delayRisk.toFixed(3));
+
+    const badge = byId("tokenActionDirectorBadge");
+    const line = byId("tokenActionDirectorLine");
+    const stepLine = byId("tokenActionDirectorStepLine");
+    if (badge) {
+      badge.textContent =
+        tone === "critical" ? "DIRECTOR ALERT" : tone === "pressure" ? "DIRECTOR WATCH" : readinessRatio >= 0.72 ? "DIRECTOR READY" : "DIRECTOR LIVE";
+      badge.className = tone === "critical" ? "badge warn" : tone === "pressure" ? "badge" : "badge info";
+    }
+    if (line) {
+      line.textContent =
+        `Quote ${quote ? "VAR" : "YOK"} | Req ${latest ? `#${asNum(latest.id)}` : "WAIT"} | ` +
+        `TX ${txSeen ? "OK" : "WAIT"} | Verify ${Math.round(verifyConfidence * 100)}% | Queue ${manualQueueCount}`;
+    }
+    if (stepLine) {
+      stepLine.textContent =
+        `Next: ${nextStepLabel} | Gate ${gateOpen ? "OPEN" : "LOCKED"} | Route ${Math.round(routeCoverage * 100)}% | Provider ${Math.round(providerRatio * 100)}%`;
+    }
+
+    setLiveStatusChip(
+      "tokenActionDirectorNextChip",
+      `NEXT ${nextStepKey.toUpperCase().slice(0, 8)}`,
+      tone === "critical" ? "critical" : tone === "pressure" ? "pressure" : "balanced",
+      readinessRatio
+    );
+    setLiveStatusChip(
+      "tokenActionDirectorGateChip",
+      gateOpen ? "GATE OPEN" : "GATE LOCK",
+      gateOpen ? "advantage" : "critical",
+      gateOpen ? 0.9 : 0.2
+    );
+    setLiveStatusChip(
+      "tokenActionDirectorRouteChip",
+      `ROUTE ${Math.round(routeCoverage * 100)}%`,
+      routeCoverage < 0.5 ? "critical" : routeCoverage < 0.85 ? "pressure" : "advantage",
+      routeCoverage
+    );
+    setLiveStatusChip(
+      "tokenActionDirectorVerifyChip",
+      verifyStateLabel,
+      verifyConfidence < 0.35 ? "critical" : verifyConfidence < 0.6 ? "pressure" : txSeen ? "advantage" : "balanced",
+      txSeen ? Math.max(verifyConfidence, 0.25) : 0.18
+    );
+    setLiveStatusChip(
+      "tokenActionDirectorQueueChip",
+      `Q ${manualQueueCount}/${pendingPayoutCount}`,
+      queuePressure > 0.7 ? "critical" : queuePressure > 0.4 ? "pressure" : "balanced",
+      queuePressure
+    );
+
+    const readinessMeter = byId("tokenActionDirectorReadinessMeter");
+    const riskMeter = byId("tokenActionDirectorRiskMeter");
+    if (readinessMeter) {
+      animateMeterWidth(readinessMeter, readinessRatio * 100, 0.24);
+      setMeterPalette(readinessMeter, readinessRatio >= 0.72 ? "safe" : readinessRatio >= 0.46 ? "balanced" : "aggressive");
+    }
+    if (riskMeter) {
+      animateMeterWidth(riskMeter, delayRisk * 100, 0.24);
+      setMeterPalette(riskMeter, delayRisk >= 0.74 ? "critical" : delayRisk >= 0.46 ? "aggressive" : "balanced");
+    }
+
+    const list = byId("tokenActionDirectorList");
+    if (list) {
+      list.innerHTML = "";
+      const appendRow = (titleText, metaText, toneKey = "ready", chipText = "OK") => {
+        const li = document.createElement("li");
+        li.className = `tokenRouteRow ${toneKey === "missing" ? "missing" : "ready"}`;
+        const left = document.createElement("div");
+        const title = document.createElement("strong");
+        title.textContent = titleText;
+        const meta = document.createElement("p");
+        meta.className = "micro";
+        meta.textContent = metaText;
+        left.appendChild(title);
+        left.appendChild(meta);
+        const chip = document.createElement("span");
+        chip.className = `adminAssetState ${toneKey === "missing" ? "missing" : toneKey === "warn" ? "warn" : "ready"}`;
+        chip.textContent = chipText;
+        li.appendChild(left);
+        li.appendChild(chip);
+        list.appendChild(li);
+      };
+
+      appendRow(
+        `Next Step: ${nextStepLabel}`,
+        `readiness ${Math.round(readinessRatio * 100)}% | delay risk ${Math.round(delayRisk * 100)}% | auto ${autoEnabled ? "ON" : "OFF"} (${autoDecisionCount})`,
+        tone === "critical" ? "missing" : tone === "pressure" ? "warn" : "ready",
+        tone === "critical" ? "ALERT" : tone === "pressure" ? "WATCH" : "GO"
+      );
+      appendRow(
+        `Routing / Provider`,
+        `route ${Math.round(routeCoverage * 100)}% | provider ${Math.round(providerRatio * 100)}% | timeout ${Math.round(timeoutRatio * 100)}% | stale ${Math.round(staleRatio * 100)}%`,
+        routeCoverage < 0.5 || providerRatio < 0.35 ? "missing" : routeCoverage < 0.85 || providerRatio < 0.7 ? "warn" : "ready",
+        providerRatio < 0.35 ? "LOW" : providerRatio < 0.7 ? "MID" : "LIVE"
+      );
+      appendRow(
+        `Lifecycle ${latest ? `#${asNum(latest.id)}` : "#-"}`,
+        latest
+          ? `${String(latestStatus || "pending").toUpperCase()} | tx ${txSeen ? maskWalletAddress(txHash) : "bekleniyor"} | verify ${Math.round(verifyConfidence * 100)}%`
+          : quote
+            ? `Quote hazir (${String(quoteData?.chain || byId("tokenChainSelect")?.value || "--").toUpperCase()}) | talep olusturulabilir`
+            : "Quote yok | zincir ve USD secimi bekleniyor",
+        latestStatus === "rejected" || latestStatus === "failed" ? "missing" : txSeen || latest ? "warn" : "ready",
+        latestStatus === "approved" ? "DONE" : txSeen ? "VERIFY" : latest ? "TX" : quote ? "REQ" : "QUOTE"
+      );
+      if (manualQueueCount > 0 || pendingPayoutCount > 0 || queuePressure > 0.22) {
+        appendRow(
+          "Queue Pressure",
+          `manual ${manualQueueCount} | payout ${pendingPayoutCount} | treasury q ${Math.round(queuePressure * 100)}% | risk ${Math.round(riskScore * 100)}%`,
+          queuePressure > 0.7 ? "missing" : queuePressure > 0.4 ? "warn" : "ready",
+          queuePressure > 0.7 ? "HIGH" : queuePressure > 0.4 ? "MID" : "LOW"
+        );
+      }
+    }
+
+    state.v3.tokenDirectorMetrics = {
+      nextStepKey,
+      nextStepLabel,
+      readinessRatio,
+      riskRatio: delayRisk,
+      verifyConfidence,
+      routeCoverage,
+      providerRatio,
+      timeoutRatio,
+      staleRatio,
+      queuePressure,
+      gateOpen,
+      manualQueueCount,
+      pendingPayoutCount,
+      tone
+    };
+    if (state.arena) {
+      state.arena.tokenDirectorUrgency = clamp((1 - readinessRatio) * 0.55 + (nextStepKey === "tx" ? 0.16 : 0) + (nextStepKey === "verify" ? 0.12 : 0), 0, 1);
+      state.arena.tokenDirectorStress = delayRisk;
+    }
+    const signalKey = `${nextStepKey}:${Math.round(readinessRatio * 100)}:${Math.round(delayRisk * 100)}:${manualQueueCount}:${pendingPayoutCount}:${gateOpen ? 1 : 0}`;
+    const now = Date.now();
+    if (signalKey !== state.v3.lastTokenDirectorSignalKey && now - asNum(state.v3.lastTokenDirectorSignalAt || 0) > 2400) {
+      state.v3.lastTokenDirectorSignalKey = signalKey;
+      state.v3.lastTokenDirectorSignalAt = now;
+      if (quote || latest || manualQueueCount > 0) {
+        triggerArenaPulse(
+          tone === "critical" ? "aggressive" : tone === "pressure" ? "warn" : "info",
+          { label: `TOKEN DIR ${nextStepKey.toUpperCase()}` }
+        );
+      }
+    }
+  }
+
   function renderAdminTreasuryRuntimeStrip(summary, tokenBootstrap = {}) {
     const host = byId("adminTreasuryRuntimeStrip");
     if (!host) {
@@ -10273,6 +10572,201 @@
     }
   }
 
+  function renderAdminDecisionTraceStrip() {
+    const host = byId("adminDecisionTraceStrip");
+    if (!host) {
+      return;
+    }
+    const queues = state.admin.queues && typeof state.admin.queues === "object" ? state.admin.queues : {};
+    const decisions = Array.isArray(queues.token_auto_decisions) ? queues.token_auto_decisions : [];
+    const manualQueue = Array.isArray(queues.token_manual_queue) ? queues.token_manual_queue : [];
+    const payoutQueue = Array.isArray(queues.payout_queue) ? queues.payout_queue : [];
+    const recent = decisions.slice(0, 20);
+    const approveCount = recent.filter((row) => /approve|approved|auto_approved/i.test(String(row?.decision || ""))).length;
+    const rejectCount = recent.filter((row) => /reject|rejected|deny|failed/i.test(String(row?.decision || ""))).length;
+    const fallbackCount = recent.filter((row) => /fallback|skip|manual/i.test(String(row?.decision || ""))).length;
+    const avgRisk =
+      recent.length > 0 ? recent.reduce((sum, row) => sum + clamp(asNum(row?.risk_score || 0), 0, 1), 0) / recent.length : 0;
+    const reasonBuckets = recent.reduce(
+      (acc, row) => {
+        const reason = String(row?.reason || "").toLowerCase();
+        const plus = (k) => {
+          acc[k] = (acc[k] || 0) + 1;
+        };
+        if (!reason) {
+          plus("none");
+        }
+        if (/risk/.test(reason)) plus("risk");
+        if (/velocity|rate/.test(reason)) plus("velocity");
+        if (/verify|quorum|provider|oracle/.test(reason)) plus("verify");
+        if (/gate|cap/.test(reason)) plus("gate");
+        if (/tx|hash|chain/.test(reason)) plus("tx");
+        if (/manual|review/.test(reason)) plus("manual");
+        if (!/(risk|velocity|rate|verify|quorum|provider|oracle|gate|cap|tx|hash|chain|manual|review)/.test(reason)) plus("other");
+        return acc;
+      },
+      {}
+    );
+    const reasonEntries = Object.entries(reasonBuckets).sort((a, b) => Number(b[1]) - Number(a[1]));
+    const topReason = reasonEntries[0]?.[0] || "none";
+    const topReasonCount = Number(reasonEntries[0]?.[1] || 0);
+    const manualPressure = clamp((manualQueue.length * 0.65 + payoutQueue.length * 0.35) / 18, 0, 1);
+    const rejectRatio = recent.length > 0 ? clamp(rejectCount / recent.length, 0, 1) : 0;
+    const approveRatio = recent.length > 0 ? clamp(approveCount / recent.length, 0, 1) : 0;
+    const decisionFlow = clamp((recent.length / 20) * 0.35 + approveRatio * 0.25 + (1 - rejectRatio) * 0.2 + (1 - manualPressure) * 0.2, 0, 1);
+    const riskPressure = clamp(avgRisk * 0.46 + rejectRatio * 0.24 + manualPressure * 0.2 + clamp(topReasonCount / 8, 0, 1) * 0.1, 0, 1);
+    const tone =
+      recent.length === 0 && manualQueue.length === 0 && payoutQueue.length === 0
+        ? "neutral"
+        : riskPressure >= 0.72 || manualPressure >= 0.75
+          ? "critical"
+          : riskPressure >= 0.44 || manualPressure >= 0.42
+            ? "pressure"
+            : "advantage";
+
+    host.dataset.tone = tone;
+    host.style.setProperty("--decision-flow", decisionFlow.toFixed(3));
+    host.style.setProperty("--decision-risk", riskPressure.toFixed(3));
+
+    const badge = byId("adminDecisionTraceBadge");
+    const line = byId("adminDecisionTraceLine");
+    const signalLine = byId("adminDecisionTraceSignalLine");
+    if (badge) {
+      badge.textContent =
+        tone === "critical" ? "TRACE ALERT" : tone === "pressure" ? "TRACE WATCH" : recent.length > 0 ? "TRACE LIVE" : "TRACE WAIT";
+      badge.className = tone === "critical" ? "badge warn" : tone === "pressure" ? "badge" : "badge info";
+    }
+    if (line) {
+      line.textContent =
+        `Auto ${recent.length} | approve ${approveCount} | reject ${rejectCount} | fallback ${fallbackCount} | manual ${manualQueue.length}`;
+    }
+    if (signalLine) {
+      signalLine.textContent =
+        `Top reason ${String(topReason).toUpperCase()} (${topReasonCount}) | avg risk ${Math.round(avgRisk * 100)}% | payout ${payoutQueue.length} | flow ${Math.round(decisionFlow * 100)}%`;
+    }
+
+    setLiveStatusChip("adminDecisionApproveChip", `APP ${approveCount}`, approveCount > 0 ? "advantage" : "neutral", clamp(approveCount / 8, 0.12, 1));
+    setLiveStatusChip(
+      "adminDecisionRejectChip",
+      `REJ ${rejectCount}`,
+      rejectCount > approveCount ? "critical" : rejectCount > 0 ? "pressure" : "neutral",
+      rejectCount > 0 ? clamp(rejectCount / 8, 0.16, 1) : 0.12
+    );
+    setLiveStatusChip(
+      "adminDecisionManualChip",
+      `MAN ${manualQueue.length}`,
+      manualQueue.length > 8 ? "critical" : manualQueue.length > 3 ? "pressure" : manualQueue.length > 0 ? "balanced" : "neutral",
+      manualQueue.length > 0 ? clamp(manualQueue.length / 15, 0.14, 1) : 0.12
+    );
+    setLiveStatusChip(
+      "adminDecisionRiskChip",
+      `RISK ${Math.round(avgRisk * 100)}%`,
+      avgRisk >= 0.65 ? "critical" : avgRisk >= 0.35 ? "pressure" : recent.length > 0 ? "balanced" : "neutral",
+      recent.length > 0 ? Math.max(avgRisk, 0.16) : 0.12
+    );
+
+    const flowMeter = byId("adminDecisionFlowMeter");
+    const riskMeter = byId("adminDecisionRiskMeter");
+    if (flowMeter) {
+      animateMeterWidth(flowMeter, decisionFlow * 100, 0.24);
+      setMeterPalette(flowMeter, decisionFlow >= 0.72 ? "safe" : decisionFlow >= 0.44 ? "balanced" : "aggressive");
+    }
+    if (riskMeter) {
+      animateMeterWidth(riskMeter, riskPressure * 100, 0.24);
+      setMeterPalette(riskMeter, riskPressure >= 0.72 ? "critical" : riskPressure >= 0.44 ? "aggressive" : "balanced");
+    }
+
+    const list = byId("adminDecisionTraceList");
+    if (list) {
+      list.innerHTML = "";
+      if (!recent.length && !manualQueue.length && !payoutQueue.length) {
+        const empty = document.createElement("li");
+        empty.className = "muted";
+        empty.textContent = "Decision traces bekleniyor.";
+        list.appendChild(empty);
+      } else {
+        const topRows = reasonEntries.slice(0, 5);
+        if (topRows.length > 0) {
+          topRows.forEach(([reason, count]) => {
+            const li = document.createElement("li");
+            const toneKey =
+              /risk|verify|gate|tx/.test(reason) ? "warn" :
+              /velocity/.test(reason) ? "missing" :
+              /manual/.test(reason) ? "warn" : "ready";
+            li.className = `tokenRouteRow ${toneKey === "missing" ? "missing" : "ready"}`;
+            const left = document.createElement("div");
+            const title = document.createElement("strong");
+            title.textContent = `Reason ${String(reason).toUpperCase()}`;
+            const meta = document.createElement("p");
+            meta.className = "micro";
+            meta.textContent = `${count} karar | reject ${rejectCount} | approve ${approveCount} | avg risk ${Math.round(avgRisk * 100)}%`;
+            left.appendChild(title);
+            left.appendChild(meta);
+            const chip = document.createElement("span");
+            chip.className = `adminAssetState ${toneKey === "missing" ? "missing" : toneKey === "warn" ? "warn" : "ready"}`;
+            chip.textContent = `${count}`;
+            li.appendChild(left);
+            li.appendChild(chip);
+            list.appendChild(li);
+          });
+        }
+        recent.slice(0, 3).forEach((row) => {
+          const decision = String(row?.decision || "").toLowerCase();
+          const bad = /reject|fail/.test(decision);
+          const li = document.createElement("li");
+          li.className = `tokenRouteRow ${bad ? "missing" : "ready"}`;
+          const left = document.createElement("div");
+          const title = document.createElement("strong");
+          title.textContent = `#${asNum(row?.request_id) || "-"} ${String(row?.decision || "-").toUpperCase()}`;
+          const meta = document.createElement("p");
+          meta.className = "micro";
+          meta.textContent = `${String(row?.reason || "reason yok")} | $${asNum(row?.usd_amount || 0).toFixed(2)} | risk ${Math.round(clamp(asNum(row?.risk_score || 0), 0, 1) * 100)}% | ${formatTime(row?.decided_at)}`;
+          left.appendChild(title);
+          left.appendChild(meta);
+          const chip = document.createElement("span");
+          chip.className = `adminAssetState ${bad ? "warn" : "ready"}`;
+          chip.textContent = bad ? "REVIEW" : "AUTO";
+          li.appendChild(left);
+          li.appendChild(chip);
+          list.appendChild(li);
+        });
+      }
+    }
+
+    state.admin.decisionTraceMetrics = {
+      sampleCount: recent.length,
+      approveCount,
+      rejectCount,
+      fallbackCount,
+      manualQueueCount: manualQueue.length,
+      payoutQueueCount: payoutQueue.length,
+      avgRisk,
+      rejectRatio,
+      approveRatio,
+      decisionFlow,
+      riskPressure,
+      topReason,
+      topReasonCount,
+      tone
+    };
+    if (state.arena) {
+      state.arena.treasuryDecisionStress = riskPressure;
+      state.arena.treasuryDecisionFlow = decisionFlow;
+    }
+    const signalKey = `${approveCount}/${rejectCount}/${manualQueue.length}:${Math.round(avgRisk * 100)}:${String(topReason)}:${Math.round(riskPressure * 100)}`;
+    const now = Date.now();
+    if (signalKey !== state.admin.lastDecisionTraceSignalKey && now - asNum(state.admin.lastDecisionTraceSignalAt || 0) > 2600) {
+      state.admin.lastDecisionTraceSignalKey = signalKey;
+      state.admin.lastDecisionTraceSignalAt = now;
+      if (recent.length > 0 || manualQueue.length > 0) {
+        triggerArenaPulse(
+          tone === "critical" ? "aggressive" : tone === "pressure" ? "warn" : "info",
+          { label: tone === "critical" ? "DECISION ALERT" : `DECISION ${approveCount}/${Math.max(recent.length, 1)}` }
+        );
+      }
+    }
+  }
+
   function renderToken(token) {
     const safe = token && typeof token === "object" ? token : {};
     const symbol = String(safe.symbol || "NXT").toUpperCase();
@@ -10328,6 +10822,7 @@
     renderTreasuryPulse(safe, state.v3.tokenQuote || null);
     renderTokenRouteRuntimeStrip(safe, state.v3.tokenQuote || null);
     renderTokenTxLifecycleStrip(safe, state.v3.tokenQuote || null);
+    renderTokenActionDirectorStrip(safe, state.v3.tokenQuote || null);
   }
 
   function renderAdmin(adminData) {
@@ -10369,6 +10864,7 @@
     renderAdminAssetStatus(state.admin.assets);
     renderAdminTreasuryRuntimeStrip(summary, state.data?.token || {});
     renderAdminProviderAlertStrip();
+    renderAdminDecisionTraceStrip();
     const spot = asNum(token.spot_usd || token.usd_price || 0);
     const minCap = asNum(gate.min);
     const targetMax = asNum(gate.targetMax);
@@ -13215,6 +13711,13 @@
       const assetOverlayRecentReject = clamp(asNum(state.arena?.assetOverlayRecentReject || 0), 0, 1);
       const assetOverlaySync = clamp(asNum(state.arena?.assetOverlaySync || 1), 0, 1);
       const assetOverlayIntegrity = clamp(asNum(state.arena?.assetOverlayIntegrity || 1), 0, 1);
+      const treasuryStress = clamp(asNum(state.arena?.treasuryStress || 0), 0, 1);
+      const treasuryRouteRisk = clamp(asNum(state.arena?.treasuryRouteRisk || 0), 0, 1);
+      const treasuryQueuePressure = clamp(asNum(state.arena?.treasuryQueuePressure || 0), 0, 1);
+      const treasuryDecisionStress = clamp(asNum(state.arena?.treasuryDecisionStress || 0), 0, 1);
+      const treasuryDecisionFlow = clamp(asNum(state.arena?.treasuryDecisionFlow || 1), 0, 1);
+      const tokenDirectorStress = clamp(asNum(state.arena?.tokenDirectorStress || 0), 0, 1);
+      const tokenDirectorUrgency = clamp(asNum(state.arena?.tokenDirectorUrgency || 0), 0, 1);
       const pvpHitBurst = clamp(asNum(state.arena?.pvpHitBurst || 0), 0, 3);
       const pvpResolveBurst = clamp(asNum(state.arena?.pvpResolveBurst || 0), 0, 3);
       const pvpCinematicBoost = clamp(asNum(state.arena?.pvpCinematicBoost || 0), 0, 1.35);
@@ -13251,6 +13754,13 @@
           pvpCinematicBoost * 0.2 +
           pvpRejectShock * 0.08 * rejectCategoryMul +
           sceneAlarmCinematic * 0.14 * sceneAlarmToneMul,
+          treasuryStress * 0.18 +
+          treasuryRouteRisk * 0.08 +
+          treasuryQueuePressure * 0.08 +
+          treasuryDecisionStress * 0.12 +
+          tokenDirectorStress * 0.08 +
+          tokenDirectorUrgency * 0.06 +
+          (1 - treasuryDecisionFlow) * 0.05 +
           assetOverlaySeverity * 0.14 +
           (1 - assetOverlaySync) * 0.06 +
           (1 - assetOverlayIntegrity) * 0.06 +
@@ -13271,7 +13781,11 @@
         (1 - pvpSyncSignal) * (cameraMode === "tactical" ? 0.12 : 0.06) +
         assetSceneRisk * 0.08 +
         assetManifestMissing * 0.06 +
-        (1 - assetManifestIntegrity) * 0.04;
+        (1 - assetManifestIntegrity) * 0.04 +
+        treasuryStress * 0.1 +
+        treasuryRouteRisk * 0.06 +
+        treasuryQueuePressure * 0.05 +
+        tokenDirectorUrgency * 0.05;
       camera.position.x += (cameraTargetX - camera.position.x) * cameraLerp;
       camera.position.y += (cameraTargetY - camera.position.y + cameraLift) * cameraLerp;
       camera.position.z += (cameraTargetZ - camera.position.z) * Math.max(0.03, Math.min(0.18, cameraLerp * 1.6));
@@ -13321,7 +13835,13 @@
         (1 - ladderSceneFreshness) * 0.55 +
         assetSceneRisk * 0.75 +
         assetManifestMissing * 0.48 +
-        (1 - assetManifestIntegrity) * 0.42;
+        (1 - assetManifestIntegrity) * 0.42 +
+        treasuryStress * 1.35 +
+        treasuryRouteRisk * 0.9 +
+        treasuryQueuePressure * 0.72 +
+        tokenDirectorUrgency * 0.62 +
+        tokenDirectorStress * 0.54 +
+        (1 - treasuryDecisionFlow) * 0.48;
       camera.fov += (targetFov - camera.fov) * 0.08;
       camera.updateProjectionMatrix();
       camera.lookAt(0, 0, 0);
@@ -13340,7 +13860,10 @@
             pvpResolveBurst * 0.1 +
             pvpHitBurst * 0.06 +
             ladderSceneActivity * 0.06 +
-            assetManifestMissing * 0.05
+            assetManifestMissing * 0.05 +
+            treasuryStress * 0.08 +
+            treasuryRouteRisk * 0.05 +
+            treasuryQueuePressure * 0.04
           ) * motionBoost - bloomPass.strength) * 0.08;
         bloomPass.radius +=
           ((0.45 +
@@ -13350,7 +13873,9 @@
               ladderSceneActivity * 0.05 +
               sceneAlarmSeverity * 0.07 +
               assetSceneRisk * 0.05 +
-              assetManifestMissing * 0.04) *
+              assetManifestMissing * 0.04 +
+              treasuryStress * 0.05 +
+              treasuryQueuePressure * 0.03) *
             motionBoost -
             bloomPass.radius) * 0.08;
         bloomPass.threshold += ((0.62 - heat * 0.16 - sceneAlarmSeverity * 0.03) - bloomPass.threshold) * 0.08;
@@ -13374,7 +13899,11 @@
               assetSceneRisk * 0.00022 +
               ladderSceneActivity * 0.00018 +
               assetManifestMissing * 0.00022 +
-              (1 - assetManifestIntegrity) * 0.00016) * motionBoost;
+              (1 - assetManifestIntegrity) * 0.00016 +
+              treasuryStress * 0.00034 +
+              treasuryRouteRisk * 0.00022 +
+              treasuryQueuePressure * 0.00018 +
+              (1 - treasuryDecisionFlow) * 0.00016) * motionBoost;
           rgbShiftPass.uniforms.amount.value = currentAmount + (targetAmount - currentAmount) * 0.12;
         }
         composer.render();
