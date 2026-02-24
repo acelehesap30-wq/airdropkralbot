@@ -1168,6 +1168,17 @@
     return bridge;
   }
 
+  function getTokenTreasuryBridge() {
+    const bridge = window.__AKR_TOKEN_TREASURY__;
+    if (!bridge || typeof bridge !== "object") {
+      return null;
+    }
+    if (typeof bridge.render !== "function") {
+      return null;
+    }
+    return bridge;
+  }
+
   function initPerfBridge() {
     const bridge = getPerfBridge();
     if (!bridge) {
@@ -9799,91 +9810,164 @@
                   ? "advantage"
                   : "balanced";
 
-    const badge = byId("tokenRouteBadge");
-    const line = byId("tokenRouteLine");
-    const coverageMeter = byId("tokenRouteCoverageMeter");
-    const quorumMeter = byId("tokenRouteQuorumMeter");
-    const routeList = byId("tokenRouteList");
-    host.dataset.tone = tone;
-    host.style.setProperty("--route-coverage", routeCoverage.toFixed(3));
-    host.style.setProperty("--route-quorum", quorumRatio.toFixed(3));
-
-    if (badge) {
-      badge.textContent = tone === "critical" ? "ROUTE ALERT" : tone === "pressure" ? "ROUTE WATCH" : gateOpen ? "ROUTE LIVE" : "ROUTE READY";
-      badge.className = tone === "critical" ? "badge warn" : tone === "pressure" ? "badge" : "badge info";
+    const tokenTreasuryBridge = getTokenTreasuryBridge();
+    let tokenRouteBridgeHandled = false;
+    if (tokenTreasuryBridge) {
+      const routeRows = chains.slice(0, 8).map((row) => {
+        const chain = String(row?.chain || "-").toUpperCase();
+        const payCurrency = String(row?.pay_currency || chain).toUpperCase();
+        const enabled = Boolean(row?.enabled);
+        const isSelected = Boolean(selectedChain && chain === selectedChain);
+        return {
+          title: `${chain} (${payCurrency})`,
+          meta: enabled ? maskWalletAddress(row?.address) : "Adres tanimli degil",
+          tone: enabled ? "ready" : "missing",
+          chip: enabled ? (isSelected ? "ACTIVE" : "READY") : "MISSING",
+          selected: isSelected
+        };
+      });
+      tokenRouteBridgeHandled =
+        tokenTreasuryBridge.render({
+          route: {
+            tone,
+            routeCoverage,
+            quorumRatio,
+            badgeText: tone === "critical" ? "ROUTE ALERT" : tone === "pressure" ? "ROUTE WATCH" : gateOpen ? "ROUTE LIVE" : "ROUTE READY",
+            badgeTone: tone === "critical" ? "warn" : tone === "pressure" ? "default" : "info",
+            lineText:
+              `${selectedChain || "CHAIN?"} | ${maskedPay || (selectedRoute?.enabled ? String(selectedRoute.address || "") : "adres yok") || "odeme rotasi bekleniyor"} | ` +
+              `Gate ${gateOpen ? "OPEN" : "LOCKED"} | Quorum ${providerCount > 0 ? Math.round(quorumRatio * 100) + "%" : "WAIT"}`,
+            chips: [
+              {
+                id: "tokenRouteCoverageChip",
+                text: `ROUTE ${enabledRoutes}/${Math.max(totalRoutes, 0)}`,
+                tone: routeCoverage < 0.5 ? "critical" : routeCoverage < 1 ? "pressure" : "advantage",
+                level: routeCoverage
+              },
+              {
+                id: "tokenRouteChainChip",
+                text: `CHAIN ${selectedChain || "--"}`,
+                tone: selectedRoute ? (selectedRoute.enabled ? "balanced" : "critical") : selectedChain ? "pressure" : "neutral",
+                level: selectedRoute?.enabled ? 0.66 : selectedChain ? 0.42 : 0.18
+              },
+              {
+                id: "tokenRoutePayChip",
+                text: payAddress ? `PAY ${maskWalletAddress(payAddress)}` : "PAY WAIT",
+                tone: payAddress ? "advantage" : quoteData ? "pressure" : "neutral",
+                level: payAddress ? 0.82 : quoteData ? 0.36 : 0.16
+              },
+              {
+                id: "tokenRouteQuorumChip",
+                text: `QRM ${providerCount > 0 ? `${okProviderCount}/${providerCount}` : quorumDecision}`,
+                tone: providerCount === 0 ? "neutral" : quorumRatio < 0.35 ? "critical" : quorumRatio < 0.6 ? "pressure" : "advantage",
+                level: providerCount === 0 ? 0.16 : quorumRatio
+              }
+            ],
+            meters: [
+              {
+                id: "tokenRouteCoverageMeter",
+                pct: routeCoverage * 100,
+                palette: routeCoverage < 0.5 ? "critical" : routeCoverage < 1 ? "aggressive" : "safe"
+              },
+              {
+                id: "tokenRouteQuorumMeter",
+                pct: quorumRatio * 100,
+                palette: providerCount === 0 ? "balanced" : quorumRatio < 0.35 ? "critical" : quorumRatio < 0.6 ? "aggressive" : "safe"
+              }
+            ],
+            rows: routeRows,
+            emptyText: "Token alimi icin odeme rotasi tanimli degil (admin env cold wallet adreslerini kontrol etmeli)."
+          }
+        }) === true;
     }
-    if (line) {
-      const chainLabel = selectedChain || "CHAIN?";
-      const payLine = maskedPay || (selectedRoute?.enabled ? String(selectedRoute.address || "") : "adres yok");
-      line.textContent =
-        `${chainLabel} | ${payLine || "odeme rotasi bekleniyor"} | ` +
-        `Gate ${gateOpen ? "OPEN" : "LOCKED"} | Quorum ${providerCount > 0 ? Math.round(quorumRatio * 100) + "%" : "WAIT"}`;
-    }
 
-    setLiveStatusChip(
-      "tokenRouteCoverageChip",
-      `ROUTE ${enabledRoutes}/${Math.max(totalRoutes, 0)}`,
-      routeCoverage < 0.5 ? "critical" : routeCoverage < 1 ? "pressure" : "advantage",
-      routeCoverage
-    );
-    setLiveStatusChip(
-      "tokenRouteChainChip",
-      `CHAIN ${selectedChain || "--"}`,
-      selectedRoute ? (selectedRoute.enabled ? "balanced" : "critical") : selectedChain ? "pressure" : "neutral",
-      selectedRoute?.enabled ? 0.66 : selectedChain ? 0.42 : 0.18
-    );
-    setLiveStatusChip(
-      "tokenRoutePayChip",
-      payAddress ? `PAY ${maskWalletAddress(payAddress)}` : "PAY WAIT",
-      payAddress ? "advantage" : quoteData ? "pressure" : "neutral",
-      payAddress ? 0.82 : quoteData ? 0.36 : 0.16
-    );
-    setLiveStatusChip(
-      "tokenRouteQuorumChip",
-      `QRM ${providerCount > 0 ? `${okProviderCount}/${providerCount}` : quorumDecision}`,
-      providerCount === 0 ? "neutral" : quorumRatio < 0.35 ? "critical" : quorumRatio < 0.6 ? "pressure" : "advantage",
-      providerCount === 0 ? 0.16 : quorumRatio
-    );
+    if (!tokenRouteBridgeHandled) {
+      const badge = byId("tokenRouteBadge");
+      const line = byId("tokenRouteLine");
+      const coverageMeter = byId("tokenRouteCoverageMeter");
+      const quorumMeter = byId("tokenRouteQuorumMeter");
+      const routeList = byId("tokenRouteList");
+      host.dataset.tone = tone;
+      host.style.setProperty("--route-coverage", routeCoverage.toFixed(3));
+      host.style.setProperty("--route-quorum", quorumRatio.toFixed(3));
 
-    if (coverageMeter) {
-      animateMeterWidth(coverageMeter, routeCoverage * 100, 0.24);
-      setMeterPalette(coverageMeter, routeCoverage < 0.5 ? "critical" : routeCoverage < 1 ? "aggressive" : "safe");
-    }
-    if (quorumMeter) {
-      animateMeterWidth(quorumMeter, quorumRatio * 100, 0.24);
-      setMeterPalette(quorumMeter, providerCount === 0 ? "balanced" : quorumRatio < 0.35 ? "critical" : quorumRatio < 0.6 ? "aggressive" : "safe");
-    }
+      if (badge) {
+        badge.textContent = tone === "critical" ? "ROUTE ALERT" : tone === "pressure" ? "ROUTE WATCH" : gateOpen ? "ROUTE LIVE" : "ROUTE READY";
+        badge.className = tone === "critical" ? "badge warn" : tone === "pressure" ? "badge" : "badge info";
+      }
+      if (line) {
+        const chainLabel = selectedChain || "CHAIN?";
+        const payLine = maskedPay || (selectedRoute?.enabled ? String(selectedRoute.address || "") : "adres yok");
+        line.textContent =
+          `${chainLabel} | ${payLine || "odeme rotasi bekleniyor"} | ` +
+          `Gate ${gateOpen ? "OPEN" : "LOCKED"} | Quorum ${providerCount > 0 ? Math.round(quorumRatio * 100) + "%" : "WAIT"}`;
+      }
 
-    if (routeList) {
-      routeList.innerHTML = "";
-      if (!chains.length) {
-        const item = document.createElement("li");
-        item.className = "muted";
-        item.textContent = "Token alimi icin odeme rotasi tanimli degil (admin env cold wallet adreslerini kontrol etmeli).";
-        routeList.appendChild(item);
-      } else {
-        chains.slice(0, 8).forEach((row) => {
-          const chain = String(row.chain || "-").toUpperCase();
-          const payCurrency = String(row.pay_currency || chain).toUpperCase();
-          const enabled = Boolean(row.enabled);
-          const isSelected = selectedChain && chain === selectedChain;
-          const li = document.createElement("li");
-          li.className = `tokenRouteRow ${enabled ? "ready" : "missing"}${isSelected ? " selected" : ""}`;
-          const left = document.createElement("div");
-          const strong = document.createElement("strong");
-          strong.textContent = `${chain} (${payCurrency})`;
-          const meta = document.createElement("p");
-          meta.className = "micro";
-          meta.textContent = enabled ? maskWalletAddress(row.address) : "Adres tanimli degil";
-          left.appendChild(strong);
-          left.appendChild(meta);
-          const chip = document.createElement("span");
-          chip.className = `adminAssetState ${enabled ? "ready" : "missing"}`;
-          chip.textContent = enabled ? (isSelected ? "ACTIVE" : "READY") : "MISSING";
-          li.appendChild(left);
-          li.appendChild(chip);
-          routeList.appendChild(li);
-        });
+      setLiveStatusChip(
+        "tokenRouteCoverageChip",
+        `ROUTE ${enabledRoutes}/${Math.max(totalRoutes, 0)}`,
+        routeCoverage < 0.5 ? "critical" : routeCoverage < 1 ? "pressure" : "advantage",
+        routeCoverage
+      );
+      setLiveStatusChip(
+        "tokenRouteChainChip",
+        `CHAIN ${selectedChain || "--"}`,
+        selectedRoute ? (selectedRoute.enabled ? "balanced" : "critical") : selectedChain ? "pressure" : "neutral",
+        selectedRoute?.enabled ? 0.66 : selectedChain ? 0.42 : 0.18
+      );
+      setLiveStatusChip(
+        "tokenRoutePayChip",
+        payAddress ? `PAY ${maskWalletAddress(payAddress)}` : "PAY WAIT",
+        payAddress ? "advantage" : quoteData ? "pressure" : "neutral",
+        payAddress ? 0.82 : quoteData ? 0.36 : 0.16
+      );
+      setLiveStatusChip(
+        "tokenRouteQuorumChip",
+        `QRM ${providerCount > 0 ? `${okProviderCount}/${providerCount}` : quorumDecision}`,
+        providerCount === 0 ? "neutral" : quorumRatio < 0.35 ? "critical" : quorumRatio < 0.6 ? "pressure" : "advantage",
+        providerCount === 0 ? 0.16 : quorumRatio
+      );
+
+      if (coverageMeter) {
+        animateMeterWidth(coverageMeter, routeCoverage * 100, 0.24);
+        setMeterPalette(coverageMeter, routeCoverage < 0.5 ? "critical" : routeCoverage < 1 ? "aggressive" : "safe");
+      }
+      if (quorumMeter) {
+        animateMeterWidth(quorumMeter, quorumRatio * 100, 0.24);
+        setMeterPalette(quorumMeter, providerCount === 0 ? "balanced" : quorumRatio < 0.35 ? "critical" : quorumRatio < 0.6 ? "aggressive" : "safe");
+      }
+
+      if (routeList) {
+        routeList.innerHTML = "";
+        if (!chains.length) {
+          const item = document.createElement("li");
+          item.className = "muted";
+          item.textContent = "Token alimi icin odeme rotasi tanimli degil (admin env cold wallet adreslerini kontrol etmeli).";
+          routeList.appendChild(item);
+        } else {
+          chains.slice(0, 8).forEach((row) => {
+            const chain = String(row.chain || "-").toUpperCase();
+            const payCurrency = String(row.pay_currency || chain).toUpperCase();
+            const enabled = Boolean(row.enabled);
+            const isSelected = selectedChain && chain === selectedChain;
+            const li = document.createElement("li");
+            li.className = `tokenRouteRow ${enabled ? "ready" : "missing"}${isSelected ? " selected" : ""}`;
+            const left = document.createElement("div");
+            const strong = document.createElement("strong");
+            strong.textContent = `${chain} (${payCurrency})`;
+            const meta = document.createElement("p");
+            meta.className = "micro";
+            meta.textContent = enabled ? maskWalletAddress(row.address) : "Adres tanimli degil";
+            left.appendChild(strong);
+            left.appendChild(meta);
+            const chip = document.createElement("span");
+            chip.className = `adminAssetState ${enabled ? "ready" : "missing"}`;
+            chip.textContent = enabled ? (isSelected ? "ACTIVE" : "READY") : "MISSING";
+            li.appendChild(left);
+            li.appendChild(chip);
+            routeList.appendChild(li);
+          });
+        }
       }
     }
 
@@ -10031,106 +10115,170 @@
                   ? "balanced"
                   : "neutral";
 
-    host.dataset.tone = tone;
-    host.style.setProperty("--token-lifecycle-progress", progressRatio.toFixed(3));
-    host.style.setProperty("--token-lifecycle-verify", verifyConfidence.toFixed(3));
-
-    const badge = byId("tokenTxLifecycleBadge");
-    const line = byId("tokenTxLifecycleLine");
-    const signalLine = byId("tokenTxLifecycleSignalLine");
-    if (badge) {
-      badge.textContent =
-        lifecycle.status === "approved"
-          ? "SETTLED"
-          : lifecycle.status === "rejected"
-            ? "REJECTED"
-            : hasRequest
-              ? "PIPELINE"
-              : quoteReady
-                ? "QUOTE READY"
-                : "IDLE";
-      badge.className = tone === "critical" ? "badge warn" : tone === "pressure" ? "badge" : "badge info";
-    }
-    if (line) {
+    const tokenTreasuryBridge = getTokenTreasuryBridge();
+    let tokenTxBridgeHandled = false;
+    if (tokenTreasuryBridge) {
       const reqLabel = latest ? `#${asNum(latest.id)} ${String(latest.status || "").toUpperCase()}` : "request yok";
       const chainLabel = String(latest?.chain || quoteData?.chain || byId("tokenChainSelect")?.value || "--").toUpperCase();
       const usdLabel = latest ? `$${asNum(latest.usd_amount).toFixed(2)}` : quote ? `$${asNum(quote.usdAmount).toFixed(2)}` : "$0.00";
-      line.textContent = `${reqLabel} | ${chainLabel} | ${usdLabel} | Gate ${gateOpen ? "OPEN" : "LOCKED"}`;
-    }
-    if (signalLine) {
-      const txLabel = txSeen ? maskWalletAddress(latest.tx_hash) : "tx bekleniyor";
+      const txLabel = txSeen ? maskWalletAddress(latest?.tx_hash) : "tx bekleniyor";
       const qLabel = providerCount > 0 ? `${okProviderCount}/${providerCount} ok | agr ${Math.round(agreementRatio * 100)}%` : "provider wait";
-      signalLine.textContent = `TX ${txLabel} | Verify ${Math.round(verifyConfidence * 100)}% | ${qLabel}`;
+      const rows = requests.slice(0, 5).map((row) => {
+        const statusInfo = classifyTokenRequestLifecycle(row?.status || "");
+        const rowTxHash = String(row?.tx_hash || "").trim();
+        return {
+          title: `#${asNum(row?.id)} ${String(row?.chain || "-").toUpperCase()} $${asNum(row?.usd_amount).toFixed(2)}`,
+          meta: `${String(row?.status || "pending").toUpperCase()} | ${rowTxHash ? maskWalletAddress(rowTxHash) : "tx yok"} | ${formatTime(row?.updated_at || row?.created_at)}`,
+          tone: statusInfo.tone === "critical" ? "missing" : statusInfo.tone === "advantage" ? "ready" : "warn",
+          chip: statusInfo.finalLabel
+        };
+      });
+      tokenTxBridgeHandled =
+        tokenTreasuryBridge.render({
+          txLifecycle: {
+            tone,
+            progressRatio,
+            verifyConfidence,
+            badgeText:
+              lifecycle.status === "approved"
+                ? "SETTLED"
+                : lifecycle.status === "rejected"
+                  ? "REJECTED"
+                  : hasRequest
+                    ? "PIPELINE"
+                    : quoteReady
+                      ? "QUOTE READY"
+                      : "IDLE",
+            badgeTone: tone === "critical" ? "warn" : tone === "pressure" ? "default" : "info",
+            lineText: `${reqLabel} | ${chainLabel} | ${usdLabel} | Gate ${gateOpen ? "OPEN" : "LOCKED"}`,
+            signalLineText: `TX ${txLabel} | Verify ${Math.round(verifyConfidence * 100)}% | ${qLabel}`,
+            chips: [
+              { id: "tokenTxQuoteChip", text: quoteReady ? "QUOTE READY" : "QUOTE WAIT", tone: quoteReady ? "balanced" : "neutral", level: quoteReady ? 0.68 : 0.16 },
+              { id: "tokenTxRequestChip", text: hasRequest ? `REQ #${asNum(latest?.id)}` : "REQ WAIT", tone: hasRequest ? (lifecycle.tone === "critical" ? "critical" : "balanced") : "neutral", level: hasRequest ? 0.52 : 0.12 },
+              { id: "tokenTxHashChip", text: txSeen ? "TX HASH OK" : hasRequest ? "TX WAIT" : "TX IDLE", tone: txSeen ? "advantage" : hasRequest ? "pressure" : "neutral", level: txSeen ? 0.82 : hasRequest ? 0.32 : 0.1 },
+              { id: "tokenTxVerifyChip", text: providerCount > 0 ? `VERIFY ${Math.round(verifyConfidence * 100)}%` : "VERIFY WAIT", tone: providerCount === 0 ? "neutral" : verifyConfidence < 0.35 ? "critical" : verifyConfidence < 0.65 ? "pressure" : "advantage", level: providerCount === 0 ? 0.14 : verifyConfidence },
+              { id: "tokenTxFinalChip", text: `FINAL ${lifecycle.finalLabel}`, tone: lifecycle.tone === "critical" ? "critical" : lifecycle.tone === "advantage" ? "advantage" : lifecycle.tone === "balanced" ? "balanced" : lifecycle.tone === "aggressive" ? "pressure" : "neutral", level: lifecycle.progress }
+            ],
+            meters: [
+              {
+                id: "tokenTxLifecycleProgressMeter",
+                pct: progressRatio * 100,
+                palette: lifecycle.tone === "critical" ? "critical" : lifecycle.tone === "advantage" ? "safe" : lifecycle.tone === "aggressive" ? "aggressive" : "balanced"
+              },
+              {
+                id: "tokenTxLifecycleVerifyMeter",
+                pct: verifyConfidence * 100,
+                palette: providerCount === 0 ? "balanced" : verifyConfidence < 0.35 ? "critical" : verifyConfidence < 0.65 ? "aggressive" : "safe"
+              }
+            ],
+            rows,
+            emptyText: "Talep akisi bos. Once quote al, sonra alim talebi olustur."
+          }
+        }) === true;
     }
 
-    setLiveStatusChip("tokenTxQuoteChip", quoteReady ? "QUOTE READY" : "QUOTE WAIT", quoteReady ? "balanced" : "neutral", quoteReady ? 0.68 : 0.16);
-    setLiveStatusChip(
-      "tokenTxRequestChip",
-      hasRequest ? `REQ #${asNum(latest.id)}` : "REQ WAIT",
-      hasRequest ? (lifecycle.tone === "critical" ? "critical" : "balanced") : "neutral",
-      hasRequest ? 0.52 : 0.12
-    );
-    setLiveStatusChip(
-      "tokenTxHashChip",
-      txSeen ? "TX HASH OK" : hasRequest ? "TX WAIT" : "TX IDLE",
-      txSeen ? "advantage" : hasRequest ? "pressure" : "neutral",
-      txSeen ? 0.82 : hasRequest ? 0.32 : 0.1
-    );
-    setLiveStatusChip(
-      "tokenTxVerifyChip",
-      providerCount > 0 ? `VERIFY ${Math.round(verifyConfidence * 100)}%` : "VERIFY WAIT",
-      providerCount === 0 ? "neutral" : verifyConfidence < 0.35 ? "critical" : verifyConfidence < 0.65 ? "pressure" : "advantage",
-      providerCount === 0 ? 0.14 : verifyConfidence
-    );
-    setLiveStatusChip(
-      "tokenTxFinalChip",
-      `FINAL ${lifecycle.finalLabel}`,
-      lifecycle.tone === "critical" ? "critical" : lifecycle.tone === "advantage" ? "advantage" : lifecycle.tone === "balanced" ? "balanced" : lifecycle.tone === "aggressive" ? "pressure" : "neutral",
-      lifecycle.progress
-    );
+    if (!tokenTxBridgeHandled) {
+      host.dataset.tone = tone;
+      host.style.setProperty("--token-lifecycle-progress", progressRatio.toFixed(3));
+      host.style.setProperty("--token-lifecycle-verify", verifyConfidence.toFixed(3));
 
-    const progressMeter = byId("tokenTxLifecycleProgressMeter");
-    const verifyMeter = byId("tokenTxLifecycleVerifyMeter");
-    if (progressMeter) {
-      animateMeterWidth(progressMeter, progressRatio * 100, 0.24);
-      setMeterPalette(progressMeter, lifecycle.tone === "critical" ? "critical" : lifecycle.tone === "advantage" ? "safe" : lifecycle.tone === "aggressive" ? "aggressive" : "balanced");
-    }
-    if (verifyMeter) {
-      animateMeterWidth(verifyMeter, verifyConfidence * 100, 0.24);
-      setMeterPalette(verifyMeter, providerCount === 0 ? "balanced" : verifyConfidence < 0.35 ? "critical" : verifyConfidence < 0.65 ? "aggressive" : "safe");
-    }
+      const badge = byId("tokenTxLifecycleBadge");
+      const line = byId("tokenTxLifecycleLine");
+      const signalLine = byId("tokenTxLifecycleSignalLine");
+      if (badge) {
+        badge.textContent =
+          lifecycle.status === "approved"
+            ? "SETTLED"
+            : lifecycle.status === "rejected"
+              ? "REJECTED"
+              : hasRequest
+                ? "PIPELINE"
+                : quoteReady
+                  ? "QUOTE READY"
+                  : "IDLE";
+        badge.className = tone === "critical" ? "badge warn" : tone === "pressure" ? "badge" : "badge info";
+      }
+      if (line) {
+        const reqLabel = latest ? `#${asNum(latest.id)} ${String(latest.status || "").toUpperCase()}` : "request yok";
+        const chainLabel = String(latest?.chain || quoteData?.chain || byId("tokenChainSelect")?.value || "--").toUpperCase();
+        const usdLabel = latest ? `$${asNum(latest.usd_amount).toFixed(2)}` : quote ? `$${asNum(quote.usdAmount).toFixed(2)}` : "$0.00";
+        line.textContent = `${reqLabel} | ${chainLabel} | ${usdLabel} | Gate ${gateOpen ? "OPEN" : "LOCKED"}`;
+      }
+      if (signalLine) {
+        const txLabel = txSeen ? maskWalletAddress(latest.tx_hash) : "tx bekleniyor";
+        const qLabel = providerCount > 0 ? `${okProviderCount}/${providerCount} ok | agr ${Math.round(agreementRatio * 100)}%` : "provider wait";
+        signalLine.textContent = `TX ${txLabel} | Verify ${Math.round(verifyConfidence * 100)}% | ${qLabel}`;
+      }
 
-    const list = byId("tokenTxLifecycleList");
-    if (list) {
-      list.innerHTML = "";
-      if (!requests.length) {
-        const li = document.createElement("li");
-        li.className = "muted";
-        li.textContent = "Talep akisi bos. Once quote al, sonra alim talebi olustur.";
-        list.appendChild(li);
-      } else {
-        requests.slice(0, 5).forEach((row) => {
-          const statusInfo = classifyTokenRequestLifecycle(row?.status || "");
+      setLiveStatusChip("tokenTxQuoteChip", quoteReady ? "QUOTE READY" : "QUOTE WAIT", quoteReady ? "balanced" : "neutral", quoteReady ? 0.68 : 0.16);
+      setLiveStatusChip(
+        "tokenTxRequestChip",
+        hasRequest ? `REQ #${asNum(latest.id)}` : "REQ WAIT",
+        hasRequest ? (lifecycle.tone === "critical" ? "critical" : "balanced") : "neutral",
+        hasRequest ? 0.52 : 0.12
+      );
+      setLiveStatusChip(
+        "tokenTxHashChip",
+        txSeen ? "TX HASH OK" : hasRequest ? "TX WAIT" : "TX IDLE",
+        txSeen ? "advantage" : hasRequest ? "pressure" : "neutral",
+        txSeen ? 0.82 : hasRequest ? 0.32 : 0.1
+      );
+      setLiveStatusChip(
+        "tokenTxVerifyChip",
+        providerCount > 0 ? `VERIFY ${Math.round(verifyConfidence * 100)}%` : "VERIFY WAIT",
+        providerCount === 0 ? "neutral" : verifyConfidence < 0.35 ? "critical" : verifyConfidence < 0.65 ? "pressure" : "advantage",
+        providerCount === 0 ? 0.14 : verifyConfidence
+      );
+      setLiveStatusChip(
+        "tokenTxFinalChip",
+        `FINAL ${lifecycle.finalLabel}`,
+        lifecycle.tone === "critical" ? "critical" : lifecycle.tone === "advantage" ? "advantage" : lifecycle.tone === "balanced" ? "balanced" : lifecycle.tone === "aggressive" ? "pressure" : "neutral",
+        lifecycle.progress
+      );
+
+      const progressMeter = byId("tokenTxLifecycleProgressMeter");
+      const verifyMeter = byId("tokenTxLifecycleVerifyMeter");
+      if (progressMeter) {
+        animateMeterWidth(progressMeter, progressRatio * 100, 0.24);
+        setMeterPalette(progressMeter, lifecycle.tone === "critical" ? "critical" : lifecycle.tone === "advantage" ? "safe" : lifecycle.tone === "aggressive" ? "aggressive" : "balanced");
+      }
+      if (verifyMeter) {
+        animateMeterWidth(verifyMeter, verifyConfidence * 100, 0.24);
+        setMeterPalette(verifyMeter, providerCount === 0 ? "balanced" : verifyConfidence < 0.35 ? "critical" : verifyConfidence < 0.65 ? "aggressive" : "safe");
+      }
+
+      const list = byId("tokenTxLifecycleList");
+      if (list) {
+        list.innerHTML = "";
+        if (!requests.length) {
           const li = document.createElement("li");
-          li.className = `tokenRouteRow ${statusInfo.tone === "critical" ? "missing" : "ready"}`;
-          const left = document.createElement("div");
-          const title = document.createElement("strong");
-          title.textContent = `#${asNum(row.id)} ${String(row.chain || "-").toUpperCase()} $${asNum(row.usd_amount).toFixed(2)}`;
-          const meta = document.createElement("p");
-          meta.className = "micro";
-          const txHash = String(row.tx_hash || "").trim();
-          meta.textContent = `${String(row.status || "pending").toUpperCase()} | ${txHash ? maskWalletAddress(txHash) : "tx yok"} | ${formatTime(row.updated_at || row.created_at)}`;
-          left.appendChild(title);
-          left.appendChild(meta);
-          const chip = document.createElement("span");
-          chip.className = `adminAssetState ${
-            statusInfo.tone === "critical" ? "missing" : statusInfo.tone === "advantage" ? "ready" : "warn"
-          }`;
-          chip.textContent = statusInfo.finalLabel;
-          li.appendChild(left);
-          li.appendChild(chip);
+          li.className = "muted";
+          li.textContent = "Talep akisi bos. Once quote al, sonra alim talebi olustur.";
           list.appendChild(li);
-        });
+        } else {
+          requests.slice(0, 5).forEach((row) => {
+            const statusInfo = classifyTokenRequestLifecycle(row?.status || "");
+            const li = document.createElement("li");
+            li.className = `tokenRouteRow ${statusInfo.tone === "critical" ? "missing" : "ready"}`;
+            const left = document.createElement("div");
+            const title = document.createElement("strong");
+            title.textContent = `#${asNum(row.id)} ${String(row.chain || "-").toUpperCase()} $${asNum(row.usd_amount).toFixed(2)}`;
+            const meta = document.createElement("p");
+            meta.className = "micro";
+            const txHash = String(row.tx_hash || "").trim();
+            meta.textContent = `${String(row.status || "pending").toUpperCase()} | ${txHash ? maskWalletAddress(txHash) : "tx yok"} | ${formatTime(row.updated_at || row.created_at)}`;
+            left.appendChild(title);
+            left.appendChild(meta);
+            const chip = document.createElement("span");
+            chip.className = `adminAssetState ${
+              statusInfo.tone === "critical" ? "missing" : statusInfo.tone === "advantage" ? "ready" : "warn"
+            }`;
+            chip.textContent = statusInfo.finalLabel;
+            li.appendChild(left);
+            li.appendChild(chip);
+            list.appendChild(li);
+          });
+        }
       }
     }
 
@@ -10271,122 +10419,239 @@
           : readinessRatio >= 0.72
             ? "advantage"
             : "balanced";
-
-    host.dataset.tone = tone;
-    host.style.setProperty("--token-director-ready", readinessRatio.toFixed(3));
-    host.style.setProperty("--token-director-risk", delayRisk.toFixed(3));
-
-    const badge = byId("tokenActionDirectorBadge");
-    const line = byId("tokenActionDirectorLine");
-    const stepLine = byId("tokenActionDirectorStepLine");
-    if (badge) {
-      badge.textContent =
-        tone === "critical" ? "DIRECTOR ALERT" : tone === "pressure" ? "DIRECTOR WATCH" : readinessRatio >= 0.72 ? "DIRECTOR READY" : "DIRECTOR LIVE";
-      badge.className = tone === "critical" ? "badge warn" : tone === "pressure" ? "badge" : "badge info";
-    }
-    if (line) {
-      line.textContent =
-        `Quote ${quote ? "VAR" : "YOK"} | Req ${latest ? `#${asNum(latest.id)}` : "WAIT"} | ` +
-        `TX ${txSeen ? "OK" : "WAIT"} | Verify ${Math.round(verifyConfidence * 100)}% | Queue ${manualQueueCount}`;
-    }
-    if (stepLine) {
-      stepLine.textContent =
-        `Next: ${nextStepLabel} | Gate ${gateOpen ? "OPEN" : "LOCKED"} | Route ${Math.round(routeCoverage * 100)}% | Provider ${Math.round(providerRatio * 100)}%`;
-    }
-
-    setLiveStatusChip(
-      "tokenActionDirectorNextChip",
-      `NEXT ${nextStepKey.toUpperCase().slice(0, 8)}`,
-      tone === "critical" ? "critical" : tone === "pressure" ? "pressure" : "balanced",
-      readinessRatio
-    );
-    setLiveStatusChip(
-      "tokenActionDirectorGateChip",
-      gateOpen ? "GATE OPEN" : "GATE LOCK",
-      gateOpen ? "advantage" : "critical",
-      gateOpen ? 0.9 : 0.2
-    );
-    setLiveStatusChip(
-      "tokenActionDirectorRouteChip",
-      `ROUTE ${Math.round(routeCoverage * 100)}%`,
-      routeCoverage < 0.5 ? "critical" : routeCoverage < 0.85 ? "pressure" : "advantage",
-      routeCoverage
-    );
-    setLiveStatusChip(
-      "tokenActionDirectorVerifyChip",
-      verifyStateLabel,
-      verifyConfidence < 0.35 ? "critical" : verifyConfidence < 0.6 ? "pressure" : txSeen ? "advantage" : "balanced",
-      txSeen ? Math.max(verifyConfidence, 0.25) : 0.18
-    );
-    setLiveStatusChip(
-      "tokenActionDirectorQueueChip",
-      `Q ${manualQueueCount}/${pendingPayoutCount}`,
-      queuePressure > 0.7 ? "critical" : queuePressure > 0.4 ? "pressure" : "balanced",
-      queuePressure
-    );
-
-    const readinessMeter = byId("tokenActionDirectorReadinessMeter");
-    const riskMeter = byId("tokenActionDirectorRiskMeter");
-    if (readinessMeter) {
-      animateMeterWidth(readinessMeter, readinessRatio * 100, 0.24);
-      setMeterPalette(readinessMeter, readinessRatio >= 0.72 ? "safe" : readinessRatio >= 0.46 ? "balanced" : "aggressive");
-    }
-    if (riskMeter) {
-      animateMeterWidth(riskMeter, delayRisk * 100, 0.24);
-      setMeterPalette(riskMeter, delayRisk >= 0.74 ? "critical" : delayRisk >= 0.46 ? "aggressive" : "balanced");
-    }
-
-    const list = byId("tokenActionDirectorList");
-    if (list) {
-      list.innerHTML = "";
-      const appendRow = (titleText, metaText, toneKey = "ready", chipText = "OK") => {
-        const li = document.createElement("li");
-        li.className = `tokenRouteRow ${toneKey === "missing" ? "missing" : "ready"}`;
-        const left = document.createElement("div");
-        const title = document.createElement("strong");
-        title.textContent = titleText;
-        const meta = document.createElement("p");
-        meta.className = "micro";
-        meta.textContent = metaText;
-        left.appendChild(title);
-        left.appendChild(meta);
-        const chip = document.createElement("span");
-        chip.className = `adminAssetState ${toneKey === "missing" ? "missing" : toneKey === "warn" ? "warn" : "ready"}`;
-        chip.textContent = chipText;
-        li.appendChild(left);
-        li.appendChild(chip);
-        list.appendChild(li);
-      };
-
-      appendRow(
-        `Next Step: ${nextStepLabel}`,
-        `readiness ${Math.round(readinessRatio * 100)}% | delay risk ${Math.round(delayRisk * 100)}% | auto ${autoEnabled ? "ON" : "OFF"} (${autoDecisionCount})`,
-        tone === "critical" ? "missing" : tone === "pressure" ? "warn" : "ready",
-        tone === "critical" ? "ALERT" : tone === "pressure" ? "WATCH" : "GO"
-      );
-      appendRow(
-        `Routing / Provider`,
-        `route ${Math.round(routeCoverage * 100)}% | provider ${Math.round(providerRatio * 100)}% | timeout ${Math.round(timeoutRatio * 100)}% | stale ${Math.round(staleRatio * 100)}%`,
-        routeCoverage < 0.5 || providerRatio < 0.35 ? "missing" : routeCoverage < 0.85 || providerRatio < 0.7 ? "warn" : "ready",
-        providerRatio < 0.35 ? "LOW" : providerRatio < 0.7 ? "MID" : "LIVE"
-      );
-      appendRow(
-        `Lifecycle ${latest ? `#${asNum(latest.id)}` : "#-"}`,
-        latest
-          ? `${String(latestStatus || "pending").toUpperCase()} | tx ${txSeen ? maskWalletAddress(txHash) : "bekleniyor"} | verify ${Math.round(verifyConfidence * 100)}%`
-          : quote
-            ? `Quote hazir (${String(quoteData?.chain || byId("tokenChainSelect")?.value || "--").toUpperCase()}) | talep olusturulabilir`
-            : "Quote yok | zincir ve USD secimi bekleniyor",
-        latestStatus === "rejected" || latestStatus === "failed" ? "missing" : txSeen || latest ? "warn" : "ready",
-        latestStatus === "approved" ? "DONE" : txSeen ? "VERIFY" : latest ? "TX" : quote ? "REQ" : "QUOTE"
-      );
+    const tokenTreasuryBridge = getTokenTreasuryBridge();
+    let tokenDirectorBridgeHandled = false;
+    if (tokenTreasuryBridge) {
+      const directorRows = [
+        {
+          title: `Next Step: ${nextStepLabel}`,
+          meta:
+            `readiness ${Math.round(readinessRatio * 100)}% | delay risk ${Math.round(delayRisk * 100)}% | ` +
+            `auto ${autoEnabled ? "ON" : "OFF"} (${autoDecisionCount})`,
+          tone: tone === "critical" ? "missing" : tone === "pressure" ? "warn" : "ready",
+          chip: tone === "critical" ? "ALERT" : tone === "pressure" ? "WATCH" : "GO"
+        },
+        {
+          title: "Routing / Provider",
+          meta:
+            `route ${Math.round(routeCoverage * 100)}% | provider ${Math.round(providerRatio * 100)}% | ` +
+            `timeout ${Math.round(timeoutRatio * 100)}% | stale ${Math.round(staleRatio * 100)}%`,
+          tone:
+            routeCoverage < 0.5 || providerRatio < 0.35
+              ? "missing"
+              : routeCoverage < 0.85 || providerRatio < 0.7
+                ? "warn"
+                : "ready",
+          chip: providerRatio < 0.35 ? "LOW" : providerRatio < 0.7 ? "MID" : "LIVE"
+        },
+        {
+          title: `Lifecycle ${latest ? `#${asNum(latest.id)}` : "#-"}`,
+          meta: latest
+            ? `${String(latestStatus || "pending").toUpperCase()} | tx ${txSeen ? maskWalletAddress(txHash) : "bekleniyor"} | verify ${Math.round(verifyConfidence * 100)}%`
+            : quote
+              ? `Quote hazir (${String(quoteData?.chain || byId("tokenChainSelect")?.value || "--").toUpperCase()}) | talep olusturulabilir`
+              : "Quote yok | zincir ve USD secimi bekleniyor",
+          tone: latestStatus === "rejected" || latestStatus === "failed" ? "missing" : txSeen || latest ? "warn" : "ready",
+          chip: latestStatus === "approved" ? "DONE" : txSeen ? "VERIFY" : latest ? "TX" : quote ? "REQ" : "QUOTE"
+        }
+      ];
       if (manualQueueCount > 0 || pendingPayoutCount > 0 || queuePressure > 0.22) {
+        directorRows.push({
+          title: "Queue Pressure",
+          meta:
+            `manual ${manualQueueCount} | payout ${pendingPayoutCount} | treasury q ${Math.round(queuePressure * 100)}% | ` +
+            `risk ${Math.round(riskScore * 100)}%`,
+          tone: queuePressure > 0.7 ? "missing" : queuePressure > 0.4 ? "warn" : "ready",
+          chip: queuePressure > 0.7 ? "HIGH" : queuePressure > 0.4 ? "MID" : "LOW"
+        });
+      }
+      tokenDirectorBridgeHandled =
+        tokenTreasuryBridge.render({
+          actionDirector: {
+            tone,
+            readinessRatio,
+            riskRatio: delayRisk,
+            badgeText:
+              tone === "critical"
+                ? "DIRECTOR ALERT"
+                : tone === "pressure"
+                  ? "DIRECTOR WATCH"
+                  : readinessRatio >= 0.72
+                    ? "DIRECTOR READY"
+                    : "DIRECTOR LIVE",
+            badgeTone: tone === "critical" ? "warn" : tone === "pressure" ? "default" : "info",
+            lineText:
+              `Quote ${quote ? "VAR" : "YOK"} | Req ${latest ? `#${asNum(latest.id)}` : "WAIT"} | ` +
+              `TX ${txSeen ? "OK" : "WAIT"} | Verify ${Math.round(verifyConfidence * 100)}% | Queue ${manualQueueCount}`,
+            stepLineText:
+              `Next: ${nextStepLabel} | Gate ${gateOpen ? "OPEN" : "LOCKED"} | Route ${Math.round(routeCoverage * 100)}% | ` +
+              `Provider ${Math.round(providerRatio * 100)}%`,
+            chips: [
+              {
+                id: "tokenActionDirectorNextChip",
+                text: `NEXT ${nextStepKey.toUpperCase().slice(0, 8)}`,
+                tone: tone === "critical" ? "critical" : tone === "pressure" ? "pressure" : "balanced",
+                level: readinessRatio
+              },
+              {
+                id: "tokenActionDirectorGateChip",
+                text: gateOpen ? "GATE OPEN" : "GATE LOCK",
+                tone: gateOpen ? "advantage" : "critical",
+                level: gateOpen ? 0.9 : 0.2
+              },
+              {
+                id: "tokenActionDirectorRouteChip",
+                text: `ROUTE ${Math.round(routeCoverage * 100)}%`,
+                tone: routeCoverage < 0.5 ? "critical" : routeCoverage < 0.85 ? "pressure" : "advantage",
+                level: routeCoverage
+              },
+              {
+                id: "tokenActionDirectorVerifyChip",
+                text: verifyStateLabel,
+                tone: verifyConfidence < 0.35 ? "critical" : verifyConfidence < 0.6 ? "pressure" : txSeen ? "advantage" : "balanced",
+                level: txSeen ? Math.max(verifyConfidence, 0.25) : 0.18
+              },
+              {
+                id: "tokenActionDirectorQueueChip",
+                text: `Q ${manualQueueCount}/${pendingPayoutCount}`,
+                tone: queuePressure > 0.7 ? "critical" : queuePressure > 0.4 ? "pressure" : "balanced",
+                level: queuePressure
+              }
+            ],
+            meters: [
+              {
+                id: "tokenActionDirectorReadinessMeter",
+                pct: readinessRatio * 100,
+                palette: readinessRatio >= 0.72 ? "safe" : readinessRatio >= 0.46 ? "balanced" : "aggressive"
+              },
+              {
+                id: "tokenActionDirectorRiskMeter",
+                pct: delayRisk * 100,
+                palette: delayRisk >= 0.74 ? "critical" : delayRisk >= 0.46 ? "aggressive" : "balanced"
+              }
+            ],
+            rows: directorRows
+          }
+        }) === true;
+    }
+
+    if (!tokenDirectorBridgeHandled) {
+      host.dataset.tone = tone;
+      host.style.setProperty("--token-director-ready", readinessRatio.toFixed(3));
+      host.style.setProperty("--token-director-risk", delayRisk.toFixed(3));
+
+      const badge = byId("tokenActionDirectorBadge");
+      const line = byId("tokenActionDirectorLine");
+      const stepLine = byId("tokenActionDirectorStepLine");
+      if (badge) {
+        badge.textContent =
+          tone === "critical" ? "DIRECTOR ALERT" : tone === "pressure" ? "DIRECTOR WATCH" : readinessRatio >= 0.72 ? "DIRECTOR READY" : "DIRECTOR LIVE";
+        badge.className = tone === "critical" ? "badge warn" : tone === "pressure" ? "badge" : "badge info";
+      }
+      if (line) {
+        line.textContent =
+          `Quote ${quote ? "VAR" : "YOK"} | Req ${latest ? `#${asNum(latest.id)}` : "WAIT"} | ` +
+          `TX ${txSeen ? "OK" : "WAIT"} | Verify ${Math.round(verifyConfidence * 100)}% | Queue ${manualQueueCount}`;
+      }
+      if (stepLine) {
+        stepLine.textContent =
+          `Next: ${nextStepLabel} | Gate ${gateOpen ? "OPEN" : "LOCKED"} | Route ${Math.round(routeCoverage * 100)}% | Provider ${Math.round(providerRatio * 100)}%`;
+      }
+
+      setLiveStatusChip(
+        "tokenActionDirectorNextChip",
+        `NEXT ${nextStepKey.toUpperCase().slice(0, 8)}`,
+        tone === "critical" ? "critical" : tone === "pressure" ? "pressure" : "balanced",
+        readinessRatio
+      );
+      setLiveStatusChip(
+        "tokenActionDirectorGateChip",
+        gateOpen ? "GATE OPEN" : "GATE LOCK",
+        gateOpen ? "advantage" : "critical",
+        gateOpen ? 0.9 : 0.2
+      );
+      setLiveStatusChip(
+        "tokenActionDirectorRouteChip",
+        `ROUTE ${Math.round(routeCoverage * 100)}%`,
+        routeCoverage < 0.5 ? "critical" : routeCoverage < 0.85 ? "pressure" : "advantage",
+        routeCoverage
+      );
+      setLiveStatusChip(
+        "tokenActionDirectorVerifyChip",
+        verifyStateLabel,
+        verifyConfidence < 0.35 ? "critical" : verifyConfidence < 0.6 ? "pressure" : txSeen ? "advantage" : "balanced",
+        txSeen ? Math.max(verifyConfidence, 0.25) : 0.18
+      );
+      setLiveStatusChip(
+        "tokenActionDirectorQueueChip",
+        `Q ${manualQueueCount}/${pendingPayoutCount}`,
+        queuePressure > 0.7 ? "critical" : queuePressure > 0.4 ? "pressure" : "balanced",
+        queuePressure
+      );
+
+      const readinessMeter = byId("tokenActionDirectorReadinessMeter");
+      const riskMeter = byId("tokenActionDirectorRiskMeter");
+      if (readinessMeter) {
+        animateMeterWidth(readinessMeter, readinessRatio * 100, 0.24);
+        setMeterPalette(readinessMeter, readinessRatio >= 0.72 ? "safe" : readinessRatio >= 0.46 ? "balanced" : "aggressive");
+      }
+      if (riskMeter) {
+        animateMeterWidth(riskMeter, delayRisk * 100, 0.24);
+        setMeterPalette(riskMeter, delayRisk >= 0.74 ? "critical" : delayRisk >= 0.46 ? "aggressive" : "balanced");
+      }
+
+      const list = byId("tokenActionDirectorList");
+      if (list) {
+        list.innerHTML = "";
+        const appendRow = (titleText, metaText, toneKey = "ready", chipText = "OK") => {
+          const li = document.createElement("li");
+          li.className = `tokenRouteRow ${toneKey === "missing" ? "missing" : "ready"}`;
+          const left = document.createElement("div");
+          const title = document.createElement("strong");
+          title.textContent = titleText;
+          const meta = document.createElement("p");
+          meta.className = "micro";
+          meta.textContent = metaText;
+          left.appendChild(title);
+          left.appendChild(meta);
+          const chip = document.createElement("span");
+          chip.className = `adminAssetState ${toneKey === "missing" ? "missing" : toneKey === "warn" ? "warn" : "ready"}`;
+          chip.textContent = chipText;
+          li.appendChild(left);
+          li.appendChild(chip);
+          list.appendChild(li);
+        };
+
         appendRow(
-          "Queue Pressure",
-          `manual ${manualQueueCount} | payout ${pendingPayoutCount} | treasury q ${Math.round(queuePressure * 100)}% | risk ${Math.round(riskScore * 100)}%`,
-          queuePressure > 0.7 ? "missing" : queuePressure > 0.4 ? "warn" : "ready",
-          queuePressure > 0.7 ? "HIGH" : queuePressure > 0.4 ? "MID" : "LOW"
+          `Next Step: ${nextStepLabel}`,
+          `readiness ${Math.round(readinessRatio * 100)}% | delay risk ${Math.round(delayRisk * 100)}% | auto ${autoEnabled ? "ON" : "OFF"} (${autoDecisionCount})`,
+          tone === "critical" ? "missing" : tone === "pressure" ? "warn" : "ready",
+          tone === "critical" ? "ALERT" : tone === "pressure" ? "WATCH" : "GO"
         );
+        appendRow(
+          `Routing / Provider`,
+          `route ${Math.round(routeCoverage * 100)}% | provider ${Math.round(providerRatio * 100)}% | timeout ${Math.round(timeoutRatio * 100)}% | stale ${Math.round(staleRatio * 100)}%`,
+          routeCoverage < 0.5 || providerRatio < 0.35 ? "missing" : routeCoverage < 0.85 || providerRatio < 0.7 ? "warn" : "ready",
+          providerRatio < 0.35 ? "LOW" : providerRatio < 0.7 ? "MID" : "LIVE"
+        );
+        appendRow(
+          `Lifecycle ${latest ? `#${asNum(latest.id)}` : "#-"}`,
+          latest
+            ? `${String(latestStatus || "pending").toUpperCase()} | tx ${txSeen ? maskWalletAddress(txHash) : "bekleniyor"} | verify ${Math.round(verifyConfidence * 100)}%`
+            : quote
+              ? `Quote hazir (${String(quoteData?.chain || byId("tokenChainSelect")?.value || "--").toUpperCase()}) | talep olusturulabilir`
+              : "Quote yok | zincir ve USD secimi bekleniyor",
+          latestStatus === "rejected" || latestStatus === "failed" ? "missing" : txSeen || latest ? "warn" : "ready",
+          latestStatus === "approved" ? "DONE" : txSeen ? "VERIFY" : latest ? "TX" : quote ? "REQ" : "QUOTE"
+        );
+        if (manualQueueCount > 0 || pendingPayoutCount > 0 || queuePressure > 0.22) {
+          appendRow(
+            "Queue Pressure",
+            `manual ${manualQueueCount} | payout ${pendingPayoutCount} | treasury q ${Math.round(queuePressure * 100)}% | risk ${Math.round(riskScore * 100)}%`,
+            queuePressure > 0.7 ? "missing" : queuePressure > 0.4 ? "warn" : "ready",
+            queuePressure > 0.7 ? "HIGH" : queuePressure > 0.4 ? "MID" : "LOW"
+          );
+        }
       }
     }
 
