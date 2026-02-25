@@ -763,6 +763,7 @@
 
     const assetManifest = state.v3?.assetManifestMeta || {};
     const assetRuntime = state.admin?.assetRuntimeMetrics || {};
+    const stateMutatorBridge = getStateMutatorBridge();
     const rejectInfo = classifyPvpRejectReason(state.v3?.pvpLastRejectReason || "");
     const rejectCategory = String(rejectInfo.category || "none");
     const rejectAgeMs = Math.max(0, Date.now() - asNum(state.v3?.pvpLastActionAt || 0));
@@ -803,96 +804,146 @@
     const integrityLineText = recentReject
       ? `Reject ${String(rejectInfo.label || rejectCategory).toUpperCase()} | q ${queueSize} | asset ${Math.round((1 - assetRisk) * 100)}% | rev ${String(assetManifest.manifestRevision || state.telemetry.manifestRevision || "local").slice(0, 10)}`
       : `Asset ${Math.round(readyRatio * 100)}% ready | sync ${Math.round(syncRatio * 100)}% | integrity ${Math.round(integrityRatio * 100)}% | ladder ${Math.round(ladderPressure * 100)}%`;
+    const derivedIntegrity =
+      stateMutatorBridge && typeof stateMutatorBridge.computeSceneIntegrityOverlayMetrics === "function"
+        ? (() => {
+            try {
+              return stateMutatorBridge.computeSceneIntegrityOverlayMetrics({
+                assetManifest,
+                assetRuntime,
+                ladder,
+                telemetry: state.telemetry || {},
+                pvp: {
+                  lastRejected: state.v3?.pvpLastRejected,
+                  lastRejectReason: state.v3?.pvpLastRejectReason,
+                  lastActionAt: state.v3?.pvpLastActionAt
+                },
+                queueSize,
+                readyRatio,
+                syncRatio,
+                integrityRatio,
+                missingRatio,
+                ladderPressure,
+                ladderFreshness,
+                nowMs: Date.now()
+              });
+            } catch (err) {
+              console.warn("[v3-state-bridge] computeSceneIntegrityOverlayMetrics failed", err);
+              return null;
+            }
+          })()
+        : null;
+    const sceneIntReadyRatio = clamp(asNum(derivedIntegrity?.readyRatio ?? readyRatio), 0, 1);
+    const sceneIntSyncRatio = clamp(asNum(derivedIntegrity?.syncRatio ?? syncRatio), 0, 1);
+    const sceneIntIntegrityRatio = clamp(asNum(derivedIntegrity?.integrityRatio ?? integrityRatio), 0, 1);
+    const sceneIntAssetRisk = clamp(asNum(derivedIntegrity?.assetRisk ?? assetRisk), 0, 1);
+    const sceneIntLadderPressure = clamp(asNum(derivedIntegrity?.ladderPressure ?? ladderPressure), 0, 1);
+    const sceneIntLadderFreshness = clamp(asNum(derivedIntegrity?.ladderFreshness ?? ladderFreshness), 0, 1);
+    const sceneIntRecentReject = Boolean(derivedIntegrity?.recentReject ?? recentReject);
+    const sceneIntRejectShock = clamp(asNum(derivedIntegrity?.rejectShock ?? rejectShock), 0, 1);
+    const sceneIntSeverity = clamp(asNum(derivedIntegrity?.severity ?? severity), 0, 1);
+    const sceneIntTone = String(derivedIntegrity?.tone || tone || "balanced");
+    const sceneIntActive = Boolean(derivedIntegrity?.active ?? active);
+    const sceneIntSweep = clamp(asNum(derivedIntegrity?.integritySweep ?? integritySweep), 0, 1);
+    const sceneIntFlash = clamp(asNum(derivedIntegrity?.integrityFlash ?? integrityFlash), 0, 1);
+    const sceneIntBadgeText = String(derivedIntegrity?.integrityBadgeText || integrityBadgeText);
+    const sceneIntBadgeTone = String(derivedIntegrity?.integrityBadgeTone || integrityBadgeTone);
+    const sceneIntLineText = String(derivedIntegrity?.integrityLineText || integrityLineText);
+    const sceneIntRejectChipText = String(derivedIntegrity?.rejectChipText || `REJ ${recentReject ? (rejectInfo.shortLabel || rejectCategory.toUpperCase()) : "--"}`);
+    const sceneIntRejectChipTone = String(
+      derivedIntegrity?.rejectChipTone || (recentReject ? (String(rejectInfo.tone || "critical") === "pressure" ? "pressure" : "critical") : "neutral")
+    );
+    const sceneIntRejectChipLevel = clamp(asNum(derivedIntegrity?.rejectChipLevel ?? (recentReject ? rejectShock : 0.18)), 0, 1);
     const integrityHandled = sceneTelemetryBridge
       ? sceneTelemetryBridge.render({
           integrity: {
-            visible: active,
-            tone,
-            state: active ? "active" : "idle",
-            sweep: integritySweep,
-            flash: integrityFlash,
-            badgeText: integrityBadgeText,
-            badgeTone: integrityBadgeTone,
-            lineText: integrityLineText,
-            meterPct: severity * 100,
-            meterPalette: tone === "critical" ? "critical" : tone === "pressure" ? "aggressive" : "balanced",
+            visible: sceneIntActive,
+            tone: sceneIntTone,
+            state: sceneIntActive ? "active" : "idle",
+            sweep: sceneIntSweep,
+            flash: sceneIntFlash,
+            badgeText: sceneIntBadgeText,
+            badgeTone: sceneIntBadgeTone,
+            lineText: sceneIntLineText,
+            meterPct: sceneIntSeverity * 100,
+            meterPalette: sceneIntTone === "critical" ? "critical" : sceneIntTone === "pressure" ? "aggressive" : "balanced",
             chips: [
               {
                 id: "sceneIntegrityOverlayAssetChip",
-                text: `AST ${Math.round(readyRatio * 100)}%`,
-                tone: assetRisk >= 0.58 ? "critical" : assetRisk >= 0.3 ? "pressure" : "advantage",
-                level: readyRatio
+                text: `AST ${Math.round(sceneIntReadyRatio * 100)}%`,
+                tone: sceneIntAssetRisk >= 0.58 ? "critical" : sceneIntAssetRisk >= 0.3 ? "pressure" : "advantage",
+                level: sceneIntReadyRatio
               },
               {
                 id: "sceneIntegrityOverlayIntegrityChip",
-                text: `INT ${Math.round(integrityRatio * 100)}%`,
-                tone: integrityRatio < 0.72 ? "critical" : integrityRatio < 0.92 ? "pressure" : "advantage",
-                level: integrityRatio
+                text: `INT ${Math.round(sceneIntIntegrityRatio * 100)}%`,
+                tone: sceneIntIntegrityRatio < 0.72 ? "critical" : sceneIntIntegrityRatio < 0.92 ? "pressure" : "advantage",
+                level: sceneIntIntegrityRatio
               },
               {
                 id: "sceneIntegrityOverlaySyncChip",
-                text: `SYNC ${Math.round(syncRatio * 100)}%`,
-                tone: syncRatio < 0.7 ? "critical" : syncRatio < 0.9 ? "pressure" : "balanced",
-                level: syncRatio
+                text: `SYNC ${Math.round(sceneIntSyncRatio * 100)}%`,
+                tone: sceneIntSyncRatio < 0.7 ? "critical" : sceneIntSyncRatio < 0.9 ? "pressure" : "balanced",
+                level: sceneIntSyncRatio
               },
               {
                 id: "sceneIntegrityOverlayRejectChip",
-                text: `REJ ${recentReject ? (rejectInfo.shortLabel || rejectCategory.toUpperCase()) : "--"}`,
-                tone: recentReject ? (String(rejectInfo.tone || "critical") === "pressure" ? "pressure" : "critical") : "neutral",
-                level: recentReject ? rejectShock : 0.18
+                text: sceneIntRejectChipText,
+                tone: sceneIntRejectChipTone,
+                level: sceneIntRejectChipLevel
               }
             ]
           }
         })
       : false;
     if (!integrityHandled) {
-      root.classList.toggle("hidden", !active);
-      root.dataset.tone = tone;
-      root.dataset.state = active ? "active" : "idle";
-      root.style.setProperty("--scene-integrity-sweep", integritySweep.toFixed(3));
-      root.style.setProperty("--scene-integrity-flash", integrityFlash.toFixed(3));
+      root.classList.toggle("hidden", !sceneIntActive);
+      root.dataset.tone = sceneIntTone;
+      root.dataset.state = sceneIntActive ? "active" : "idle";
+      root.style.setProperty("--scene-integrity-sweep", sceneIntSweep.toFixed(3));
+      root.style.setProperty("--scene-integrity-flash", sceneIntFlash.toFixed(3));
 
       setLiveStatusChip(
         "sceneIntegrityOverlayAssetChip",
-        `AST ${Math.round(readyRatio * 100)}%`,
-        assetRisk >= 0.58 ? "critical" : assetRisk >= 0.3 ? "pressure" : "advantage",
-        readyRatio
+        `AST ${Math.round(sceneIntReadyRatio * 100)}%`,
+        sceneIntAssetRisk >= 0.58 ? "critical" : sceneIntAssetRisk >= 0.3 ? "pressure" : "advantage",
+        sceneIntReadyRatio
       );
       setLiveStatusChip(
         "sceneIntegrityOverlayIntegrityChip",
-        `INT ${Math.round(integrityRatio * 100)}%`,
-        integrityRatio < 0.72 ? "critical" : integrityRatio < 0.92 ? "pressure" : "advantage",
-        integrityRatio
+        `INT ${Math.round(sceneIntIntegrityRatio * 100)}%`,
+        sceneIntIntegrityRatio < 0.72 ? "critical" : sceneIntIntegrityRatio < 0.92 ? "pressure" : "advantage",
+        sceneIntIntegrityRatio
       );
       setLiveStatusChip(
         "sceneIntegrityOverlaySyncChip",
-        `SYNC ${Math.round(syncRatio * 100)}%`,
-        syncRatio < 0.7 ? "critical" : syncRatio < 0.9 ? "pressure" : "balanced",
-        syncRatio
+        `SYNC ${Math.round(sceneIntSyncRatio * 100)}%`,
+        sceneIntSyncRatio < 0.7 ? "critical" : sceneIntSyncRatio < 0.9 ? "pressure" : "balanced",
+        sceneIntSyncRatio
       );
       setLiveStatusChip(
         "sceneIntegrityOverlayRejectChip",
-        `REJ ${recentReject ? (rejectInfo.shortLabel || rejectCategory.toUpperCase()) : "--"}`,
-        recentReject ? (String(rejectInfo.tone || "critical") === "pressure" ? "pressure" : "critical") : "neutral",
-        recentReject ? rejectShock : 0.18
+        sceneIntRejectChipText,
+        sceneIntRejectChipTone,
+        sceneIntRejectChipLevel
       );
 
-      badge.textContent = integrityBadgeText;
-      badge.className = integrityBadgeTone === "warn" ? "badge warn" : integrityBadgeTone === "default" ? "badge" : "badge info";
+      badge.textContent = sceneIntBadgeText;
+      badge.className = sceneIntBadgeTone === "warn" ? "badge warn" : sceneIntBadgeTone === "default" ? "badge" : "badge info";
 
-      animateTextSwap(line, integrityLineText);
-      animateMeterWidth(meter, severity * 100, 0.2);
-      setMeterPalette(meter, tone === "critical" ? "critical" : tone === "pressure" ? "aggressive" : "balanced");
+      animateTextSwap(line, sceneIntLineText);
+      animateMeterWidth(meter, sceneIntSeverity * 100, 0.2);
+      setMeterPalette(meter, sceneIntTone === "critical" ? "critical" : sceneIntTone === "pressure" ? "aggressive" : "balanced");
     }
 
     if (state.arena) {
-      state.arena.assetOverlaySeverity = clamp(asNum(state.arena.assetOverlaySeverity ?? severity) * 0.72 + severity * 0.28, 0, 1);
-      state.arena.assetOverlayTone = tone;
-      state.arena.assetOverlayRecentReject = recentReject ? 1 : 0;
-      state.arena.assetOverlaySync = syncRatio;
-      state.arena.assetOverlayIntegrity = integrityRatio;
-      if (recentReject || assetRisk >= 0.58 || integrityRatio < 0.75) {
-        state.arena.scenePulseAmbient = Math.min(3.2, asNum(state.arena.scenePulseAmbient || 0) + (recentReject ? 0.14 : 0.08) + severity * 0.04);
+      state.arena.assetOverlaySeverity = clamp(asNum(state.arena.assetOverlaySeverity ?? sceneIntSeverity) * 0.72 + sceneIntSeverity * 0.28, 0, 1);
+      state.arena.assetOverlayTone = sceneIntTone;
+      state.arena.assetOverlayRecentReject = sceneIntRecentReject ? 1 : 0;
+      state.arena.assetOverlaySync = sceneIntSyncRatio;
+      state.arena.assetOverlayIntegrity = sceneIntIntegrityRatio;
+      if (sceneIntRecentReject || sceneIntAssetRisk >= 0.58 || sceneIntIntegrityRatio < 0.75) {
+        state.arena.scenePulseAmbient = Math.min(3.2, asNum(state.arena.scenePulseAmbient || 0) + (sceneIntRecentReject ? 0.14 : 0.08) + sceneIntSeverity * 0.04);
       }
     }
   }

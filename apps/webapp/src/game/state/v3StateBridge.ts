@@ -189,6 +189,29 @@ type SceneAlarmMetrics = {
   rejectCode: string;
 };
 
+type SceneIntegrityOverlayMetrics = {
+  readyRatio: number;
+  syncRatio: number;
+  integrityRatio: number;
+  missingRatio: number;
+  assetRisk: number;
+  ladderPressure: number;
+  ladderFreshness: number;
+  recentReject: boolean;
+  rejectShock: number;
+  severity: number;
+  tone: string;
+  active: boolean;
+  integritySweep: number;
+  integrityFlash: number;
+  integrityBadgeText: string;
+  integrityBadgeTone: "warn" | "default" | "info";
+  integrityLineText: string;
+  rejectChipText: string;
+  rejectChipTone: string;
+  rejectChipLevel: number;
+};
+
 type V3StateMutatorBridge = {
   computeAssetManifestMetrics: (manifestPayload: any) => AssetManifestMetrics;
   computePvpLeaderboardState: (payloadData: any, currentTransport?: string) => PvpLeaderboardState;
@@ -200,6 +223,7 @@ type V3StateMutatorBridge = {
   computeDecisionTraceMetrics: (decisions: any[], manualQueue: any[], payoutQueue: any[]) => DecisionTraceMetrics;
   computeTreasuryRuntimeMetrics: (input: any) => TreasuryRuntimeMetrics;
   computeSceneAlarmMetrics: (input: any) => SceneAlarmMetrics;
+  computeSceneIntegrityOverlayMetrics: (input: any) => SceneIntegrityOverlayMetrics;
 };
 
 declare global {
@@ -967,6 +991,92 @@ function computeSceneAlarmMetrics(input: any): SceneAlarmMetrics {
   };
 }
 
+function computeSceneIntegrityOverlayMetrics(input: any): SceneIntegrityOverlayMetrics {
+  const data = input && typeof input === "object" ? input : {};
+  const assetManifest = data.assetManifest && typeof data.assetManifest === "object" ? data.assetManifest : {};
+  const assetRuntime = data.assetRuntime && typeof data.assetRuntime === "object" ? data.assetRuntime : {};
+  const ladder = data.ladder && typeof data.ladder === "object" ? data.ladder : {};
+  const telemetry = data.telemetry && typeof data.telemetry === "object" ? data.telemetry : {};
+  const pvp = data.pvp && typeof data.pvp === "object" ? data.pvp : {};
+  const nowMs = asNum(data.nowMs || Date.now());
+
+  const rejectInfo = classifyRejectReasonBridge(pvp.lastRejectReason);
+  const rejectCategory = asString(rejectInfo.category || "none", "none");
+  const lastActionAt = Math.max(0, asNum(pvp.lastActionAt || 0));
+  const rejectAgeMs = lastActionAt > 0 ? Math.max(0, nowMs - lastActionAt) : Number.MAX_SAFE_INTEGER;
+  const recentReject = Boolean(pvp.lastRejected) && rejectCategory !== "none" && rejectAgeMs < 9000;
+  const queueSize = Math.max(0, Math.floor(asNum(data.queueSize || 0)));
+
+  const readyRatio = clamp(
+    asNum(
+      data.readyRatio ??
+        assetRuntime.readyRatio ??
+        assetManifest.readyRatio ??
+        (asNum(telemetry.assetTotalCount || 0) > 0
+          ? asNum(telemetry.assetReadyCount || 0) / Math.max(1, asNum(telemetry.assetTotalCount || 0))
+          : 0)
+    ),
+    0,
+    1
+  );
+  const syncRatio = clamp(asNum(data.syncRatio ?? assetRuntime.syncRatio ?? assetRuntime.dbReadyRatio ?? readyRatio), 0, 1);
+  const integrityRatio = clamp(asNum(data.integrityRatio ?? assetManifest.integrityRatio ?? assetRuntime.dbReadyRatio ?? syncRatio ?? readyRatio), 0, 1);
+  const missingRatio = clamp(asNum(data.missingRatio ?? assetManifest.missingRatio ?? 1 - readyRatio), 0, 1);
+  const assetRisk = clamp((1 - readyRatio) * 0.34 + (1 - syncRatio) * 0.26 + (1 - integrityRatio) * 0.4, 0, 1);
+
+  const ladderPressure = clamp(asNum(data.ladderPressure ?? ladder.pressure ?? 0), 0, 1);
+  const ladderFreshness = clamp(asNum(data.ladderFreshness ?? ladder.freshnessRatio ?? 0), 0, 1);
+  const rejectShock = recentReject ? clamp(1 - rejectAgeMs / 9000, 0, 1) : 0;
+
+  const severity = clamp(
+    assetRisk * 0.62 +
+      missingRatio * 0.16 +
+      ladderPressure * 0.12 +
+      (1 - ladderFreshness) * 0.06 +
+      rejectShock * 0.2 +
+      (Math.min(queueSize, 5) / 5) * 0.08,
+    0,
+    1
+  );
+  const tone = severity >= 0.7 ? "critical" : severity >= 0.4 ? "pressure" : severity >= 0.16 ? "balanced" : "advantage";
+  const active = severity >= 0.22 || recentReject;
+  const integritySweep = clamp(readyRatio * 0.2 + syncRatio * 0.25 + ladderFreshness * 0.2 + rejectShock * 0.35, 0, 1);
+  const integrityFlash = recentReject ? clamp(0.24 + rejectShock * 0.76, 0, 1) : clamp(assetRisk * 0.55, 0, 0.7);
+  const integrityBadgeText =
+    tone === "critical" ? "SCENE ALARM" : tone === "pressure" ? "SCENE WATCH" : recentReject ? "SCENE REJECT" : "SCENE STABLE";
+  const integrityBadgeTone: "warn" | "default" | "info" = tone === "critical" ? "warn" : tone === "pressure" ? "default" : "info";
+  const revisionLabel = asString(assetManifest.manifestRevision || telemetry.manifestRevision || "local").slice(0, 10);
+  const integrityLineText = recentReject
+    ? `Reject ${asString(rejectInfo.label || rejectCategory).toUpperCase()} | q ${queueSize} | asset ${Math.round((1 - assetRisk) * 100)}% | rev ${revisionLabel}`
+    : `Asset ${Math.round(readyRatio * 100)}% ready | sync ${Math.round(syncRatio * 100)}% | integrity ${Math.round(integrityRatio * 100)}% | ladder ${Math.round(ladderPressure * 100)}%`;
+  const rejectChipText = `REJ ${recentReject ? (asString(rejectInfo.shortLabel) || rejectCategory.toUpperCase()) : "--"}`;
+  const rejectChipTone = recentReject ? (asString(rejectInfo.tone || "critical") === "pressure" ? "pressure" : "critical") : "neutral";
+  const rejectChipLevel = recentReject ? rejectShock : 0.18;
+
+  return {
+    readyRatio,
+    syncRatio,
+    integrityRatio,
+    missingRatio,
+    assetRisk,
+    ladderPressure,
+    ladderFreshness,
+    recentReject,
+    rejectShock,
+    severity,
+    tone,
+    active,
+    integritySweep,
+    integrityFlash,
+    integrityBadgeText,
+    integrityBadgeTone,
+    integrityLineText,
+    rejectChipText,
+    rejectChipTone,
+    rejectChipLevel
+  };
+}
+
 export function installV3StateMutatorBridge(): void {
   window.__AKR_STATE_MUTATORS__ = {
     computeAssetManifestMetrics,
@@ -978,6 +1088,7 @@ export function installV3StateMutatorBridge(): void {
     computeTokenDirectorMetrics,
     computeDecisionTraceMetrics,
     computeTreasuryRuntimeMetrics,
-    computeSceneAlarmMetrics
+    computeSceneAlarmMetrics,
+    computeSceneIntegrityOverlayMetrics
   };
 }
