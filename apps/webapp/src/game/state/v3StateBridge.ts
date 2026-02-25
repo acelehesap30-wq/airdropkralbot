@@ -90,6 +90,38 @@ type TokenRouteRuntimeMetrics = {
   tone: string;
 };
 
+type TokenLifecycleMetrics = {
+  status: string;
+  progressRatio: number;
+  verifyConfidence: number;
+  providerCount: number;
+  okProviderCount: number;
+  agreementRatio: number;
+  providerRatio: number;
+  routeCoverage: number;
+  gateOpen: boolean;
+  tone: string;
+};
+
+type TokenDirectorMetrics = {
+  nextStepKey: string;
+  nextStepLabel: string;
+  verifyStateLabel: string;
+  readinessRatio: number;
+  riskRatio: number;
+  routeCoverage: number;
+  verifyConfidence: number;
+  providerRatio: number;
+  timeoutRatio: number;
+  staleRatio: number;
+  queuePressure: number;
+  gateOpen: boolean;
+  manualQueueCount: number;
+  autoDecisionCount: number;
+  pendingPayoutCount: number;
+  tone: string;
+};
+
 type DecisionTraceMetrics = {
   sampleCount: number;
   approveCount: number;
@@ -109,13 +141,34 @@ type DecisionTraceMetrics = {
   reasonEntries: Array<[string, number]>;
 };
 
+type TreasuryRuntimeMetrics = {
+  totalRoutes: number;
+  enabledRoutes: number;
+  routeCoverage: number;
+  routeMissing: number;
+  gateOpen: boolean;
+  apiTotal: number;
+  apiOk: number;
+  apiRatio: number;
+  apiLatencyAvg: number;
+  manualQueueCount: number;
+  autoDecisionCount: number;
+  pendingPayoutCount: number;
+  queuePressure: number;
+  autoPolicyEnabled: boolean;
+  tone: string;
+};
+
 type V3StateMutatorBridge = {
   computeAssetManifestMetrics: (manifestPayload: any) => AssetManifestMetrics;
   computePvpLeaderboardState: (payloadData: any, currentTransport?: string) => PvpLeaderboardState;
   computeSceneEffectiveProfile: (input: any) => SceneEffectiveProfile;
   computeProviderRuntimeMetrics: (rows: any[], decisions: any[], nowMs?: number) => ProviderRuntimeMetrics;
   computeTokenRouteRuntimeMetrics: (input: any) => TokenRouteRuntimeMetrics;
+  computeTokenLifecycleMetrics: (input: any) => TokenLifecycleMetrics;
+  computeTokenDirectorMetrics: (input: any) => TokenDirectorMetrics;
   computeDecisionTraceMetrics: (decisions: any[], manualQueue: any[], payoutQueue: any[]) => DecisionTraceMetrics;
+  computeTreasuryRuntimeMetrics: (input: any) => TreasuryRuntimeMetrics;
 };
 
 declare global {
@@ -425,6 +478,168 @@ function computeTokenRouteRuntimeMetrics(input: any): TokenRouteRuntimeMetrics {
   };
 }
 
+function computeTokenLifecycleMetrics(input: any): TokenLifecycleMetrics {
+  const data = input && typeof input === "object" ? input : {};
+  const lifecycle = data.lifecycle && typeof data.lifecycle === "object" ? data.lifecycle : {};
+  const route = data.route && typeof data.route === "object" ? data.route : {};
+  const quoteData = data.quoteData && typeof data.quoteData === "object" ? data.quoteData : {};
+  const tokenData = data.tokenData && typeof data.tokenData === "object" ? data.tokenData : {};
+  const quoteReady = Boolean(data.quoteReady);
+  const hasRequest = Boolean(data.hasRequest);
+  const providerCount = Math.max(0, Math.floor(asNum(data.providerCount ?? quoteData?.quote_quorum?.provider_count ?? 0)));
+  const okProviderCount = Math.max(0, Math.floor(asNum(data.okProviderCount ?? quoteData?.quote_quorum?.ok_provider_count ?? 0)));
+  const agreementRatio = clamp(asNum(data.agreementRatio ?? quoteData?.quote_quorum?.agreement_ratio ?? 0), 0, 1);
+  const providerRatio =
+    providerCount > 0 ? clamp(okProviderCount / providerCount, 0, 1) : clamp(asNum(route.quorumRatio || 0), 0, 1);
+  const verifyConfidence = clamp(providerRatio * 0.56 + agreementRatio * 0.44, 0, 1);
+  const routeCoverage = clamp(asNum(route.routeCoverage || 0), 0, 1);
+  const gateOpen =
+    route.gateOpen === true || quoteData?.payout_gate?.allowed === true || tokenData?.payout_gate?.allowed === true;
+  const progressRatio = clamp(
+    Math.max(
+      asNum(lifecycle.progress || 0),
+      quoteReady ? 0.18 : 0.08,
+      hasRequest ? (asNum(lifecycle.progress || 0.38) || 0.38) : 0
+    ),
+    0,
+    1
+  );
+  const status = asString(lifecycle.status || "").toLowerCase() || "none";
+  const tone =
+    asString(lifecycle.tone) === "critical"
+      ? "critical"
+      : !gateOpen
+        ? "pressure"
+        : hasRequest && status === "approved"
+          ? "advantage"
+          : hasRequest && status === "tx_submitted" && verifyConfidence < 0.35
+            ? "pressure"
+            : hasRequest && status === "tx_submitted"
+              ? "balanced"
+              : quoteReady
+                ? "balanced"
+                : "neutral";
+  return {
+    status,
+    progressRatio,
+    verifyConfidence,
+    providerCount,
+    okProviderCount,
+    agreementRatio,
+    providerRatio,
+    routeCoverage,
+    gateOpen,
+    tone
+  };
+}
+
+function computeTokenDirectorMetrics(input: any): TokenDirectorMetrics {
+  const data = input && typeof input === "object" ? input : {};
+  const quoteReady = Boolean(data.quoteReady);
+  const hasRequest = Boolean(data.hasRequest);
+  const txSeen = Boolean(data.txSeen);
+  const gateOpen = Boolean(data.gateOpen);
+  const latestStatus = asString(data.latestStatus || "none").toLowerCase();
+  const routeCoverage = clamp(asNum(data.routeCoverage || 0), 0, 1);
+  const verifyConfidence = clamp(asNum(data.verifyConfidence || 0), 0, 1);
+  const providerRatio = clamp(asNum(data.providerRatio || 0), 0, 1);
+  const timeoutRatio = clamp(asNum(data.timeoutRatio || 0), 0, 1);
+  const staleRatio = clamp(asNum(data.staleRatio || 0), 0, 1);
+  const queuePressure = clamp(asNum(data.queuePressure || 0), 0, 1);
+  const riskScore = clamp(asNum(data.riskScore || 0), 0, 1);
+  const manualQueueCount = Math.max(0, Math.floor(asNum(data.manualQueueCount || 0)));
+  const autoDecisionCount = Math.max(0, Math.floor(asNum(data.autoDecisionCount || 0)));
+  const pendingPayoutCount = Math.max(0, Math.floor(asNum(data.pendingPayoutCount || 0)));
+
+  let nextStepKey = "quote";
+  let nextStepLabel = "Quote Al";
+  let verifyStateLabel = "VERIFY WAIT";
+  if (!gateOpen) {
+    nextStepKey = "gate";
+    nextStepLabel = "Gate Acilmasini Bekle";
+    verifyStateLabel = "GATE LOCK";
+  } else if (!quoteReady) {
+    nextStepKey = "quote";
+    nextStepLabel = "Quote Al / Zincir Sec";
+    verifyStateLabel = "VERIFY WAIT";
+  } else if (!hasRequest) {
+    nextStepKey = "request";
+    nextStepLabel = "Alim Talebi Olustur";
+    verifyStateLabel = "REQ NEEDED";
+  } else if (latestStatus === "rejected" || latestStatus === "failed") {
+    nextStepKey = "review";
+    nextStepLabel = "Talep Gozden Gecir / Yeni Talep";
+    verifyStateLabel = "REJECTED";
+  } else if (!txSeen) {
+    nextStepKey = "tx";
+    nextStepLabel = "TX Hash Gonder";
+    verifyStateLabel = "TX WAIT";
+  } else if (latestStatus === "approved") {
+    nextStepKey = "settled";
+    nextStepLabel = "Settled / Yeni Quote";
+    verifyStateLabel = "SETTLED";
+  } else if (verifyConfidence < 0.6) {
+    nextStepKey = "verify";
+    nextStepLabel = "Verify / Quorum Bekle";
+    verifyStateLabel = "VERIFY LOW";
+  } else {
+    nextStepKey = "decision";
+    nextStepLabel = "Admin Karar / Auto Policy";
+    verifyStateLabel = "VERIFY OK";
+  }
+
+  const readinessRatio = clamp(
+    (gateOpen ? 0.26 : 0.04) +
+      routeCoverage * 0.2 +
+      (quoteReady ? 0.12 : 0) +
+      (hasRequest ? 0.12 : 0) +
+      (txSeen ? 0.12 : 0) +
+      verifyConfidence * 0.1 +
+      providerRatio * 0.04 +
+      (latestStatus === "approved" ? 0.12 : 0),
+    0,
+    1
+  );
+  const delayRisk = clamp(
+    timeoutRatio * 0.24 +
+      staleRatio * 0.16 +
+      queuePressure * 0.22 +
+      (1 - providerRatio) * 0.14 +
+      (1 - routeCoverage) * 0.08 +
+      (gateOpen ? 0 : 0.2) +
+      riskScore * 0.12 +
+      (manualQueueCount > 0 ? Math.min(0.14, manualQueueCount / 40) : 0),
+    0,
+    1
+  );
+  const tone =
+    nextStepKey === "gate" || latestStatus === "rejected" || delayRisk >= 0.74
+      ? "critical"
+      : delayRisk >= 0.46 || nextStepKey === "verify" || nextStepKey === "decision"
+        ? "pressure"
+        : readinessRatio >= 0.72
+          ? "advantage"
+          : "balanced";
+  return {
+    nextStepKey,
+    nextStepLabel,
+    verifyStateLabel,
+    readinessRatio,
+    riskRatio: delayRisk,
+    routeCoverage,
+    verifyConfidence,
+    providerRatio,
+    timeoutRatio,
+    staleRatio,
+    queuePressure,
+    gateOpen,
+    manualQueueCount,
+    autoDecisionCount,
+    pendingPayoutCount,
+    tone
+  };
+}
+
 function computeDecisionTraceMetrics(decisionsInput: any[], manualQueueInput: any[], payoutQueueInput: any[]): DecisionTraceMetrics {
   const decisions = Array.isArray(decisionsInput) ? decisionsInput : [];
   const manualQueue = Array.isArray(manualQueueInput) ? manualQueueInput : [];
@@ -486,6 +701,62 @@ function computeDecisionTraceMetrics(decisionsInput: any[], manualQueueInput: an
   };
 }
 
+function computeTreasuryRuntimeMetrics(input: any): TreasuryRuntimeMetrics {
+  const data = input && typeof input === "object" ? input : {};
+  const token = data.token && typeof data.token === "object" ? data.token : {};
+  const queues = data.queues && typeof data.queues === "object" ? data.queues : {};
+  const routing = data.routing && typeof data.routing === "object" ? data.routing : {};
+  const routeChains = Array.isArray(data.routeChains) ? data.routeChains : Array.isArray(routing.chains) ? routing.chains : [];
+  const totalRoutes = Math.max(0, asNum(routing.total_routes || routeChains.length));
+  const enabledRoutes = Math.max(0, asNum(routing.enabled_routes || routeChains.filter((row: any) => row?.enabled).length));
+  const routeCoverage = totalRoutes > 0 ? clamp(enabledRoutes / totalRoutes, 0, 1) : 0;
+  const routeMissing = Math.max(0, totalRoutes - enabledRoutes);
+  const gate = token.payout_gate && typeof token.payout_gate === "object" ? token.payout_gate : {};
+  const gateOpen = gate.allowed === true;
+  const apiRows = Array.isArray(queues.external_api_health) ? queues.external_api_health : [];
+  const apiTotal = apiRows.length;
+  const apiOk = apiRows.filter((row) => row && row.ok === true).length;
+  const apiRatio = apiTotal > 0 ? clamp(apiOk / apiTotal, 0, 1) : 0.35;
+  const apiLatencyAvg = apiTotal > 0 ? apiRows.reduce((sum, row) => sum + asNum(row?.latency_ms || 0), 0) / apiTotal : 0;
+  const manualQueueCount = Array.isArray(queues.token_manual_queue) ? queues.token_manual_queue.length : 0;
+  const autoDecisionCount = Array.isArray(queues.token_auto_decisions) ? queues.token_auto_decisions.length : 0;
+  const pendingPayoutCount = Array.isArray(queues.payout_queue) ? queues.payout_queue.length : Math.max(0, asNum(data.pendingPayoutCount || 0));
+  const queuePressure = clamp(
+    (manualQueueCount * 0.45 + pendingPayoutCount * 0.35 + Math.max(0, autoDecisionCount - 8) * 0.2) / 12,
+    0,
+    1
+  );
+  const autoPolicy = token.auto_policy && typeof token.auto_policy === "object" ? token.auto_policy : {};
+  const autoPolicyEnabled = autoPolicy.enabled === true;
+  const tone =
+    totalRoutes === 0 || enabledRoutes === 0
+      ? "critical"
+      : routeMissing > 0 || !gateOpen || apiRatio < 0.5
+        ? apiRatio < 0.25 || routeMissing >= 2
+          ? "critical"
+          : "pressure"
+        : queuePressure > 0.7
+          ? "pressure"
+          : "advantage";
+  return {
+    totalRoutes,
+    enabledRoutes,
+    routeCoverage,
+    routeMissing,
+    gateOpen,
+    apiTotal,
+    apiOk,
+    apiRatio,
+    apiLatencyAvg,
+    manualQueueCount,
+    autoDecisionCount,
+    pendingPayoutCount,
+    queuePressure,
+    autoPolicyEnabled,
+    tone
+  };
+}
+
 export function installV3StateMutatorBridge(): void {
   window.__AKR_STATE_MUTATORS__ = {
     computeAssetManifestMetrics,
@@ -493,6 +764,9 @@ export function installV3StateMutatorBridge(): void {
     computeSceneEffectiveProfile,
     computeProviderRuntimeMetrics,
     computeTokenRouteRuntimeMetrics,
-    computeDecisionTraceMetrics
+    computeTokenLifecycleMetrics,
+    computeTokenDirectorMetrics,
+    computeDecisionTraceMetrics,
+    computeTreasuryRuntimeMetrics
   };
 }
