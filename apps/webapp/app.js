@@ -1209,6 +1209,12 @@
     if (
       typeof bridge.fetchActiveAssetManifestMeta !== "function" ||
       typeof bridge.fetchTokenQuote !== "function" ||
+      typeof bridge.fetchPvpSessionState !== "function" ||
+      typeof bridge.fetchPvpMatchTick !== "function" ||
+      typeof bridge.startPvpSession !== "function" ||
+      typeof bridge.postPvpSessionAction !== "function" ||
+      typeof bridge.resolvePvpSession !== "function" ||
+      typeof bridge.fetchPvpLeaderboardLive !== "function" ||
       typeof bridge.fetchAdminQueues !== "function" ||
       typeof bridge.fetchAdminMetrics !== "function" ||
       typeof bridge.fetchAdminRuntime !== "function" ||
@@ -8228,22 +8234,30 @@
   }
 
   async function fetchPvpSessionState(sessionRef = "") {
-    const query = new URLSearchParams({
-      uid: state.auth.uid,
-      ts: state.auth.ts,
-      sig: state.auth.sig
-    });
-    if (sessionRef) {
-      query.set("session_ref", sessionRef);
-    }
-    const t0 = performance.now();
-    const res = await fetch(`/webapp/api/pvp/session/state?${query.toString()}`);
-    markLatency(performance.now() - t0);
-    const payload = await res.json();
-    if (!res.ok || !payload.success) {
-      const error = new Error(payload.error || `pvp_session_state_failed:${res.status}`);
-      error.code = res.status;
-      throw error;
+    const bridge = getNetApiBridge();
+    let payload;
+    if (bridge) {
+      const t0 = performance.now();
+      payload = await bridge.fetchPvpSessionState(state.auth, sessionRef);
+      markLatency(performance.now() - t0);
+    } else {
+      const query = new URLSearchParams({
+        uid: state.auth.uid,
+        ts: state.auth.ts,
+        sig: state.auth.sig
+      });
+      if (sessionRef) {
+        query.set("session_ref", sessionRef);
+      }
+      const t0 = performance.now();
+      const res = await fetch(`/webapp/api/pvp/session/state?${query.toString()}`);
+      markLatency(performance.now() - t0);
+      payload = await res.json();
+      if (!res.ok || !payload.success) {
+        const error = new Error(payload.error || `pvp_session_state_failed:${res.status}`);
+        error.code = res.status;
+        throw error;
+      }
     }
     renewAuth(payload);
     state.v3.pvpAuthAvailable = true;
@@ -8258,20 +8272,28 @@
     if (!cleanSessionRef) {
       throw new Error("session_ref_required");
     }
-    const query = new URLSearchParams({
-      uid: state.auth.uid,
-      ts: state.auth.ts,
-      sig: state.auth.sig,
-      session_ref: cleanSessionRef
-    }).toString();
-    const t0 = performance.now();
-    const res = await fetch(`/webapp/api/pvp/match/tick?${query}`);
-    markLatency(performance.now() - t0);
-    const payload = await res.json();
-    if (!res.ok || !payload.success) {
-      const error = new Error(payload.error || `pvp_match_tick_failed:${res.status}`);
-      error.code = res.status;
-      throw error;
+    const bridge = getNetApiBridge();
+    let payload;
+    if (bridge) {
+      const t0 = performance.now();
+      payload = await bridge.fetchPvpMatchTick(state.auth, cleanSessionRef);
+      markLatency(performance.now() - t0);
+    } else {
+      const query = new URLSearchParams({
+        uid: state.auth.uid,
+        ts: state.auth.ts,
+        sig: state.auth.sig,
+        session_ref: cleanSessionRef
+      }).toString();
+      const t0 = performance.now();
+      const res = await fetch(`/webapp/api/pvp/match/tick?${query}`);
+      markLatency(performance.now() - t0);
+      payload = await res.json();
+      if (!res.ok || !payload.success) {
+        const error = new Error(payload.error || `pvp_match_tick_failed:${res.status}`);
+        error.code = res.status;
+        throw error;
+      }
     }
     renewAuth(payload);
     const data = payload.data || {};
@@ -8301,25 +8323,33 @@
   }
 
   async function startPvpSession(modeSuggested = "balanced") {
-    const t0 = performance.now();
-    const res = await fetch("/webapp/api/pvp/session/start", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        uid: state.auth.uid,
-        ts: state.auth.ts,
-        sig: state.auth.sig,
-        request_id: `webapp_pvp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-        mode_suggested: modeSuggested,
-        transport: "poll"
-      })
-    });
-    markLatency(performance.now() - t0);
-    const payload = await res.json();
-    if (!res.ok || !payload.success) {
-      const error = new Error(payload.error || `pvp_session_start_failed:${res.status}`);
-      error.code = res.status;
-      throw error;
+    const bridge = getNetApiBridge();
+    let payload;
+    if (bridge) {
+      const t0 = performance.now();
+      payload = await bridge.startPvpSession(state.auth, modeSuggested, "poll");
+      markLatency(performance.now() - t0);
+    } else {
+      const t0 = performance.now();
+      const res = await fetch("/webapp/api/pvp/session/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          uid: state.auth.uid,
+          ts: state.auth.ts,
+          sig: state.auth.sig,
+          request_id: `webapp_pvp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+          mode_suggested: modeSuggested,
+          transport: "poll"
+        })
+      });
+      markLatency(performance.now() - t0);
+      payload = await res.json();
+      if (!res.ok || !payload.success) {
+        const error = new Error(payload.error || `pvp_session_start_failed:${res.status}`);
+        error.code = res.status;
+        throw error;
+      }
     }
     renewAuth(payload);
     state.v3.pvpAuthAvailable = true;
@@ -8336,27 +8366,41 @@
     }
     const actionSeq = asNum(session.action_count?.self) + 1;
     const latencyMs = Math.max(0, Date.now() - Number(queuedAt || Date.now()));
-    const t0 = performance.now();
-    const res = await fetch("/webapp/api/pvp/session/action", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        uid: state.auth.uid,
-        ts: state.auth.ts,
-        sig: state.auth.sig,
+    const bridge = getNetApiBridge();
+    let payload;
+    if (bridge) {
+      const t0 = performance.now();
+      payload = await bridge.postPvpSessionAction(state.auth, {
         session_ref: session.session_ref,
         action_seq: actionSeq,
         input_action: String(inputAction || "").toLowerCase(),
         latency_ms: latencyMs,
         client_ts: Date.now()
-      })
-    });
-    markLatency(performance.now() - t0);
-    const payload = await res.json();
-    if (!res.ok || !payload.success) {
-      const error = new Error(payload.error || `pvp_session_action_failed:${res.status}`);
-      error.code = res.status;
-      throw error;
+      });
+      markLatency(performance.now() - t0);
+    } else {
+      const t0 = performance.now();
+      const res = await fetch("/webapp/api/pvp/session/action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          uid: state.auth.uid,
+          ts: state.auth.ts,
+          sig: state.auth.sig,
+          session_ref: session.session_ref,
+          action_seq: actionSeq,
+          input_action: String(inputAction || "").toLowerCase(),
+          latency_ms: latencyMs,
+          client_ts: Date.now()
+        })
+      });
+      markLatency(performance.now() - t0);
+      payload = await res.json();
+      if (!res.ok || !payload.success) {
+        const error = new Error(payload.error || `pvp_session_action_failed:${res.status}`);
+        error.code = res.status;
+        throw error;
+      }
     }
     renewAuth(payload);
     state.v3.pvpAuthAvailable = true;
@@ -8455,23 +8499,31 @@
     if (!session || !session.session_ref) {
       throw new Error("pvp_session_not_found");
     }
-    const t0 = performance.now();
-    const res = await fetch("/webapp/api/pvp/session/resolve", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        uid: state.auth.uid,
-        ts: state.auth.ts,
-        sig: state.auth.sig,
-        session_ref: session.session_ref
-      })
-    });
-    markLatency(performance.now() - t0);
-    const payload = await res.json();
-    if (!res.ok || !payload.success) {
-      const error = new Error(payload.error || `pvp_session_resolve_failed:${res.status}`);
-      error.code = res.status;
-      throw error;
+    const bridge = getNetApiBridge();
+    let payload;
+    if (bridge) {
+      const t0 = performance.now();
+      payload = await bridge.resolvePvpSession(state.auth, session.session_ref);
+      markLatency(performance.now() - t0);
+    } else {
+      const t0 = performance.now();
+      const res = await fetch("/webapp/api/pvp/session/resolve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          uid: state.auth.uid,
+          ts: state.auth.ts,
+          sig: state.auth.sig,
+          session_ref: session.session_ref
+        })
+      });
+      markLatency(performance.now() - t0);
+      payload = await res.json();
+      if (!res.ok || !payload.success) {
+        const error = new Error(payload.error || `pvp_session_resolve_failed:${res.status}`);
+        error.code = res.status;
+        throw error;
+      }
     }
     renewAuth(payload);
     state.v3.pvpAuthAvailable = true;
@@ -8503,20 +8555,28 @@
   }
 
   async function loadPvpLeaderboard() {
-    const query = new URLSearchParams({
-      uid: state.auth.uid,
-      ts: state.auth.ts,
-      sig: state.auth.sig,
-      limit: "10"
-    }).toString();
-    const t0 = performance.now();
-    const res = await fetch(`/webapp/api/pvp/leaderboard/live?${query}`);
-    markLatency(performance.now() - t0);
-    const payload = await res.json();
-    if (!res.ok || !payload.success) {
-      const error = new Error(payload.error || `pvp_leaderboard_failed:${res.status}`);
-      error.code = res.status;
-      throw error;
+    const bridge = getNetApiBridge();
+    let payload;
+    if (bridge) {
+      const t0 = performance.now();
+      payload = await bridge.fetchPvpLeaderboardLive(state.auth, 10);
+      markLatency(performance.now() - t0);
+    } else {
+      const query = new URLSearchParams({
+        uid: state.auth.uid,
+        ts: state.auth.ts,
+        sig: state.auth.sig,
+        limit: "10"
+      }).toString();
+      const t0 = performance.now();
+      const res = await fetch(`/webapp/api/pvp/leaderboard/live?${query}`);
+      markLatency(performance.now() - t0);
+      payload = await res.json();
+      if (!res.ok || !payload.success) {
+        const error = new Error(payload.error || `pvp_leaderboard_failed:${res.status}`);
+        error.code = res.status;
+        throw error;
+      }
     }
     renewAuth(payload);
     const data = payload.data || {};

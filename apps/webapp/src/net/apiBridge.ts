@@ -11,6 +11,21 @@ type FetchJsonOptions = {
 type NetApiBridge = {
   fetchActiveAssetManifestMeta: (auth: AuthPayload, extra?: Record<string, string>) => Promise<any>;
   fetchTokenQuote: (auth: AuthPayload, usdAmount: number, chain: string) => Promise<any>;
+  fetchPvpSessionState: (auth: AuthPayload, sessionRef?: string) => Promise<any>;
+  fetchPvpMatchTick: (auth: AuthPayload, sessionRef: string) => Promise<any>;
+  startPvpSession: (auth: AuthPayload, modeSuggested?: string, transport?: string) => Promise<any>;
+  postPvpSessionAction: (
+    auth: AuthPayload,
+    payload: {
+      session_ref: string;
+      action_seq: number;
+      input_action: string;
+      latency_ms: number;
+      client_ts: number;
+    }
+  ) => Promise<any>;
+  resolvePvpSession: (auth: AuthPayload, sessionRef: string) => Promise<any>;
+  fetchPvpLeaderboardLive: (auth: AuthPayload, limit?: number) => Promise<any>;
   fetchAdminQueues: (auth: AuthPayload) => Promise<any>;
   fetchAdminMetrics: (auth: AuthPayload) => Promise<any>;
   fetchAdminRuntime: (auth: AuthPayload, limit?: number) => Promise<any>;
@@ -57,6 +72,21 @@ async function fetchJson(pathWithQuery: string, options: FetchJsonOptions = {}):
   return payload;
 }
 
+async function postJson(path: string, body: Record<string, unknown>): Promise<any> {
+  const res = await fetch(asString(path), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body || {})
+  });
+  const payload = await res.json();
+  if (!res.ok || !payload?.success) {
+    const err = new Error(payload?.error || `request_failed:${res.status}`);
+    (err as any).code = res.status;
+    throw err;
+  }
+  return payload;
+}
+
 async function fetchActiveAssetManifestMeta(
   auth: AuthPayload,
   extra: Record<string, string> = {}
@@ -81,6 +111,90 @@ async function fetchTokenQuote(auth: AuthPayload, usdAmount: number, chain: stri
     chain: asString(chain).toUpperCase()
   });
   return fetchJson(`/webapp/api/token/quote?${query}`);
+}
+
+async function fetchPvpSessionState(auth: AuthPayload, sessionRef = ""): Promise<any> {
+  const queryParams: Record<string, unknown> = {
+    uid: auth?.uid,
+    ts: auth?.ts,
+    sig: auth?.sig
+  };
+  if (asString(sessionRef).trim()) {
+    queryParams.session_ref = asString(sessionRef).trim();
+  }
+  const query = buildQuery(queryParams);
+  return fetchJson(`/webapp/api/pvp/session/state?${query}`);
+}
+
+async function fetchPvpMatchTick(auth: AuthPayload, sessionRef: string): Promise<any> {
+  const clean = asString(sessionRef).trim();
+  if (!clean) {
+    throw new Error("session_ref_required");
+  }
+  const query = buildQuery({
+    uid: auth?.uid,
+    ts: auth?.ts,
+    sig: auth?.sig,
+    session_ref: clean
+  });
+  return fetchJson(`/webapp/api/pvp/match/tick?${query}`);
+}
+
+async function startPvpSession(auth: AuthPayload, modeSuggested = "balanced", transport = "poll"): Promise<any> {
+  return postJson("/webapp/api/pvp/session/start", {
+    uid: auth?.uid,
+    ts: auth?.ts,
+    sig: auth?.sig,
+    request_id: `webapp_pvp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    mode_suggested: asString(modeSuggested) || "balanced",
+    transport: asString(transport) || "poll"
+  });
+}
+
+async function postPvpSessionAction(
+  auth: AuthPayload,
+  payload: {
+    session_ref: string;
+    action_seq: number;
+    input_action: string;
+    latency_ms: number;
+    client_ts: number;
+  }
+): Promise<any> {
+  return postJson("/webapp/api/pvp/session/action", {
+    uid: auth?.uid,
+    ts: auth?.ts,
+    sig: auth?.sig,
+    session_ref: asString(payload?.session_ref).trim(),
+    action_seq: Math.max(1, Math.floor(asNumber(payload?.action_seq) || 1)),
+    input_action: asString(payload?.input_action).toLowerCase(),
+    latency_ms: Math.max(0, Math.floor(asNumber(payload?.latency_ms) || 0)),
+    client_ts: Math.max(0, Math.floor(asNumber(payload?.client_ts) || Date.now()))
+  });
+}
+
+async function resolvePvpSession(auth: AuthPayload, sessionRef: string): Promise<any> {
+  const clean = asString(sessionRef).trim();
+  if (!clean) {
+    throw new Error("pvp_session_not_found");
+  }
+  return postJson("/webapp/api/pvp/session/resolve", {
+    uid: auth?.uid,
+    ts: auth?.ts,
+    sig: auth?.sig,
+    session_ref: clean
+  });
+}
+
+async function fetchPvpLeaderboardLive(auth: AuthPayload, limit = 10): Promise<any> {
+  const safeLimit = Math.max(1, Math.min(50, Math.floor(asNumber(limit) || 10)));
+  const query = buildQuery({
+    uid: auth?.uid,
+    ts: auth?.ts,
+    sig: auth?.sig,
+    limit: String(safeLimit)
+  });
+  return fetchJson(`/webapp/api/pvp/leaderboard/live?${query}`);
 }
 
 async function fetchAdminQueues(auth: AuthPayload): Promise<any> {
@@ -149,6 +263,12 @@ export function installNetApiBridge(): void {
   window.__AKR_NET_API__ = {
     fetchActiveAssetManifestMeta,
     fetchTokenQuote,
+    fetchPvpSessionState,
+    fetchPvpMatchTick,
+    startPvpSession,
+    postPvpSessionAction,
+    resolvePvpSession,
+    fetchPvpLeaderboardLive,
     fetchAdminQueues,
     fetchAdminMetrics,
     fetchAdminRuntime,
