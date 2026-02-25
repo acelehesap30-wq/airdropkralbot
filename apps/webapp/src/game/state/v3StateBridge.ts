@@ -26,9 +26,59 @@ type PvpLeaderboardState = {
   };
 };
 
+type SceneEffectiveProfile = {
+  sceneMode: string;
+  perfTier: string;
+  fps: number;
+  readyAssets: number;
+  totalAssets: number;
+  isLite: boolean;
+  assetRatio: number;
+  transport: string;
+  pvpStatus: string;
+  manifestRevision: string;
+  manifestShort: string;
+  manifestSource: string;
+  ladderActivity: number;
+  pressureRatio: number;
+  manifestSyncRatio: number;
+  assetSyncRatio: number;
+  assetReadyRatio: number;
+  assetRuntimeTone: string;
+  manifestRiskRatio: number;
+  perfTone: string;
+  transportTone: string;
+  profileLine: string;
+  liteBadge: {
+    shouldShow: boolean;
+    text: string;
+    tone: "warn" | "info";
+    mode: "lite" | "watch" | "ok";
+    title: string;
+  };
+};
+
+type ProviderRuntimeMetrics = {
+  providerTotal: number;
+  providerOk: number;
+  timeoutCount: number;
+  providerRatio: number;
+  timeoutRatio: number;
+  avgLatency: number;
+  latestAgeSec: number | null;
+  staleRatio: number;
+  autoApproveCount: number;
+  autoRejectCount: number;
+  queuePressure: number;
+  tone: string;
+  latestStatus: string;
+};
+
 type V3StateMutatorBridge = {
   computeAssetManifestMetrics: (manifestPayload: any) => AssetManifestMetrics;
   computePvpLeaderboardState: (payloadData: any, currentTransport?: string) => PvpLeaderboardState;
+  computeSceneEffectiveProfile: (input: any) => SceneEffectiveProfile;
+  computeProviderRuntimeMetrics: (rows: any[], decisions: any[], nowMs?: number) => ProviderRuntimeMetrics;
 };
 
 declare global {
@@ -129,10 +179,166 @@ function computePvpLeaderboardState(payloadData: any, currentTransport = "poll")
   };
 }
 
-export function installV3StateMutatorBridge(): void {
-  window.__AKR_STATE_MUTATORS__ = {
-    computeAssetManifestMetrics,
-    computePvpLeaderboardState
+function computeSceneEffectiveProfile(input: any): SceneEffectiveProfile {
+  const data = input && typeof input === "object" ? input : {};
+  const sceneMode = asString(data.sceneMode || "pro").toUpperCase();
+  const perfTier = asString(data.perfTier || "normal").toUpperCase();
+  const fps = Math.max(0, Math.round(asNum(data.fps || 0)));
+  const assetsText = asString(data.assetsText || "Assets: -");
+  const assetRuntime = data.assetRuntime && typeof data.assetRuntime === "object" ? data.assetRuntime : {};
+  const manifestMeta = data.manifestMeta && typeof data.manifestMeta === "object" ? data.manifestMeta : {};
+  const telemetryReadyAssets = asNum(data.telemetryReadyAssets || 0);
+  const telemetryTotalAssets = asNum(data.telemetryTotalAssets || 0);
+  const telemetrySceneMode = asString(data.telemetrySceneMode || "").toUpperCase();
+  const assetReadyMatch = assetsText.match(/Assets:\s*(\d+)\/(\d+)/i);
+  const readyAssets = telemetryTotalAssets > 0 ? telemetryReadyAssets : assetReadyMatch ? asNum(assetReadyMatch[1]) : 0;
+  const totalAssets = telemetryTotalAssets > 0 ? Math.max(1, telemetryTotalAssets) : assetReadyMatch ? Math.max(1, asNum(assetReadyMatch[2])) : 1;
+  const isLite = telemetrySceneMode
+    ? telemetrySceneMode.includes("LITE")
+    : assetsText.toUpperCase().includes("LITE") || assetsText.toLowerCase().includes("fallback");
+  const assetRatio = clamp(readyAssets / Math.max(1, totalAssets), 0, 1);
+  const transport = asString(data.transport || "poll").toUpperCase();
+  const pvpStatus = asString(data.pvpStatus || "idle").toLowerCase();
+  const manifestRevision = asString(
+    assetRuntime.manifestRevision || manifestMeta.manifestRevision || data.telemetryManifestRevision || "local"
+  );
+  const manifestShort = manifestRevision.length > 10 ? manifestRevision.slice(0, 10) : manifestRevision;
+  const manifestSource = asString(
+    assetRuntime.sourceMode || manifestMeta.sourceMode || data.telemetryManifestProvider || "fallback"
+  );
+  const ladderActivity = clamp(asNum(data.ladderActivity || 0), 0, 1);
+  const pressureRatio = clamp(asNum(data.combatHeat || 0) * 0.45 + asNum(data.threatRatio || 0) * 0.55, 0, 1);
+  const manifestSyncRatio = clamp(asNum(manifestMeta.integrityRatio ?? 1), 0, 1);
+  const assetSyncRatio = clamp(asNum(assetRuntime.syncRatio ?? manifestSyncRatio ?? 1), 0, 1);
+  const assetReadyRatio = clamp(asNum(assetRuntime.readyRatio ?? manifestMeta.readyRatio ?? assetRatio), 0, 1);
+  const assetRuntimeTone = asString(assetRuntime.tone || manifestMeta.tone || (isLite ? "pressure" : "balanced")).toLowerCase();
+  const manifestRiskRatio = clamp((1 - assetReadyRatio) * 0.42 + (1 - assetSyncRatio) * 0.36 + (1 - manifestSyncRatio) * 0.22, 0, 1);
+  const perfTone =
+    fps > 0 && fps < 28 ? "critical" : fps > 0 && fps < 40 ? "pressure" : perfTier === "LOW" ? "pressure" : "safe";
+  const transportTone =
+    pvpStatus === "resolved"
+      ? "balanced"
+      : pvpStatus === "active"
+        ? pressureRatio > 0.68
+          ? "critical"
+          : pressureRatio > 0.42
+            ? "pressure"
+            : "balanced"
+        : "neutral";
+  const hudDensity = asString(data.hudDensity || "full");
+  const postFx = Number(asNum(data.postFxLevel || 0.9)).toFixed(2);
+  const liteBadge = (() => {
+    const shouldShow = isLite || manifestRiskRatio >= 0.2;
+    let text = "Lite Scene";
+    let tone: "warn" | "info" = "info";
+    let mode: "lite" | "watch" | "ok" = "ok";
+    if (isLite) {
+      const reasonText =
+        manifestRiskRatio >= 0.6
+          ? `Risk ${Math.round(manifestRiskRatio * 100)}`
+          : assetReadyRatio < 0.95
+            ? `Ready ${Math.round(assetReadyRatio * 100)}%`
+            : `Int ${Math.round(assetSyncRatio * 100)}%`;
+      text = `Lite Scene | ${reasonText}`;
+      tone = manifestRiskRatio >= 0.5 ? "warn" : "info";
+      mode = "lite";
+    } else if (manifestRiskRatio >= 0.2) {
+      text = `Asset Watch | ${Math.round((1 - assetSyncRatio) * 100)}% drift`;
+      tone = manifestRiskRatio >= 0.48 ? "warn" : "info";
+      mode = "watch";
+    }
+    return {
+      shouldShow,
+      text,
+      tone,
+      mode,
+      title:
+        `scene=${sceneMode} perf=${perfTier} ladder=${Math.round(ladderActivity * 100)}% ` +
+        `ready=${Math.round(assetReadyRatio * 100)}% sync=${Math.round(assetSyncRatio * 100)}% ` +
+        `manifest=${manifestShort} ${manifestSource}`
+    };
+  })();
+  return {
+    sceneMode,
+    perfTier,
+    fps,
+    readyAssets,
+    totalAssets,
+    isLite,
+    assetRatio,
+    transport,
+    pvpStatus,
+    manifestRevision,
+    manifestShort,
+    manifestSource,
+    ladderActivity,
+    pressureRatio,
+    manifestSyncRatio,
+    assetSyncRatio,
+    assetReadyRatio,
+    assetRuntimeTone,
+    manifestRiskRatio,
+    perfTone,
+    transportTone,
+    profileLine:
+      `Profile: hud ${hudDensity} | postfx ${postFx} | rev ${manifestShort} | ` +
+      `assets ${readyAssets}/${totalAssets} | int ${Math.round(assetSyncRatio * 100)}%`,
+    liteBadge
   };
 }
 
+function computeProviderRuntimeMetrics(rowsInput: any[], decisionsInput: any[], nowMs = Date.now()): ProviderRuntimeMetrics {
+  const rows = Array.isArray(rowsInput) ? rowsInput : [];
+  const decisions = Array.isArray(decisionsInput) ? decisionsInput : [];
+  const providerTotal = rows.length;
+  const providerOk = rows.filter((row) => row && row.ok === true).length;
+  const timeoutCount = rows.filter((row) => {
+    const code = asString(row?.error_code).toLowerCase();
+    const message = asString(row?.error_message).toLowerCase();
+    return code.includes("timeout") || message.includes("timeout") || message.includes("timed out");
+  }).length;
+  const providerRatio = providerTotal > 0 ? clamp(providerOk / providerTotal, 0, 1) : 0.35;
+  const timeoutRatio = providerTotal > 0 ? clamp(timeoutCount / providerTotal, 0, 1) : 0;
+  const avgLatency = providerTotal > 0 ? rows.reduce((sum, row) => sum + asNum(row?.latency_ms || 0), 0) / providerTotal : 0;
+  const latest = rows[0] || null;
+  const latestAgeSec =
+    latest?.checked_at ? Math.max(0, Math.round((nowMs - new Date(latest.checked_at).getTime()) / 1000)) : null;
+  const staleRatio = latestAgeSec == null ? 0.3 : clamp(latestAgeSec / 180, 0, 1);
+  const recentDecisions = decisions.slice(0, 4);
+  const autoApproveCount = recentDecisions.filter((d) => asString(d?.decision).toLowerCase().includes("approve")).length;
+  const autoRejectCount = recentDecisions.filter((d) => asString(d?.decision).toLowerCase().includes("reject")).length;
+  const queuePressure = clamp(timeoutRatio * 0.35 + (1 - providerRatio) * 0.4 + staleRatio * 0.25, 0, 1);
+  const tone =
+    providerTotal === 0
+      ? "neutral"
+      : providerRatio < 0.35 || timeoutRatio > 0.5 || staleRatio > 0.9
+        ? "critical"
+        : providerRatio < 0.7 || timeoutRatio > 0.2 || staleRatio > 0.5
+          ? "pressure"
+          : "advantage";
+  const latestStatus = latest ? `${latest.ok ? "OK" : "FAIL"} ${asNum(latest.status_code || 0) || "-"}` : "WAIT";
+  return {
+    providerTotal,
+    providerOk,
+    timeoutCount,
+    providerRatio,
+    timeoutRatio,
+    avgLatency,
+    latestAgeSec,
+    staleRatio,
+    autoApproveCount,
+    autoRejectCount,
+    queuePressure,
+    tone,
+    latestStatus
+  };
+}
+
+export function installV3StateMutatorBridge(): void {
+  window.__AKR_STATE_MUTATORS__ = {
+    computeAssetManifestMetrics,
+    computePvpLeaderboardState,
+    computeSceneEffectiveProfile,
+    computeProviderRuntimeMetrics
+  };
+}

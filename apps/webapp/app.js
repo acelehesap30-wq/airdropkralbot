@@ -336,6 +336,37 @@
               ? "pressure"
               : "balanced"
           : "neutral";
+    const stateMutatorBridge = getStateMutatorBridge();
+    let sceneEffectiveProfile = null;
+    if (stateMutatorBridge) {
+      try {
+        sceneEffectiveProfile = stateMutatorBridge.computeSceneEffectiveProfile({
+          sceneMode: state.ui.sceneMode || "pro",
+          perfTier: state.ui.autoQualityMode || state.telemetry.perfTier || "normal",
+          fps: state.telemetry.fpsAvg || 0,
+          assetsText,
+          assetRuntime,
+          manifestMeta,
+          telemetryReadyAssets: state.telemetry.assetReadyCount || 0,
+          telemetryTotalAssets: state.telemetry.assetTotalCount || 0,
+          telemetrySceneMode: state.telemetry.assetSceneMode || "",
+          telemetryManifestRevision: state.telemetry.manifestRevision || "",
+          telemetryManifestProvider: state.telemetry.manifestProvider || "",
+          transport: state.v3.pvpTransport || "poll",
+          pvpStatus: state.v3.pvpSession?.status || "idle",
+          ladderActivity: state.arena?.ladderActivity || 0,
+          combatHeat: state.telemetry.combatHeat || 0,
+          threatRatio: state.telemetry.threatRatio || 0,
+          hudDensity: state.ui?.hudDensity || "full",
+          postFxLevel: state.telemetry.scenePostFxLevel || 0.9
+        });
+      } catch (_) {
+        sceneEffectiveProfile = null;
+      }
+    }
+    if (sceneEffectiveProfile) {
+      state.v3.sceneEffectiveProfile = sceneEffectiveProfile;
+    }
 
     setSceneDeckChip("sceneDeckModeChip", `SCENE ${sceneMode}`, isLite ? "pressure" : "balanced", isLite ? 0.42 : 0.28);
     setSceneDeckChip(
@@ -379,11 +410,16 @@
 
     const liteBadge = byId("liteSceneBadge");
     if (liteBadge) {
-      const shouldShow = isLite || manifestRiskRatio >= 0.2;
+      const bridgeLiteBadge = sceneEffectiveProfile && sceneEffectiveProfile.liteBadge ? sceneEffectiveProfile.liteBadge : null;
+      const shouldShow = bridgeLiteBadge ? !!bridgeLiteBadge.shouldShow : isLite || manifestRiskRatio >= 0.2;
       liteBadge.classList.toggle("hidden", !shouldShow);
       liteBadge.classList.remove("warn", "info");
       let badgeText = "Lite Scene";
-      if (isLite) {
+      if (bridgeLiteBadge) {
+        badgeText = String(bridgeLiteBadge.text || "Lite Scene");
+        liteBadge.classList.add(bridgeLiteBadge.tone === "warn" ? "warn" : "info");
+        liteBadge.dataset.mode = String(bridgeLiteBadge.mode || "ok");
+      } else if (isLite) {
         const reasonText =
           manifestRiskRatio >= 0.6
             ? `Risk ${Math.round(manifestRiskRatio * 100)}`
@@ -402,19 +438,24 @@
         liteBadge.dataset.mode = "ok";
       }
       liteBadge.textContent = badgeText;
-      liteBadge.title =
-        `scene=${sceneMode} perf=${perfTier} ladder=${Math.round(ladderActivity * 100)}% ` +
-        `ready=${Math.round(assetReadyRatio * 100)}% sync=${Math.round(assetSyncRatio * 100)}% ` +
-        `manifest=${manifestShort} ${manifestSource}`;
+      liteBadge.title = bridgeLiteBadge && bridgeLiteBadge.title
+        ? String(bridgeLiteBadge.title)
+        : `scene=${sceneMode} perf=${perfTier} ladder=${Math.round(ladderActivity * 100)}% ` +
+          `ready=${Math.round(assetReadyRatio * 100)}% sync=${Math.round(assetSyncRatio * 100)}% ` +
+          `manifest=${manifestShort} ${manifestSource}`;
     }
 
     const sceneProfileLine = byId("sceneProfileLine");
     if (sceneProfileLine) {
-      const hudDensity = String(state.ui?.hudDensity || "full");
-      const postFx = Number(state.telemetry.scenePostFxLevel || 0.9).toFixed(2);
-      sceneProfileLine.textContent =
-        `Profile: hud ${hudDensity} | postfx ${postFx} | rev ${manifestShort} | ` +
-        `assets ${readyAssets}/${totalAssets} | int ${Math.round(assetSyncRatio * 100)}%`;
+      if (sceneEffectiveProfile && sceneEffectiveProfile.profileLine) {
+        sceneProfileLine.textContent = String(sceneEffectiveProfile.profileLine);
+      } else {
+        const hudDensity = String(state.ui?.hudDensity || "full");
+        const postFx = Number(state.telemetry.scenePostFxLevel || 0.9).toFixed(2);
+        sceneProfileLine.textContent =
+          `Profile: hud ${hudDensity} | postfx ${postFx} | rev ${manifestShort} | ` +
+          `assets ${readyAssets}/${totalAssets} | int ${Math.round(assetSyncRatio * 100)}%`;
+      }
     }
     renderSceneAlarmStrip();
     renderSceneIntegrityOverlay();
@@ -1233,7 +1274,9 @@
     }
     if (
       typeof bridge.computeAssetManifestMetrics !== "function" ||
-      typeof bridge.computePvpLeaderboardState !== "function"
+      typeof bridge.computePvpLeaderboardState !== "function" ||
+      typeof bridge.computeSceneEffectiveProfile !== "function" ||
+      typeof bridge.computeProviderRuntimeMetrics !== "function"
     ) {
       return null;
     }
@@ -11142,28 +11185,44 @@
     const queues = state.admin.queues && typeof state.admin.queues === "object" ? state.admin.queues : {};
     const rows = Array.isArray(queues.external_api_health) ? queues.external_api_health : [];
     const decisions = Array.isArray(queues.token_auto_decisions) ? queues.token_auto_decisions : [];
-    const providerTotal = rows.length;
-    const providerOk = rows.filter((row) => row && row.ok === true).length;
-    const timeoutCount = rows.filter((row) => {
+    const stateMutatorBridge = getStateMutatorBridge();
+    let providerMetrics = null;
+    if (stateMutatorBridge) {
+      try {
+        providerMetrics = stateMutatorBridge.computeProviderRuntimeMetrics(rows, decisions, Date.now());
+      } catch (_) {
+        providerMetrics = null;
+      }
+    }
+    const providerTotal = providerMetrics ? asNum(providerMetrics.providerTotal) : rows.length;
+    const providerOk = providerMetrics ? asNum(providerMetrics.providerOk) : rows.filter((row) => row && row.ok === true).length;
+    const timeoutCount = providerMetrics ? asNum(providerMetrics.timeoutCount) : rows.filter((row) => {
       const code = String(row?.error_code || "").toLowerCase();
       const message = String(row?.error_message || "").toLowerCase();
       return code.includes("timeout") || message.includes("timeout") || message.includes("timed out");
     }).length;
-    const providerRatio = providerTotal > 0 ? clamp(providerOk / providerTotal, 0, 1) : 0.35;
-    const timeoutRatio = providerTotal > 0 ? clamp(timeoutCount / providerTotal, 0, 1) : 0;
+    const providerRatio = providerMetrics ? clamp(asNum(providerMetrics.providerRatio), 0, 1) : providerTotal > 0 ? clamp(providerOk / providerTotal, 0, 1) : 0.35;
+    const timeoutRatio = providerMetrics ? clamp(asNum(providerMetrics.timeoutRatio), 0, 1) : providerTotal > 0 ? clamp(timeoutCount / providerTotal, 0, 1) : 0;
     const avgLatency =
-      providerTotal > 0
-        ? rows.reduce((sum, row) => sum + asNum(row?.latency_ms || 0), 0) / providerTotal
-        : 0;
+      providerMetrics
+        ? asNum(providerMetrics.avgLatency)
+        : providerTotal > 0
+          ? rows.reduce((sum, row) => sum + asNum(row?.latency_ms || 0), 0) / providerTotal
+          : 0;
     const latest = rows[0] || null;
-    const latestAgeSec = latest?.checked_at ? Math.max(0, Math.round((Date.now() - new Date(latest.checked_at).getTime()) / 1000)) : null;
-    const staleRatio = latestAgeSec == null ? 0.3 : clamp(latestAgeSec / 180, 0, 1);
+    const latestAgeSec = providerMetrics && providerMetrics.latestAgeSec != null
+      ? asNum(providerMetrics.latestAgeSec)
+      : latest?.checked_at
+        ? Math.max(0, Math.round((Date.now() - new Date(latest.checked_at).getTime()) / 1000))
+        : null;
+    const staleRatio = providerMetrics ? clamp(asNum(providerMetrics.staleRatio), 0, 1) : latestAgeSec == null ? 0.3 : clamp(latestAgeSec / 180, 0, 1);
     const recentDecisions = decisions.slice(0, 4);
-    const autoApproveCount = recentDecisions.filter((d) => String(d?.decision || "").toLowerCase().includes("approve")).length;
-    const autoRejectCount = recentDecisions.filter((d) => String(d?.decision || "").toLowerCase().includes("reject")).length;
-    const queuePressure = clamp((timeoutRatio * 0.35) + ((1 - providerRatio) * 0.4) + (staleRatio * 0.25), 0, 1);
-    const tone =
-      providerTotal === 0
+    const autoApproveCount = providerMetrics ? asNum(providerMetrics.autoApproveCount) : recentDecisions.filter((d) => String(d?.decision || "").toLowerCase().includes("approve")).length;
+    const autoRejectCount = providerMetrics ? asNum(providerMetrics.autoRejectCount) : recentDecisions.filter((d) => String(d?.decision || "").toLowerCase().includes("reject")).length;
+    const queuePressure = providerMetrics ? clamp(asNum(providerMetrics.queuePressure), 0, 1) : clamp((timeoutRatio * 0.35) + ((1 - providerRatio) * 0.4) + (staleRatio * 0.25), 0, 1);
+    const tone = providerMetrics && providerMetrics.tone
+      ? String(providerMetrics.tone)
+      : providerTotal === 0
         ? "neutral"
         : providerRatio < 0.35 || timeoutRatio > 0.5 || staleRatio > 0.9
           ? "critical"
@@ -11173,9 +11232,11 @@
     const adminTreasuryBridge = getAdminTreasuryBridge();
     let providerBridgeHandled = false;
     if (adminTreasuryBridge) {
-      const latestStatus = latest
-        ? `${latest.ok ? "OK" : "FAIL"} ${asNum(latest.status_code || 0) || "-"}`
-        : "WAIT";
+      const latestStatus = providerMetrics && providerMetrics.latestStatus
+        ? String(providerMetrics.latestStatus)
+        : latest
+          ? `${latest.ok ? "OK" : "FAIL"} ${asNum(latest.status_code || 0) || "-"}`
+          : "WAIT";
       providerBridgeHandled =
         adminTreasuryBridge.render({
           provider: {
@@ -11274,9 +11335,11 @@
         line.textContent = `${p} | OK ${providerOk}/${providerTotal} | timeout ${timeoutCount} | avg ${Math.round(avgLatency)}ms`;
       }
       if (signal) {
-        const latestStatus = latest
-          ? `${latest.ok ? "OK" : "FAIL"} ${asNum(latest.status_code || 0) || "-"}`
-          : "WAIT";
+        const latestStatus = providerMetrics && providerMetrics.latestStatus
+          ? String(providerMetrics.latestStatus)
+          : latest
+            ? `${latest.ok ? "OK" : "FAIL"} ${asNum(latest.status_code || 0) || "-"}`
+            : "WAIT";
         signal.textContent =
           `Latest ${latestStatus}${latestAgeSec != null ? ` | age ${latestAgeSec}s` : ""} | auto approve ${autoApproveCount} | auto reject ${autoRejectCount}`;
       }
@@ -11362,7 +11425,11 @@
       avgLatency,
       latestAgeSec,
       staleRatio,
-      tone
+      tone,
+      queuePressure,
+      autoApproveCount,
+      autoRejectCount,
+      latestStatus: providerMetrics && providerMetrics.latestStatus ? String(providerMetrics.latestStatus) : undefined
     };
 
     const providerSignalKey = `${providerOk}/${providerTotal}:${timeoutCount}:${Math.round(staleRatio * 100)}:${Math.round(avgLatency)}:${autoApproveCount}/${autoRejectCount}`;
