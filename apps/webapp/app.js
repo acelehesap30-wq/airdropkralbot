@@ -1278,7 +1278,10 @@
       typeof bridge.computeSceneEffectiveProfile !== "function" ||
       typeof bridge.computeProviderRuntimeMetrics !== "function" ||
       typeof bridge.computeTokenRouteRuntimeMetrics !== "function" ||
-      typeof bridge.computeDecisionTraceMetrics !== "function"
+      typeof bridge.computeTokenLifecycleMetrics !== "function" ||
+      typeof bridge.computeTokenDirectorMetrics !== "function" ||
+      typeof bridge.computeDecisionTraceMetrics !== "function" ||
+      typeof bridge.computeTreasuryRuntimeMetrics !== "function"
     ) {
       return null;
     }
@@ -10354,9 +10357,28 @@
               ? "pressure"
               : hasRequest && lifecycle.status === "tx_submitted"
                 ? "balanced"
-                : quoteReady
+              : quoteReady
                   ? "balanced"
                   : "neutral";
+    let derivedLifecycleMetrics = null;
+    const stateMutatorBridge = getStateMutatorBridge();
+    if (stateMutatorBridge && typeof stateMutatorBridge.computeTokenLifecycleMetrics === "function") {
+      try {
+        derivedLifecycleMetrics = stateMutatorBridge.computeTokenLifecycleMetrics({
+          lifecycle,
+          route,
+          quoteData,
+          tokenData: safe,
+          quoteReady,
+          hasRequest,
+          providerCount,
+          okProviderCount,
+          agreementRatio
+        });
+      } catch (err) {
+        console.warn("[v3-state-bridge] computeTokenLifecycleMetrics failed", err);
+      }
+    }
 
     const tokenTreasuryBridge = getTokenTreasuryBridge();
     let tokenTxBridgeHandled = false;
@@ -10525,29 +10547,45 @@
       }
     }
 
-    state.v3.tokenLifecycleMetrics = {
-      status: lifecycle.status || "none",
-      progressRatio,
-      verifyConfidence,
-      providerCount,
-      okProviderCount,
-      routeCoverage,
-      gateOpen,
-      tone
-    };
+    const lifecycleMetricsState = derivedLifecycleMetrics && typeof derivedLifecycleMetrics === "object"
+      ? {
+          status: String(derivedLifecycleMetrics.status || lifecycle.status || "none"),
+          progressRatio: clamp(asNum(derivedLifecycleMetrics.progressRatio), 0, 1),
+          verifyConfidence: clamp(asNum(derivedLifecycleMetrics.verifyConfidence), 0, 1),
+          providerCount: Math.max(0, Math.floor(asNum(derivedLifecycleMetrics.providerCount))),
+          okProviderCount: Math.max(0, Math.floor(asNum(derivedLifecycleMetrics.okProviderCount))),
+          agreementRatio: clamp(asNum(derivedLifecycleMetrics.agreementRatio), 0, 1),
+          providerRatio: clamp(asNum(derivedLifecycleMetrics.providerRatio), 0, 1),
+          routeCoverage: clamp(asNum(derivedLifecycleMetrics.routeCoverage), 0, 1),
+          gateOpen: derivedLifecycleMetrics.gateOpen === true,
+          tone: String(derivedLifecycleMetrics.tone || tone)
+        }
+      : {
+          status: lifecycle.status || "none",
+          progressRatio,
+          verifyConfidence,
+          providerCount,
+          okProviderCount,
+          agreementRatio,
+          providerRatio,
+          routeCoverage,
+          gateOpen,
+          tone
+        };
+    state.v3.tokenLifecycleMetrics = lifecycleMetricsState;
 
-    const lifecycleKey = `${lifecycle.status}:${Math.round(progressRatio * 100)}:${Math.round(verifyConfidence * 100)}:${providerCount}:${okProviderCount}:${gateOpen ? 1 : 0}`;
+    const lifecycleKey = `${lifecycleMetricsState.status}:${Math.round(lifecycleMetricsState.progressRatio * 100)}:${Math.round(lifecycleMetricsState.verifyConfidence * 100)}:${lifecycleMetricsState.providerCount}:${lifecycleMetricsState.okProviderCount}:${lifecycleMetricsState.gateOpen ? 1 : 0}`;
     const now = Date.now();
     if (lifecycleKey !== state.v3.lastTokenLifecycleSignalKey && now - asNum(state.v3.lastTokenLifecycleSignalAt || 0) > 1800) {
       state.v3.lastTokenLifecycleSignalKey = lifecycleKey;
       state.v3.lastTokenLifecycleSignalAt = now;
       if (hasRequest || quoteReady) {
         const pulseTone =
-          lifecycle.status === "approved"
+          lifecycleMetricsState.status === "approved"
             ? "reveal"
-            : lifecycle.status === "rejected"
+            : lifecycleMetricsState.status === "rejected"
               ? "aggressive"
-              : lifecycle.status === "tx_submitted"
+              : lifecycleMetricsState.status === "tx_submitted"
                 ? "balanced"
                 : quoteReady
                   ? "info"
@@ -10662,6 +10700,31 @@
           : readinessRatio >= 0.72
             ? "advantage"
             : "balanced";
+    let derivedDirectorMetrics = null;
+    const stateMutatorBridge = getStateMutatorBridge();
+    if (stateMutatorBridge && typeof stateMutatorBridge.computeTokenDirectorMetrics === "function") {
+      try {
+        derivedDirectorMetrics = stateMutatorBridge.computeTokenDirectorMetrics({
+          quoteReady: Boolean(quote),
+          hasRequest: Boolean(latest),
+          txSeen,
+          gateOpen,
+          latestStatus,
+          routeCoverage,
+          verifyConfidence,
+          providerRatio,
+          timeoutRatio,
+          staleRatio,
+          queuePressure,
+          riskScore,
+          manualQueueCount,
+          autoDecisionCount,
+          pendingPayoutCount
+        });
+      } catch (err) {
+        console.warn("[v3-state-bridge] computeTokenDirectorMetrics failed", err);
+      }
+    }
     const tokenTreasuryBridge = getTokenTreasuryBridge();
     let tokenDirectorBridgeHandled = false;
     if (tokenTreasuryBridge) {
@@ -10898,35 +10961,63 @@
       }
     }
 
-    state.v3.tokenDirectorMetrics = {
-      nextStepKey,
-      nextStepLabel,
-      readinessRatio,
-      riskRatio: delayRisk,
-      verifyConfidence,
-      routeCoverage,
-      providerRatio,
-      timeoutRatio,
-      staleRatio,
-      queuePressure,
-      gateOpen,
-      manualQueueCount,
-      pendingPayoutCount,
-      tone
-    };
+    const tokenDirectorMetricsState = derivedDirectorMetrics && typeof derivedDirectorMetrics === "object"
+      ? {
+          nextStepKey: String(derivedDirectorMetrics.nextStepKey || nextStepKey),
+          nextStepLabel: String(derivedDirectorMetrics.nextStepLabel || nextStepLabel),
+          verifyStateLabel: String(derivedDirectorMetrics.verifyStateLabel || verifyStateLabel),
+          readinessRatio: clamp(asNum(derivedDirectorMetrics.readinessRatio), 0, 1),
+          riskRatio: clamp(asNum(derivedDirectorMetrics.riskRatio), 0, 1),
+          verifyConfidence: clamp(asNum(derivedDirectorMetrics.verifyConfidence), 0, 1),
+          routeCoverage: clamp(asNum(derivedDirectorMetrics.routeCoverage), 0, 1),
+          providerRatio: clamp(asNum(derivedDirectorMetrics.providerRatio), 0, 1),
+          timeoutRatio: clamp(asNum(derivedDirectorMetrics.timeoutRatio), 0, 1),
+          staleRatio: clamp(asNum(derivedDirectorMetrics.staleRatio), 0, 1),
+          queuePressure: clamp(asNum(derivedDirectorMetrics.queuePressure), 0, 1),
+          gateOpen: derivedDirectorMetrics.gateOpen === true,
+          manualQueueCount: Math.max(0, Math.floor(asNum(derivedDirectorMetrics.manualQueueCount))),
+          autoDecisionCount: Math.max(0, Math.floor(asNum(derivedDirectorMetrics.autoDecisionCount))),
+          pendingPayoutCount: Math.max(0, Math.floor(asNum(derivedDirectorMetrics.pendingPayoutCount))),
+          tone: String(derivedDirectorMetrics.tone || tone)
+        }
+      : {
+          nextStepKey,
+          nextStepLabel,
+          verifyStateLabel,
+          readinessRatio,
+          riskRatio: delayRisk,
+          verifyConfidence,
+          routeCoverage,
+          providerRatio,
+          timeoutRatio,
+          staleRatio,
+          queuePressure,
+          gateOpen,
+          manualQueueCount,
+          autoDecisionCount,
+          pendingPayoutCount,
+          tone
+        };
+    state.v3.tokenDirectorMetrics = tokenDirectorMetricsState;
     if (state.arena) {
-      state.arena.tokenDirectorUrgency = clamp((1 - readinessRatio) * 0.55 + (nextStepKey === "tx" ? 0.16 : 0) + (nextStepKey === "verify" ? 0.12 : 0), 0, 1);
-      state.arena.tokenDirectorStress = delayRisk;
+      state.arena.tokenDirectorUrgency = clamp(
+        (1 - tokenDirectorMetricsState.readinessRatio) * 0.55 +
+          (tokenDirectorMetricsState.nextStepKey === "tx" ? 0.16 : 0) +
+          (tokenDirectorMetricsState.nextStepKey === "verify" ? 0.12 : 0),
+        0,
+        1
+      );
+      state.arena.tokenDirectorStress = tokenDirectorMetricsState.riskRatio;
     }
-    const signalKey = `${nextStepKey}:${Math.round(readinessRatio * 100)}:${Math.round(delayRisk * 100)}:${manualQueueCount}:${pendingPayoutCount}:${gateOpen ? 1 : 0}`;
+    const signalKey = `${tokenDirectorMetricsState.nextStepKey}:${Math.round(tokenDirectorMetricsState.readinessRatio * 100)}:${Math.round(tokenDirectorMetricsState.riskRatio * 100)}:${tokenDirectorMetricsState.manualQueueCount}:${tokenDirectorMetricsState.pendingPayoutCount}:${tokenDirectorMetricsState.gateOpen ? 1 : 0}`;
     const now = Date.now();
     if (signalKey !== state.v3.lastTokenDirectorSignalKey && now - asNum(state.v3.lastTokenDirectorSignalAt || 0) > 2400) {
       state.v3.lastTokenDirectorSignalKey = signalKey;
       state.v3.lastTokenDirectorSignalAt = now;
       if (quote || latest || manualQueueCount > 0) {
         triggerArenaPulse(
-          tone === "critical" ? "aggressive" : tone === "pressure" ? "warn" : "info",
-          { label: `TOKEN DIR ${nextStepKey.toUpperCase()}` }
+          tokenDirectorMetricsState.tone === "critical" ? "aggressive" : tokenDirectorMetricsState.tone === "pressure" ? "warn" : "info",
+          { label: `TOKEN DIR ${String(tokenDirectorMetricsState.nextStepKey || nextStepKey).toUpperCase()}` }
         );
       }
     }
@@ -10980,6 +11071,21 @@
           : queuePressure > 0.7
             ? "pressure"
             : "advantage";
+    let derivedTreasuryRuntimeMetrics = null;
+    const stateMutatorBridge = getStateMutatorBridge();
+    if (stateMutatorBridge && typeof stateMutatorBridge.computeTreasuryRuntimeMetrics === "function") {
+      try {
+        derivedTreasuryRuntimeMetrics = stateMutatorBridge.computeTreasuryRuntimeMetrics({
+          token,
+          queues,
+          routing,
+          routeChains,
+          pendingPayoutCount: safeSummary.pending_payout_count || 0
+        });
+      } catch (err) {
+        console.warn("[v3-state-bridge] computeTreasuryRuntimeMetrics failed", err);
+      }
+    }
     const adminTreasuryBridge = getAdminTreasuryBridge();
     let treasuryBridgeHandled = false;
     if (adminTreasuryBridge) {
@@ -11170,30 +11276,56 @@
       }
     }
 
-    state.admin.treasuryRuntimeMetrics = {
-      routeCoverage,
-      totalRoutes,
-      enabledRoutes,
-      apiRatio,
-      apiOk,
-      apiTotal,
-      apiLatencyAvg,
-      queuePressure,
-      manualQueueCount,
-      pendingPayoutCount,
-      autoDecisionCount,
-      gateOpen,
-      tone
-    };
+    const treasuryRuntimeMetricsState = derivedTreasuryRuntimeMetrics && typeof derivedTreasuryRuntimeMetrics === "object"
+      ? {
+          routeCoverage: clamp(asNum(derivedTreasuryRuntimeMetrics.routeCoverage), 0, 1),
+          totalRoutes: Math.max(0, Math.floor(asNum(derivedTreasuryRuntimeMetrics.totalRoutes))),
+          enabledRoutes: Math.max(0, Math.floor(asNum(derivedTreasuryRuntimeMetrics.enabledRoutes))),
+          routeMissing: Math.max(0, Math.floor(asNum(derivedTreasuryRuntimeMetrics.routeMissing))),
+          apiRatio: clamp(asNum(derivedTreasuryRuntimeMetrics.apiRatio), 0, 1),
+          apiOk: Math.max(0, Math.floor(asNum(derivedTreasuryRuntimeMetrics.apiOk))),
+          apiTotal: Math.max(0, Math.floor(asNum(derivedTreasuryRuntimeMetrics.apiTotal))),
+          apiLatencyAvg: asNum(derivedTreasuryRuntimeMetrics.apiLatencyAvg),
+          queuePressure: clamp(asNum(derivedTreasuryRuntimeMetrics.queuePressure), 0, 1),
+          manualQueueCount: Math.max(0, Math.floor(asNum(derivedTreasuryRuntimeMetrics.manualQueueCount))),
+          pendingPayoutCount: Math.max(0, Math.floor(asNum(derivedTreasuryRuntimeMetrics.pendingPayoutCount))),
+          autoDecisionCount: Math.max(0, Math.floor(asNum(derivedTreasuryRuntimeMetrics.autoDecisionCount))),
+          gateOpen: derivedTreasuryRuntimeMetrics.gateOpen === true,
+          autoPolicyEnabled: derivedTreasuryRuntimeMetrics.autoPolicyEnabled === true,
+          tone: String(derivedTreasuryRuntimeMetrics.tone || tone)
+        }
+      : {
+          routeCoverage,
+          totalRoutes,
+          enabledRoutes,
+          routeMissing,
+          apiRatio,
+          apiOk,
+          apiTotal,
+          apiLatencyAvg,
+          queuePressure,
+          manualQueueCount,
+          pendingPayoutCount,
+          autoDecisionCount,
+          gateOpen,
+          autoPolicyEnabled,
+          tone
+        };
+    state.admin.treasuryRuntimeMetrics = treasuryRuntimeMetricsState;
 
-    const signalKey = `${enabledRoutes}/${totalRoutes}:${apiOk}/${apiTotal}:${Math.round(queuePressure * 100)}:${gateOpen ? 1 : 0}:${autoPolicyEnabled ? 1 : 0}`;
+    const signalKey = `${treasuryRuntimeMetricsState.enabledRoutes}/${treasuryRuntimeMetricsState.totalRoutes}:${treasuryRuntimeMetricsState.apiOk}/${treasuryRuntimeMetricsState.apiTotal}:${Math.round(treasuryRuntimeMetricsState.queuePressure * 100)}:${treasuryRuntimeMetricsState.gateOpen ? 1 : 0}:${treasuryRuntimeMetricsState.autoPolicyEnabled ? 1 : 0}`;
     const now = Date.now();
     if (signalKey !== state.admin.lastTreasurySignalKey && now - asNum(state.admin.lastTreasurySignalAt || 0) > 2600) {
       state.admin.lastTreasurySignalKey = signalKey;
       state.admin.lastTreasurySignalAt = now;
       triggerArenaPulse(
-        tone === "critical" ? "aggressive" : tone === "pressure" ? "warn" : "info",
-        { label: tone === "critical" ? "TREASURY ALERT" : `TREASURY ${enabledRoutes}/${Math.max(totalRoutes, 1)}` }
+        treasuryRuntimeMetricsState.tone === "critical" ? "aggressive" : treasuryRuntimeMetricsState.tone === "pressure" ? "warn" : "info",
+        {
+          label:
+            treasuryRuntimeMetricsState.tone === "critical"
+              ? "TREASURY ALERT"
+              : `TREASURY ${treasuryRuntimeMetricsState.enabledRoutes}/${Math.max(treasuryRuntimeMetricsState.totalRoutes, 1)}`
+        }
       );
     }
   }
