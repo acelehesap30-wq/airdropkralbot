@@ -1493,6 +1493,17 @@
     return bridge;
   }
 
+  function getCameraDirectorBridge() {
+    const bridge = window.__AKR_CAMERA_DIRECTOR__;
+    if (!bridge || typeof bridge !== "object") {
+      return null;
+    }
+    if (typeof bridge.render !== "function") {
+      return null;
+    }
+    return bridge;
+  }
+
   function getNetSchedulerBridge() {
     const bridge = window.__AKR_NET_SCHEDULER__;
     if (!bridge || typeof bridge !== "object") {
@@ -13537,22 +13548,37 @@
     const windowMs = Math.max(200, asNum(state.v3.pvpActionWindowMs || 800));
     const cinematicIntensity = clamp(asNum(state.arena?.pvpCinematicIntensity || 0), 0, 1.6);
     const dynamics = resolveCameraDynamics(validMode, heat, threat, cinematicIntensity);
+    const riskPct = Math.round(clamp(asNum(safe.risk_score || 0) * 100, 0, 100));
+    const cameraPayload = {
+      mode: {
+        key: validMode,
+        text: `${cameraModeLabel(validMode).toUpperCase()} | Drift ${Math.round(dynamics.drift * 100)}%`
+      },
+      focus: {
+        text: `${dynamics.focus} Queue ${queueSize} | Window ${windowMs}ms | Risk ${riskPct}%`
+      },
+      energy: {
+        pct: dynamics.energy
+      }
+    };
+    const cameraDirectorBridge = getCameraDirectorBridge();
+    const bridgeRendered = !!(cameraDirectorBridge && cameraDirectorBridge.render(cameraPayload));
+    if (!bridgeRendered) {
+      const modeLine = byId("cameraModeLine");
+      if (modeLine) {
+        modeLine.dataset.mode = validMode;
+        modeLine.textContent = cameraPayload.mode.text;
+      }
 
-    const modeLine = byId("cameraModeLine");
-    if (modeLine) {
-      modeLine.dataset.mode = validMode;
-      modeLine.textContent = `${cameraModeLabel(validMode).toUpperCase()} | Drift ${Math.round(dynamics.drift * 100)}%`;
-    }
+      const focusLine = byId("cameraFocusLine");
+      if (focusLine) {
+        focusLine.textContent = cameraPayload.focus.text;
+      }
 
-    const focusLine = byId("cameraFocusLine");
-    if (focusLine) {
-      const riskPct = Math.round(clamp(asNum(safe.risk_score || 0) * 100, 0, 100));
-      focusLine.textContent = `${dynamics.focus} Queue ${queueSize} | Window ${windowMs}ms | Risk ${riskPct}%`;
-    }
-
-    const energyMeter = byId("cameraEnergyMeter");
-    if (energyMeter) {
-      animateMeterWidth(energyMeter, dynamics.energy, 0.32);
+      const energyMeter = byId("cameraEnergyMeter");
+      if (energyMeter) {
+        animateMeterWidth(energyMeter, cameraPayload.energy.pct, 0.32);
+      }
     }
   }
 
