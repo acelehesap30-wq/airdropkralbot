@@ -1460,6 +1460,17 @@
     return bridge;
   }
 
+  function getPvpRejectIntelBridge() {
+    const bridge = window.__AKR_PVP_REJECT_INTEL__;
+    if (!bridge || typeof bridge !== "object") {
+      return null;
+    }
+    if (typeof bridge.render !== "function") {
+      return null;
+    }
+    return bridge;
+  }
+
   function getNetSchedulerBridge() {
     const bridge = window.__AKR_NET_SCHEDULER__;
     if (!bridge || typeof bridge !== "object") {
@@ -7096,46 +7107,53 @@
           return;
         }
 
-        root.dataset.tone = String(metrics.root?.tone || "neutral");
-        root.dataset.category = String(metrics.root?.category || "none");
-        root.dataset.recent = metrics.root?.recent ? "1" : "0";
-        root.style.setProperty("--reject-intel-risk", clamp(asNum(metrics.root?.risk), 0, 1).toFixed(3));
-        root.style.setProperty("--reject-intel-sweep", clamp(asNum(metrics.root?.sweep), 0, 1).toFixed(3));
-        root.style.setProperty("--reject-intel-flash", clamp(asNum(metrics.root?.flash), 0, 1).toFixed(3));
-
-        badge.textContent = String(metrics.badge?.text || "WATCH");
-        badge.className = metrics.badge?.tone === "warn" ? "badge warn" : metrics.badge?.tone === "default" ? "badge" : "badge info";
-
-        animateTextSwap(line, String(metrics.texts?.line || "Reject diagnostics"));
-        animateTextSwap(hint, String(metrics.texts?.hint || "Reject diagnostics aktif."));
-        animateTextSwap(plan, String(metrics.texts?.plan || "Plan bilgisi yok."));
-        animateTextSwap(solutionLine, String(metrics.texts?.solution || "Cozum onerisi bekleniyor."));
-
-        const chipMap = metrics.chips || {};
-        for (const entry of [chipMap.reason, chipMap.fresh, chipMap.window, chipMap.asset, chipMap.directive, chipMap.expected, chipMap.queue, chipMap.backoff, chipMap.sync]) {
-          if (!entry || !entry.id) continue;
-          const target =
-            entry.id === "pvpRejectIntelReasonChip" ? reasonChip :
-            entry.id === "pvpRejectIntelFreshChip" ? freshChip :
-            entry.id === "pvpRejectIntelWindowChip" ? windowChip :
-            entry.id === "pvpRejectIntelAssetChip" ? assetChip :
-            entry.id === "pvpRejectIntelDirectiveChip" ? directiveChip :
-            entry.id === "pvpRejectIntelExpectedChip" ? expectedChip :
-            entry.id === "pvpRejectIntelQueueChip" ? queueChip :
-            entry.id === "pvpRejectIntelBackoffChip" ? backoffChip :
-            entry.id === "pvpRejectIntelSyncChip" ? syncChip :
-            null;
-          if (target) {
-            setChip(target, entry.text, entry.tone, entry.level);
-          }
+        let renderedByTsBridge = false;
+        const pvpRejectIntelBridge = getPvpRejectIntelBridge();
+        if (pvpRejectIntelBridge && typeof pvpRejectIntelBridge.render === "function") {
+          renderedByTsBridge = !!pvpRejectIntelBridge.render(metrics);
         }
+        if (!renderedByTsBridge) {
+          root.dataset.tone = String(metrics.root?.tone || "neutral");
+          root.dataset.category = String(metrics.root?.category || "none");
+          root.dataset.recent = metrics.root?.recent ? "1" : "0";
+          root.style.setProperty("--reject-intel-risk", clamp(asNum(metrics.root?.risk), 0, 1).toFixed(3));
+          root.style.setProperty("--reject-intel-sweep", clamp(asNum(metrics.root?.sweep), 0, 1).toFixed(3));
+          root.style.setProperty("--reject-intel-flash", clamp(asNum(metrics.root?.flash), 0, 1).toFixed(3));
 
-        actionPanel.dataset.tone = String(metrics.actionPanel?.tone || "neutral");
-        actionPanel.dataset.category = String(metrics.actionPanel?.category || "none");
-        animateMeterWidth(recoveryMeter, clamp(asNum(metrics.meters?.recoveryPct), 0, 100), 0.22);
-        animateMeterWidth(riskMeter, clamp(asNum(metrics.meters?.riskPct), 0, 100), 0.22);
-        setMeterPalette(recoveryMeter, String(metrics.meters?.recoveryPalette || "neutral"));
-        setMeterPalette(riskMeter, String(metrics.meters?.riskPalette || "neutral"));
+          badge.textContent = String(metrics.badge?.text || "WATCH");
+          badge.className = metrics.badge?.tone === "warn" ? "badge warn" : metrics.badge?.tone === "default" ? "badge" : "badge info";
+
+          animateTextSwap(line, String(metrics.texts?.line || "Reject diagnostics"));
+          animateTextSwap(hint, String(metrics.texts?.hint || "Reject diagnostics aktif."));
+          animateTextSwap(plan, String(metrics.texts?.plan || "Plan bilgisi yok."));
+          animateTextSwap(solutionLine, String(metrics.texts?.solution || "Cozum onerisi bekleniyor."));
+
+          const chipMap = metrics.chips || {};
+          for (const entry of [chipMap.reason, chipMap.fresh, chipMap.window, chipMap.asset, chipMap.directive, chipMap.expected, chipMap.queue, chipMap.backoff, chipMap.sync]) {
+            if (!entry || !entry.id) continue;
+            const target =
+              entry.id === "pvpRejectIntelReasonChip" ? reasonChip :
+              entry.id === "pvpRejectIntelFreshChip" ? freshChip :
+              entry.id === "pvpRejectIntelWindowChip" ? windowChip :
+              entry.id === "pvpRejectIntelAssetChip" ? assetChip :
+              entry.id === "pvpRejectIntelDirectiveChip" ? directiveChip :
+              entry.id === "pvpRejectIntelExpectedChip" ? expectedChip :
+              entry.id === "pvpRejectIntelQueueChip" ? queueChip :
+              entry.id === "pvpRejectIntelBackoffChip" ? backoffChip :
+              entry.id === "pvpRejectIntelSyncChip" ? syncChip :
+              null;
+            if (target) {
+              setChip(target, entry.text, entry.tone, entry.level);
+            }
+          }
+
+          actionPanel.dataset.tone = String(metrics.actionPanel?.tone || "neutral");
+          actionPanel.dataset.category = String(metrics.actionPanel?.category || "none");
+          animateMeterWidth(recoveryMeter, clamp(asNum(metrics.meters?.recoveryPct), 0, 100), 0.22);
+          animateMeterWidth(riskMeter, clamp(asNum(metrics.meters?.riskPct), 0, 100), 0.22);
+          setMeterPalette(recoveryMeter, String(metrics.meters?.recoveryPalette || "neutral"));
+          setMeterPalette(riskMeter, String(metrics.meters?.riskPalette || "neutral"));
+        }
 
         if (state.arena) {
           state.arena.pvpRejectIntelRisk = clamp(asNum(state.arena.pvpRejectIntelRisk ?? asNum(metrics.stateEffects?.rejectIntelRisk)) * 0.74 + asNum(metrics.stateEffects?.rejectIntelRisk) * 0.26, 0, 1);
