@@ -1482,6 +1482,17 @@
     return bridge;
   }
 
+  function getRoundDirectorBridge() {
+    const bridge = window.__AKR_ROUND_DIRECTOR__;
+    if (!bridge || typeof bridge !== "object") {
+      return null;
+    }
+    if (typeof bridge.render !== "function") {
+      return null;
+    }
+    return bridge;
+  }
+
   function getNetSchedulerBridge() {
     const bridge = window.__AKR_NET_SCHEDULER__;
     if (!bridge || typeof bridge !== "object") {
@@ -13412,45 +13423,69 @@
     const roundPhase = roundHeat >= 0.82 ? "critical" : roundHeat >= 0.62 ? "overdrive" : roundHeat >= 0.4 ? "engage" : "warmup";
     const dominanceState = dominance >= 0.62 ? "ahead" : dominance <= 0.38 ? "behind" : "even";
     const pressureState = pressure >= 0.7 ? "high" : pressure >= 0.4 ? "mid" : "low";
+    const dominanceLabel = dominanceState === "ahead" ? "AHEAD" : dominanceState === "behind" ? "UNDER" : "EVEN";
+    const roundPayload = {
+      heat: {
+        phase: roundPhase,
+        text: `${Math.round(roundHeat * 100)}% | ${roundPhase.toUpperCase()}`,
+        pct: roundHeat * 100
+      },
+      tempo: {
+        text: `${Math.round(tempoRatio * 100)}% | Tick ${tickMs}ms`,
+        pct: tempoRatio * 100
+      },
+      dominance: {
+        state: dominanceState,
+        text: `YOU ${scoreSelf} - ${scoreOpp} OPP | ${dominanceLabel}`,
+        pct: dominance * 100
+      },
+      pressure: {
+        state: pressureState,
+        text: `${Math.round(pressure * 100)}% | Queue ${queueSize}`,
+        pct: pressure * 100
+      }
+    };
+    const roundDirectorBridge = getRoundDirectorBridge();
+    const bridgeRendered = !!(roundDirectorBridge && roundDirectorBridge.render(roundPayload));
+    if (!bridgeRendered) {
+      const heatLine = byId("roundHeatLine");
+      if (heatLine) {
+        heatLine.dataset.phase = roundPhase;
+        heatLine.textContent = roundPayload.heat.text;
+      }
+      const heatMeter = byId("roundHeatMeter");
+      if (heatMeter) {
+        animateMeterWidth(heatMeter, roundPayload.heat.pct, 0.3);
+      }
 
-    const heatLine = byId("roundHeatLine");
-    if (heatLine) {
-      heatLine.dataset.phase = roundPhase;
-      heatLine.textContent = `${Math.round(roundHeat * 100)}% | ${roundPhase.toUpperCase()}`;
-    }
-    const heatMeter = byId("roundHeatMeter");
-    if (heatMeter) {
-      animateMeterWidth(heatMeter, roundHeat * 100, 0.3);
-    }
+      const tempoLine = byId("roundTempoLine");
+      if (tempoLine) {
+        tempoLine.textContent = roundPayload.tempo.text;
+      }
+      const tempoMeter = byId("roundTempoMeter");
+      if (tempoMeter) {
+        animateMeterWidth(tempoMeter, roundPayload.tempo.pct, 0.3);
+      }
 
-    const tempoLine = byId("roundTempoLine");
-    if (tempoLine) {
-      tempoLine.textContent = `${Math.round(tempoRatio * 100)}% | Tick ${tickMs}ms`;
-    }
-    const tempoMeter = byId("roundTempoMeter");
-    if (tempoMeter) {
-      animateMeterWidth(tempoMeter, tempoRatio * 100, 0.3);
-    }
+      const dominanceLine = byId("roundDominanceLine");
+      if (dominanceLine) {
+        dominanceLine.dataset.dominance = dominanceState;
+        dominanceLine.textContent = roundPayload.dominance.text;
+      }
+      const dominanceMeter = byId("roundDominanceMeter");
+      if (dominanceMeter) {
+        animateMeterWidth(dominanceMeter, roundPayload.dominance.pct, 0.34);
+      }
 
-    const dominanceLine = byId("roundDominanceLine");
-    if (dominanceLine) {
-      dominanceLine.dataset.dominance = dominanceState;
-      const dominanceLabel = dominanceState === "ahead" ? "AHEAD" : dominanceState === "behind" ? "UNDER" : "EVEN";
-      dominanceLine.textContent = `YOU ${scoreSelf} - ${scoreOpp} OPP | ${dominanceLabel}`;
-    }
-    const dominanceMeter = byId("roundDominanceMeter");
-    if (dominanceMeter) {
-      animateMeterWidth(dominanceMeter, dominance * 100, 0.34);
-    }
-
-    const pressureLine = byId("roundPressureLine");
-    if (pressureLine) {
-      pressureLine.dataset.pressure = pressureState;
-      pressureLine.textContent = `${Math.round(pressure * 100)}% | Queue ${queueSize}`;
-    }
-    const pressureMeter = byId("roundPressureMeter");
-    if (pressureMeter) {
-      animateMeterWidth(pressureMeter, pressure * 100, 0.34);
+      const pressureLine = byId("roundPressureLine");
+      if (pressureLine) {
+        pressureLine.dataset.pressure = pressureState;
+        pressureLine.textContent = roundPayload.pressure.text;
+      }
+      const pressureMeter = byId("roundPressureMeter");
+      if (pressureMeter) {
+        animateMeterWidth(pressureMeter, roundPayload.pressure.pct, 0.34);
+      }
     }
 
     const alertKey = `${roundPhase}:${dominanceState}:${pressureState}`;
