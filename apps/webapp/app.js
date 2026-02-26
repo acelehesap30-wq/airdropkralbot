@@ -7074,6 +7074,98 @@
       renderSceneStatusDeck();
     };
 
+    const stateMutatorBridge = getStateMutatorBridge();
+    if (stateMutatorBridge && typeof stateMutatorBridge.computePvpRejectIntelMetrics === "function") {
+      try {
+        const bridgeRejectInfo = classifyPvpRejectReason(state.v3.pvpLastRejectReason || "");
+        const bridgeExpectedAction = resolveExpectedPvpAction(getPvpTickSnapshot());
+        const bridgeExpectedLabel = normalizePvpInputLabel(bridgeExpectedAction || "wait").toUpperCase();
+        const metrics = stateMutatorBridge.computePvpRejectIntelMetrics({
+          session,
+          tickMeta,
+          v3: state.v3,
+          admin: state.admin,
+          telemetry: state.telemetry,
+          rejectInfo: bridgeRejectInfo,
+          expectedLabel: bridgeExpectedLabel,
+          nowMs: Date.now()
+        });
+
+        if (metrics.clearState) {
+          clearState();
+          return;
+        }
+
+        root.dataset.tone = String(metrics.root?.tone || "neutral");
+        root.dataset.category = String(metrics.root?.category || "none");
+        root.dataset.recent = metrics.root?.recent ? "1" : "0";
+        root.style.setProperty("--reject-intel-risk", clamp(asNum(metrics.root?.risk), 0, 1).toFixed(3));
+        root.style.setProperty("--reject-intel-sweep", clamp(asNum(metrics.root?.sweep), 0, 1).toFixed(3));
+        root.style.setProperty("--reject-intel-flash", clamp(asNum(metrics.root?.flash), 0, 1).toFixed(3));
+
+        badge.textContent = String(metrics.badge?.text || "WATCH");
+        badge.className = metrics.badge?.tone === "warn" ? "badge warn" : metrics.badge?.tone === "default" ? "badge" : "badge info";
+
+        animateTextSwap(line, String(metrics.texts?.line || "Reject diagnostics"));
+        animateTextSwap(hint, String(metrics.texts?.hint || "Reject diagnostics aktif."));
+        animateTextSwap(plan, String(metrics.texts?.plan || "Plan bilgisi yok."));
+        animateTextSwap(solutionLine, String(metrics.texts?.solution || "Cozum onerisi bekleniyor."));
+
+        const chipMap = metrics.chips || {};
+        for (const entry of [chipMap.reason, chipMap.fresh, chipMap.window, chipMap.asset, chipMap.directive, chipMap.expected, chipMap.queue, chipMap.backoff, chipMap.sync]) {
+          if (!entry || !entry.id) continue;
+          const target =
+            entry.id === "pvpRejectIntelReasonChip" ? reasonChip :
+            entry.id === "pvpRejectIntelFreshChip" ? freshChip :
+            entry.id === "pvpRejectIntelWindowChip" ? windowChip :
+            entry.id === "pvpRejectIntelAssetChip" ? assetChip :
+            entry.id === "pvpRejectIntelDirectiveChip" ? directiveChip :
+            entry.id === "pvpRejectIntelExpectedChip" ? expectedChip :
+            entry.id === "pvpRejectIntelQueueChip" ? queueChip :
+            entry.id === "pvpRejectIntelBackoffChip" ? backoffChip :
+            entry.id === "pvpRejectIntelSyncChip" ? syncChip :
+            null;
+          if (target) {
+            setChip(target, entry.text, entry.tone, entry.level);
+          }
+        }
+
+        actionPanel.dataset.tone = String(metrics.actionPanel?.tone || "neutral");
+        actionPanel.dataset.category = String(metrics.actionPanel?.category || "none");
+        animateMeterWidth(recoveryMeter, clamp(asNum(metrics.meters?.recoveryPct), 0, 100), 0.22);
+        animateMeterWidth(riskMeter, clamp(asNum(metrics.meters?.riskPct), 0, 100), 0.22);
+        setMeterPalette(recoveryMeter, String(metrics.meters?.recoveryPalette || "neutral"));
+        setMeterPalette(riskMeter, String(metrics.meters?.riskPalette || "neutral"));
+
+        if (state.arena) {
+          state.arena.pvpRejectIntelRisk = clamp(asNum(state.arena.pvpRejectIntelRisk ?? asNum(metrics.stateEffects?.rejectIntelRisk)) * 0.74 + asNum(metrics.stateEffects?.rejectIntelRisk) * 0.26, 0, 1);
+          state.arena.pvpRejectRecovery = clamp(asNum(state.arena.pvpRejectRecovery ?? asNum(metrics.stateEffects?.rejectRecovery)) * 0.72 + asNum(metrics.stateEffects?.rejectRecovery) * 0.28, 0, 1);
+          state.arena.assetRisk = clamp(Math.max(asNum(state.arena.assetRisk || 0), asNum(metrics.stateEffects?.assetRisk) * 0.95), 0, 1);
+          if (metrics.root?.recent) {
+            state.arena.scenePulseReject = Math.min(3.4, asNum(state.arena.scenePulseReject || 0) + asNum(metrics.stateEffects?.scenePulseRejectDelta || 0));
+            state.arena.pvpCinematicIntensity = Math.min(2.8, asNum(state.arena.pvpCinematicIntensity || 0) + asNum(metrics.stateEffects?.pvpCinematicIntensityDelta || 0));
+          }
+        }
+
+        const pulse = metrics.pulse || {};
+        const pulseKey = String(pulse.key || "");
+        const now = Date.now();
+        if (pulseKey !== state.v3.pvpRejectIntelPulseKey || now - asNum(state.v3.pvpRejectIntelPulseAt || 0) > asNum(pulse.maxAgeMs || 9000)) {
+          if (now - asNum(state.v3.pvpRejectIntelPulseAt || 0) > asNum(pulse.minGapMs || 2400)) {
+            state.v3.pvpRejectIntelPulseKey = pulseKey;
+            state.v3.pvpRejectIntelPulseAt = now;
+            if (pulse.shouldPulse) {
+              triggerArenaPulse(String(pulse.tone || "balanced"), { label: String(pulse.label || "REJECT") });
+            }
+          }
+        }
+        renderSceneStatusDeck();
+        return;
+      } catch (err) {
+        console.warn("[v3-state-bridge] computePvpRejectIntelMetrics failed", err);
+      }
+    }
+
     const rejectInfo = classifyPvpRejectReason(state.v3.pvpLastRejectReason || "");
     const diagnostics = tickMeta?.diagnostics || tickMeta?.state_json?.diagnostics || {};
     const now = Date.now();

@@ -258,6 +258,64 @@ type CombatFxOverlayMetrics = {
   chips: UiChip[];
 };
 
+type PvpRejectIntelMetrics = {
+  clearState: boolean;
+  root: {
+    tone: string;
+    category: string;
+    recent: boolean;
+    risk: number;
+    sweep: number;
+    flash: number;
+  };
+  badge: {
+    text: string;
+    tone: "warn" | "default" | "info";
+  };
+  texts: {
+    line: string;
+    hint: string;
+    plan: string;
+    solution: string;
+  };
+  actionPanel: {
+    tone: string;
+    category: string;
+  };
+  chips: {
+    reason: UiChip;
+    fresh: UiChip;
+    window: UiChip;
+    asset: UiChip;
+    directive: UiChip;
+    expected: UiChip;
+    queue: UiChip;
+    backoff: UiChip;
+    sync: UiChip;
+  };
+  meters: {
+    recoveryPct: number;
+    riskPct: number;
+    recoveryPalette: string;
+    riskPalette: string;
+  };
+  stateEffects: {
+    rejectIntelRisk: number;
+    rejectRecovery: number;
+    assetRisk: number;
+    scenePulseRejectDelta: number;
+    pvpCinematicIntensityDelta: number;
+  };
+  pulse: {
+    key: string;
+    shouldPulse: boolean;
+    tone: string;
+    label: string;
+    minGapMs: number;
+    maxAgeMs: number;
+  };
+};
+
 type V3StateMutatorBridge = {
   computeAssetManifestMetrics: (manifestPayload: any) => AssetManifestMetrics;
   computePvpLeaderboardState: (payloadData: any, currentTransport?: string) => PvpLeaderboardState;
@@ -272,6 +330,7 @@ type V3StateMutatorBridge = {
   computeSceneIntegrityOverlayMetrics: (input: any) => SceneIntegrityOverlayMetrics;
   computeResolveBurstMetrics: (input: any) => ResolveBurstMetrics;
   computeCombatFxOverlayMetrics: (input: any) => CombatFxOverlayMetrics;
+  computePvpRejectIntelMetrics: (input: any) => PvpRejectIntelMetrics;
 };
 
 declare global {
@@ -1295,6 +1354,304 @@ function computeCombatFxOverlayMetrics(input: any): CombatFxOverlayMetrics {
   };
 }
 
+function computePvpRejectIntelMetrics(input: any): PvpRejectIntelMetrics {
+  const data = input && typeof input === "object" ? input : {};
+  const session = data.session && typeof data.session === "object" ? data.session : null;
+  const tickMeta = data.tickMeta && typeof data.tickMeta === "object" ? data.tickMeta : null;
+  const v3 = data.v3 && typeof data.v3 === "object" ? data.v3 : {};
+  const admin = data.admin && typeof data.admin === "object" ? data.admin : {};
+  const telemetry = data.telemetry && typeof data.telemetry === "object" ? data.telemetry : {};
+  const rejectInfo = data.rejectInfo && typeof data.rejectInfo === "object" ? data.rejectInfo : {};
+  const now = asNum(data.nowMs || Date.now());
+  const lastActionAt = asNum(v3.pvpLastActionAt || 0);
+  const rejectAgeMs = lastActionAt > 0 ? Math.max(0, now - lastActionAt) : 0;
+  const rejectCategory = asString(rejectInfo.category || "none").toLowerCase() || "none";
+  const recentReject = Boolean(v3.pvpLastRejected) && rejectAgeMs < 12000 && rejectCategory !== "none";
+
+  const diagnostics =
+    tickMeta?.diagnostics && typeof tickMeta.diagnostics === "object"
+      ? tickMeta.diagnostics
+      : tickMeta?.state_json?.diagnostics && typeof tickMeta.state_json.diagnostics === "object"
+        ? tickMeta.state_json.diagnostics
+        : {};
+  const queueSize = Math.max(0, asNum(v3?.pvpQueue?.length || 0));
+  const tickMs = Math.max(220, asNum(session?.tick_ms || tickMeta?.tick_ms || v3.pvpTickMs || 1000));
+  const windowMs = clamp(asNum(session?.action_window_ms || tickMeta?.action_window_ms || v3.pvpActionWindowMs || 800), 80, tickMs);
+  const latencyMs = Math.max(0, asNum(diagnostics.latency_ms || telemetry.latencyAvgMs || 0));
+  const windowRatio = clamp((windowMs - latencyMs) / Math.max(1, windowMs), 0, 1);
+  const drift = asNum(diagnostics.score_drift || 0);
+  const driftRatio = clamp(Math.abs(drift) / 6, 0, 1);
+  const queueRatio = clamp(queueSize / 8, 0, 1);
+  const freshnessRatio = recentReject ? clamp(1 - rejectAgeMs / 12000, 0, 1) : 0;
+
+  const ladder = v3.pvpLeaderboardMetrics && typeof v3.pvpLeaderboardMetrics === "object" ? v3.pvpLeaderboardMetrics : {};
+  const ladderPressure = clamp(asNum(ladder.pressure || 0), 0, 1);
+  const ladderFreshness = clamp(asNum(ladder.freshnessRatio || 0), 0, 1);
+  const ladderTone = asString(ladder.tone || "neutral");
+
+  const assetRuntime = admin.assetRuntimeMetrics && typeof admin.assetRuntimeMetrics === "object" ? admin.assetRuntimeMetrics : null;
+  const assetManifest = v3.assetManifestMeta && typeof v3.assetManifestMeta === "object" ? v3.assetManifestMeta : null;
+  const assetReadyRatio = clamp(
+    asNum(
+      assetRuntime?.readyRatio ??
+        assetManifest?.readyRatio ??
+        (asNum(telemetry.assetTotalCount || 0) > 0 ? asNum(telemetry.assetReadyCount || 0) / Math.max(1, asNum(telemetry.assetTotalCount || 0)) : 0)
+    ),
+    0,
+    1
+  );
+  const assetIntegrityRatio = clamp(asNum(assetManifest?.integrityRatio ?? assetRuntime?.dbReadyRatio ?? assetRuntime?.syncRatio ?? assetReadyRatio), 0, 1);
+  const assetSyncRatio = clamp(asNum(assetRuntime?.syncRatio ?? assetReadyRatio), 0, 1);
+  const assetRisk = clamp((1 - assetReadyRatio) * 0.38 + (1 - assetIntegrityRatio) * 0.42 + (1 - assetSyncRatio) * 0.2, 0, 1);
+
+  const categoryWeightMap: Record<string, number> = {
+    none: 0.08,
+    duplicate: 0.28,
+    stale: 0.34,
+    invalid: 0.42,
+    session: 0.48,
+    sequence: 0.66,
+    window: 0.72,
+    auth: 0.78,
+    unknown: 0.6
+  };
+  const categoryWeight = clamp(asNum(categoryWeightMap[rejectCategory] ?? 0.5), 0, 1);
+  const recoveryRatio = recentReject
+    ? clamp(windowRatio * 0.44 + (1 - queueRatio) * 0.24 + (1 - driftRatio) * 0.22 + assetReadyRatio * 0.1, 0, 1)
+    : clamp(windowRatio * 0.5 + (1 - queueRatio) * 0.2 + assetReadyRatio * 0.15 + ladderFreshness * 0.15, 0, 1);
+  const riskRatio = clamp(
+    (recentReject ? 0.2 : 0.06) +
+      driftRatio * 0.23 +
+      queueRatio * 0.16 +
+      (1 - windowRatio) * 0.19 +
+      ladderPressure * 0.12 +
+      assetRisk * 0.18 +
+      categoryWeight * (recentReject ? 0.22 : 0.06),
+    0,
+    1
+  );
+
+  let tone = "advantage";
+  if (recentReject) {
+    tone = asString(rejectInfo.tone || "critical") === "pressure" ? "pressure" : "critical";
+  } else if (riskRatio >= 0.66 || assetRisk >= 0.58) {
+    tone = "critical";
+  } else if (riskRatio >= 0.38 || ladderTone === "pressure" || ladderTone === "critical") {
+    tone = "pressure";
+  } else {
+    tone = "advantage";
+  }
+  if (!session) {
+    tone = recentReject ? tone : "neutral";
+  }
+
+  const reasonCodeMap: Record<string, string> = {
+    none: "NONE",
+    duplicate: "DUP",
+    stale: "STA",
+    invalid: "INV",
+    session: "SES",
+    sequence: "SEQ",
+    window: "WND",
+    auth: "AUTH",
+    unknown: "UNK"
+  };
+  const reasonCode = reasonCodeMap[rejectCategory] || "UNK";
+  const ageText = recentReject ? `${Math.max(0, Math.round(rejectAgeMs / 100) / 10)}s` : "--";
+  const assetLabel =
+    assetReadyRatio <= 0 && assetIntegrityRatio <= 0
+      ? "AST WAIT"
+      : assetRisk >= 0.5
+        ? `AST LITE ${Math.round(assetReadyRatio * 100)}`
+        : `AST PRO ${Math.round(assetIntegrityRatio * 100)}`;
+
+  const lineText = recentReject
+    ? `${asString(rejectInfo.label || "REJECT")} | age ${ageText} | window ${Math.round(windowRatio * 100)}% | drift ${drift >= 0 ? "+" : ""}${Math.round(drift)}`
+    : `Reject clean | window ${Math.round(windowRatio * 100)}% | queue ${queueSize} | ladder ${Math.round(ladderPressure * 100)}% | asset ${Math.round((1 - assetRisk) * 100)}%`;
+  const hintText = recentReject
+    ? asString(rejectInfo.hint || "Reject nedeni tespit edildi. Queue temizleyip expected aksiyona don ve tick penceresini koru.")
+    : tone === "critical"
+      ? "Reject olmasa da risk birikiyor: latency/queue/asset sync baskisini dusur."
+      : tone === "pressure"
+        ? "Reject intel izleme modunda: window ve queue drift bozulursa aksiyon ritmini kis."
+        : "Reject temiz: combo zincirini koru, resolve penceresine guvenli tasi.";
+
+  const planTextMap: Record<string, string> = {
+    window: "Plan: tick penceresini yakala, expected glow ile ayni aksiyonu tekrar senkron gonder.",
+    sequence: "Plan: action_seq siralamasini sifirla, queue'daki eski aksiyonlari bosalt ve yeniden ritim kur.",
+    duplicate: "Plan: duplicate flood kes, queue uzunlugunu dusur ve yeni tick bekle.",
+    stale: "Plan: session/tick state yenile, stale paketi at, sonra expected aksiyonla devam et.",
+    auth: "Plan: auth/sig yenile, sessioni tekrar ac ve aksiyonlari yeniden baslat.",
+    session: "Plan: duel state sync al, aktif session dogrula, sonra queue temizleyip devam et.",
+    invalid: "Plan: expected aksiyona don, random input yerine director onerisine uy.",
+    unknown: "Plan: drift + queue + state sync'i dengele, sonra kontrollu aksiyonla devam et.",
+    none: "Plan: expected aksiyonu takip et, queue driftini dusur, gerekirse state yenile."
+  };
+
+  const expectedLabel = asString(data.expectedLabel || "WAIT").toUpperCase();
+  const syncHealth = clamp(windowRatio * 0.34 + (1 - queueRatio) * 0.2 + (1 - driftRatio) * 0.2 + assetSyncRatio * 0.16 + assetIntegrityRatio * 0.1, 0, 1);
+  const backoffBaseMap: Record<string, number> = {
+    window: clamp((tickMs - windowMs) + latencyMs * 0.45 + 90, 90, 1400),
+    sequence: clamp(220 + queueSize * 90 + driftRatio * 280, 160, 1600),
+    duplicate: clamp(120 + queueSize * 60 + tickMs * 0.24, 100, 1200),
+    stale: clamp(320 + tickMs * 0.45 + (1 - syncHealth) * 360, 200, 1800),
+    auth: clamp(620 + (1 - syncHealth) * 420, 420, 2200),
+    session: clamp(380 + queueSize * 80 + (1 - syncHealth) * 280, 220, 1800),
+    invalid: clamp(180 + queueSize * 50 + driftRatio * 140, 120, 1400),
+    unknown: clamp(260 + queueSize * 70 + driftRatio * 220, 180, 1800),
+    none: clamp(80 + queueSize * 40 + (1 - windowRatio) * 120, 60, 900)
+  };
+  const backoffMs = Math.round(asNum(backoffBaseMap[rejectCategory] ?? backoffBaseMap.none));
+  const directiveMap: Record<string, string> = {
+    window: "DIR HOLD",
+    sequence: "DIR RESET_SEQ",
+    duplicate: "DIR WAIT_TICK",
+    stale: "DIR SYNC",
+    auth: "DIR REAUTH",
+    session: "DIR RESUME",
+    invalid: "DIR FOLLOW_EXP",
+    unknown: "DIR SOFT_RESET",
+    none: tone === "critical" ? "DIR WATCH" : "DIR FLOW"
+  };
+  const directive = asString(directiveMap[recentReject ? rejectCategory : "none"] || directiveMap.none);
+  const queueDriftRisk = clamp(queueRatio * 0.55 + driftRatio * 0.45, 0, 1);
+  const queueTone = queueDriftRisk >= 0.68 ? "critical" : queueDriftRisk >= 0.34 ? "pressure" : "advantage";
+  const syncTone = syncHealth < 0.45 ? "critical" : syncHealth < 0.72 ? "pressure" : "advantage";
+  const backoffTone =
+    recentReject && (rejectCategory === "auth" || rejectCategory === "sequence" || rejectCategory === "window")
+      ? backoffMs > 650
+        ? "critical"
+        : "pressure"
+      : backoffMs > 420
+        ? "pressure"
+        : "balanced";
+  const actionPanelTone = recentReject ? (tone === "critical" ? "critical" : "pressure") : tone === "advantage" ? "advantage" : "pressure";
+  const solutionMap: Record<string, string> = {
+    window: `Window disi aksiyon. ${expectedLabel} icin ${backoffMs}ms bekle, sonra tek input gonder.`,
+    sequence: `Sira bozuk. Queue temizle, action_seq akisini resetle ve ${expectedLabel} ile tekrar baslat.`,
+    duplicate: `Duplicate/replay tespit edildi. Flood kes, yeni tick bekle ve tek aksiyon gonder.`,
+    stale: `State stale. PvP paneli yenile, tick sync al, sonra ${expectedLabel} aksiyonuna don.`,
+    auth: `Auth sorunu. Session auth yenile ve ${expectedLabel} aksiyonunu yeniden dene.`,
+    session: "Session drift var. Duel state refresh et, queueyu bosalt ve yeniden senkron ol.",
+    invalid: `Beklenmeyen input. Director/expected aksiyon: ${expectedLabel}.`,
+    unknown: "Reject tanimsiz. Queue drifti azalt, state sync al ve tek aksiyonla devam et.",
+    none:
+      syncHealth < 0.55
+        ? `Sync baskisi yuksek. Queue ${queueSize}, drift ${Math.round(driftRatio * 100)}%. Ritmi kis.`
+        : `Reject temiz. ${expectedLabel} akisini takip et, queueyu ${Math.max(0, queueSize)} seviyede tut.`
+  };
+
+  const pulseKey = recentReject
+    ? `${rejectCategory}:${Math.round(freshnessRatio * 100)}:${Math.round(riskRatio * 100)}:${Math.round(recoveryRatio * 100)}`
+    : `idle:${Math.round(assetRisk * 100)}:${Math.round(ladderPressure * 100)}:${Math.round(windowRatio * 100)}`;
+  const pulseTone = recentReject ? (tone === "critical" ? "aggressive" : "balanced") : assetRisk >= 0.55 ? "aggressive" : "balanced";
+  const pulseLabel = recentReject ? `REJECT ${reasonCode}` : assetRisk >= 0.55 ? `ASSET RISK ${Math.round(assetRisk * 100)}` : `LADDER ${Math.round(ladderPressure * 100)}`;
+
+  const defaultChipLevel = 0.12;
+  return {
+    clearState: !session && !recentReject && rejectCategory === "none",
+    root: {
+      tone,
+      category: recentReject ? rejectCategory : "none",
+      recent: recentReject,
+      risk: riskRatio,
+      sweep: clamp((windowRatio + ladderPressure * 0.45 + freshnessRatio * 0.25) / 1.7, 0, 1),
+      flash: recentReject ? clamp(0.35 + freshnessRatio * 0.65, 0, 1) : 0
+    },
+    badge: {
+      text: recentReject ? (tone === "critical" ? "REJECT HOT" : "REJECT LIVE") : tone === "pressure" ? "WATCH" : tone === "critical" ? "RISK" : "CLEAN",
+      tone: tone === "critical" ? "warn" : tone === "pressure" ? "default" : "info"
+    },
+    texts: {
+      line: lineText,
+      hint: hintText,
+      plan: planTextMap[recentReject ? rejectCategory : "none"] || planTextMap.none,
+      solution: solutionMap[recentReject ? rejectCategory : "none"] || solutionMap.none
+    },
+    actionPanel: {
+      tone: actionPanelTone,
+      category: recentReject ? rejectCategory : "none"
+    },
+    chips: {
+      reason: {
+        id: "pvpRejectIntelReasonChip",
+        text: recentReject ? `REJ ${reasonCode}` : "REJ NONE",
+        tone: recentReject ? (tone === "critical" ? "critical" : "pressure") : "advantage",
+        level: recentReject ? 0.95 : 0.2
+      },
+      fresh: {
+        id: "pvpRejectIntelFreshChip",
+        text: recentReject ? `AGE ${ageText}` : `AGE ${Math.round(clamp(ladderFreshness, 0, 1) * 100)}%`,
+        tone: recentReject ? (freshnessRatio > 0.5 ? "critical" : "pressure") : ladderFreshness < 0.35 ? "pressure" : "advantage",
+        level: recentReject ? freshnessRatio : ladderFreshness
+      },
+      window: {
+        id: "pvpRejectIntelWindowChip",
+        text: `WND ${Math.round(windowRatio * 100)} | Q ${queueSize}`,
+        tone: windowRatio < 0.35 ? "critical" : windowRatio < 0.58 || queueSize >= 3 ? "pressure" : "advantage",
+        level: clamp(windowRatio * 0.7 + (1 - queueRatio) * 0.3, 0, 1)
+      },
+      asset: {
+        id: "pvpRejectIntelAssetChip",
+        text: assetLabel,
+        tone: assetRisk >= 0.55 ? "critical" : assetRisk >= 0.28 ? "pressure" : "advantage",
+        level: 1 - assetRisk
+      },
+      directive: {
+        id: "pvpRejectIntelDirectiveChip",
+        text: directive,
+        tone: actionPanelTone,
+        level: recentReject ? 0.9 : 0.38
+      },
+      expected: {
+        id: "pvpRejectIntelExpectedChip",
+        text: `EXP ${expectedLabel}`,
+        tone: expectedLabel && expectedLabel !== "--" ? "balanced" : "neutral",
+        level: expectedLabel && expectedLabel !== "--" ? 0.66 : 0.16
+      },
+      queue: {
+        id: "pvpRejectIntelQueueChip",
+        text: `Q ${queueSize} | D ${Math.round(driftRatio * 100)}`,
+        tone: queueTone,
+        level: 1 - queueDriftRisk
+      },
+      backoff: {
+        id: "pvpRejectIntelBackoffChip",
+        text: recentReject ? `BACKOFF ${backoffMs}ms` : `BACKOFF ${Math.round(clamp((1 - windowRatio) * 220 + queueSize * 35, 0, 520))}ms`,
+        tone: backoffTone,
+        level: recentReject ? clamp(1 - backoffMs / 1800, 0, 1) : 0.42
+      },
+      sync: {
+        id: "pvpRejectIntelSyncChip",
+        text: `SYNC ${Math.round(syncHealth * 100)}%`,
+        tone: syncTone,
+        level: syncHealth
+      }
+    },
+    meters: {
+      recoveryPct: recoveryRatio * 100,
+      riskPct: riskRatio * 100,
+      recoveryPalette: recoveryRatio >= 0.7 ? "safe" : recoveryRatio >= 0.45 ? "balanced" : "aggressive",
+      riskPalette: riskRatio >= 0.72 ? "critical" : riskRatio >= 0.44 ? "aggressive" : "balanced"
+    },
+    stateEffects: {
+      rejectIntelRisk: riskRatio,
+      rejectRecovery: recoveryRatio,
+      assetRisk,
+      scenePulseRejectDelta: recentReject ? (tone === "critical" ? 0.42 : 0.26) + categoryWeight * 0.1 : 0,
+      pvpCinematicIntensityDelta: recentReject ? riskRatio * 0.16 + (1 - recoveryRatio) * 0.12 : 0
+    },
+    pulse: {
+      key: pulseKey,
+      shouldPulse: recentReject || assetRisk >= 0.55 || ladderPressure >= 0.72,
+      tone: pulseTone,
+      label: pulseLabel,
+      minGapMs: 2400,
+      maxAgeMs: 9000
+    }
+  };
+}
+
 export function installV3StateMutatorBridge(): void {
   window.__AKR_STATE_MUTATORS__ = {
     computeAssetManifestMetrics,
@@ -1309,6 +1666,7 @@ export function installV3StateMutatorBridge(): void {
     computeSceneAlarmMetrics,
     computeSceneIntegrityOverlayMetrics,
     computeResolveBurstMetrics,
-    computeCombatFxOverlayMetrics
+    computeCombatFxOverlayMetrics,
+    computePvpRejectIntelMetrics
   };
 }
