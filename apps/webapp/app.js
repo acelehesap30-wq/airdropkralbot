@@ -1471,6 +1471,28 @@
     return bridge;
   }
 
+  function getAdminAuditRuntimeBridge() {
+    const bridge = window.__AKR_ADMIN_AUDIT_RUNTIME__;
+    if (!bridge || typeof bridge !== "object") {
+      return null;
+    }
+    if (typeof bridge.render !== "function") {
+      return null;
+    }
+    return bridge;
+  }
+
+  function getAdminAssetRuntimeBridge() {
+    const bridge = window.__AKR_ADMIN_ASSET_RUNTIME__;
+    if (!bridge || typeof bridge !== "object") {
+      return null;
+    }
+    if (typeof bridge.render !== "function") {
+      return null;
+    }
+    return bridge;
+  }
+
   function getPvpRejectIntelBridge() {
     const bridge = window.__AKR_PVP_REJECT_INTEL__;
     if (!bridge || typeof bridge !== "object") {
@@ -12705,11 +12727,67 @@
         : phaseTone === "pressure" || runtimeTone === "pressure" || truthTone === "pressure" || bundleTone === "pressure"
           ? "pressure"
           : "advantage";
+    const phaseLabel = phaseStatus ? phaseStatus.toUpperCase() : "UNKNOWN";
+    const adminAuditRuntimeBridge = getAdminAuditRuntimeBridge();
+    const bridgeHandled =
+      adminAuditRuntimeBridge &&
+      adminAuditRuntimeBridge.render({
+        tone: combinedTone,
+        phaseHealth,
+        truthScore,
+        phaseChipText: `PHASE ${phaseLabel}`,
+        phaseChipTone: phaseTone === "critical" ? "warn" : phaseTone === "pressure" ? "default" : "info",
+        signalLineText: `Runtime ${runtimeAlive ? "ON" : "OFF"} | lock ${runtimeLock ? "OK" : "MISS"} | rev ${latestRelease} | findings ${findings.length}`,
+        hintLineText:
+          findings.length > 0
+            ? `Audit bulgulari: ${findings.slice(0, 2).map((row) => String(row.code || row.severity || "finding")).join(" | ")}`
+            : `Truth map: real ${truthRealCount}/${Math.max(truthTotal, 1)} | mixed ${truthMixedCount} | source ${flagSource}`,
+        chips: [
+          {
+            id: "adminAuditFlagsChip",
+            text: `FLAGS ${flagSource.toUpperCase()}`,
+            tone: flagSource === "env_locked" ? "advantage" : "pressure",
+            level: flagSource === "env_locked" ? 0.9 : 0.45
+          },
+          {
+            id: "adminAuditBundleChip",
+            text: `BUNDLE ${bundleMode.toUpperCase()}`,
+            tone: bundleTone,
+            level: bundleMode === "dist" ? 0.92 : 0.45
+          },
+          {
+            id: "adminAuditRuntimeChip",
+            text: `BOT ${runtimeAlive ? (runtimeLock ? "LOCK" : "UNLOCK") : "OFF"}`,
+            tone: runtimeTone,
+            level: runtimeAlive && runtimeLock ? 0.92 : runtimeAlive ? 0.45 : 0.1
+          },
+          {
+            id: "adminAuditTruthChip",
+            text: `TRUTH ${truthRealCount}/${Math.max(truthTotal, 1)}`,
+            tone: truthTone,
+            level: truthScore
+          }
+        ],
+        meters: [
+          {
+            id: "adminAuditPhaseMeter",
+            pct: phaseHealth * 100,
+            palette: phaseTone === "critical" ? "aggressive" : phaseTone === "pressure" ? "balanced" : "safe"
+          },
+          {
+            id: "adminAuditTruthMeter",
+            pct: truthScore * 100,
+            palette: truthTone === "critical" ? "aggressive" : truthTone === "pressure" ? "balanced" : "safe"
+          }
+        ]
+      }) === true;
+    if (bridgeHandled) {
+      return;
+    }
+
     host.dataset.tone = combinedTone;
     host.style.setProperty("--audit-health", clamp(phaseHealth, 0, 1).toFixed(3));
     host.style.setProperty("--audit-truth", clamp(truthScore, 0, 1).toFixed(3));
-
-    const phaseLabel = phaseStatus ? phaseStatus.toUpperCase() : "UNKNOWN";
     byId("adminAuditPhaseChip").textContent = `PHASE ${phaseLabel}`;
     byId("adminAuditPhaseChip").className = phaseTone === "critical" ? "badge warn" : phaseTone === "pressure" ? "badge" : "badge info";
     setLiveStatusChip("adminAuditFlagsChip", `FLAGS ${flagSource.toUpperCase()}`, flagSource === "env_locked" ? "advantage" : "pressure", flagSource === "env_locked" ? 0.9 : 0.45);
@@ -12821,32 +12899,77 @@
     const manifestRevision = String(activeManifest.manifest_revision || activeManifest.revision || "local");
     const sourceMode = payload.active_manifest ? "registry" : payload.local_manifest ? "local" : "unknown";
     const tone = missing > 0 ? (missing >= 2 ? "critical" : "pressure") : syncRatio < 0.9 || dbReadyRatio < 0.8 ? "pressure" : "advantage";
-    const stateChip = byId("adminAssetSourceChip");
-    const readyChip = byId("adminAssetReadyChip");
-    const syncChip = byId("adminAssetSyncChip");
-    const revChip = byId("adminAssetRevisionChip");
-    const readyMeter = byId("adminAssetReadyMeter");
-    const syncMeter = byId("adminAssetSyncMeter");
-    const signalLine = byId("adminAssetSignalLine");
-    host.dataset.tone = tone;
-    host.style.setProperty("--asset-ready", readyRatio.toFixed(3));
-    host.style.setProperty("--asset-sync", syncRatio.toFixed(3));
-    setLiveStatusChip("adminAssetSourceChip", `SRC ${String(sourceMode).toUpperCase()}`, tone === "critical" ? "critical" : tone === "pressure" ? "pressure" : "advantage", sourceMode === "registry" ? 0.9 : 0.4);
-    setLiveStatusChip("adminAssetReadyChip", `READY ${ready}/${total}`, missing > 0 ? (missing >= 2 ? "critical" : "pressure") : "advantage", readyRatio);
-    setLiveStatusChip("adminAssetSyncChip", `SYNC ${dbRows.length}/${total}`, syncRatio < 0.75 ? "critical" : syncRatio < 0.95 ? "pressure" : "balanced", syncRatio);
     const revShort = manifestRevision.length > 10 ? manifestRevision.slice(0, 10) : manifestRevision;
-    setLiveStatusChip("adminAssetRevisionChip", `REV ${revShort}`, sourceMode === "registry" ? "balanced" : "neutral", 0.35);
-    if (readyMeter) {
-      animateMeterWidth(readyMeter, readyRatio * 100, 0.24);
-      setMeterPalette(readyMeter, missing > 0 ? "aggressive" : "safe");
-    }
-    if (syncMeter) {
-      animateMeterWidth(syncMeter, Math.max(syncRatio, dbReadyRatio) * 100, 0.24);
-      setMeterPalette(syncMeter, syncRatio < 0.85 ? "aggressive" : "balanced");
-    }
-    if (signalLine) {
-      signalLine.textContent =
-        `DB ${dbRows.length} kayit | DB READY ${dbReady}/${Math.max(dbRows.length, 1)} | missing ${missing} | source ${sourceMode}`;
+    const adminAssetRuntimeBridge = getAdminAssetRuntimeBridge();
+    const bridgeHandled =
+      adminAssetRuntimeBridge &&
+      adminAssetRuntimeBridge.render({
+        tone,
+        readyRatio,
+        syncRatio,
+        signalLineText: `DB ${dbRows.length} kayit | DB READY ${dbReady}/${Math.max(dbRows.length, 1)} | missing ${missing} | source ${sourceMode}`,
+        chips: [
+          {
+            id: "adminAssetSourceChip",
+            text: `SRC ${String(sourceMode).toUpperCase()}`,
+            tone: tone === "critical" ? "critical" : tone === "pressure" ? "pressure" : "advantage",
+            level: sourceMode === "registry" ? 0.9 : 0.4
+          },
+          {
+            id: "adminAssetReadyChip",
+            text: `READY ${ready}/${total}`,
+            tone: missing > 0 ? (missing >= 2 ? "critical" : "pressure") : "advantage",
+            level: readyRatio
+          },
+          {
+            id: "adminAssetSyncChip",
+            text: `SYNC ${dbRows.length}/${total}`,
+            tone: syncRatio < 0.75 ? "critical" : syncRatio < 0.95 ? "pressure" : "balanced",
+            level: syncRatio
+          },
+          {
+            id: "adminAssetRevisionChip",
+            text: `REV ${revShort}`,
+            tone: sourceMode === "registry" ? "balanced" : "neutral",
+            level: 0.35
+          }
+        ],
+        meters: [
+          {
+            id: "adminAssetReadyMeter",
+            pct: readyRatio * 100,
+            palette: missing > 0 ? "aggressive" : "safe"
+          },
+          {
+            id: "adminAssetSyncMeter",
+            pct: Math.max(syncRatio, dbReadyRatio) * 100,
+            palette: syncRatio < 0.85 ? "aggressive" : "balanced"
+          }
+        ]
+      }) === true;
+    if (!bridgeHandled) {
+      const readyMeter = byId("adminAssetReadyMeter");
+      const syncMeter = byId("adminAssetSyncMeter");
+      const signalLine = byId("adminAssetSignalLine");
+      host.dataset.tone = tone;
+      host.style.setProperty("--asset-ready", readyRatio.toFixed(3));
+      host.style.setProperty("--asset-sync", syncRatio.toFixed(3));
+      setLiveStatusChip("adminAssetSourceChip", `SRC ${String(sourceMode).toUpperCase()}`, tone === "critical" ? "critical" : tone === "pressure" ? "pressure" : "advantage", sourceMode === "registry" ? 0.9 : 0.4);
+      setLiveStatusChip("adminAssetReadyChip", `READY ${ready}/${total}`, missing > 0 ? (missing >= 2 ? "critical" : "pressure") : "advantage", readyRatio);
+      setLiveStatusChip("adminAssetSyncChip", `SYNC ${dbRows.length}/${total}`, syncRatio < 0.75 ? "critical" : syncRatio < 0.95 ? "pressure" : "balanced", syncRatio);
+      setLiveStatusChip("adminAssetRevisionChip", `REV ${revShort}`, sourceMode === "registry" ? "balanced" : "neutral", 0.35);
+      if (readyMeter) {
+        animateMeterWidth(readyMeter, readyRatio * 100, 0.24);
+        setMeterPalette(readyMeter, missing > 0 ? "aggressive" : "safe");
+      }
+      if (syncMeter) {
+        animateMeterWidth(syncMeter, Math.max(syncRatio, dbReadyRatio) * 100, 0.24);
+        setMeterPalette(syncMeter, syncRatio < 0.85 ? "aggressive" : "balanced");
+      }
+      if (signalLine) {
+        signalLine.textContent =
+          `DB ${dbRows.length} kayit | DB READY ${dbReady}/${Math.max(dbRows.length, 1)} | missing ${missing} | source ${sourceMode}`;
+      }
     }
     state.telemetry.assetReadyCount = ready;
     state.telemetry.assetTotalCount = total;
