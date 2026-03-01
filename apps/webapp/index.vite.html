@@ -1151,6 +1151,32 @@
                   <li class="muted">Provider ve auto decision kayitlari yukleniyor...</li>
                 </ul>
               </section>
+              <section id="adminAuditRuntimeStrip" class="adminAuditRuntimeStrip" data-tone="neutral">
+                <div class="adminAuditRuntimeHead">
+                  <div class="panelHead compact">
+                    <h4>Runtime Audit Pulse</h4>
+                    <span id="adminAuditPhaseChip" class="badge info">PHASE -</span>
+                  </div>
+                  <p id="adminAuditSignalLine" class="micro">Phase alignment ve runtime truth map bekleniyor.</p>
+                  <div class="adminAuditChipRow">
+                    <span id="adminAuditFlagsChip" class="pvpLiveChip neutral">FLAGS -</span>
+                    <span id="adminAuditBundleChip" class="pvpLiveChip neutral">BUNDLE -</span>
+                    <span id="adminAuditRuntimeChip" class="pvpLiveChip neutral">BOT -</span>
+                    <span id="adminAuditTruthChip" class="pvpLiveChip neutral">TRUTH -</span>
+                  </div>
+                </div>
+                <div class="adminAuditMeters">
+                  <div class="adminAuditMeterCard">
+                    <p class="micro">Phase Health</p>
+                    <div class="meter"><span id="adminAuditPhaseMeter"></span></div>
+                  </div>
+                  <div class="adminAuditMeterCard">
+                    <p class="micro">Runtime Truth</p>
+                    <div class="meter"><span id="adminAuditTruthMeter"></span></div>
+                  </div>
+                </div>
+                <p id="adminAuditHintLine" class="micro">Audit bulgulari yukleniyor.</p>
+              </section>
               <section id="adminDecisionTraceStrip" class="adminDecisionTraceStrip" data-tone="neutral">
                 <div class="adminDecisionTraceHead">
                   <div class="panelHead compact">

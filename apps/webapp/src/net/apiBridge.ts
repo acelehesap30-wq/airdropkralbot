@@ -10,8 +10,12 @@ type FetchJsonOptions = {
 
 type NetApiBridge = {
   fetchActiveAssetManifestMeta: (auth: AuthPayload, extra?: Record<string, string>) => Promise<any>;
+  fetchSceneProfileEffective: (auth: AuthPayload) => Promise<any>;
   fetchTokenQuote: (auth: AuthPayload, usdAmount: number, chain: string) => Promise<any>;
+  fetchTokenRouteStatus: (auth: AuthPayload) => Promise<any>;
+  fetchTokenDecisionTraces: (auth: AuthPayload, limit?: number) => Promise<any>;
   fetchPvpSessionState: (auth: AuthPayload, sessionRef?: string) => Promise<any>;
+  fetchPvpDiagnosticsLive: (auth: AuthPayload, bucketWindow?: string) => Promise<any>;
   fetchPvpMatchTick: (auth: AuthPayload, sessionRef: string) => Promise<any>;
   startPvpSession: (auth: AuthPayload, modeSuggested?: string, transport?: string) => Promise<any>;
   postPvpSessionAction: (
@@ -29,6 +33,10 @@ type NetApiBridge = {
   fetchAdminQueues: (auth: AuthPayload) => Promise<any>;
   fetchAdminMetrics: (auth: AuthPayload) => Promise<any>;
   fetchAdminRuntime: (auth: AuthPayload, limit?: number) => Promise<any>;
+  fetchAdminRuntimeFlags: (auth: AuthPayload) => Promise<any>;
+  fetchAdminDeployStatus: (auth: AuthPayload) => Promise<any>;
+  fetchAdminAuditPhaseStatus: (auth: AuthPayload, persist?: boolean) => Promise<any>;
+  fetchAdminAuditDataIntegrity: (auth: AuthPayload) => Promise<any>;
   fetchAdminAssetStatus: (auth: AuthPayload) => Promise<any>;
   postAdmin: (auth: AuthPayload, path: string, extraBody?: Record<string, unknown>) => Promise<any>;
 };
@@ -102,6 +110,15 @@ async function fetchActiveAssetManifestMeta(
   return fetchJson(`/webapp/api/assets/manifest/active?${query}`, { cache: "no-store" });
 }
 
+async function fetchSceneProfileEffective(auth: AuthPayload): Promise<any> {
+  const query = buildQuery({
+    uid: auth?.uid,
+    ts: auth?.ts,
+    sig: auth?.sig
+  });
+  return fetchJson(`/webapp/api/scene/profile/effective?${query}`, { cache: "no-store" });
+}
+
 async function fetchTokenQuote(auth: AuthPayload, usdAmount: number, chain: string): Promise<any> {
   const query = buildQuery({
     uid: auth?.uid,
@@ -111,6 +128,26 @@ async function fetchTokenQuote(auth: AuthPayload, usdAmount: number, chain: stri
     chain: asString(chain).toUpperCase()
   });
   return fetchJson(`/webapp/api/token/quote?${query}`);
+}
+
+async function fetchTokenRouteStatus(auth: AuthPayload): Promise<any> {
+  const query = buildQuery({
+    uid: auth?.uid,
+    ts: auth?.ts,
+    sig: auth?.sig
+  });
+  return fetchJson(`/webapp/api/token/route/status?${query}`, { cache: "no-store" });
+}
+
+async function fetchTokenDecisionTraces(auth: AuthPayload, limit = 40): Promise<any> {
+  const safeLimit = Math.max(5, Math.min(100, Math.floor(asNumber(limit) || 40)));
+  const query = buildQuery({
+    uid: auth?.uid,
+    ts: auth?.ts,
+    sig: auth?.sig,
+    limit: String(safeLimit)
+  });
+  return fetchJson(`/webapp/api/token/decision/traces?${query}`, { cache: "no-store" });
 }
 
 async function fetchPvpSessionState(auth: AuthPayload, sessionRef = ""): Promise<any> {
@@ -124,6 +161,17 @@ async function fetchPvpSessionState(auth: AuthPayload, sessionRef = ""): Promise
   }
   const query = buildQuery(queryParams);
   return fetchJson(`/webapp/api/pvp/session/state?${query}`);
+}
+
+async function fetchPvpDiagnosticsLive(auth: AuthPayload, bucketWindow = "5m"): Promise<any> {
+  const normalizedWindow = asString(bucketWindow || "5m").toLowerCase();
+  const query = buildQuery({
+    uid: auth?.uid,
+    ts: auth?.ts,
+    sig: auth?.sig,
+    window: normalizedWindow
+  });
+  return fetchJson(`/webapp/api/pvp/diagnostics/live?${query}`, { cache: "no-store" });
 }
 
 async function fetchPvpMatchTick(auth: AuthPayload, sessionRef: string): Promise<any> {
@@ -226,6 +274,43 @@ async function fetchAdminRuntime(auth: AuthPayload, limit = 20): Promise<any> {
   return fetchJson(`/webapp/api/admin/runtime/bot?${query}`);
 }
 
+async function fetchAdminRuntimeFlags(auth: AuthPayload): Promise<any> {
+  const query = buildQuery({
+    uid: auth?.uid,
+    ts: auth?.ts,
+    sig: auth?.sig
+  });
+  return fetchJson(`/webapp/api/admin/runtime/flags?${query}`, { cache: "no-store" });
+}
+
+async function fetchAdminDeployStatus(auth: AuthPayload): Promise<any> {
+  const query = buildQuery({
+    uid: auth?.uid,
+    ts: auth?.ts,
+    sig: auth?.sig
+  });
+  return fetchJson(`/webapp/api/admin/runtime/deploy/status?${query}`, { cache: "no-store" });
+}
+
+async function fetchAdminAuditPhaseStatus(auth: AuthPayload, persist = false): Promise<any> {
+  const query = buildQuery({
+    uid: auth?.uid,
+    ts: auth?.ts,
+    sig: auth?.sig,
+    persist: persist ? "1" : "0"
+  });
+  return fetchJson(`/webapp/api/admin/runtime/audit/phase-status?${query}`, { cache: "no-store" });
+}
+
+async function fetchAdminAuditDataIntegrity(auth: AuthPayload): Promise<any> {
+  const query = buildQuery({
+    uid: auth?.uid,
+    ts: auth?.ts,
+    sig: auth?.sig
+  });
+  return fetchJson(`/webapp/api/admin/runtime/audit/data-integrity?${query}`, { cache: "no-store" });
+}
+
 async function fetchAdminAssetStatus(auth: AuthPayload): Promise<any> {
   const query = buildQuery({
     uid: auth?.uid,
@@ -262,8 +347,12 @@ async function postAdmin(
 export function installNetApiBridge(): void {
   window.__AKR_NET_API__ = {
     fetchActiveAssetManifestMeta,
+    fetchSceneProfileEffective,
     fetchTokenQuote,
+    fetchTokenRouteStatus,
+    fetchTokenDecisionTraces,
     fetchPvpSessionState,
+    fetchPvpDiagnosticsLive,
     fetchPvpMatchTick,
     startPvpSession,
     postPvpSessionAction,
@@ -272,6 +361,10 @@ export function installNetApiBridge(): void {
     fetchAdminQueues,
     fetchAdminMetrics,
     fetchAdminRuntime,
+    fetchAdminRuntimeFlags,
+    fetchAdminDeployStatus,
+    fetchAdminAuditPhaseStatus,
+    fetchAdminAuditDataIntegrity,
     fetchAdminAssetStatus,
     postAdmin
   };

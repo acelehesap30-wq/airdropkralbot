@@ -329,6 +329,27 @@ type TelemetryDeckMetrics = {
   badgeClass: string;
 };
 
+type RoundDirectorMetrics = {
+  payload: {
+    heat: { phase: string; text: string; pct: number };
+    tempo: { text: string; pct: number };
+    dominance: { state: string; text: string; pct: number };
+    pressure: { state: string; text: string; pct: number };
+  };
+  roundPhase: string;
+  dominanceState: string;
+  pressureState: string;
+};
+
+type CameraDirectorMetrics = {
+  payload: {
+    mode: { key: string; text: string };
+    focus: { text: string };
+    energy: { pct: number };
+  };
+  modeKey: string;
+};
+
 type V3StateMutatorBridge = {
   computeAssetManifestMetrics: (manifestPayload: any) => AssetManifestMetrics;
   computePvpLeaderboardState: (payloadData: any, currentTransport?: string) => PvpLeaderboardState;
@@ -345,6 +366,8 @@ type V3StateMutatorBridge = {
   computeCombatFxOverlayMetrics: (input: any) => CombatFxOverlayMetrics;
   computePvpRejectIntelMetrics: (input: any) => PvpRejectIntelMetrics;
   computeTelemetryDeckMetrics: (input: any) => TelemetryDeckMetrics;
+  computeRoundDirectorMetrics: (input: any) => RoundDirectorMetrics;
+  computeCameraDirectorMetrics: (input: any) => CameraDirectorMetrics;
 };
 
 declare global {
@@ -517,6 +540,116 @@ function computeTelemetryDeckMetrics(input: any): TelemetryDeckMetrics {
       threatPct >= 78 ? "Kritik anomali: SAFE cizgisine don" : threatPct >= 45 ? "Kontrat baskisi yukseliyor" : "Stabil pencere",
     badgeText,
     badgeClass
+  };
+}
+
+function computeRoundDirectorMetrics(input: any): RoundDirectorMetrics {
+  const data = input && typeof input === "object" ? input : {};
+  const scoreSelf = asNum(data.scoreSelf || 0);
+  const scoreOpp = asNum(data.scoreOpp || 0);
+  const scoreDelta = scoreSelf - scoreOpp;
+  const tickMs = Math.max(1, asNum(data.tickMs || 1000));
+  const latency = Math.max(0, asNum(data.latency || 0));
+  const queueSize = Math.max(0, asNum(data.queueSize || 0));
+  const comboSelf = asNum(data.comboSelf || 0);
+  const comboOpp = asNum(data.comboOpp || 0);
+  const comboNet = comboSelf - comboOpp;
+  const windowMs = Math.max(1, asNum(data.windowMs || 800));
+  const heat = clamp(asNum(data.heat || 0), 0, 1);
+  const threat = clamp(asNum(data.threat || 0), 0, 1);
+  const simCombo = Math.max(0, asNum(data.simCombo || 0));
+  const windowRatio = clamp((windowMs - latency) / windowMs, 0, 1);
+  const tempoRatio = clamp((1100 - tickMs) / 420, 0, 1) * 0.58 + windowRatio * 0.42;
+  const pressure = clamp(threat * 0.6 + (1 - windowRatio) * 0.22 + clamp(queueSize / 8, 0, 1) * 0.18, 0, 1);
+  const dominance = clamp(0.5 + scoreDelta / 12 + comboNet / 18, 0, 1);
+  const roundHeat = clamp(heat * 0.66 + clamp(Math.max(comboSelf, simCombo) / 10, 0, 1) * 0.34, 0, 1);
+  const roundPhase = roundHeat >= 0.82 ? "critical" : roundHeat >= 0.62 ? "overdrive" : roundHeat >= 0.4 ? "engage" : "warmup";
+  const dominanceState = dominance >= 0.62 ? "ahead" : dominance <= 0.38 ? "behind" : "even";
+  const pressureState = pressure >= 0.7 ? "high" : pressure >= 0.4 ? "mid" : "low";
+  const dominanceLabel = dominanceState === "ahead" ? "AHEAD" : dominanceState === "behind" ? "UNDER" : "EVEN";
+  return {
+    payload: {
+      heat: {
+        phase: roundPhase,
+        text: `${Math.round(roundHeat * 100)}% | ${roundPhase.toUpperCase()}`,
+        pct: roundHeat * 100
+      },
+      tempo: {
+        text: `${Math.round(tempoRatio * 100)}% | Tick ${tickMs}ms`,
+        pct: tempoRatio * 100
+      },
+      dominance: {
+        state: dominanceState,
+        text: `YOU ${scoreSelf} - ${scoreOpp} OPP | ${dominanceLabel}`,
+        pct: dominance * 100
+      },
+      pressure: {
+        state: pressureState,
+        text: `${Math.round(pressure * 100)}% | Queue ${queueSize}`,
+        pct: pressure * 100
+      }
+    },
+    roundPhase,
+    dominanceState,
+    pressureState
+  };
+}
+
+function cameraModeLabelBridge(mode: string): string {
+  const key = asString(mode || "broadcast").toLowerCase();
+  if (key === "tactical") return "Tactical";
+  if (key === "chase") return "Chase";
+  return "Broadcast";
+}
+
+function resolveCameraDynamicsBridge(mode: string, heat: number, threat: number, cinematicIntensity: number) {
+  if (mode === "tactical") {
+    return {
+      drift: clamp(0.22 + heat * 0.34, 0.2, 0.78),
+      energy: clamp((heat * 0.42 + threat * 0.28 + cinematicIntensity * 0.18) * 100, 8, 92),
+      focus: "Tactical lock aktif, pencereler daha net."
+    };
+  }
+  if (mode === "chase") {
+    return {
+      drift: clamp(0.58 + heat * 0.56 + cinematicIntensity * 0.22, 0.5, 1.42),
+      energy: clamp((heat * 0.55 + threat * 0.25 + cinematicIntensity * 0.3) * 100, 16, 100),
+      focus: "Chase takibi aktif, ani vuruslar one cikiyor."
+    };
+  }
+  return {
+    drift: clamp(0.34 + heat * 0.4 + cinematicIntensity * 0.15, 0.3, 1.02),
+    energy: clamp((heat * 0.47 + threat * 0.31 + cinematicIntensity * 0.2) * 100, 10, 96),
+    focus: "Broadcast acisi dengeli, kontrat hizi izleniyor."
+  };
+}
+
+function computeCameraDirectorMetrics(input: any): CameraDirectorMetrics {
+  const data = input && typeof input === "object" ? input : {};
+  const modeRaw = asString(data.mode || "broadcast").toLowerCase();
+  const validModes = ["broadcast", "tactical", "chase"];
+  const modeKey = validModes.includes(modeRaw) ? modeRaw : "broadcast";
+  const heat = clamp(asNum(data.heat || 0), 0, 1);
+  const threat = clamp(asNum(data.threat || 0), 0, 1);
+  const queueSize = Math.max(0, asNum(data.queueSize || 0));
+  const windowMs = Math.max(200, asNum(data.windowMs || 800));
+  const cinematicIntensity = clamp(asNum(data.cinematicIntensity || 0), 0, 1.6);
+  const riskPct = Math.round(clamp(asNum(data.riskScore || 0) * 100, 0, 100));
+  const dynamics = resolveCameraDynamicsBridge(modeKey, heat, threat, cinematicIntensity);
+  return {
+    payload: {
+      mode: {
+        key: modeKey,
+        text: `${cameraModeLabelBridge(modeKey).toUpperCase()} | Drift ${Math.round(dynamics.drift * 100)}%`
+      },
+      focus: {
+        text: `${dynamics.focus} Queue ${queueSize} | Window ${windowMs}ms | Risk ${riskPct}%`
+      },
+      energy: {
+        pct: dynamics.energy
+      }
+    },
+    modeKey
   };
 }
 
@@ -1722,6 +1855,8 @@ export function installV3StateMutatorBridge(): void {
     computeResolveBurstMetrics,
     computeCombatFxOverlayMetrics,
     computePvpRejectIntelMetrics,
-    computeTelemetryDeckMetrics
+    computeTelemetryDeckMetrics,
+    computeRoundDirectorMetrics,
+    computeCameraDirectorMetrics
   };
 }

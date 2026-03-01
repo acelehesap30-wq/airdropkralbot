@@ -153,6 +153,16 @@ function parseLimit(value, fallback = 50, max = 200) {
   return Math.max(1, Math.min(max, Math.floor(parsed)));
 }
 
+function parseTruthyQuery(value) {
+  if (value === true || value === 1) {
+    return true;
+  }
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+  return normalized === "1" || normalized === "true" || normalized === "yes" || normalized === "on";
+}
+
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, Number(value)));
 }
@@ -247,6 +257,57 @@ function buildPvpTickDiagnostics(session, directorPayload) {
     ),
     anomaly_bias: String(directorPayload?.anomaly?.preferred_mode || "none"),
     contract_mode: String(directorPayload?.contract?.required_mode || "open")
+  };
+}
+
+function toFiniteNumber(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function summarizeProviderHealthRows(rows = []) {
+  const grouped = new Map();
+  for (const raw of Array.isArray(rows) ? rows : []) {
+    const provider = String(raw.provider || "unknown");
+    if (!grouped.has(provider)) {
+      grouped.set(provider, {
+        provider,
+        latest_ok: Boolean(raw.ok),
+        latest_status_code: Math.max(0, Math.floor(toFiniteNumber(raw.status_code, 0))),
+        latest_latency_ms: Math.max(0, Math.floor(toFiniteNumber(raw.latency_ms, 0))),
+        latest_error_code: String(raw.error_code || ""),
+        latest_error_message: String(raw.error_message || ""),
+        latest_checked_at: raw.checked_at || null,
+        checks_15m: 0,
+        ok_15m: 0,
+        avg_latency_15m: 0
+      });
+    }
+    const entry = grouped.get(provider);
+    const checkedAtMs = raw.checked_at ? new Date(raw.checked_at).getTime() : 0;
+    if (checkedAtMs > 0 && checkedAtMs >= Date.now() - 15 * 60 * 1000) {
+      entry.checks_15m += 1;
+      if (raw.ok) {
+        entry.ok_15m += 1;
+      }
+      entry.avg_latency_15m += Math.max(0, toFiniteNumber(raw.latency_ms, 0));
+    }
+  }
+
+  const providers = Array.from(grouped.values()).map((entry) => ({
+    ...entry,
+    avg_latency_15m:
+      entry.checks_15m > 0 ? Number((entry.avg_latency_15m / entry.checks_15m).toFixed(2)) : 0,
+    ok_ratio_15m: entry.checks_15m > 0 ? Number((entry.ok_15m / entry.checks_15m).toFixed(4)) : 0
+  }));
+
+  const providerCount = providers.length;
+  const okProviderCount = providers.filter((entry) => entry.latest_ok).length;
+  return {
+    providers,
+    provider_count: providerCount,
+    ok_provider_count: okProviderCount,
+    ok_ratio: providerCount > 0 ? Number((okProviderCount / providerCount).toFixed(4)) : 0
   };
 }
 
@@ -1549,6 +1610,23 @@ function summarizeActiveAssetManifest(activeManifest) {
     integrity_ok_assets: integrityOk,
     integrity_ratio: total > 0 ? Number((integrityOk / total).toFixed(4)) : 0
   };
+}
+
+function deriveAssetModeFromManifest(summary) {
+  const total = Number(summary?.total_assets || 0);
+  const ready = Number(summary?.ready_assets || 0);
+  const integrityOk = Number(summary?.integrity_ok_assets || 0);
+  const available = Boolean(summary?.available);
+  if (!available || total <= 0) {
+    return "procedural";
+  }
+  if (ready <= 0) {
+    return "lite";
+  }
+  if (ready >= total && integrityOk >= total) {
+    return "glb";
+  }
+  return "mixed";
 }
 
 function classifyKeywordFinding(filePath, lineText) {
@@ -3477,6 +3555,140 @@ fastify.post(
     }
   }
 );
+
+fastify.get("/webapp/api/scene/profile/effective", async (request, reply) => {
+  const auth = verifyWebAppAuth(request.query.uid, request.query.ts, request.query.sig);
+  if (!auth.ok) {
+    reply.code(401).send({ success: false, error: auth.reason });
+    return;
+  }
+  const sceneKey = String(request.query.scene_key || "nexus_arena").trim() || "nexus_arena";
+  const client = await pool.connect();
+  try {
+    const profile = await getProfileByTelegram(client, auth.uid);
+    if (!profile) {
+      reply.code(404).send({ success: false, error: "user_not_started" });
+      return;
+    }
+    const [sceneProfile, perfProfile, uiPrefs, activeManifest] = await Promise.all([
+      readSceneProfile(client, profile.user_id, sceneKey),
+      webappStore.getLatestPerfProfile(client, profile.user_id).catch((err) => {
+        if (err.code === "42P01") return null;
+        throw err;
+      }),
+      webappStore.getUserUiPrefs(client, profile.user_id).catch((err) => {
+        if (err.code === "42P01") return null;
+        throw err;
+      }),
+      readActiveAssetManifest(client, { includeEntries: true, entryLimit: 600 })
+    ]);
+    const manifestSummary = summarizeActiveAssetManifest(activeManifest);
+    const latestEffective = await client
+      .query(
+        `SELECT
+           scene_mode,
+           asset_mode,
+           perf_profile,
+           quality_mode,
+           reduced_motion,
+           large_text,
+           fallback_active,
+           profile_json,
+           created_at
+         FROM scene_effective_profiles
+         WHERE user_id = $1
+           AND scene_key = $2
+         ORDER BY created_at DESC
+         LIMIT 1;`,
+        [profile.user_id, sceneKey]
+      )
+      .then((res) => res.rows?.[0] || null)
+      .catch((err) => {
+        if (err.code === "42P01") return null;
+        throw err;
+      });
+
+    const computedAssetMode = deriveAssetModeFromManifest(manifestSummary);
+    const effective = {
+      scene_key: sceneKey,
+      scene_mode: String(latestEffective?.scene_mode || sceneProfile?.scene_mode || "pro"),
+      asset_mode: String(latestEffective?.asset_mode || computedAssetMode),
+      perf_profile: String(latestEffective?.perf_profile || sceneProfile?.perf_profile || "normal"),
+      quality_mode: String(latestEffective?.quality_mode || sceneProfile?.quality_mode || "auto"),
+      reduced_motion:
+        typeof latestEffective?.reduced_motion === "boolean"
+          ? Boolean(latestEffective.reduced_motion)
+          : Boolean(sceneProfile?.reduced_motion),
+      large_text:
+        typeof latestEffective?.large_text === "boolean"
+          ? Boolean(latestEffective.large_text)
+          : Boolean(sceneProfile?.large_text),
+      fallback_active:
+        typeof latestEffective?.fallback_active === "boolean"
+          ? Boolean(latestEffective.fallback_active)
+          : computedAssetMode !== "glb",
+      profile_json: latestEffective?.profile_json || {},
+      source: latestEffective ? "db_effective" : "computed",
+      created_at: latestEffective?.created_at || null
+    };
+
+    await client
+      .query(
+        `INSERT INTO scene_effective_profiles (
+           user_id,
+           scene_key,
+           scene_mode,
+           asset_mode,
+           perf_profile,
+           quality_mode,
+           reduced_motion,
+           large_text,
+           fallback_active,
+           profile_json
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb);`,
+        [
+          profile.user_id,
+          sceneKey,
+          effective.scene_mode,
+          effective.asset_mode,
+          effective.perf_profile,
+          effective.quality_mode,
+          effective.reduced_motion,
+          effective.large_text,
+          effective.fallback_active,
+          JSON.stringify({
+            source: "scene_profile_effective",
+            manifest: manifestSummary,
+            scene_profile: sceneProfile,
+            ui_prefs: uiPrefs || null
+          })
+        ]
+      )
+      .catch((err) => {
+        if (err.code !== "42P01") {
+          throw err;
+        }
+      });
+
+    reply.send({
+      success: true,
+      session: issueWebAppSession(auth.uid),
+      data: {
+        effective_profile: effective,
+        scene_profile: sceneProfile,
+        perf_profile: perfProfile,
+        ui_prefs: uiPrefs,
+        asset_manifest: {
+          summary: manifestSummary,
+          active_revision: activeManifest?.active_revision || null
+        }
+      }
+    });
+  } finally {
+    client.release();
+  }
+});
 
 fastify.get("/webapp/api/assets/manifest/active", async (request, reply) => {
   const auth = verifyWebAppAuth(request.query.uid, request.query.ts, request.query.sig);
@@ -5847,6 +6059,182 @@ fastify.get("/webapp/api/pvp/leaderboard/live", async (request, reply) => {
   }
 });
 
+fastify.get("/webapp/api/pvp/diagnostics/live", async (request, reply) => {
+  const auth = verifyWebAppAuth(request.query.uid, request.query.ts, request.query.sig);
+  if (!auth.ok) {
+    reply.code(401).send({ success: false, error: auth.reason });
+    return;
+  }
+  const windowRaw = String(request.query.window || "5m").trim().toLowerCase();
+  const allowedWindows = new Set(["5m", "15m", "1h", "24h"]);
+  const bucketWindow = allowedWindows.has(windowRaw) ? windowRaw : "5m";
+  const windowMsByKey = {
+    "5m": 5 * 60 * 1000,
+    "15m": 15 * 60 * 1000,
+    "1h": 60 * 60 * 1000,
+    "24h": 24 * 60 * 60 * 1000
+  };
+  const sessionRef = String(request.query.session_ref || "").trim();
+  const windowStart = new Date(Date.now() - (windowMsByKey[bucketWindow] || 5 * 60 * 1000));
+  const client = await pool.connect();
+  try {
+    const profile = await getProfileByTelegram(client, auth.uid);
+    if (!profile) {
+      reply.code(404).send({ success: false, error: "user_not_started" });
+      return;
+    }
+    const flags = await loadFeatureFlags(client);
+    if (!isFeatureEnabled(flags, "ARENA_AUTH_ENABLED")) {
+      reply.code(409).send({ success: false, error: "arena_auth_disabled" });
+      return;
+    }
+    const runtimeConfig = await configService.getEconomyConfig(client);
+    const directorPayload = await arenaService.buildDirectorView(client, {
+      profile,
+      config: runtimeConfig
+    });
+    const latestDiagWindow = await client
+      .query(
+        `SELECT
+           bucket_window,
+           bucket_start,
+           bucket_end,
+           session_count,
+           action_count,
+           accepted_count,
+           rejected_count,
+           median_latency_ms,
+           p95_latency_ms,
+           drift_avg_ms,
+           diagnostics_json,
+           created_at
+         FROM pvp_diag_windows
+         WHERE bucket_window = $1
+         ORDER BY bucket_start DESC
+         LIMIT 1;`,
+        [bucketWindow]
+      )
+      .then((res) => res.rows?.[0] || null)
+      .catch((err) => {
+        if (err.code === "42P01") return null;
+        throw err;
+      });
+    let rejectMix = await client
+      .query(
+        `SELECT
+           reason_code,
+           hit_count,
+           sample_json,
+           bucket_start,
+           bucket_end,
+           created_at
+         FROM pvp_reject_reason_rollups
+         WHERE bucket_window = $1
+         ORDER BY bucket_start DESC, hit_count DESC
+         LIMIT 25;`,
+        [bucketWindow]
+      )
+      .then((res) => res.rows || [])
+      .catch((err) => {
+        if (err.code === "42P01") return [];
+        throw err;
+      });
+    if (!rejectMix.length) {
+      rejectMix = await client
+        .query(
+          `SELECT
+             COALESCE(NULLIF(reason_code, ''), 'unknown') AS reason_code,
+             COUNT(*)::int AS hit_count
+           FROM pvp_action_rejections
+           WHERE created_at >= $1::timestamptz
+           GROUP BY 1
+           ORDER BY hit_count DESC
+           LIMIT 25;`,
+          [windowStart.toISOString()]
+        )
+        .then((res) => res.rows || [])
+        .catch((err) => {
+          if (err.code === "42P01") return [];
+          throw err;
+        });
+    }
+    const tickWindowStats = await client
+      .query(
+        `SELECT
+           COUNT(*)::int AS tick_count,
+           COALESCE(AVG(tick_ms), 0)::numeric AS avg_tick_ms,
+           COALESCE(AVG(action_window_ms), 0)::numeric AS avg_action_window_ms
+         FROM pvp_match_ticks
+         WHERE created_at >= $1::timestamptz;`,
+        [windowStart.toISOString()]
+      )
+      .then((res) => res.rows?.[0] || null)
+      .catch((err) => {
+        if (err.code === "42P01") return null;
+        throw err;
+      });
+
+    let sessionState = null;
+    if (sessionRef) {
+      const statePayload = await arenaService.getAuthoritativePvpSessionState(client, {
+        profile,
+        sessionRef
+      });
+      if (statePayload.ok) {
+        sessionState = statePayload.session || null;
+      }
+    }
+
+    const latestAction = await client
+      .query(
+        `SELECT
+           id,
+           session_ref,
+           action_seq,
+           input_action,
+           accepted,
+           reject_reason,
+           latency_ms,
+           created_at
+         FROM pvp_session_actions
+         WHERE actor_user_id = $1
+         ORDER BY created_at DESC
+         LIMIT 1;`,
+        [profile.user_id]
+      )
+      .then((res) => res.rows?.[0] || null)
+      .catch((err) => {
+        if (err.code === "42P01") return null;
+        throw err;
+      });
+
+    const acceptedCount = Number(latestDiagWindow?.accepted_count || 0);
+    const rejectedCount = Number(latestDiagWindow?.rejected_count || 0);
+    const actionCount = Math.max(0, Number(latestDiagWindow?.action_count || acceptedCount + rejectedCount));
+    const acceptRate = actionCount > 0 ? Number((acceptedCount / actionCount).toFixed(4)) : 0;
+    reply.send({
+      success: true,
+      session: issueWebAppSession(auth.uid),
+      data: {
+        window: bucketWindow,
+        diagnostics: latestDiagWindow,
+        reject_mix: rejectMix,
+        tick_stats: tickWindowStats,
+        accept_rate: acceptRate,
+        contract: directorPayload?.contract || null,
+        anomaly: directorPayload?.anomaly || null,
+        director: directorPayload?.director || null,
+        live_session: sessionState,
+        latest_action: latestAction,
+        transport: PVP_WS_ENABLED ? "ws" : "poll",
+        server_tick: Date.now()
+      }
+    });
+  } finally {
+    client.release();
+  }
+});
+
 fastify.get("/webapp/api/token/summary", async (request, reply) => {
   const auth = verifyWebAppAuth(request.query.uid, request.query.ts, request.query.sig);
   if (!auth.ok) {
@@ -5875,6 +6263,287 @@ fastify.get("/webapp/api/token/summary", async (request, reply) => {
       return;
     }
     throw err;
+  } finally {
+    client.release();
+  }
+});
+
+fastify.get("/webapp/api/token/route/status", async (request, reply) => {
+  const auth = verifyWebAppAuth(request.query.uid, request.query.ts, request.query.sig);
+  if (!auth.ok) {
+    reply.code(401).send({ success: false, error: auth.reason });
+    return;
+  }
+  const client = await pool.connect();
+  try {
+    const profile = await getProfileByTelegram(client, auth.uid);
+    if (!profile) {
+      reply.code(404).send({ success: false, error: "user_not_started" });
+      return;
+    }
+
+    const runtimeConfig = await configService.getEconomyConfig(client);
+    const tokenConfig = tokenEngine.normalizeTokenConfig(runtimeConfig);
+    const featureFlags = await loadFeatureFlags(client);
+    const marketState = await tokenStore.getTokenMarketState(client, tokenConfig.symbol).catch((err) => {
+      if (err.code === "42P01") return null;
+      throw err;
+    });
+    const supply = await economyStore.getCurrencySupply(client, tokenConfig.symbol);
+    const curveEnabled = Boolean(
+      isFeatureEnabled(featureFlags, "TOKEN_CURVE_ENABLED") && tokenConfig.curve?.enabled
+    );
+    const curveQuote = tokenEngine.computeTreasuryCurvePrice({
+      tokenConfig,
+      marketState,
+      totalSupply: Number(supply.total || 0)
+    });
+    const spotUsd = curveEnabled ? Number(curveQuote.priceUsd || 0) : Number(tokenConfig.usd_price || 0);
+    const gate = computeTokenMarketCapGate(tokenConfig, supply.total, spotUsd);
+    const guardrail = await tokenStore.getTreasuryGuardrail(client, tokenConfig.symbol).catch((err) => {
+      if (err.code === "42P01") return null;
+      throw err;
+    });
+    const routeRows = Object.keys(tokenConfig.purchase?.chains || {}).map((chainKey) => {
+      const chainConfig = tokenEngine.getChainConfig(tokenConfig, chainKey);
+      const payAddress = tokenEngine.resolvePaymentAddress({ addresses: getPaymentAddressBook() }, chainConfig);
+      return {
+        chain: String(chainConfig?.chain || chainKey || "").toUpperCase(),
+        pay_currency: String(chainConfig?.payCurrency || chainKey || "").toUpperCase(),
+        enabled: Boolean(chainConfig && payAddress),
+        pay_address_masked: maskAddress(payAddress),
+        source: payAddress ? "env" : "missing"
+      };
+    });
+    const providerHealth = await webappStore.getLatestExternalApiHealth(client, "coingecko", 12).catch((err) => {
+      if (err.code === "42P01") return [];
+      throw err;
+    });
+    const latestRouteSnapshot = await client
+      .query(
+        `SELECT
+           token_symbol,
+           route_count,
+           enabled_route_count,
+           provider_count,
+           ok_provider_count,
+           gate_open,
+           quote_source_mode,
+           snapshot_json,
+           created_at
+         FROM token_route_runtime_snapshots
+         WHERE token_symbol = $1
+         ORDER BY created_at DESC
+         LIMIT 1;`,
+        [tokenConfig.symbol]
+      )
+      .then((res) => res.rows?.[0] || null)
+      .catch((err) => {
+        if (err.code === "42P01") return null;
+        throw err;
+      });
+    const latestQuorum = await client
+      .query(
+        `SELECT
+           request_ref,
+           token_symbol,
+           chain,
+           provider_count,
+           ok_provider_count,
+           agreement_ratio,
+           chosen_provider,
+           decision,
+           created_at
+         FROM token_route_provider_quorum_events
+         WHERE token_symbol = $1
+         ORDER BY created_at DESC
+         LIMIT 15;`,
+        [tokenConfig.symbol]
+      )
+      .then((res) => res.rows || [])
+      .catch((err) => {
+        if (err.code === "42P01") return [];
+        throw err;
+      });
+    const providerCount = latestQuorum.length > 0 ? Number(latestQuorum[0].provider_count || 0) : 0;
+    const okProviderCount = latestQuorum.length > 0 ? Number(latestQuorum[0].ok_provider_count || 0) : 0;
+    const routeSnapshotPayload = {
+      tokenSymbol: tokenConfig.symbol,
+      routeCount: routeRows.length,
+      enabledRouteCount: routeRows.filter((row) => row.enabled).length,
+      providerCount,
+      okProviderCount,
+      gateOpen: Boolean(gate.allowed),
+      quoteSourceMode: curveEnabled ? "curve_and_quorum" : "static_price",
+      snapshotJson: {
+        source: "token_route_status",
+        spot_usd: Number(spotUsd || 0),
+        market_cap_usd: Number(gate.current || 0),
+        guardrail: guardrail || null
+      },
+      createdBy: Number(auth.uid || 0)
+    };
+    await client
+      .query(
+        `INSERT INTO token_route_runtime_snapshots (
+           token_symbol,
+           route_count,
+           enabled_route_count,
+           provider_count,
+           ok_provider_count,
+           gate_open,
+           quote_source_mode,
+           snapshot_json,
+           created_by
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9);`,
+        [
+          routeSnapshotPayload.tokenSymbol,
+          routeSnapshotPayload.routeCount,
+          routeSnapshotPayload.enabledRouteCount,
+          routeSnapshotPayload.providerCount,
+          routeSnapshotPayload.okProviderCount,
+          routeSnapshotPayload.gateOpen,
+          routeSnapshotPayload.quoteSourceMode,
+          JSON.stringify(routeSnapshotPayload.snapshotJson),
+          routeSnapshotPayload.createdBy
+        ]
+      )
+      .catch((err) => {
+        if (err.code !== "42P01") {
+          throw err;
+        }
+      });
+
+    reply.send({
+      success: true,
+      session: issueWebAppSession(auth.uid),
+      data: {
+        token_symbol: tokenConfig.symbol,
+        route_status: {
+          routes: routeRows,
+          route_count: routeRows.length,
+          enabled_route_count: routeRows.filter((row) => row.enabled).length
+        },
+        quote_status: {
+          source_mode: curveEnabled ? "curve_and_quorum" : "static_price",
+          spot_usd: Number(spotUsd || 0),
+          curve_enabled: Boolean(curveEnabled),
+          curve_quote: curveQuote
+        },
+        payout_gate: {
+          ...gate,
+          guardrail: guardrail || null
+        },
+        provider_health: providerHealth,
+        provider_quorum_recent: latestQuorum,
+        latest_snapshot: latestRouteSnapshot
+      }
+    });
+  } finally {
+    client.release();
+  }
+});
+
+fastify.get("/webapp/api/token/decision/traces", async (request, reply) => {
+  const auth = verifyWebAppAuth(request.query.uid, request.query.ts, request.query.sig);
+  if (!auth.ok) {
+    reply.code(401).send({ success: false, error: auth.reason });
+    return;
+  }
+  const limit = Math.max(5, Math.min(100, Number(request.query.limit || 40)));
+  const client = await pool.connect();
+  try {
+    const profile = await getProfileByTelegram(client, auth.uid);
+    if (!profile) {
+      reply.code(404).send({ success: false, error: "user_not_started" });
+      return;
+    }
+    const isAdmin = isAdminTelegramId(auth.uid);
+    const recentDecisions = await tokenStore.listTokenAutoDecisions(client, { limit }).catch((err) => {
+      if (err.code === "42P01") return [];
+      throw err;
+    });
+    const ownRequestIds = !isAdmin
+      ? new Set(
+          (await listTokenRequestsSafe(client, profile.user_id, 200)).map((row) => Number(row.id || 0)).filter((id) => id > 0)
+        )
+      : null;
+    const filteredDecisions = isAdmin
+      ? recentDecisions
+      : recentDecisions.filter((row) => ownRequestIds.has(Number(row.request_id || 0)));
+    const manualQueue = await tokenStore.listManualReviewQueue(client, limit).catch((err) => {
+      if (err.code === "42P01") return [];
+      throw err;
+    });
+    const manualQueueScoped = isAdmin
+      ? manualQueue
+      : manualQueue.filter((row) => Number(row.user_id || 0) === Number(profile.user_id || 0));
+    const reasonBuckets = await client
+      .query(
+        `SELECT
+           token_symbol,
+           decision_source,
+           decision_status,
+           reason_key,
+           bucket_window,
+           bucket_start,
+           bucket_end,
+           hit_count,
+           meta_json,
+           created_at
+         FROM token_decision_reason_buckets
+         ORDER BY bucket_start DESC, hit_count DESC
+         LIMIT $1;`,
+        [limit]
+      )
+      .then((res) => res.rows || [])
+      .catch((err) => {
+        if (err.code === "42P01") return [];
+        throw err;
+      });
+    const windowRollups = await client
+      .query(
+        `SELECT
+           token_symbol,
+           bucket_window,
+           bucket_start,
+           bucket_end,
+           auto_count,
+           manual_count,
+           approve_count,
+           reject_count,
+           stale_provider_count,
+           gate_block_count,
+           summary_json,
+           created_at
+         FROM token_decision_window_rollups
+         ORDER BY bucket_start DESC
+         LIMIT $1;`,
+        [Math.max(5, Math.min(72, limit))]
+      )
+      .then((res) => res.rows || [])
+      .catch((err) => {
+        if (err.code === "42P01") return [];
+        throw err;
+      });
+    reply.send({
+      success: true,
+      session: issueWebAppSession(auth.uid),
+      data: {
+        is_admin: isAdmin,
+        recent_decisions: filteredDecisions,
+        manual_queue: manualQueueScoped,
+        reason_buckets: reasonBuckets,
+        window_rollups: windowRollups,
+        summary: {
+          recent_decision_count: filteredDecisions.length,
+          manual_queue_count: manualQueueScoped.length,
+          bucket_count: reasonBuckets.length,
+          rollup_count: windowRollups.length
+        }
+      }
+    });
   } finally {
     client.release();
   }
@@ -8165,10 +8834,7 @@ fastify.get("/admin/runtime/flags/effective", async (request, reply) => {
   }
 });
 
-fastify.get("/admin/runtime/deploy/status", async (request, reply) => {
-  const actorId = parseAdminId(request);
-  const client = await pool.connect();
-  try {
+async function buildRuntimeDeployStatusPayload(client, actorId) {
     const runtime = await readBotRuntimeState(client, { stateKey: botRuntimeStore.DEFAULT_STATE_KEY, limit: 20 });
     const runtimeHealth = projectBotRuntimeHealth(runtime);
     const flags = await loadFeatureFlags(client, { withMeta: true });
@@ -8304,31 +8970,268 @@ fastify.get("/admin/runtime/deploy/status", async (request, reply) => {
         throw err;
       });
 
+    return {
+      actor_admin_id: Number(actorId || 0),
+      configured_admin_id: Number(ADMIN_TELEGRAM_ID || 0),
+      is_admin: isAdminTelegramId(actorId),
+      release_latest: releaseLatest,
+      webapp_version: webappVersionState.version,
+      webapp_version_source: webappVersionState.source,
+      webapp_launch_url: webappLaunchUrl,
+      runtime_flags: {
+        source_mode: flags.source_mode,
+        env_forced: Boolean(flags.env_forced),
+        effective_flags: flags.flags
+      },
+      bot_runtime: {
+        state_key: runtime.state_key || botRuntimeStore.DEFAULT_STATE_KEY,
+        health: runtimeHealth,
+        state: runtime.state || null,
+        events: runtime.events || []
+      },
+      dependency_health: dependency,
+      runtime_deploy_state: refreshedState
+  };
+}
+
+async function buildPhaseStatusAuditResponse(client, actorId, options = {}) {
+  const snapshot = await buildPhaseStatusAuditSnapshot(client, {
+    phase_name: options.phase_name || "V3.6",
+    release_ref: options.release_ref || "",
+    git_revision: options.git_revision || ""
+  });
+  const persist = Boolean(options.persist);
+  let runtimeAuditSnapshotId = null;
+  let phaseAlignment = null;
+  if (persist) {
+    await client.query("BEGIN");
+    runtimeAuditSnapshotId = await insertRuntimeAuditSnapshot(client, {
+      audit_scope: "phase_status",
+      phase_name: snapshot.phase_name,
+      release_ref: snapshot.release_ref,
+      git_revision: snapshot.git_revision,
+      flag_source_mode: snapshot.flag_source_mode,
+      webapp_bundle_mode: snapshot.bundle_mode,
+      bot_alive: snapshot.bot_alive,
+      bot_lock_acquired: snapshot.bot_lock_acquired,
+      schema_head: snapshot.schema_head,
+      snapshot_json: snapshot.snapshot_json,
+      findings: snapshot.findings,
+      created_by: actorId
+    });
+    phaseAlignment = await upsertReleasePhaseAlignment(client, {
+      release_ref: snapshot.release_ref,
+      git_revision: snapshot.git_revision,
+      phase_name: snapshot.phase_name,
+      phase_status: snapshot.phase_status,
+      flag_source_mode: snapshot.flag_source_mode,
+      bundle_mode: snapshot.bundle_mode,
+      bot_alive: snapshot.bot_alive,
+      bot_lock_acquired: snapshot.bot_lock_acquired,
+      acceptance_json: {
+        findings_count: Array.isArray(snapshot.findings) ? snapshot.findings.length : 0,
+        dependency_ok: Boolean(snapshot.dependency_health?.ok),
+        critical_flags: pickCriticalRuntimeFlags(snapshot.feature_flags?.flags || {})
+      },
+      created_by: actorId
+    });
+    await client.query("COMMIT");
+  }
+
+  return {
+    actor_admin_id: Number(actorId || 0),
+    configured_admin_id: Number(ADMIN_TELEGRAM_ID || 0),
+    is_admin: isAdminTelegramId(actorId),
+    phase_name: snapshot.phase_name,
+    phase_status: snapshot.phase_status,
+    release_ref: snapshot.release_ref,
+    git_revision: snapshot.git_revision,
+    flag_source_mode: snapshot.flag_source_mode,
+    bundle_mode: snapshot.bundle_mode,
+    bot_alive: snapshot.bot_alive,
+    bot_lock_acquired: snapshot.bot_lock_acquired,
+    schema_head: snapshot.schema_head,
+    persisted: persist,
+    runtime_audit_snapshot_id: runtimeAuditSnapshotId,
+    phase_alignment: phaseAlignment
+      ? {
+          release_ref: phaseAlignment.release_ref,
+          git_revision: phaseAlignment.git_revision,
+          phase_name: phaseAlignment.phase_name,
+          phase_status: phaseAlignment.phase_status,
+          created_at: phaseAlignment.created_at
+        }
+      : null,
+    findings: snapshot.findings,
+    snapshot: snapshot.snapshot_json
+  };
+}
+
+async function buildDataIntegrityAuditPayload(client, actorId) {
+  const [dependency, flagsMeta, variant, runtimeState, latestRelease, activeManifest, adminSummary] = await Promise.all([
+    dependencyHealth(),
+    loadFeatureFlags(client, { withMeta: true }),
+    resolveWebAppVariant(client),
+    readBotRuntimeState(client, { stateKey: botRuntimeStore.DEFAULT_STATE_KEY, limit: 10 }),
+    hasReleaseMarkersTable(client).then((exists) => (exists ? readLatestReleaseMarker(client) : null)).catch(() => null),
+    readActiveAssetManifest(client, { includeEntries: true, entryLimit: 256 }).catch((err) => {
+      if (err?.code === "42P01") {
+        return { available: false, active_revision: null, entries: [] };
+      }
+      throw err;
+    }),
+    configService
+      .getEconomyConfig(client)
+      .then((cfg) => buildAdminSummary(client, cfg))
+      .catch((err) => {
+        if (err?.code === "42P01") return null;
+        throw err;
+      })
+  ]);
+  const botRuntimeHealth = projectBotRuntimeHealth(runtimeState);
+  const manifestSummary = summarizeActiveAssetManifest(activeManifest);
+  const assetMode = summarizeAssetMode({
+    sceneMode: String(adminSummary?.scene_mode || ""),
+    manifestSummary,
+    runtimeAssetSummary: adminSummary?.assets?.runtime || null
+  });
+  const queueSummary = adminSummary?.queues || {};
+  const externalApiHealth = Array.isArray(queueSummary.external_api_health) ? queueSummary.external_api_health : [];
+  const tokenAutoDecisions = Array.isArray(queueSummary.token_auto_decisions) ? queueSummary.token_auto_decisions : [];
+  const truthMap = {
+    gameplay: {
+      source: "backend_authoritative",
+      arena_tables: Boolean(dependency?.dependencies?.arena_session_tables),
+      raid_tables: Boolean(dependency?.dependencies?.raid_session_tables),
+      pvp_tables: Boolean(dependency?.dependencies?.pvp_session_tables),
+      status:
+        dependency?.dependencies?.arena_session_tables &&
+        dependency?.dependencies?.raid_session_tables &&
+        dependency?.dependencies?.pvp_session_tables
+          ? "real"
+          : "partial"
+    },
+    treasury: {
+      source: "backend_authoritative+env_routing",
+      token_market_tables: Boolean(dependency?.dependencies?.token_market_tables),
+      treasury_ops_tables: Boolean(dependency?.dependencies?.treasury_ops_tables),
+      quote_trace_tables: Boolean(dependency?.dependencies?.oracle_tables),
+      provider_health_rows: externalApiHealth.length,
+      auto_decision_rows: tokenAutoDecisions.length,
+      route_chains: adminSummary?.token?.routing?.chains || [],
+      payout_gate_status: String(adminSummary?.token?.market?.payout_gate || ""),
+      status: dependency?.dependencies?.token_market_tables ? "real" : "partial"
+    },
+    webapp_ui: {
+      source: variant?.source === "dist" ? "vite_ts_bundle" : "legacy_runtime",
+      bundle_mode: String(variant?.source || "unknown"),
+      ts_bundle_enabled: Boolean(flagsMeta?.flags?.WEBAPP_TS_BUNDLE_ENABLED),
+      webapp_v3_enabled: Boolean(flagsMeta?.flags?.WEBAPP_V3_ENABLED),
+      status: variant?.source === "dist" ? "real" : "partial"
+    },
+    scene_assets: {
+      source: "manifest+registry+runtime",
+      asset_mode: assetMode,
+      manifest: manifestSummary,
+      runtime_assets: adminSummary?.assets?.runtime || null,
+      status: assetMode === "glb" ? "real" : assetMode === "mixed" || assetMode === "lite" ? "mixed" : "procedural"
+    },
+    bot_runtime: {
+      source: "bot_runtime_state",
+      health: botRuntimeHealth,
+      status: botRuntimeHealth.alive && botRuntimeHealth.lock_acquired ? "real" : "degraded"
+    }
+  };
+
+  return {
+    actor_admin_id: Number(actorId || 0),
+    configured_admin_id: Number(ADMIN_TELEGRAM_ID || 0),
+    is_admin: isAdminTelegramId(actorId),
+    release_latest: latestRelease
+      ? {
+          release_ref: latestRelease.release_ref,
+          git_revision: latestRelease.git_revision,
+          created_at: latestRelease.created_at
+        }
+      : null,
+    dependency_health: dependency,
+    runtime_flags: {
+      source_mode: String(flagsMeta?.source_mode || "env_locked"),
+      env_forced: Boolean(flagsMeta?.env_forced),
+      effective_flags: flagsMeta?.flags || {}
+    },
+    truth_map: truthMap,
+    notes: [
+      "Gameplay/economy/treasury values are backend-authoritative.",
+      "Procedural fallback is allowed only for visual scene assets.",
+      "This endpoint summarizes runtime truth sources, not repo-wide keyword scans."
+    ]
+  };
+}
+
+fastify.get("/webapp/api/admin/runtime/deploy/status", async (request, reply) => {
+  const auth = verifyWebAppAuth(request.query.uid, request.query.ts, request.query.sig);
+  if (!auth.ok) {
+    reply.code(401).send({ success: false, error: auth.reason });
+    return;
+  }
+  const client = await pool.connect();
+  try {
+    const profile = await requireWebAppAdmin(client, reply, auth.uid);
+    if (!profile) {
+      return;
+    }
+    const data = await buildRuntimeDeployStatusPayload(client, auth.uid);
     reply.send({
       success: true,
-      data: {
-        actor_admin_id: Number(actorId || 0),
-        configured_admin_id: Number(ADMIN_TELEGRAM_ID || 0),
-        is_admin: isAdminTelegramId(actorId),
-        release_latest: releaseLatest,
-        webapp_version: webappVersionState.version,
-        webapp_version_source: webappVersionState.source,
-        webapp_launch_url: webappLaunchUrl,
-        runtime_flags: {
-          source_mode: flags.source_mode,
-          env_forced: Boolean(flags.env_forced),
-          effective_flags: flags.flags
-        },
-        bot_runtime: {
-          state_key: runtime.state_key || botRuntimeStore.DEFAULT_STATE_KEY,
-          health: runtimeHealth,
-          state: runtime.state || null,
-          events: runtime.events || []
-        },
-        dependency_health: dependency,
-        runtime_deploy_state: refreshedState
-      }
+      session: issueWebAppSession(auth.uid),
+      data
     });
+  } finally {
+    client.release();
+  }
+});
+
+fastify.get("/admin/runtime/deploy/status", async (request, reply) => {
+  const actorId = parseAdminId(request);
+  const client = await pool.connect();
+  try {
+    const data = await buildRuntimeDeployStatusPayload(client, actorId);
+    reply.send({ success: true, data });
+  } finally {
+    client.release();
+  }
+});
+
+fastify.get("/webapp/api/admin/runtime/audit/phase-status", async (request, reply) => {
+  const auth = verifyWebAppAuth(request.query.uid, request.query.ts, request.query.sig);
+  if (!auth.ok) {
+    reply.code(401).send({ success: false, error: auth.reason });
+    return;
+  }
+  const persist = parseTruthyQuery(request.query?.persist);
+  const client = await pool.connect();
+  try {
+    const profile = await requireWebAppAdmin(client, reply, auth.uid);
+    if (!profile) {
+      return;
+    }
+    const data = await buildPhaseStatusAuditResponse(client, auth.uid, {
+      persist,
+      phase_name: request.query?.phase_name || "V3.6",
+      release_ref: request.query?.release_ref || "",
+      git_revision: request.query?.git_revision || ""
+    });
+    reply.send({
+      success: true,
+      session: issueWebAppSession(auth.uid),
+      data
+    });
+  } catch (err) {
+    try {
+      await client.query("ROLLBACK");
+    } catch {}
+    throw err;
   } finally {
     client.release();
   }
@@ -8351,90 +9254,15 @@ fastify.get(
   },
   async (request, reply) => {
     const actorId = parseAdminId(request);
-    const persistRaw = request.query?.persist;
-    const persist =
-      persistRaw === true ||
-      String(persistRaw || "")
-        .trim()
-        .toLowerCase() === "1" ||
-      String(persistRaw || "")
-        .trim()
-        .toLowerCase() === "true";
     const client = await pool.connect();
     try {
-      const snapshot = await buildPhaseStatusAuditSnapshot(client, {
+      const data = await buildPhaseStatusAuditResponse(client, actorId, {
+        persist: parseTruthyQuery(request.query?.persist),
         phase_name: request.query?.phase_name || "V3.6",
         release_ref: request.query?.release_ref || "",
         git_revision: request.query?.git_revision || ""
       });
-
-      let runtimeAuditSnapshotId = null;
-      let phaseAlignment = null;
-      if (persist) {
-        await client.query("BEGIN");
-        runtimeAuditSnapshotId = await insertRuntimeAuditSnapshot(client, {
-          audit_scope: "phase_status",
-          phase_name: snapshot.phase_name,
-          release_ref: snapshot.release_ref,
-          git_revision: snapshot.git_revision,
-          flag_source_mode: snapshot.flag_source_mode,
-          webapp_bundle_mode: snapshot.bundle_mode,
-          bot_alive: snapshot.bot_alive,
-          bot_lock_acquired: snapshot.bot_lock_acquired,
-          schema_head: snapshot.schema_head,
-          snapshot_json: snapshot.snapshot_json,
-          findings: snapshot.findings,
-          created_by: actorId
-        });
-        phaseAlignment = await upsertReleasePhaseAlignment(client, {
-          release_ref: snapshot.release_ref,
-          git_revision: snapshot.git_revision,
-          phase_name: snapshot.phase_name,
-          phase_status: snapshot.phase_status,
-          flag_source_mode: snapshot.flag_source_mode,
-          bundle_mode: snapshot.bundle_mode,
-          bot_alive: snapshot.bot_alive,
-          bot_lock_acquired: snapshot.bot_lock_acquired,
-          acceptance_json: {
-            findings_count: Array.isArray(snapshot.findings) ? snapshot.findings.length : 0,
-            dependency_ok: Boolean(snapshot.dependency_health?.ok),
-            critical_flags: pickCriticalRuntimeFlags(snapshot.feature_flags?.flags || {})
-          },
-          created_by: actorId
-        });
-        await client.query("COMMIT");
-      }
-
-      reply.send({
-        success: true,
-        data: {
-          actor_admin_id: Number(actorId || 0),
-          configured_admin_id: Number(ADMIN_TELEGRAM_ID || 0),
-          is_admin: isAdminTelegramId(actorId),
-          phase_name: snapshot.phase_name,
-          phase_status: snapshot.phase_status,
-          release_ref: snapshot.release_ref,
-          git_revision: snapshot.git_revision,
-          flag_source_mode: snapshot.flag_source_mode,
-          bundle_mode: snapshot.bundle_mode,
-          bot_alive: snapshot.bot_alive,
-          bot_lock_acquired: snapshot.bot_lock_acquired,
-          schema_head: snapshot.schema_head,
-          persisted: persist,
-          runtime_audit_snapshot_id: runtimeAuditSnapshotId,
-          phase_alignment: phaseAlignment
-            ? {
-                release_ref: phaseAlignment.release_ref,
-                git_revision: phaseAlignment.git_revision,
-                phase_name: phaseAlignment.phase_name,
-                phase_status: phaseAlignment.phase_status,
-                created_at: phaseAlignment.created_at
-              }
-            : null,
-          findings: snapshot.findings,
-          snapshot: snapshot.snapshot_json
-        }
-      });
+      reply.send({ success: true, data });
     } catch (err) {
       try {
         await client.query("ROLLBACK");
@@ -8446,113 +9274,35 @@ fastify.get(
   }
 );
 
+fastify.get("/webapp/api/admin/runtime/audit/data-integrity", async (request, reply) => {
+  const auth = verifyWebAppAuth(request.query.uid, request.query.ts, request.query.sig);
+  if (!auth.ok) {
+    reply.code(401).send({ success: false, error: auth.reason });
+    return;
+  }
+  const client = await pool.connect();
+  try {
+    const profile = await requireWebAppAdmin(client, reply, auth.uid);
+    if (!profile) {
+      return;
+    }
+    const data = await buildDataIntegrityAuditPayload(client, auth.uid);
+    reply.send({
+      success: true,
+      session: issueWebAppSession(auth.uid),
+      data
+    });
+  } finally {
+    client.release();
+  }
+});
+
 fastify.get("/admin/runtime/audit/data-integrity", async (request, reply) => {
   const actorId = parseAdminId(request);
   const client = await pool.connect();
   try {
-    const [dependency, flagsMeta, variant, runtimeState, latestRelease, activeManifest, adminSummary] = await Promise.all([
-      dependencyHealth(),
-      loadFeatureFlags(client, { withMeta: true }),
-      resolveWebAppVariant(client),
-      readBotRuntimeState(client, { stateKey: botRuntimeStore.DEFAULT_STATE_KEY, limit: 10 }),
-      hasReleaseMarkersTable(client).then((exists) => (exists ? readLatestReleaseMarker(client) : null)).catch(() => null),
-      readActiveAssetManifest(client, { includeEntries: true, entryLimit: 256 }).catch((err) => {
-        if (err?.code === "42P01") {
-          return { available: false, active_revision: null, entries: [] };
-        }
-        throw err;
-      }),
-      configService
-        .getEconomyConfig(client)
-        .then((cfg) => buildAdminSummary(client, cfg))
-        .catch((err) => {
-          if (err?.code === "42P01") return null;
-          throw err;
-        })
-    ]);
-    const botRuntimeHealth = projectBotRuntimeHealth(runtimeState);
-    const manifestSummary = summarizeActiveAssetManifest(activeManifest);
-    const assetMode = summarizeAssetMode({
-      sceneMode: String(adminSummary?.scene_mode || ""),
-      manifestSummary,
-      runtimeAssetSummary: adminSummary?.assets?.runtime || null
-    });
-    const queueSummary = adminSummary?.queues || {};
-    const externalApiHealth = Array.isArray(queueSummary.external_api_health) ? queueSummary.external_api_health : [];
-    const tokenAutoDecisions = Array.isArray(queueSummary.token_auto_decisions) ? queueSummary.token_auto_decisions : [];
-    const truthMap = {
-      gameplay: {
-        source: "backend_authoritative",
-        arena_tables: Boolean(dependency?.dependencies?.arena_session_tables),
-        raid_tables: Boolean(dependency?.dependencies?.raid_session_tables),
-        pvp_tables: Boolean(dependency?.dependencies?.pvp_session_tables),
-        status:
-          dependency?.dependencies?.arena_session_tables &&
-          dependency?.dependencies?.raid_session_tables &&
-          dependency?.dependencies?.pvp_session_tables
-            ? "real"
-            : "partial"
-      },
-      treasury: {
-        source: "backend_authoritative+env_routing",
-        token_market_tables: Boolean(dependency?.dependencies?.token_market_tables),
-        treasury_ops_tables: Boolean(dependency?.dependencies?.treasury_ops_tables),
-        quote_trace_tables: Boolean(dependency?.dependencies?.oracle_tables),
-        provider_health_rows: externalApiHealth.length,
-        auto_decision_rows: tokenAutoDecisions.length,
-        route_chains: adminSummary?.token?.routing?.chains || [],
-        payout_gate_status: String(adminSummary?.token?.market?.payout_gate || ""),
-        status: dependency?.dependencies?.token_market_tables ? "real" : "partial"
-      },
-      webapp_ui: {
-        source: variant?.source === "dist" ? "vite_ts_bundle" : "legacy_runtime",
-        bundle_mode: String(variant?.source || "unknown"),
-        ts_bundle_enabled: Boolean(flagsMeta?.flags?.WEBAPP_TS_BUNDLE_ENABLED),
-        webapp_v3_enabled: Boolean(flagsMeta?.flags?.WEBAPP_V3_ENABLED),
-        status: variant?.source === "dist" ? "real" : "partial"
-      },
-      scene_assets: {
-        source: "manifest+registry+runtime",
-        asset_mode: assetMode,
-        manifest: manifestSummary,
-        runtime_assets: adminSummary?.assets?.runtime || null,
-        status:
-          assetMode === "glb" ? "real" : assetMode === "mixed" || assetMode === "lite" ? "mixed" : "procedural"
-      },
-      bot_runtime: {
-        source: "bot_runtime_state",
-        health: botRuntimeHealth,
-        status: botRuntimeHealth.alive && botRuntimeHealth.lock_acquired ? "real" : "degraded"
-      }
-    };
-
-    reply.send({
-      success: true,
-      data: {
-        actor_admin_id: Number(actorId || 0),
-        configured_admin_id: Number(ADMIN_TELEGRAM_ID || 0),
-        is_admin: isAdminTelegramId(actorId),
-        release_latest: latestRelease
-          ? {
-              release_ref: latestRelease.release_ref,
-              git_revision: latestRelease.git_revision,
-              created_at: latestRelease.created_at
-            }
-          : null,
-        dependency_health: dependency,
-        runtime_flags: {
-          source_mode: String(flagsMeta?.source_mode || "env_locked"),
-          env_forced: Boolean(flagsMeta?.env_forced),
-          effective_flags: flagsMeta?.flags || {}
-        },
-        truth_map: truthMap,
-        notes: [
-          "Gameplay/economy/treasury values are backend-authoritative.",
-          "Procedural fallback is allowed only for visual scene assets.",
-          "This endpoint summarizes runtime truth sources, not repo-wide keyword scans."
-        ]
-      }
-    });
+    const data = await buildDataIntegrityAuditPayload(client, actorId);
+    reply.send({ success: true, data });
   } finally {
     client.release();
   }

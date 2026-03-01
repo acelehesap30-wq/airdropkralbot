@@ -13,7 +13,12 @@
       summary: null,
       runtime: null,
       assets: null,
-      queues: null
+      queues: null,
+      runtimeFlags: null,
+      deployStatus: null,
+      decisionTraces: null,
+      auditPhaseStatus: null,
+      dataIntegrity: null
     },
     suggestion: null,
     arena: null,
@@ -81,6 +86,12 @@
       matrixScopeHistory: [],
       matrixScopeLastAt: 0,
       tokenQuote: null,
+      tokenRouteStatus: null,
+      sceneProfileEffective: null,
+      pvpDiagnostics: null,
+      runtimeFlagsEffective: {},
+      webappVersion: "",
+      webappLaunchUrl: "",
       quoteTimer: null,
       featureFlags: {}
     },
@@ -9049,6 +9060,47 @@
     return data;
   }
 
+  async function fetchPvpDiagnosticsLive(bucketWindow = "5m", sessionRef = "") {
+    const cleanWindow = String(bucketWindow || "5m").trim().toLowerCase() || "5m";
+    const cleanSessionRef = String(sessionRef || "").trim();
+    const bridge = getNetApiBridge();
+    let payload;
+    if (bridge && typeof bridge.fetchPvpDiagnosticsLive === "function") {
+      const t0 = performance.now();
+      payload = await bridge.fetchPvpDiagnosticsLive(state.auth, cleanWindow);
+      markLatency(performance.now() - t0);
+    } else {
+      const query = new URLSearchParams({
+        uid: state.auth.uid,
+        ts: state.auth.ts,
+        sig: state.auth.sig,
+        window: cleanWindow
+      });
+      if (cleanSessionRef) {
+        query.set("session_ref", cleanSessionRef);
+      }
+      const t0 = performance.now();
+      const res = await fetch(`/webapp/api/pvp/diagnostics/live?${query.toString()}`);
+      markLatency(performance.now() - t0);
+      payload = await res.json();
+      if (!res.ok || !payload.success) {
+        const error = new Error(payload.error || `pvp_diagnostics_live_failed:${res.status}`);
+        error.code = res.status;
+        throw error;
+      }
+    }
+    renewAuth(payload);
+    const data = payload.data || {};
+    state.v3.pvpDiagnostics = data;
+    if (data.diagnostics && !state.v3.pvpTickMeta?.diagnostics) {
+      state.v3.pvpTickMeta = {
+        ...(state.v3.pvpTickMeta || {}),
+        diagnostics: data.diagnostics
+      };
+    }
+    return data;
+  }
+
   async function drainPvpQueue() {
     if (state.v3.pvpDraining) {
       return;
@@ -10375,7 +10427,7 @@
   function renderTreasuryPulse(token, quotePayload = null) {
     const safe = token && typeof token === "object" ? token : {};
     const quoteData = quotePayload && typeof quotePayload === "object" ? quotePayload : state.v3.tokenQuote || null;
-    const gate = quoteData?.payout_gate || safe.payout_gate || {};
+    const gate = quoteData?.payout_gate || routeStatusPayload?.payout_gate || safe.payout_gate || {};
     const guardrail = gate.guardrail || {};
     const curveQuote = quoteData?.curve?.quote || safe.curve?.quote || {};
     const quorum = quoteData?.quote_quorum || {};
@@ -10512,22 +10564,40 @@
       return;
     }
     const safe = token && typeof token === "object" ? token : {};
-    const chains = Array.isArray(safe.purchase?.chains) ? safe.purchase.chains : [];
+    const routeStatusPayload = state.v3.tokenRouteStatus || {};
+    const chainsFromToken = Array.isArray(safe.purchase?.chains) ? safe.purchase.chains : [];
+    const chainsFromRouteStatus = Array.isArray(routeStatusPayload?.route_status?.routes)
+      ? routeStatusPayload.route_status.routes.map((row) => ({
+          chain: String(row?.chain || "").toUpperCase(),
+          pay_currency: String(row?.pay_currency || row?.chain || "").toUpperCase(),
+          enabled: Boolean(row?.enabled),
+          address: String(row?.pay_address || row?.pay_address_masked || "").trim()
+        }))
+      : [];
+    const chains = chainsFromRouteStatus.length > 0 ? chainsFromRouteStatus : chainsFromToken;
     const quoteData = quotePayload && typeof quotePayload === "object" ? quotePayload : state.v3.tokenQuote || null;
-    const selectedChain = String(byId("tokenChainSelect")?.value || quoteData?.chain || "").toUpperCase();
+    const selectedChain = String(
+      byId("tokenChainSelect")?.value || quoteData?.chain || chains[0]?.chain || ""
+    ).toUpperCase();
     const selectedRoute = chains.find((row) => String(row.chain || "").toUpperCase() === selectedChain) || null;
     const totalRoutes = chains.length;
     const enabledRoutes = chains.filter((row) => row && row.enabled).length;
     const missingRoutes = Math.max(0, totalRoutes - enabledRoutes);
     const routeCoverage = totalRoutes > 0 ? clamp(enabledRoutes / totalRoutes, 0, 1) : 0;
-    const payAddress = String(quoteData?.pay_address || selectedRoute?.address || "").trim();
+    const payAddress = String(
+      quoteData?.pay_address || selectedRoute?.address || selectedRoute?.pay_address || ""
+    ).trim();
     const maskedPay = maskWalletAddress(payAddress);
     const gate = quoteData?.payout_gate || safe.payout_gate || {};
     const gateOpen = gate.allowed === true;
-    const quorum = quoteData?.quote_quorum || {};
+    const quorumFallback =
+      routeStatusPayload?.provider_quorum_recent && Array.isArray(routeStatusPayload.provider_quorum_recent)
+        ? routeStatusPayload.provider_quorum_recent[0] || {}
+        : {};
+    const quorum = quoteData?.quote_quorum || quorumFallback || {};
     const providerCount = Math.max(0, Math.floor(asNum(quorum.provider_count || 0)));
     const okProviderCount = Math.max(0, Math.floor(asNum(quorum.ok_provider_count || 0)));
-    const agreementRatio = clamp(asNum(quorum.agreement_ratio || 0), 0, 1);
+    const agreementRatio = clamp(asNum(quorum.agreement_ratio || quorum.agreementRatio || 0), 0, 1);
     const providerRatio = providerCount > 0 ? clamp(okProviderCount / providerCount, 0, 1) : 0;
     const quorumRatio =
       providerCount > 0 ? clamp(providerRatio * 0.58 + agreementRatio * 0.42, 0, 1) : routeCoverage > 0 ? 0.35 : 0;
@@ -12473,6 +12543,8 @@
     panel.classList.remove("hidden");
     const summary = info.summary || {};
     const runtime = summary.bot_runtime || state.admin.runtime || null;
+    const runtimeFlags = summary.runtime_flags || state.admin.runtimeFlags || null;
+    const deployStatus = summary.deploy_status || state.admin.deployStatus || null;
     const metrics = summary.metrics || {};
     const queues = summary.queues || {};
     const manualTokenQueue = Array.isArray(queues.token_manual_queue) ? queues.token_manual_queue.length : 0;
@@ -12488,11 +12560,26 @@
     byId("adminTokenCap").textContent = `Cap $${asNum(token.market_cap_usd).toFixed(2)} | Gate ${gate.allowed ? "OPEN" : "LOCKED"} (${asNum(gate.current).toFixed(2)} / ${asNum(gate.min).toFixed(2)})`;
     byId("adminMetrics").textContent =
       `24s: active ${asNum(metrics.users_active_24h)} | start ${asNum(metrics.attempts_started_24h)} | complete ${asNum(metrics.attempts_completed_24h)} | reveal ${asNum(metrics.reveals_24h)} | token $${asNum(metrics.token_usd_volume_24h).toFixed(2)}`;
+    const runtimeMode = String(runtimeFlags?.source_mode || summary.feature_flag_runtime?.source_mode || "env_locked").toLowerCase();
+    const deployRev = String(
+      deployStatus?.release_latest?.git_revision ||
+        deployStatus?.release_marker?.git_revision ||
+        summary.webapp_version ||
+        state.data?.webapp_version ||
+        "-"
+    )
+      .trim()
+      .slice(0, 10);
     byId("adminQueue").textContent =
       `Queue: payout ${asNum(summary.pending_payout_count)} | token ${asNum(summary.pending_token_count)}` +
-      ` | manual ${manualTokenQueue} | auto ${autoDecisions}`;
+      ` | manual ${manualTokenQueue} | auto ${autoDecisions} | flags ${runtimeMode} | rev ${deployRev}`;
     state.admin.runtime = runtime || null;
+    state.admin.runtimeFlags = runtimeFlags || state.admin.runtimeFlags || null;
+    state.admin.deployStatus = deployStatus || state.admin.deployStatus || null;
+    state.admin.auditPhaseStatus = summary.audit_phase_status || state.admin.auditPhaseStatus || null;
+    state.admin.dataIntegrity = summary.data_integrity || state.admin.dataIntegrity || null;
     renderAdminRuntime(runtime);
+    renderAdminAuditRuntimeStrip(summary, runtimeFlags, deployStatus);
     renderAdminAssetStatus(state.admin.assets);
     renderAdminTreasuryRuntimeStrip(summary, state.data?.token || {});
     renderAdminProviderAlertStrip();
@@ -12565,6 +12652,86 @@
       .map((event) => String(event.event_type || event.type || "runtime"))
       .join(" | ");
     eventsLine.textContent = `Runtime events: ${preview}`;
+  }
+
+  function renderAdminAuditRuntimeStrip(summaryData, runtimeFlagsData, deployStatusData) {
+    const host = byId("adminAuditRuntimeStrip");
+    const signalLine = byId("adminAuditSignalLine");
+    const hintLine = byId("adminAuditHintLine");
+    if (!host || !signalLine || !hintLine) {
+      return;
+    }
+    const summary = summaryData && typeof summaryData === "object" ? summaryData : {};
+    const runtimeFlags = runtimeFlagsData && typeof runtimeFlagsData === "object" ? runtimeFlagsData : state.admin.runtimeFlags || {};
+    const deployStatus = deployStatusData && typeof deployStatusData === "object" ? deployStatusData : state.admin.deployStatus || {};
+    const phase = summary.audit_phase_status || state.admin.auditPhaseStatus || {};
+    const dataIntegrity = summary.data_integrity || state.admin.dataIntegrity || {};
+    const truthMap = dataIntegrity && typeof dataIntegrity === "object" ? dataIntegrity.truth_map || {} : {};
+    const truthEntries = Object.values(truthMap).filter((entry) => entry && typeof entry === "object");
+    const truthRealCount = truthEntries.filter((entry) => String(entry.status || "").toLowerCase() === "real").length;
+    const truthMixedCount = truthEntries.filter((entry) => String(entry.status || "").toLowerCase() === "mixed").length;
+    const truthTotal = truthEntries.length;
+    const truthScore = truthTotal > 0 ? clamp((truthRealCount + truthMixedCount * 0.5) / truthTotal, 0, 1) : 0.2;
+    const phaseStatus = String(phase.phase_status || "unknown").toLowerCase();
+    const phaseTone = phaseStatus === "pass" ? "advantage" : phaseStatus === "warn" ? "pressure" : phaseStatus === "fail" ? "critical" : "neutral";
+    const phaseHealth = phaseStatus === "pass" ? 1 : phaseStatus === "warn" ? 0.56 : phaseStatus === "fail" ? 0.15 : 0.32;
+    const runtimeAlive = Boolean(phase.bot_alive);
+    const runtimeLock = Boolean(phase.bot_lock_acquired);
+    const runtimeTone = runtimeAlive && runtimeLock ? "advantage" : runtimeAlive ? "pressure" : "critical";
+    const flagSource = String(
+      phase.flag_source_mode ||
+        runtimeFlags.source_mode ||
+        summary.feature_flag_runtime?.source_mode ||
+        "env_locked"
+    ).toLowerCase();
+    const bundleMode = String(phase.bundle_mode || summary.webapp_bundle_mode || "unknown").toLowerCase();
+    const bundleTone = bundleMode === "dist" ? "advantage" : bundleMode === "legacy" ? "pressure" : "neutral";
+    const truthTone = truthScore < 0.45 ? "critical" : truthScore < 0.8 ? "pressure" : "advantage";
+    const findings = Array.isArray(phase.findings) ? phase.findings : [];
+    const latestRelease =
+      String(
+        deployStatus?.release_latest?.git_revision ||
+          deployStatus?.release_marker?.git_revision ||
+          phase?.git_revision ||
+          summary?.webapp_version ||
+          state?.data?.webapp_version ||
+          "-"
+      )
+        .trim()
+        .slice(0, 10) || "-";
+    const combinedTone =
+      phaseTone === "critical" || runtimeTone === "critical" || truthTone === "critical"
+        ? "critical"
+        : phaseTone === "pressure" || runtimeTone === "pressure" || truthTone === "pressure" || bundleTone === "pressure"
+          ? "pressure"
+          : "advantage";
+    host.dataset.tone = combinedTone;
+    host.style.setProperty("--audit-health", clamp(phaseHealth, 0, 1).toFixed(3));
+    host.style.setProperty("--audit-truth", clamp(truthScore, 0, 1).toFixed(3));
+
+    const phaseLabel = phaseStatus ? phaseStatus.toUpperCase() : "UNKNOWN";
+    byId("adminAuditPhaseChip").textContent = `PHASE ${phaseLabel}`;
+    byId("adminAuditPhaseChip").className = phaseTone === "critical" ? "badge warn" : phaseTone === "pressure" ? "badge" : "badge info";
+    setLiveStatusChip("adminAuditFlagsChip", `FLAGS ${flagSource.toUpperCase()}`, flagSource === "env_locked" ? "advantage" : "pressure", flagSource === "env_locked" ? 0.9 : 0.45);
+    setLiveStatusChip("adminAuditBundleChip", `BUNDLE ${bundleMode.toUpperCase()}`, bundleTone, bundleMode === "dist" ? 0.92 : 0.45);
+    setLiveStatusChip("adminAuditRuntimeChip", `BOT ${runtimeAlive ? (runtimeLock ? "LOCK" : "UNLOCK") : "OFF"}`, runtimeTone, runtimeAlive && runtimeLock ? 0.92 : runtimeAlive ? 0.45 : 0.1);
+    setLiveStatusChip("adminAuditTruthChip", `TRUTH ${truthRealCount}/${Math.max(truthTotal, 1)}`, truthTone, truthScore);
+    signalLine.textContent = `Runtime ${runtimeAlive ? "ON" : "OFF"} | lock ${runtimeLock ? "OK" : "MISS"} | rev ${latestRelease} | findings ${findings.length}`;
+    hintLine.textContent =
+      findings.length > 0
+        ? `Audit bulgulari: ${findings.slice(0, 2).map((row) => String(row.code || row.severity || "finding")).join(" | ")}`
+        : `Truth map: real ${truthRealCount}/${Math.max(truthTotal, 1)} | mixed ${truthMixedCount} | source ${flagSource}`;
+
+    const phaseMeter = byId("adminAuditPhaseMeter");
+    const truthMeter = byId("adminAuditTruthMeter");
+    if (phaseMeter) {
+      animateMeterWidth(phaseMeter, phaseHealth * 100, 0.26);
+      setMeterPalette(phaseMeter, phaseTone === "critical" ? "aggressive" : phaseTone === "pressure" ? "balanced" : "safe");
+    }
+    if (truthMeter) {
+      animateMeterWidth(truthMeter, truthScore * 100, 0.26);
+      setMeterPalette(truthMeter, truthTone === "critical" ? "aggressive" : truthTone === "pressure" ? "balanced" : "safe");
+    }
   }
 
   function renderAdminAssetStatus(assetsData) {
@@ -12720,6 +12887,100 @@
     renderPvpRejectIntelStrip(state.v3.pvpSession, state.v3.pvpTickMeta);
   }
 
+  async function fetchSceneProfileEffective(sceneKey = "nexus_arena") {
+    const cleanSceneKey = String(sceneKey || "nexus_arena").trim() || "nexus_arena";
+    const bridge = getNetApiBridge();
+    let payload;
+    if (bridge && typeof bridge.fetchSceneProfileEffective === "function") {
+      const t0 = performance.now();
+      payload = await bridge.fetchSceneProfileEffective(state.auth);
+      markLatency(performance.now() - t0);
+    } else {
+      const query = new URLSearchParams({
+        uid: state.auth.uid,
+        ts: state.auth.ts,
+        sig: state.auth.sig,
+        scene_key: cleanSceneKey
+      }).toString();
+      const t0 = performance.now();
+      const res = await fetch(`/webapp/api/scene/profile/effective?${query}`);
+      markLatency(performance.now() - t0);
+      payload = await res.json();
+      if (!res.ok || !payload.success) {
+        const error = new Error(payload.error || `scene_profile_effective_failed:${res.status}`);
+        error.code = res.status;
+        throw error;
+      }
+    }
+    renewAuth(payload);
+    const data = payload.data || {};
+    state.v3.sceneProfileEffective = data;
+    return data;
+  }
+
+  async function fetchTokenRouteStatus() {
+    const bridge = getNetApiBridge();
+    let payload;
+    if (bridge && typeof bridge.fetchTokenRouteStatus === "function") {
+      const t0 = performance.now();
+      payload = await bridge.fetchTokenRouteStatus(state.auth);
+      markLatency(performance.now() - t0);
+    } else {
+      const query = new URLSearchParams(state.auth).toString();
+      const t0 = performance.now();
+      const res = await fetch(`/webapp/api/token/route/status?${query}`);
+      markLatency(performance.now() - t0);
+      payload = await res.json();
+      if (!res.ok || !payload.success) {
+        const error = new Error(payload.error || `token_route_status_failed:${res.status}`);
+        error.code = res.status;
+        throw error;
+      }
+    }
+    renewAuth(payload);
+    const data = payload.data || {};
+    state.v3.tokenRouteStatus = data;
+    return data;
+  }
+
+  async function fetchTokenDecisionTraces(limit = 40) {
+    const cleanLimit = Math.max(5, Math.min(100, Number(limit || 40)));
+    const bridge = getNetApiBridge();
+    let payload;
+    if (bridge && typeof bridge.fetchTokenDecisionTraces === "function") {
+      const t0 = performance.now();
+      payload = await bridge.fetchTokenDecisionTraces(state.auth, cleanLimit);
+      markLatency(performance.now() - t0);
+    } else {
+      const query = new URLSearchParams({
+        ...state.auth,
+        limit: String(cleanLimit)
+      }).toString();
+      const t0 = performance.now();
+      const res = await fetch(`/webapp/api/token/decision/traces?${query}`);
+      markLatency(performance.now() - t0);
+      payload = await res.json();
+      if (!res.ok || !payload.success) {
+        const error = new Error(payload.error || `token_decision_traces_failed:${res.status}`);
+        error.code = res.status;
+        throw error;
+      }
+    }
+    renewAuth(payload);
+    const data = payload.data || {};
+    state.admin.decisionTraces = data;
+    if (!state.admin.queues || typeof state.admin.queues !== "object") {
+      state.admin.queues = {};
+    }
+    if (Array.isArray(data.recent_decisions)) {
+      state.admin.queues.token_auto_decisions = data.recent_decisions;
+    }
+    if (Array.isArray(data.manual_queue)) {
+      state.admin.queues.token_manual_queue = data.manual_queue;
+    }
+    return data;
+  }
+
   async function fetchAdminSummary() {
     const query = new URLSearchParams(state.auth).toString();
     const res = await fetch(`/webapp/api/admin/summary?${query}`);
@@ -12732,26 +12993,46 @@
       is_admin: true,
       summary: payload.data
     });
-    try {
-      const queues = await fetchAdminQueues();
-      if (state.admin.summary && typeof state.admin.summary === "object") {
-        state.admin.summary.queues = queues;
-        renderAdmin({ is_admin: true, summary: state.admin.summary });
+    const settled = await Promise.allSettled([
+      fetchAdminQueues(),
+      fetchAdminRuntime(),
+      fetchAdminAssetStatus(),
+      fetchAdminRuntimeFlags(),
+      fetchAdminDeployStatus(),
+      fetchTokenRouteStatus(),
+      fetchTokenDecisionTraces(60),
+      fetchAdminAuditPhaseStatus(false),
+      fetchAdminDataIntegrity()
+    ]);
+    if (state.admin.summary && typeof state.admin.summary === "object") {
+      const [queuesRes, runtimeRes, _assetsRes, runtimeFlagsRes, deployRes, routeRes, decisionRes, auditPhaseRes, dataIntegrityRes] = settled;
+      if (queuesRes.status === "fulfilled") {
+        state.admin.summary.queues = queuesRes.value;
       }
-    } catch (_) {}
-    try {
-      const runtime = await fetchAdminRuntime();
-      if (state.admin.summary && typeof state.admin.summary === "object") {
-        state.admin.summary.bot_runtime = runtime;
-        renderAdmin({ is_admin: true, summary: state.admin.summary });
+      if (runtimeRes.status === "fulfilled") {
+        state.admin.summary.bot_runtime = runtimeRes.value;
       }
-    } catch (_) {}
-    try {
-      await fetchAdminAssetStatus();
-      if (state.admin.summary && typeof state.admin.summary === "object") {
-        renderAdmin({ is_admin: true, summary: state.admin.summary });
+      if (runtimeFlagsRes.status === "fulfilled") {
+        state.admin.summary.runtime_flags = runtimeFlagsRes.value;
       }
-    } catch (_) {}
+      if (deployRes.status === "fulfilled") {
+        state.admin.summary.deploy_status = deployRes.value;
+      }
+      if (routeRes.status === "fulfilled") {
+        state.admin.summary.token_route_status = routeRes.value;
+      }
+      if (decisionRes.status === "fulfilled") {
+        state.admin.summary.token_decision_traces = decisionRes.value;
+      }
+      if (auditPhaseRes.status === "fulfilled") {
+        state.admin.summary.audit_phase_status = auditPhaseRes.value;
+      }
+      if (dataIntegrityRes.status === "fulfilled") {
+        state.admin.summary.data_integrity = dataIntegrityRes.value;
+      }
+      renderAdmin({ is_admin: true, summary: state.admin.summary });
+      renderDecisionTracePanel(state.admin.queues || {});
+    }
     return payload.data;
   }
 
@@ -12814,6 +13095,89 @@
     state.admin.runtime = payload.data || null;
     renderAdminRuntime(state.admin.runtime);
     return state.admin.runtime;
+  }
+
+  async function fetchAdminRuntimeFlags() {
+    const bridge = getNetApiBridge();
+    let payload;
+    if (bridge && typeof bridge.fetchAdminRuntimeFlags === "function") {
+      payload = await bridge.fetchAdminRuntimeFlags(state.auth);
+    } else {
+      const query = new URLSearchParams(state.auth).toString();
+      const res = await fetch(`/webapp/api/admin/runtime/flags?${query}`);
+      payload = await res.json();
+      if (!res.ok || !payload.success) {
+        throw new Error(payload.error || `admin_runtime_flags_failed:${res.status}`);
+      }
+    }
+    renewAuth(payload);
+    state.admin.runtimeFlags = payload.data || null;
+    return state.admin.runtimeFlags;
+  }
+
+  async function fetchAdminDeployStatus() {
+    const bridge = getNetApiBridge();
+    let payload;
+    if (bridge && typeof bridge.fetchAdminDeployStatus === "function") {
+      payload = await bridge.fetchAdminDeployStatus(state.auth);
+    } else {
+      const query = new URLSearchParams(state.auth).toString();
+      const res = await fetch(`/webapp/api/admin/runtime/deploy/status?${query}`);
+      payload = await res.json();
+      if (!res.ok || !payload.success) {
+        throw new Error(payload.error || `admin_deploy_status_failed:${res.status}`);
+      }
+    }
+    renewAuth(payload);
+    state.admin.deployStatus = payload.data || null;
+    return state.admin.deployStatus;
+  }
+
+  async function fetchAdminAuditPhaseStatus(persist = false) {
+    const bridge = getNetApiBridge();
+    let payload;
+    if (bridge && typeof bridge.fetchAdminAuditPhaseStatus === "function") {
+      const t0 = performance.now();
+      payload = await bridge.fetchAdminAuditPhaseStatus(state.auth, Boolean(persist));
+      markLatency(performance.now() - t0);
+    } else {
+      const query = new URLSearchParams({
+        ...state.auth,
+        persist: persist ? "1" : "0"
+      }).toString();
+      const t0 = performance.now();
+      const res = await fetch(`/webapp/api/admin/runtime/audit/phase-status?${query}`);
+      markLatency(performance.now() - t0);
+      payload = await res.json();
+      if (!res.ok || !payload.success) {
+        throw new Error(payload.error || `admin_audit_phase_status_failed:${res.status}`);
+      }
+    }
+    renewAuth(payload);
+    state.admin.auditPhaseStatus = payload.data || null;
+    return state.admin.auditPhaseStatus;
+  }
+
+  async function fetchAdminDataIntegrity() {
+    const bridge = getNetApiBridge();
+    let payload;
+    if (bridge && typeof bridge.fetchAdminAuditDataIntegrity === "function") {
+      const t0 = performance.now();
+      payload = await bridge.fetchAdminAuditDataIntegrity(state.auth);
+      markLatency(performance.now() - t0);
+    } else {
+      const query = new URLSearchParams(state.auth).toString();
+      const t0 = performance.now();
+      const res = await fetch(`/webapp/api/admin/runtime/audit/data-integrity?${query}`);
+      markLatency(performance.now() - t0);
+      payload = await res.json();
+      if (!res.ok || !payload.success) {
+        throw new Error(payload.error || `admin_data_integrity_failed:${res.status}`);
+      }
+    }
+    renewAuth(payload);
+    state.admin.dataIntegrity = payload.data || null;
+    return state.admin.dataIntegrity;
   }
 
   async function fetchAdminAssetStatus() {
@@ -13426,36 +13790,68 @@
     const comboOpp = asNum(session?.combo?.opponent || 0);
     const comboNet = comboSelf - comboOpp;
     const windowMs = Math.max(1, asNum(state.v3.pvpActionWindowMs || 800));
-    const windowRatio = clamp((windowMs - latency) / windowMs, 0, 1);
-    const tempoRatio = clamp((1100 - tickMs) / 420, 0, 1) * 0.58 + windowRatio * 0.42;
-    const pressure = clamp(threat * 0.6 + (1 - windowRatio) * 0.22 + clamp(queueSize / 8, 0, 1) * 0.18, 0, 1);
-    const dominance = clamp(0.5 + scoreDelta / 12 + comboNet / 18, 0, 1);
-    const roundHeat = clamp(heat * 0.66 + clamp(Math.max(comboSelf, state.sim.combo || 0) / 10, 0, 1) * 0.34, 0, 1);
-    const roundPhase = roundHeat >= 0.82 ? "critical" : roundHeat >= 0.62 ? "overdrive" : roundHeat >= 0.4 ? "engage" : "warmup";
-    const dominanceState = dominance >= 0.62 ? "ahead" : dominance <= 0.38 ? "behind" : "even";
-    const pressureState = pressure >= 0.7 ? "high" : pressure >= 0.4 ? "mid" : "low";
-    const dominanceLabel = dominanceState === "ahead" ? "AHEAD" : dominanceState === "behind" ? "UNDER" : "EVEN";
-    const roundPayload = {
-      heat: {
-        phase: roundPhase,
-        text: `${Math.round(roundHeat * 100)}% | ${roundPhase.toUpperCase()}`,
-        pct: roundHeat * 100
-      },
-      tempo: {
-        text: `${Math.round(tempoRatio * 100)}% | Tick ${tickMs}ms`,
-        pct: tempoRatio * 100
-      },
-      dominance: {
-        state: dominanceState,
-        text: `YOU ${scoreSelf} - ${scoreOpp} OPP | ${dominanceLabel}`,
-        pct: dominance * 100
-      },
-      pressure: {
-        state: pressureState,
-        text: `${Math.round(pressure * 100)}% | Queue ${queueSize}`,
-        pct: pressure * 100
+    const stateMutatorBridge = getStateMutatorBridge();
+    let roundMetrics = null;
+    if (stateMutatorBridge && typeof stateMutatorBridge.computeRoundDirectorMetrics === "function") {
+      try {
+        roundMetrics = stateMutatorBridge.computeRoundDirectorMetrics({
+          scoreSelf,
+          scoreOpp,
+          tickMs,
+          latency,
+          queueSize,
+          comboSelf,
+          comboOpp,
+          windowMs,
+          heat,
+          threat,
+          simCombo: state.sim.combo || 0
+        });
+      } catch (err) {
+        console.warn("[v3-state-bridge] computeRoundDirectorMetrics failed", err);
       }
-    };
+    }
+    let roundPhase = "warmup";
+    let dominanceState = "even";
+    let pressureState = "low";
+    let roundPayload = null;
+    if (roundMetrics && roundMetrics.payload) {
+      roundPayload = roundMetrics.payload;
+      roundPhase = String(roundMetrics.roundPhase || roundPayload.heat?.phase || roundPhase);
+      dominanceState = String(roundMetrics.dominanceState || roundPayload.dominance?.state || dominanceState);
+      pressureState = String(roundMetrics.pressureState || roundPayload.pressure?.state || pressureState);
+    } else {
+      const windowRatio = clamp((windowMs - latency) / windowMs, 0, 1);
+      const tempoRatio = clamp((1100 - tickMs) / 420, 0, 1) * 0.58 + windowRatio * 0.42;
+      const pressure = clamp(threat * 0.6 + (1 - windowRatio) * 0.22 + clamp(queueSize / 8, 0, 1) * 0.18, 0, 1);
+      const dominance = clamp(0.5 + scoreDelta / 12 + comboNet / 18, 0, 1);
+      const roundHeat = clamp(heat * 0.66 + clamp(Math.max(comboSelf, state.sim.combo || 0) / 10, 0, 1) * 0.34, 0, 1);
+      roundPhase = roundHeat >= 0.82 ? "critical" : roundHeat >= 0.62 ? "overdrive" : roundHeat >= 0.4 ? "engage" : "warmup";
+      dominanceState = dominance >= 0.62 ? "ahead" : dominance <= 0.38 ? "behind" : "even";
+      pressureState = pressure >= 0.7 ? "high" : pressure >= 0.4 ? "mid" : "low";
+      const dominanceLabel = dominanceState === "ahead" ? "AHEAD" : dominanceState === "behind" ? "UNDER" : "EVEN";
+      roundPayload = {
+        heat: {
+          phase: roundPhase,
+          text: `${Math.round(roundHeat * 100)}% | ${roundPhase.toUpperCase()}`,
+          pct: roundHeat * 100
+        },
+        tempo: {
+          text: `${Math.round(tempoRatio * 100)}% | Tick ${tickMs}ms`,
+          pct: tempoRatio * 100
+        },
+        dominance: {
+          state: dominanceState,
+          text: `YOU ${scoreSelf} - ${scoreOpp} OPP | ${dominanceLabel}`,
+          pct: dominance * 100
+        },
+        pressure: {
+          state: pressureState,
+          text: `${Math.round(pressure * 100)}% | Queue ${queueSize}`,
+          pct: pressure * 100
+        }
+      };
+    }
     const roundDirectorBridge = getRoundDirectorBridge();
     const bridgeRendered = !!(roundDirectorBridge && roundDirectorBridge.render(roundPayload));
     if (!bridgeRendered) {
@@ -13547,20 +13943,43 @@
     );
     const windowMs = Math.max(200, asNum(state.v3.pvpActionWindowMs || 800));
     const cinematicIntensity = clamp(asNum(state.arena?.pvpCinematicIntensity || 0), 0, 1.6);
-    const dynamics = resolveCameraDynamics(validMode, heat, threat, cinematicIntensity);
     const riskPct = Math.round(clamp(asNum(safe.risk_score || 0) * 100, 0, 100));
-    const cameraPayload = {
-      mode: {
-        key: validMode,
-        text: `${cameraModeLabel(validMode).toUpperCase()} | Drift ${Math.round(dynamics.drift * 100)}%`
-      },
-      focus: {
-        text: `${dynamics.focus} Queue ${queueSize} | Window ${windowMs}ms | Risk ${riskPct}%`
-      },
-      energy: {
-        pct: dynamics.energy
+    const stateMutatorBridge = getStateMutatorBridge();
+    let cameraMetrics = null;
+    if (stateMutatorBridge && typeof stateMutatorBridge.computeCameraDirectorMetrics === "function") {
+      try {
+        cameraMetrics = stateMutatorBridge.computeCameraDirectorMetrics({
+          mode: validMode,
+          heat,
+          threat,
+          queueSize,
+          windowMs,
+          cinematicIntensity,
+          riskScore: asNum(safe.risk_score || 0)
+        });
+      } catch (err) {
+        console.warn("[v3-state-bridge] computeCameraDirectorMetrics failed", err);
       }
-    };
+    }
+    let cameraPayload = null;
+    if (cameraMetrics && cameraMetrics.payload) {
+      state.ui.cameraMode = String(cameraMetrics.modeKey || validMode);
+      cameraPayload = cameraMetrics.payload;
+    } else {
+      const dynamics = resolveCameraDynamics(validMode, heat, threat, cinematicIntensity);
+      cameraPayload = {
+        mode: {
+          key: validMode,
+          text: `${cameraModeLabel(validMode).toUpperCase()} | Drift ${Math.round(dynamics.drift * 100)}%`
+        },
+        focus: {
+          text: `${dynamics.focus} Queue ${queueSize} | Window ${windowMs}ms | Risk ${riskPct}%`
+        },
+        energy: {
+          pct: dynamics.energy
+        }
+      };
+    }
     const cameraDirectorBridge = getCameraDirectorBridge();
     const bridgeRendered = !!(cameraDirectorBridge && cameraDirectorBridge.render(cameraPayload));
     if (!bridgeRendered) {
@@ -13840,6 +14259,9 @@
     }
     renewAuth(payload);
     state.v3.featureFlags = payload.data?.feature_flags || {};
+    state.v3.runtimeFlagsEffective = payload.data?.runtime_flags_effective || {};
+    state.v3.webappVersion = String(payload.data?.webapp_version || payload.webapp_version || "");
+    state.v3.webappLaunchUrl = String(payload.data?.webapp_launch_url || payload.webapp_launch_url || "");
     if (payload.data?.perf_profile) {
       const perf = payload.data.perf_profile;
       state.telemetry.fpsAvg = asNum(perf.fps_avg || perf.fpsAvg || state.telemetry.fpsAvg);
@@ -13948,6 +14370,61 @@
     } catch (err) {
       console.warn("asset-manifest-bootstrap-sync-failed", err);
       renderPublicAssetManifestStrip(null);
+    }
+    const diagnosticsWindow = "5m";
+    const bootstrapSettled = await Promise.allSettled([
+      fetchSceneProfileEffective("nexus_arena"),
+      fetchTokenRouteStatus(),
+      fetchTokenDecisionTraces(40),
+      fetchPvpDiagnosticsLive(diagnosticsWindow, state.v3?.pvpSession?.session_ref || "")
+    ]);
+    const [sceneEffectiveRes, tokenRouteRes, decisionTraceRes, pvpDiagnosticsRes] = bootstrapSettled;
+    if (sceneEffectiveRes.status === "fulfilled") {
+      const scenePayload = sceneEffectiveRes.value || {};
+      const effective = scenePayload.effective_profile || {};
+      const nextSceneMode = String(effective.scene_mode || "").toLowerCase();
+      if (SCENE_MODE_VALUES.includes(nextSceneMode)) {
+        state.ui.sceneMode = nextSceneMode;
+      }
+      const nextQuality = String(effective.quality_mode || "").toLowerCase();
+      if (["auto", "high", "normal", "low"].includes(nextQuality)) {
+        state.ui.qualityMode = nextQuality === "normal" ? "auto" : nextQuality;
+      }
+      const nextPerf = String(effective.perf_profile || "").toLowerCase();
+      if (["low", "normal", "high"].includes(nextPerf)) {
+        state.ui.autoQualityMode = nextPerf;
+      }
+      if (typeof effective.reduced_motion === "boolean") {
+        state.ui.reducedMotion = Boolean(effective.reduced_motion);
+      }
+      if (typeof effective.large_text === "boolean") {
+        state.ui.largeText = Boolean(effective.large_text);
+      }
+      applyUiClasses();
+      persistUiPrefs();
+      renderSceneStatusDeck();
+    }
+    if (tokenRouteRes.status === "fulfilled") {
+      renderTokenRouteRuntimeStrip(state.data?.token || {}, state.v3.tokenQuote || null);
+    }
+    if (decisionTraceRes.status === "fulfilled") {
+      renderDecisionTracePanel(state.admin.queues || {});
+    }
+    if (pvpDiagnosticsRes.status === "fulfilled") {
+      const diagData = pvpDiagnosticsRes.value || {};
+      const diagnosticsPayload =
+        diagData.live_session?.state_json?.diagnostics ||
+        diagData.live_session?.diagnostics ||
+        diagData.diagnostics?.diagnostics_json ||
+        diagData.diagnostics ||
+        null;
+      if (diagnosticsPayload) {
+        state.v3.pvpTickMeta = {
+          ...(state.v3.pvpTickMeta || {}),
+          diagnostics: diagnosticsPayload
+        };
+      }
+      renderPvpRejectIntelStrip(state.v3.pvpSession, state.v3.pvpTickMeta);
     }
     schedulePerfProfile(true);
     scheduleSceneProfileSync(true);
