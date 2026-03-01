@@ -1629,6 +1629,173 @@ function deriveAssetModeFromManifest(summary) {
   return "mixed";
 }
 
+async function computeSceneEffectiveProfile(
+  db,
+  {
+    userId,
+    sceneKey = "nexus_arena",
+    persist = true,
+    forceRefresh = false,
+    persistSource = "scene_profile_effective",
+    profileJsonExtras = {}
+  } = {}
+) {
+  const resolvedUserId = Number(userId || 0);
+  if (!resolvedUserId) {
+    throw new Error("scene_effective_user_required");
+  }
+  const cleanSceneKey = String(sceneKey || "nexus_arena").trim() || "nexus_arena";
+  const [sceneProfile, perfProfile, uiPrefs, activeManifest] = await Promise.all([
+    readSceneProfile(db, resolvedUserId, cleanSceneKey),
+    webappStore.getLatestPerfProfile(db, resolvedUserId).catch((err) => {
+      if (err.code === "42P01") return null;
+      throw err;
+    }),
+    webappStore.getUserUiPrefs(db, resolvedUserId).catch((err) => {
+      if (err.code === "42P01") return null;
+      throw err;
+    }),
+    readActiveAssetManifest(db, { includeEntries: true, entryLimit: 600 })
+  ]);
+
+  let latestEffective = null;
+  if (!forceRefresh) {
+    latestEffective = await db
+      .query(
+        `SELECT
+           scene_mode,
+           asset_mode,
+           perf_profile,
+           quality_mode,
+           reduced_motion,
+           large_text,
+           fallback_active,
+           profile_json,
+           created_at
+         FROM scene_effective_profiles
+         WHERE user_id = $1
+           AND scene_key = $2
+         ORDER BY created_at DESC
+         LIMIT 1;`,
+        [resolvedUserId, cleanSceneKey]
+      )
+      .then((res) => res.rows?.[0] || null)
+      .catch((err) => {
+        if (err.code === "42P01") return null;
+        throw err;
+      });
+  }
+
+  const manifestSummary = summarizeActiveAssetManifest(activeManifest);
+  const computedAssetMode = deriveAssetModeFromManifest(manifestSummary);
+  const effective = {
+    scene_key: cleanSceneKey,
+    scene_mode: String(latestEffective?.scene_mode || sceneProfile?.scene_mode || "pro"),
+    asset_mode: String(latestEffective?.asset_mode || computedAssetMode),
+    perf_profile: String(latestEffective?.perf_profile || sceneProfile?.perf_profile || "normal"),
+    quality_mode: String(latestEffective?.quality_mode || sceneProfile?.quality_mode || "auto"),
+    reduced_motion:
+      typeof latestEffective?.reduced_motion === "boolean"
+        ? Boolean(latestEffective.reduced_motion)
+        : Boolean(sceneProfile?.reduced_motion),
+    large_text:
+      typeof latestEffective?.large_text === "boolean"
+        ? Boolean(latestEffective.large_text)
+        : Boolean(sceneProfile?.large_text),
+    fallback_active:
+      typeof latestEffective?.fallback_active === "boolean"
+        ? Boolean(latestEffective.fallback_active)
+        : computedAssetMode !== "glb",
+    profile_json: latestEffective?.profile_json || {},
+    source: latestEffective ? "db_effective" : "computed",
+    created_at: latestEffective?.created_at || null
+  };
+
+  if (persist) {
+    await db
+      .query(
+        `INSERT INTO scene_effective_profiles (
+           user_id,
+           scene_key,
+           scene_mode,
+           asset_mode,
+           perf_profile,
+           quality_mode,
+           reduced_motion,
+           large_text,
+           fallback_active,
+           profile_json
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb);`,
+        [
+          resolvedUserId,
+          cleanSceneKey,
+          effective.scene_mode,
+          effective.asset_mode,
+          effective.perf_profile,
+          effective.quality_mode,
+          effective.reduced_motion,
+          effective.large_text,
+          effective.fallback_active,
+          JSON.stringify({
+            source: persistSource,
+            manifest: manifestSummary,
+            scene_profile: sceneProfile,
+            ui_prefs: uiPrefs || null,
+            ...profileJsonExtras
+          })
+        ]
+      )
+      .catch((err) => {
+        if (err.code !== "42P01") {
+          throw err;
+        }
+      });
+
+    if (effective.fallback_active) {
+      await db
+        .query(
+          `INSERT INTO scene_fallback_events (
+             user_id,
+             scene_key,
+             fallback_mode,
+             reason_key,
+             event_json
+           )
+           VALUES ($1, $2, $3, $4, $5::jsonb);`,
+          [
+            resolvedUserId,
+            cleanSceneKey,
+            String(effective.asset_mode || "lite"),
+            "asset_mode_fallback",
+            JSON.stringify({
+              source: persistSource,
+              asset_mode: effective.asset_mode,
+              manifest_revision: manifestSummary.active_revision || "",
+              missing_assets: Number(manifestSummary.missing_assets || 0)
+            })
+          ]
+        )
+        .catch((err) => {
+          if (err.code !== "42P01") {
+            throw err;
+          }
+        });
+    }
+  }
+
+  return {
+    effective_profile: effective,
+    scene_profile: sceneProfile,
+    perf_profile: perfProfile,
+    ui_prefs: uiPrefs,
+    asset_manifest: {
+      summary: manifestSummary,
+      active_revision: activeManifest?.active_revision || null
+    }
+  };
+}
+
 function classifyKeywordFinding(filePath, lineText) {
   const p = String(filePath || "").replace(/\\/g, "/").toLowerCase();
   const line = String(lineText || "").toLowerCase();
@@ -3570,120 +3737,18 @@ fastify.get("/webapp/api/scene/profile/effective", async (request, reply) => {
       reply.code(404).send({ success: false, error: "user_not_started" });
       return;
     }
-    const [sceneProfile, perfProfile, uiPrefs, activeManifest] = await Promise.all([
-      readSceneProfile(client, profile.user_id, sceneKey),
-      webappStore.getLatestPerfProfile(client, profile.user_id).catch((err) => {
-        if (err.code === "42P01") return null;
-        throw err;
-      }),
-      webappStore.getUserUiPrefs(client, profile.user_id).catch((err) => {
-        if (err.code === "42P01") return null;
-        throw err;
-      }),
-      readActiveAssetManifest(client, { includeEntries: true, entryLimit: 600 })
-    ]);
-    const manifestSummary = summarizeActiveAssetManifest(activeManifest);
-    const latestEffective = await client
-      .query(
-        `SELECT
-           scene_mode,
-           asset_mode,
-           perf_profile,
-           quality_mode,
-           reduced_motion,
-           large_text,
-           fallback_active,
-           profile_json,
-           created_at
-         FROM scene_effective_profiles
-         WHERE user_id = $1
-           AND scene_key = $2
-         ORDER BY created_at DESC
-         LIMIT 1;`,
-        [profile.user_id, sceneKey]
-      )
-      .then((res) => res.rows?.[0] || null)
-      .catch((err) => {
-        if (err.code === "42P01") return null;
-        throw err;
-      });
-
-    const computedAssetMode = deriveAssetModeFromManifest(manifestSummary);
-    const effective = {
-      scene_key: sceneKey,
-      scene_mode: String(latestEffective?.scene_mode || sceneProfile?.scene_mode || "pro"),
-      asset_mode: String(latestEffective?.asset_mode || computedAssetMode),
-      perf_profile: String(latestEffective?.perf_profile || sceneProfile?.perf_profile || "normal"),
-      quality_mode: String(latestEffective?.quality_mode || sceneProfile?.quality_mode || "auto"),
-      reduced_motion:
-        typeof latestEffective?.reduced_motion === "boolean"
-          ? Boolean(latestEffective.reduced_motion)
-          : Boolean(sceneProfile?.reduced_motion),
-      large_text:
-        typeof latestEffective?.large_text === "boolean"
-          ? Boolean(latestEffective.large_text)
-          : Boolean(sceneProfile?.large_text),
-      fallback_active:
-        typeof latestEffective?.fallback_active === "boolean"
-          ? Boolean(latestEffective.fallback_active)
-          : computedAssetMode !== "glb",
-      profile_json: latestEffective?.profile_json || {},
-      source: latestEffective ? "db_effective" : "computed",
-      created_at: latestEffective?.created_at || null
-    };
-
-    await client
-      .query(
-        `INSERT INTO scene_effective_profiles (
-           user_id,
-           scene_key,
-           scene_mode,
-           asset_mode,
-           perf_profile,
-           quality_mode,
-           reduced_motion,
-           large_text,
-           fallback_active,
-           profile_json
-         )
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb);`,
-        [
-          profile.user_id,
-          sceneKey,
-          effective.scene_mode,
-          effective.asset_mode,
-          effective.perf_profile,
-          effective.quality_mode,
-          effective.reduced_motion,
-          effective.large_text,
-          effective.fallback_active,
-          JSON.stringify({
-            source: "scene_profile_effective",
-            manifest: manifestSummary,
-            scene_profile: sceneProfile,
-            ui_prefs: uiPrefs || null
-          })
-        ]
-      )
-      .catch((err) => {
-        if (err.code !== "42P01") {
-          throw err;
-        }
-      });
+    const computed = await computeSceneEffectiveProfile(client, {
+      userId: profile.user_id,
+      sceneKey,
+      persist: true,
+      forceRefresh: false,
+      persistSource: "scene_profile_effective"
+    });
 
     reply.send({
       success: true,
       session: issueWebAppSession(auth.uid),
-      data: {
-        effective_profile: effective,
-        scene_profile: sceneProfile,
-        perf_profile: perfProfile,
-        ui_prefs: uiPrefs,
-        asset_manifest: {
-          summary: manifestSummary,
-          active_revision: activeManifest?.active_revision || null
-        }
-      }
+      data: computed
     });
   } finally {
     client.release();
@@ -7714,6 +7779,121 @@ fastify.post(
   }
 );
 
+fastify.post(
+  "/webapp/api/admin/runtime/scene/reconcile",
+  {
+    schema: {
+      body: {
+        type: "object",
+        required: ["uid", "ts", "sig"],
+        properties: {
+          uid: { type: "string" },
+          ts: { type: "string" },
+          sig: { type: "string" },
+          target_uid: { type: "string", minLength: 1, maxLength: 32 },
+          scene_key: { type: "string", minLength: 1, maxLength: 80 },
+          reason: { type: "string", maxLength: 280 },
+          force_refresh: { type: "boolean" }
+        }
+      }
+    }
+  },
+  async (request, reply) => {
+    const auth = verifyWebAppAuth(request.body.uid, request.body.ts, request.body.sig);
+    if (!auth.ok) {
+      reply.code(401).send({ success: false, error: auth.reason });
+      return;
+    }
+
+    const sceneKey = String(request.body.scene_key || "nexus_arena").trim() || "nexus_arena";
+    const reason = String(request.body.reason || "manual_scene_reconcile").trim() || "manual_scene_reconcile";
+    const forceRefresh = Boolean(request.body.force_refresh);
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const profile = await requireWebAppAdmin(client, reply, auth.uid);
+      if (!profile) {
+        await client.query("ROLLBACK");
+        return;
+      }
+
+      let targetTelegramId = Number(profile.telegram_id || auth.uid || 0);
+      if (request.body.target_uid !== undefined && request.body.target_uid !== null && String(request.body.target_uid).trim()) {
+        try {
+          targetTelegramId = parseTelegramId(request.body.target_uid, "target_uid");
+        } catch (err) {
+          await client.query("ROLLBACK");
+          reply.code(400).send({ success: false, error: "invalid_target_uid", detail: String(err.message || "") });
+          return;
+        }
+      }
+
+      const targetProfile = await getProfileByTelegram(client, targetTelegramId);
+      if (!targetProfile) {
+        await client.query("ROLLBACK");
+        reply.code(404).send({ success: false, error: "target_user_not_started" });
+        return;
+      }
+
+      const computed = await computeSceneEffectiveProfile(client, {
+        userId: targetProfile.user_id,
+        sceneKey,
+        persist: true,
+        forceRefresh,
+        persistSource: "admin_scene_reconcile",
+        profileJsonExtras: {
+          reason,
+          actor_telegram_id: Number(profile.telegram_id || 0),
+          target_telegram_id: Number(targetProfile.telegram_id || 0),
+          force_refresh: forceRefresh
+        }
+      });
+
+      await client.query(
+        `INSERT INTO admin_audit (admin_id, action, target, payload_json)
+         VALUES ($1, 'scene_runtime_reconcile', $2, $3::jsonb);`,
+        [
+          Number(profile.telegram_id || auth.uid || 0),
+          `scene:${targetProfile.user_id}:${sceneKey}`,
+          JSON.stringify({
+            reason,
+            force_refresh: forceRefresh,
+            target_telegram_id: Number(targetProfile.telegram_id || 0),
+            target_user_id: Number(targetProfile.user_id || 0),
+            effective_asset_mode: String(computed?.effective_profile?.asset_mode || ""),
+            fallback_active: Boolean(computed?.effective_profile?.fallback_active)
+          })
+        ]
+      );
+
+      await client.query("COMMIT");
+      reply.send({
+        success: true,
+        session: issueWebAppSession(auth.uid),
+        data: {
+          scene_key: sceneKey,
+          reason,
+          force_refresh: forceRefresh,
+          target: {
+            telegram_id: Number(targetProfile.telegram_id || 0),
+            user_id: Number(targetProfile.user_id || 0)
+          },
+          ...computed
+        }
+      });
+    } catch (err) {
+      await client.query("ROLLBACK");
+      if (err.code === "42P01") {
+        reply.code(503).send({ success: false, error: "scene_reconcile_tables_missing" });
+        return;
+      }
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+);
+
 fastify.get("/webapp/api/admin/metrics", async (request, reply) => {
   const auth = verifyWebAppAuth(request.query.uid, request.query.ts, request.query.sig);
   if (!auth.ok) {
@@ -8802,6 +8982,105 @@ fastify.post(
       });
     } catch (err) {
       await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+);
+
+fastify.post(
+  "/admin/runtime/scene/reconcile",
+  {
+    schema: {
+      body: {
+        type: "object",
+        properties: {
+          target_telegram_id: { type: "integer", minimum: 1 },
+          scene_key: { type: "string", minLength: 1, maxLength: 80 },
+          reason: { type: "string", maxLength: 280 },
+          force_refresh: { type: "boolean" }
+        }
+      }
+    }
+  },
+  async (request, reply) => {
+    const body = request.body || {};
+    const actorId = parseAdminId(request);
+    const sceneKey = String(body.scene_key || "nexus_arena").trim() || "nexus_arena";
+    const reason = String(body.reason || "admin_runtime_scene_reconcile").trim() || "admin_runtime_scene_reconcile";
+    const forceRefresh = Boolean(body.force_refresh);
+    const targetTelegramId = Number(body.target_telegram_id || actorId || ADMIN_TELEGRAM_ID || 0);
+
+    if (!targetTelegramId) {
+      reply.code(400).send({ success: false, error: "target_telegram_id_required" });
+      return;
+    }
+
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const targetProfile = await getProfileByTelegram(client, targetTelegramId);
+      if (!targetProfile) {
+        await client.query("ROLLBACK");
+        reply.code(404).send({ success: false, error: "target_user_not_started" });
+        return;
+      }
+
+      const computed = await computeSceneEffectiveProfile(client, {
+        userId: targetProfile.user_id,
+        sceneKey,
+        persist: true,
+        forceRefresh,
+        persistSource: "admin_runtime_scene_reconcile",
+        profileJsonExtras: {
+          reason,
+          actor_telegram_id: Number(actorId || 0),
+          target_telegram_id: Number(targetProfile.telegram_id || 0),
+          force_refresh: forceRefresh
+        }
+      });
+
+      await client.query(
+        `INSERT INTO admin_audit (admin_id, action, target, payload_json)
+         VALUES ($1, 'scene_runtime_reconcile', $2, $3::jsonb);`,
+        [
+          Number(actorId || 0),
+          `scene:${targetProfile.user_id}:${sceneKey}`,
+          JSON.stringify({
+            reason,
+            force_refresh: forceRefresh,
+            target_telegram_id: Number(targetProfile.telegram_id || 0),
+            target_user_id: Number(targetProfile.user_id || 0),
+            effective_asset_mode: String(computed?.effective_profile?.asset_mode || ""),
+            fallback_active: Boolean(computed?.effective_profile?.fallback_active)
+          })
+        ]
+      );
+
+      await client.query("COMMIT");
+      reply.send({
+        success: true,
+        data: {
+          actor_admin_id: Number(actorId || 0),
+          configured_admin_id: Number(ADMIN_TELEGRAM_ID || 0),
+          is_admin: isAdminTelegramId(actorId),
+          scene_key: sceneKey,
+          reason,
+          force_refresh: forceRefresh,
+          target: {
+            telegram_id: Number(targetProfile.telegram_id || 0),
+            user_id: Number(targetProfile.user_id || 0)
+          },
+          ...computed
+        }
+      });
+    } catch (err) {
+      await client.query("ROLLBACK");
+      if (err.code === "42P01") {
+        reply.code(503).send({ success: false, error: "scene_reconcile_tables_missing" });
+        return;
+      }
       throw err;
     } finally {
       client.release();

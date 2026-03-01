@@ -121,6 +121,45 @@ function Invoke-WebRequestWithRetry {
   throw $lastError.Exception
 }
 
+function Invoke-ApiJsonWithRetry {
+  param(
+    [Parameter(Mandatory = $true)][string]$Uri,
+    [ValidateSet("GET", "POST", "PUT", "PATCH", "DELETE")][string]$Method = "GET",
+    [hashtable]$Headers = @{},
+    [string]$Body = "",
+    [int]$TimeoutSec = 20,
+    [int]$MaxAttempts = 4,
+    [int]$DelaySec = 5
+  )
+
+  $lastError = $null
+  for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
+    try {
+      $invokeParams = @{
+        UseBasicParsing = $true
+        Uri = $Uri
+        Method = $Method
+        TimeoutSec = $TimeoutSec
+      }
+      if ($Headers.Count -gt 0) {
+        $invokeParams.Headers = $Headers
+      }
+      if (-not [string]::IsNullOrWhiteSpace($Body) -and $Method -ne "GET") {
+        $invokeParams.Body = $Body
+      }
+      return Invoke-WebRequest @invokeParams
+    } catch {
+      $lastError = $_
+      if ($attempt -lt $MaxAttempts) {
+        Write-Host ("[retry] " + $Method + " " + $Uri + " (" + $attempt + "/" + $MaxAttempts + ")") -ForegroundColor Yellow
+        Start-Sleep -Seconds $DelaySec
+      }
+    }
+  }
+
+  throw $lastError.Exception
+}
+
 function Warmup-RemoteService {
   param(
     [Parameter(Mandatory = $true)][string]$BaseUrl,
@@ -357,6 +396,52 @@ try {
         throw "Runtime phase audit reported fail"
       }
       Write-Host ("[OK] runtime phase audit status=" + $phaseStatus) -ForegroundColor Green
+
+      $sceneTargetRaw = [string]$envMap["ADMIN_TELEGRAM_ID"]
+      if ([string]::IsNullOrWhiteSpace($sceneTargetRaw)) {
+        $sceneTargetRaw = [string]$ExpectedAdminTelegramId
+      }
+      $sceneTargetId = [int64]0
+      if (-not [int64]::TryParse($sceneTargetRaw, [ref]$sceneTargetId)) {
+        throw "Scene reconcile check: ADMIN_TELEGRAM_ID is not numeric"
+      }
+
+      $sceneBody = @{
+        target_telegram_id = $sceneTargetId
+        scene_key = "nexus_arena"
+        reason = "readiness_probe"
+        force_refresh = $true
+      } | ConvertTo-Json -Depth 8
+
+      $sceneUri = $adminBase + "/runtime/scene/reconcile"
+      try {
+        $sceneRes = Invoke-ApiJsonWithRetry -Uri $sceneUri -Method "POST" -Headers @{
+          Authorization = "Bearer $token"
+          "Content-Type" = "application/json"
+        } -Body $sceneBody -TimeoutSec $HealthTimeoutSec -MaxAttempts 3 -DelaySec 4
+        if ($sceneRes.StatusCode -ne 200) {
+          throw "/admin/runtime/scene/reconcile status " + $sceneRes.StatusCode
+        }
+        $scenePayload = Parse-JsonSafely -Raw $sceneRes.Content
+        if (-not $scenePayload -or -not $scenePayload.success) {
+          throw "/admin/runtime/scene/reconcile payload invalid"
+        }
+        $sceneAssetMode = [string]$scenePayload.data.effective_profile.asset_mode
+        if ([string]::IsNullOrWhiteSpace($sceneAssetMode)) {
+          throw "/admin/runtime/scene/reconcile missing effective_profile.asset_mode"
+        }
+        Write-Host ("[OK] scene runtime reconcile asset_mode=" + $sceneAssetMode) -ForegroundColor Green
+      } catch {
+        $sceneStatusCode = 0
+        if ($_.Exception.Response -and $_.Exception.Response.StatusCode) {
+          $sceneStatusCode = [int]$_.Exception.Response.StatusCode.value__
+        }
+        if ($sceneStatusCode -eq 404) {
+          Write-Host "[WARN] scene reconcile target user profile not found yet; skipping strict failure." -ForegroundColor Yellow
+        } else {
+          throw $_
+        }
+      }
     }
   }
 }

@@ -38,6 +38,15 @@ type NetApiBridge = {
   fetchAdminAuditPhaseStatus: (auth: AuthPayload, persist?: boolean) => Promise<any>;
   fetchAdminAuditDataIntegrity: (auth: AuthPayload) => Promise<any>;
   fetchAdminAssetStatus: (auth: AuthPayload) => Promise<any>;
+  reconcileAdminSceneRuntime: (
+    auth: AuthPayload,
+    payload?: {
+      scene_key?: string;
+      reason?: string;
+      force_refresh?: boolean;
+      target_uid?: string;
+    }
+  ) => Promise<any>;
   postAdmin: (auth: AuthPayload, path: string, extraBody?: Record<string, unknown>) => Promise<any>;
 };
 
@@ -320,6 +329,26 @@ async function fetchAdminAssetStatus(auth: AuthPayload): Promise<any> {
   return fetchJson(`/webapp/api/admin/assets/status?${query}`);
 }
 
+async function reconcileAdminSceneRuntime(
+  auth: AuthPayload,
+  payload: {
+    scene_key?: string;
+    reason?: string;
+    force_refresh?: boolean;
+    target_uid?: string;
+  } = {}
+): Promise<any> {
+  return postJson("/webapp/api/admin/runtime/scene/reconcile", {
+    uid: auth?.uid,
+    ts: auth?.ts,
+    sig: auth?.sig,
+    scene_key: payload?.scene_key || "nexus_arena",
+    reason: payload?.reason || "asset_reload_sync",
+    force_refresh: Boolean(payload?.force_refresh),
+    ...(payload?.target_uid ? { target_uid: asString(payload.target_uid) } : {})
+  });
+}
+
 async function postAdmin(
   auth: AuthPayload,
   path: string,
@@ -366,6 +395,7 @@ export function installNetApiBridge(): void {
     fetchAdminAuditPhaseStatus,
     fetchAdminAuditDataIntegrity,
     fetchAdminAssetStatus,
+    reconcileAdminSceneRuntime,
     postAdmin
   };
 }

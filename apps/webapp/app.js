@@ -13440,7 +13440,45 @@
         entries: []
       });
     }
+    try {
+      let scenePayload = null;
+      const bridge = getNetApiBridge();
+      if (bridge && typeof bridge.reconcileAdminSceneRuntime === "function") {
+        const t0 = performance.now();
+        const bridgeRes = await bridge.reconcileAdminSceneRuntime(state.auth, {
+          scene_key: "nexus_arena",
+          reason: "asset_reload_sync",
+          force_refresh: true
+        });
+        markLatency(performance.now() - t0);
+        renewAuth(bridgeRes);
+        scenePayload = bridgeRes?.data || null;
+      } else {
+        scenePayload = await postAdmin("/webapp/api/admin/runtime/scene/reconcile", {
+          scene_key: "nexus_arena",
+          reason: "asset_reload_sync",
+          force_refresh: true
+        });
+      }
+      if (scenePayload?.asset_manifest?.active_revision) {
+        ingestActiveAssetManifestMeta({
+          available: true,
+          active_revision: scenePayload.asset_manifest.active_revision,
+          entries: []
+        });
+      }
+      if (scenePayload?.effective_profile) {
+        state.v3.sceneProfileEffective = scenePayload;
+      }
+    } catch (err) {
+      console.warn("admin_scene_reconcile_failed", err?.message || err);
+    }
     fetchActiveAssetManifestMeta().catch(() => {});
+    fetchSceneProfileEffective("nexus_arena")
+      .then(() => {
+        renderSceneStatusDeck();
+      })
+      .catch(() => {});
     return state.admin.assets;
   }
 
