@@ -5269,6 +5269,75 @@ body[data-scene-mood="critical"] .meter > span {
   transform: translateX(-50%) translateY(0);
 }
 
+body.blocking-recovery-open {
+  overflow: hidden;
+}
+
+.blockingRecoveryModal {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(4, 9, 24, 0.88);
+  backdrop-filter: blur(6px);
+}
+
+.blockingRecoveryModal.hidden {
+  display: none;
+}
+
+.blockingRecoveryCard {
+  width: min(540px, 100%);
+  border: 1px solid rgba(255, 108, 146, 0.55);
+  border-radius: 16px;
+  padding: 16px;
+  background: linear-gradient(145deg, rgba(34, 20, 44, 0.96), rgba(10, 14, 36, 0.96));
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.5), inset 0 0 24px rgba(255, 117, 150, 0.16);
+  display: grid;
+  gap: 10px;
+}
+
+.blockingRecoveryEyebrow {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 171, 194, 0.85);
+}
+
+.blockingRecoveryCard h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.blockingRecoveryCard p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.blockingRecoveryActions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.blockingRecoveryActions button {
+  min-height: 40px;
+  border-radius: 10px;
+  border: 1px solid rgba(162, 186, 255, 0.34);
+  background: rgba(12, 19, 46, 0.88);
+  color: var(--ink);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.blockingRecoveryActions button:hover {
+  border-color: rgba(61, 248, 194, 0.64);
+}
+
 .introModal {
   position: fixed;
   inset: 0;

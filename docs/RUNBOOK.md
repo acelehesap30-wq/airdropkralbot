@@ -23,7 +23,7 @@
 6. `KYC_THRESHOLD_V1_ENABLED=1`
 7. `MONETIZATION_CORE_V1_ENABLED=1`
 8. `WEBAPP_V3_ENABLED=1`
-9. `WEBAPP_TS_BUNDLE_ENABLED=0|1` (`1` icin once `npm run build:webapp`)
+9. `WEBAPP_TS_BUNDLE_ENABLED=0|1` (`1` icin once `npm run build:webapp`; build sonu asset sync otomatik calisir)
 10. `WALLET_VERIFY_MODE=format_only|strict_crypto`
 11. `WALLET_CHALLENGE_TTL_SEC=300`, `WALLET_SESSION_TTL_SEC=86400`
 12. `KYC_RISK_THRESHOLD=0.75`, `KYC_PAYOUT_BTC_THRESHOLD=0.001`
@@ -48,6 +48,19 @@
 - `GET /admin/runtime/deploy/status` (release + lock + launch URL snapshot)
 - `GET /webapp/api/admin/assets/status` (GLB manifest + registry durumu)
 - `POST /webapp/api/admin/assets/reload` (asset registry/manifest cache yenile)
+- `GET /webapp/api/v2/assets/manifest/resolved` (runtime serve edilen asset kaynaklari + missing list)
+
+## WebApp recovery checks (v5.3-R)
+1. Player bootstrap hizli yol:
+- `GET /webapp/api/v2/bootstrap?uid=<uid>&ts=<ts>&sig=<sig>&scope=player&include_admin=0`
+2. Admin heavy bootstrap lazy yol:
+- `GET /webapp/api/v2/admin/bootstrap?uid=<uid>&ts=<ts>&sig=<sig>`
+3. TS bundle asset zinciri:
+- `GET /webapp/assets/manifest.json` -> `200`
+- Manifestteki her `path` icin `GET /webapp/assets/<file>` -> `200`
+4. Auth hata kurtarma kodlari:
+- `expired`, `invalid_signature`, `missing_fields`, `webapp_secret_missing`
+- Frontend bu kodlarda blocking recovery modal gostermelidir.
 
 ## Release readiness gate
 1. Release oncesi:

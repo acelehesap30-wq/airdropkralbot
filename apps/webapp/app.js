@@ -2792,6 +2792,77 @@
     }, 1800);
   }
 
+  function ensureBlockingRecoveryModal() {
+    let root = byId("blockingRecoveryModal");
+    if (root) {
+      return root;
+    }
+    root = document.createElement("div");
+    root.id = "blockingRecoveryModal";
+    root.className = "blockingRecoveryModal hidden";
+    root.innerHTML = `
+      <div class="blockingRecoveryCard">
+        <div class="blockingRecoveryEyebrow">WEBAPP RECOVERY</div>
+        <h2 id="blockingRecoveryTitle">Session Hatasi</h2>
+        <p id="blockingRecoveryMessage">WebApp oturumu yenilenmeli.</p>
+        <div class="blockingRecoveryActions">
+          <button id="blockingRecoveryReloadBtn" type="button">Yenile</button>
+          <button id="blockingRecoveryCloseBtn" type="button">Telegram'a Don</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(root);
+    const reloadBtn = byId("blockingRecoveryReloadBtn");
+    const closeBtn = byId("blockingRecoveryCloseBtn");
+    if (reloadBtn) {
+      reloadBtn.addEventListener("click", () => {
+        window.location.reload();
+      });
+    }
+    if (closeBtn) {
+      closeBtn.addEventListener("click", () => {
+        if (tg && typeof tg.close === "function") {
+          tg.close();
+          return;
+        }
+        const botName = String(state.bot || "").trim().replace(/^@/, "");
+        if (botName) {
+          window.location.href = `https://t.me/${botName}`;
+          return;
+        }
+        window.location.reload();
+      });
+    }
+    return root;
+  }
+
+  function showBlockingRecoveryError(errorCode, message) {
+    const root = ensureBlockingRecoveryModal();
+    if (!root) {
+      return;
+    }
+    const title = byId("blockingRecoveryTitle");
+    const body = byId("blockingRecoveryMessage");
+    const code = String(errorCode || "").trim();
+    if (title) {
+      title.textContent = code ? `Session Hatasi (${code})` : "Session Hatasi";
+    }
+    if (body) {
+      body.textContent = String(message || "WebApp oturumu yenilenmeli.");
+    }
+    root.classList.remove("hidden");
+    document.body.classList.add("blocking-recovery-open");
+  }
+
+  function hideBlockingRecoveryError() {
+    const root = byId("blockingRecoveryModal");
+    if (!root) {
+      return;
+    }
+    root.classList.add("hidden");
+    document.body.classList.remove("blocking-recovery-open");
+  }
+
   function pushCombatTicker(message, tone = "info") {
     const line = byId("combatEventTicker");
     if (!line) {
@@ -9053,6 +9124,49 @@
   }
 
   async function fetchActiveAssetManifestMeta() {
+    const resolvedQuery = new URLSearchParams({
+      ...state.auth,
+      include_entries: "1",
+      limit: "200"
+    }).toString();
+    const resolvedT0 = performance.now();
+    const resolvedRes = await fetch(`/webapp/api/v2/assets/manifest/resolved?${resolvedQuery}`, {
+      cache: "no-store"
+    }).catch(() => null);
+    markLatency(performance.now() - resolvedT0);
+    if (resolvedRes && resolvedRes.ok) {
+      const resolvedPayload = await resolvedRes.json().catch(() => ({}));
+      if (resolvedPayload && resolvedPayload.success && resolvedPayload.data) {
+        renewAuth(resolvedPayload);
+        const data = resolvedPayload.data || {};
+        const resolvedEntries = Array.isArray(data.entries) ? data.entries : [];
+        const missingEntries = Array.isArray(data.missing) ? data.missing : [];
+        const syntheticManifest = {
+          available: true,
+          active_revision: {
+            manifest_revision: String(data.active_revision || "v0"),
+            source: String(data.variant_source || "unknown"),
+            manifest_hash: "",
+            activated_at: null
+          },
+          entries: [
+            ...resolvedEntries.map((row) => ({
+              asset_key: String(row?.asset_key || ""),
+              exists_local: true,
+              integrity_status: "ok"
+            })),
+            ...missingEntries.map((row) => ({
+              asset_key: String(row?.asset_key || ""),
+              exists_local: false,
+              integrity_status: "missing"
+            }))
+          ]
+        };
+        state.v3.assetManifestResolved = data;
+        return ingestActiveAssetManifestMeta(syntheticManifest);
+      }
+    }
+
     const bridge = getNetApiBridge();
     let payload;
     if (bridge) {
@@ -15148,13 +15262,33 @@
   }
 
   async function fetchAdminSummary() {
-    const query = new URLSearchParams(state.auth).toString();
-    const res = await fetch(`/webapp/api/admin/summary?${query}`);
-    const payload = await res.json();
-    if (!res.ok || !payload.success) {
+    const query = new URLSearchParams({
+      ...state.auth,
+      scope: "full",
+      include_admin: "1"
+    }).toString();
+    let payload = null;
+    let status = 0;
+    let endpointUsed = "";
+    for (const endpoint of ["/webapp/api/v2/admin/bootstrap", "/webapp/api/admin/summary"]) {
+      const res = await fetch(`${endpoint}?${query}`);
+      status = res.status;
+      payload = await res.json().catch(() => ({}));
+      if (res.ok && payload.success) {
+        endpointUsed = endpoint;
+        break;
+      }
+      if (res.status === 404) {
+        continue;
+      }
       throw new Error(payload.error || `admin_summary_failed:${res.status}`);
     }
+    if (!payload || !payload.success) {
+      throw new Error(payload?.error || `admin_summary_failed:${status}`);
+    }
     renewAuth(payload);
+    state.admin.bootstrapEndpoint = endpointUsed;
+    state.admin.lastLoadedAt = Date.now();
     renderAdmin({
       is_admin: true,
       summary: payload.data
@@ -16659,7 +16793,9 @@
   async function loadBootstrap() {
     const query = new URLSearchParams({
       ...state.auth,
-      lang: normalizeUxLanguage(state.ux.language)
+      lang: normalizeUxLanguage(state.ux.language),
+      scope: "player",
+      include_admin: "0"
     }).toString();
     const t0 = performance.now();
     let res = null;
@@ -16674,7 +16810,8 @@
       if (candidate.status === 404) {
         continue;
       }
-      throw new Error(`bootstrap_failed:${candidate.status}`);
+      const body = await candidate.json().catch(() => ({}));
+      throw new Error(body.error || `bootstrap_failed:${candidate.status}`);
     }
     markLatency(performance.now() - t0);
     if (!res) {
@@ -16685,8 +16822,10 @@
       throw new Error(payload.error || "bootstrap_failed");
     }
     renewAuth(payload);
+    hideBlockingRecoveryError();
     state.v3.bootstrapEndpoint = endpointUsed;
     state.v3.apiVersion = String(payload.data?.api_version || (endpointUsed.includes("/v2/") ? "v2" : "v1"));
+    state.admin.isAdmin = Boolean(payload.data?.admin?.is_admin || payload.data?.admin?.isAdmin);
     state.v3.featureFlags = payload.data?.feature_flags || {};
     state.v3.runtimeFlagsEffective = payload.data?.runtime_flags_effective || {};
     state.v3.webappVersion = String(payload.data?.webapp_version || payload.webapp_version || "");
@@ -16823,18 +16962,34 @@
       renderPublicAssetManifestStrip(null);
     }
     const diagnosticsWindow = "5m";
-    const bootstrapSettled = await Promise.allSettled([
-      fetchSceneProfileEffective("nexus_arena"),
-      fetchTokenRouteStatus(),
-      fetchTokenDecisionTraces(40),
-      fetchPvpDiagnosticsLive(diagnosticsWindow, state.v3?.pvpSession?.session_ref || ""),
-      fetchPvpProgressionStatus(),
-      fetchWalletSessionStatus(),
-      fetchMonetizationStatus(),
-      fetchCommandCatalog()
-    ]);
-    const [sceneEffectiveRes, tokenRouteRes, decisionTraceRes, pvpDiagnosticsRes, pvpProgressionRes, walletSessionRes, monetizationRes, commandCatalogRes] =
-      bootstrapSettled;
+    const deferredTasks = [
+      { key: "scene", run: () => fetchSceneProfileEffective("nexus_arena") },
+      { key: "pvp_diagnostics", run: () => fetchPvpDiagnosticsLive(diagnosticsWindow, state.v3?.pvpSession?.session_ref || "") },
+      { key: "pvp_progression", run: () => fetchPvpProgressionStatus() },
+      { key: "wallet_session", run: () => fetchWalletSessionStatus() },
+      { key: "monetization", run: () => fetchMonetizationStatus() },
+      { key: "command_catalog", run: () => fetchCommandCatalog() }
+    ];
+    if (state.admin.isAdmin && String(state.ux.activeTab || "home").toLowerCase() === "admin") {
+      deferredTasks.push(
+        { key: "token_route", run: () => fetchTokenRouteStatus() },
+        { key: "token_traces", run: () => fetchTokenDecisionTraces(40) },
+        { key: "admin_bootstrap", run: () => fetchAdminSummary() }
+      );
+    }
+    const settled = await Promise.allSettled(deferredTasks.map((task) => task.run()));
+    const deferredMap = {};
+    deferredTasks.forEach((task, index) => {
+      deferredMap[task.key] = settled[index];
+    });
+    const sceneEffectiveRes = deferredMap.scene;
+    const tokenRouteRes = deferredMap.token_route;
+    const decisionTraceRes = deferredMap.token_traces;
+    const pvpDiagnosticsRes = deferredMap.pvp_diagnostics;
+    const pvpProgressionRes = deferredMap.pvp_progression;
+    const walletSessionRes = deferredMap.wallet_session;
+    const monetizationRes = deferredMap.monetization;
+    const commandCatalogRes = deferredMap.command_catalog;
     if (sceneEffectiveRes.status === "fulfilled") {
       const scenePayload = sceneEffectiveRes.value || {};
       const effective = scenePayload.effective_profile || {};
@@ -16860,10 +17015,10 @@
       persistUiPrefs();
       renderSceneStatusDeck();
     }
-    if (tokenRouteRes.status === "fulfilled") {
+    if (tokenRouteRes && tokenRouteRes.status === "fulfilled") {
       renderTokenRouteRuntimeStrip(state.data?.token || {}, state.v3.tokenQuote || null);
     }
-    if (decisionTraceRes.status === "fulfilled") {
+    if (decisionTraceRes && decisionTraceRes.status === "fulfilled") {
       renderDecisionTracePanel(state.admin.queues || {});
     }
     if (pvpDiagnosticsRes.status === "fulfilled") {
@@ -16962,6 +17117,11 @@
         persistUxPrefs();
         if (target === "pvp") {
           fetchPvpProgressionStatus().catch(() => {});
+        } else if (target === "admin" && state.admin.isAdmin) {
+          const loadedAt = Number(state.admin.lastLoadedAt || 0);
+          if (!loadedAt || Date.now() - loadedAt > 15000) {
+            fetchAdminSummary().catch(showError);
+          }
         }
       });
     });
@@ -18904,8 +19064,16 @@
       tx_hash_missing: "Token onayi icin tx hash zorunlu.",
       tx_hash_already_used: "Bu tx hash baska bir talepte kullanildi.",
       already_approved: "Talep zaten onayli.",
-      already_rejected: "Talep reddedilmis."
+      already_rejected: "Talep reddedilmis.",
+      expired: "Session suresi doldu. Telegram uzerinden WebApp'i yeniden ac.",
+      invalid_signature: "Session imzasi gecersiz. Telegram uzerinden WebApp'i yeniden ac.",
+      missing_fields: "Session alanlari eksik. Bot menuden WebApp'i tekrar baslat.",
+      webapp_secret_missing: "Sunucu webapp imza sirri tanimli degil. Kisa sure sonra tekrar dene."
     };
+    const blockingCodes = new Set(["expired", "invalid_signature", "missing_fields", "webapp_secret_missing"]);
+    if (blockingCodes.has(raw)) {
+      showBlockingRecoveryError(raw, map[raw] || "Session yenileme gerekiyor.");
+    }
     const message = map[raw] || raw;
     showToast(`Hata: ${message}`, true);
   }
@@ -18915,7 +19083,6 @@
     loadUiPrefs();
     loadUxPrefs();
     initAudioBank();
-    await initThree();
     bindUi();
     applyLanguageUi();
     applyUxView();
@@ -18924,7 +19091,13 @@
     if (window.gsap && !state.ui.reducedMotion) {
       gsap.from(".card, .panel", { y: 18, opacity: 0, stagger: 0.05, duration: 0.38, ease: "power2.out" });
     }
-    await loadBootstrap();
+    const bootstrapPromise = loadBootstrap();
+    const threePromise = initThree();
+    await bootstrapPromise;
+    threePromise.catch((err) => {
+      console.warn("initThree_failed", err);
+      setAssetModeLine("Assets: fallback (scene)");
+    });
     if (shouldShowIntroModal()) {
       showIntroModal();
     }

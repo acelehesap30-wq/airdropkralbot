@@ -2341,6 +2341,60 @@ async function resolveWebAppVariant(db) {
   };
 }
 
+function buildWebAppAssetServeRoots(variant) {
+  const roots = [];
+  const pushRoot = (candidate) => {
+    const clean = path.resolve(String(candidate || ""));
+    if (!clean || roots.includes(clean)) {
+      return;
+    }
+    roots.push(clean);
+  };
+  pushRoot(variant?.assetsDir);
+  pushRoot(path.join(WEBAPP_DIST_DIR, "assets"));
+  pushRoot(WEBAPP_ASSETS_DIR);
+  return roots.filter((root) => fs.existsSync(root));
+}
+
+function resolveAssetRelativePath(assetWebPath = "") {
+  const normalized = String(assetWebPath || "")
+    .trim()
+    .replace(/\\/g, "/")
+    .replace(/^\/+/, "");
+  if (!normalized) {
+    return "";
+  }
+  if (normalized.startsWith("webapp/assets/")) {
+    return normalized.slice("webapp/assets/".length);
+  }
+  if (normalized.startsWith("assets/")) {
+    return normalized.slice("assets/".length);
+  }
+  return normalized;
+}
+
+function resolveAssetFileFromRoots(roots, relativePath) {
+  const cleanRelative = resolveAssetRelativePath(relativePath);
+  if (!cleanRelative) {
+    return null;
+  }
+  for (const root of roots || []) {
+    const normalizedRoot = path.resolve(String(root || ""));
+    const candidate = path.resolve(normalizedRoot, cleanRelative);
+    if (!candidate.startsWith(`${normalizedRoot}${path.sep}`)) {
+      continue;
+    }
+    if (fs.existsSync(candidate)) {
+      return {
+        root: normalizedRoot,
+        relativePath: cleanRelative,
+        filePath: candidate
+      };
+    }
+  }
+  return null;
+}
+
 function assertStartupGuards() {
   const tsBundleEnabled = FLAG_DEFAULTS.WEBAPP_TS_BUNDLE_ENABLED;
   if (tsBundleEnabled) {
@@ -4887,11 +4941,13 @@ fastify.get("/webapp/assets/*", async (request, reply) => {
   const client = await pool.connect();
   try {
     const variant = await resolveWebAppVariant(client);
-    const filePath = path.join(variant.assetsDir, rawPath);
-    if (!filePath.startsWith(variant.assetsDir) || !fs.existsSync(filePath)) {
+    const roots = buildWebAppAssetServeRoots(variant);
+    const resolved = resolveAssetFileFromRoots(roots, rawPath);
+    if (!resolved || !resolved.filePath) {
       reply.code(404).type("text/plain").send("asset_not_found");
       return;
     }
+    const filePath = resolved.filePath;
 
     const ext = path.extname(filePath).toLowerCase();
     const contentType =
@@ -4929,6 +4985,10 @@ fastify.get("/webapp/api/bootstrap", async (request, reply) => {
     reply.code(401).send({ success: false, error: auth.reason });
     return;
   }
+  const scopeRaw = String(request.query.scope || "player").trim().toLowerCase();
+  const bootstrapScope = scopeRaw === "full" ? "full" : "player";
+  const includeAdminRequested = String(request.query.include_admin || "0") === "1" || bootstrapScope === "full";
+  const includeHeavyPayload = bootstrapScope === "full";
 
   const client = await pool.connect();
   try {
@@ -5051,16 +5111,33 @@ fastify.get("/webapp/api/bootstrap", async (request, reply) => {
       }
       throw err;
     });
-    const activeManifest = await readActiveAssetManifest(client, { includeEntries: true, entryLimit: 256 }).catch((err) => {
+    const activeManifest = await readActiveAssetManifest(client, {
+      includeEntries: includeHeavyPayload,
+      entryLimit: includeHeavyPayload ? 256 : 32
+    }).catch((err) => {
       if (err.code === "42P01") {
         return { available: false, active_revision: null, entries: [] };
       }
       throw err;
     });
-    const manifestSummary = summarizeActiveAssetManifest(activeManifest);
+    let manifestSummary = summarizeActiveAssetManifest(activeManifest);
+    if (Number(manifestSummary.total_assets || 0) <= 0) {
+      const localAssetStatus = buildAssetStatusRows();
+      const localReady = localAssetStatus.rows.filter((row) => row.exists).length;
+      const localTotal = localAssetStatus.rows.length;
+      manifestSummary = {
+        ...manifestSummary,
+        available: Boolean(manifestSummary.available || localTotal > 0),
+        total_assets: localTotal,
+        ready_assets: localReady,
+        missing_assets: Math.max(0, localTotal - localReady),
+        integrity_ok_assets: Math.max(Number(manifestSummary.integrity_ok_assets || 0), localReady),
+        integrity_ratio: localTotal > 0 ? Number((localReady / localTotal).toFixed(4)) : Number(manifestSummary.integrity_ratio || 0)
+      };
+    }
     const isAdmin = isAdminTelegramId(auth.uid);
     let adminSummary = null;
-    if (isAdmin) {
+    if (isAdmin && includeAdminRequested) {
       adminSummary = await buildAdminSummary(client, runtimeConfig);
       const botRuntime = await readBotRuntimeState(client, { stateKey: botRuntimeStore.DEFAULT_STATE_KEY, limit: 15 });
       adminSummary.bot_runtime = {
@@ -5099,6 +5176,8 @@ fastify.get("/webapp/api/bootstrap", async (request, reply) => {
       webapp_launch_url: webappLaunchUrl,
       data: {
         api_version: "v1",
+        bootstrap_scope: bootstrapScope,
+        admin_included: Boolean(isAdmin && includeAdminRequested),
         profile,
         balances,
         daily: buildDailyView(runtimeConfig, profile, dailyRow),
@@ -5295,6 +5374,126 @@ fastify.get("/webapp/api/v2/bootstrap", async (request, reply) => {
       return payload;
     }
   });
+});
+
+fastify.get("/webapp/api/v2/admin/bootstrap", async (request, reply) => {
+  await proxyWebAppApiV1(request, reply, {
+    targetPath: "/webapp/api/admin/summary",
+    method: "GET",
+    transform: (payload) => {
+      if (!payload || typeof payload !== "object") {
+        return payload;
+      }
+      if (!payload.data || typeof payload.data !== "object") {
+        payload.data = {};
+      }
+      payload.data.api_version = "v2";
+      payload.data.bootstrap_scope = "admin";
+      payload.data.admin_included = true;
+      return payload;
+    }
+  });
+});
+
+fastify.get("/webapp/api/v2/assets/manifest/resolved", async (request, reply) => {
+  const auth = verifyWebAppAuth(request.query.uid, request.query.ts, request.query.sig);
+  if (!auth.ok) {
+    reply.code(401).send({ success: false, error: auth.reason });
+    return;
+  }
+  const includeEntries = String(request.query.include_entries || "0") === "1";
+  const entryLimit = Math.max(1, Math.min(600, Number(request.query.limit || 200)));
+  const client = await pool.connect();
+  try {
+    const profile = await getProfileByTelegram(client, auth.uid);
+    if (!profile) {
+      reply.code(404).send({ success: false, error: "user_not_started" });
+      return;
+    }
+    const [variant, activeManifest] = await Promise.all([
+      resolveWebAppVariant(client),
+      readActiveAssetManifest(client, { includeEntries: true, entryLimit })
+    ]);
+    const roots = buildWebAppAssetServeRoots(variant);
+    const resolvedRoots = roots.map((root) => ({
+      root_path: root,
+      exists: fs.existsSync(root),
+      source: root.startsWith(path.resolve(WEBAPP_DIST_DIR)) ? "dist" : "source"
+    }));
+    const manifestHit = resolveAssetFileFromRoots(roots, "manifest.json");
+
+    let entries = Array.isArray(activeManifest?.entries) ? activeManifest.entries : [];
+    if (!entries.length) {
+      const localManifest = readAssetManifest().manifest;
+      const localModels = localManifest && typeof localManifest.models === "object" ? localManifest.models : {};
+      entries = Object.entries(localModels).map(([assetKey, model]) => ({
+        asset_key: String(assetKey || ""),
+        asset_path: String(model?.path || ""),
+        fallback_path: "",
+        exists_local: null,
+        integrity_status: "unknown",
+        meta_json: model && typeof model === "object" ? model : {}
+      }));
+    }
+
+    const resolvedEntries = [];
+    const missing = [];
+    for (const entry of entries) {
+      const rawPath = String(entry.asset_path || entry.fallback_path || "").trim();
+      const relativePath = resolveAssetRelativePath(rawPath);
+      if (!relativePath) {
+        continue;
+      }
+      const hit = resolveAssetFileFromRoots(roots, relativePath);
+      if (hit) {
+        resolvedEntries.push({
+          asset_key: String(entry.asset_key || ""),
+          asset_path: rawPath,
+          served_relative_path: hit.relativePath,
+          served_file_path: hit.filePath,
+          served_root: hit.root
+        });
+      } else {
+        missing.push({
+          asset_key: String(entry.asset_key || ""),
+          asset_path: rawPath,
+          served_relative_path: relativePath
+        });
+      }
+    }
+
+    reply.send({
+      success: true,
+      session: issueWebAppSession(auth.uid),
+      data: {
+        api_version: "v2",
+        variant_source: String(variant.source || "legacy"),
+        active_revision:
+          String(
+            activeManifest?.active_revision?.manifest_revision ||
+              activeManifest?.active_revision?.state_json?.manifest_revision ||
+              activeManifest?.active_revision?.state_json?.active_revision ||
+              ""
+          ) || "v0",
+        served_paths: resolvedRoots,
+        manifest: {
+          public_path: "/webapp/assets/manifest.json",
+          resolved: Boolean(manifestHit),
+          resolved_file_path: manifestHit?.filePath || "",
+          source_root: manifestHit?.root || ""
+        },
+        counts: {
+          total_entries: entries.length,
+          resolved_entries: resolvedEntries.length,
+          missing_entries: missing.length
+        },
+        missing: missing.slice(0, 300),
+        entries: includeEntries ? resolvedEntries.slice(0, 300) : []
+      }
+    });
+  } finally {
+    client.release();
+  }
 });
 
 fastify.get("/webapp/api/v2/commands/catalog", async (request, reply) => {

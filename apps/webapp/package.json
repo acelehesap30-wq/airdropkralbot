@@ -4,7 +4,7 @@
   "version": "3.2.0",
   "type": "module",
   "scripts": {
-    "build": "vite build",
+    "build": "vite build && node ../../scripts/webapp_sync_assets.mjs",
     "dev": "vite"
   },
   "dependencies": {
