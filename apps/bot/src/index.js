@@ -3,7 +3,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const dotenv = require("dotenv");
-const { Telegraf, Markup } = require("telegraf");
+const { Telegraf } = require("telegraf");
 const { createPool, ping, withTransaction } = require("./db");
 const userStore = require("./stores/userStore");
 const taskStore = require("./stores/taskStore");
@@ -37,10 +37,35 @@ const {
 const { getCommandRegistry, toTelegramCommands, buildAliasLookup, getPrimaryCommands } = require("./commands/registry");
 const { buildIntentIndex, resolveIntent, normalizeMode } = require("./commands/intentRouter");
 const { normalizeLanguage } = require("./i18n");
+const {
+  buildTaskKeyboard,
+  buildStartKeyboard,
+  buildMoreMenuKeyboard,
+  buildGuideKeyboard,
+  buildHelpKeyboard,
+  buildCompleteKeyboard,
+  buildRevealKeyboard,
+  buildPostRevealKeyboard,
+  buildShopKeyboard,
+  buildMissionKeyboard,
+  buildPayoutKeyboard,
+  buildTokenKeyboard,
+  buildPlayKeyboard,
+  buildRaidKeyboard,
+  buildAdminKeyboard,
+  buildAdminPayoutActionKeyboard,
+  buildAdminTokenActionKeyboard
+} = require("./ui/keyboards");
+const { createSafeMarkdownReplyMiddleware } = require("./utils/safeMarkdownReply");
+const { createSlashCommandTelemetryMiddleware } = require("./telemetry/slashTelemetry");
 
 const envPath = path.join(process.cwd(), ".env");
 if (fs.existsSync(envPath)) {
   dotenv.config({ path: envPath });
+}
+
+function escapeMarkdownText(value) {
+  return String(value || "").replace(/([_*[\]()~`>#+\-=|{}.!\\])/g, "\\$1");
 }
 
 function requireEnv(name, opts = {}) {
@@ -182,6 +207,17 @@ const PLAYER_ACTION_DEFAULT_COOLDOWNS_MS = Object.freeze({
   reroll_tasks: 3000,
   payout_request: 4000
 });
+const WEBAPP_ACTION_IDEMPOTENCY_TTL_MS = 15 * 60 * 1000;
+const WEBAPP_ACTION_IDEMPOTENCY_CACHE = new Map();
+const WEBAPP_CRITICAL_ACTIONS = new Set([
+  "accept_offer",
+  "complete_latest",
+  "reveal_latest",
+  "mint_token",
+  "buy_token",
+  "submit_token_tx",
+  "reroll_tasks"
+]);
 
 function normalizePublicName(ctx) {
   if (ctx.from?.username) {
@@ -965,46 +1001,6 @@ function parseRewardFromMeta(meta, tier) {
   return { sc: 1, hc: 0, rc: 1 };
 }
 
-function buildTaskKeyboard(offers) {
-  const buttons = offers.map((offer, index) => Markup.button.callback(`Gorev ${index + 1}`, `TASK_ACCEPT:${offer.id}`));
-  const rows = [];
-  for (let i = 0; i < buttons.length; i += 3) {
-    rows.push(buttons.slice(i, i + 3));
-  }
-  rows.push([
-    Markup.button.callback("Panel Yenile (1 RC)", "REROLL_TASKS"),
-    Markup.button.callback("Gunluk", "OPEN_DAILY")
-  ]);
-  return Markup.inlineKeyboard(rows);
-}
-
-function buildStartKeyboard() {
-  return Markup.inlineKeyboard(
-    [
-      [Markup.button.callback("Arena 3D Ac", "OPEN_PLAY")],
-      [Markup.button.callback("Onboard", "OPEN_ONBOARD"), Markup.button.callback("Gorev Al", "OPEN_TASKS")],
-      [Markup.button.callback("PvP Raid", "ARENA_RAID:balanced"), Markup.button.callback("Vault", "OPEN_PAYOUT")],
-      [Markup.button.callback("Cuzdan", "OPEN_WALLET"), Markup.button.callback("Durum", "OPEN_STATUS")],
-      [Markup.button.callback("Story", "OPEN_GUIDE"), Markup.button.callback("Daha Fazla", "OPEN_MORE_MENU")]
-    ],
-    { columns: 2 }
-  );
-}
-
-function buildMoreMenuKeyboard() {
-  return Markup.inlineKeyboard(
-    [
-      [Markup.button.callback("Hizli Rehber", "OPEN_GUIDE"), Markup.button.callback("Ana Launcher", "OPEN_HOME_MENU")],
-      [Markup.button.callback("Misyonlar", "OPEN_MISSIONS"), Markup.button.callback("Gunluk", "OPEN_DAILY")],
-      [Markup.button.callback("Kingdom", "OPEN_KINGDOM"), Markup.button.callback("Nexus", "OPEN_NEXUS")],
-      [Markup.button.callback("Arena Raid", "ARENA_RAID:balanced"), Markup.button.callback("War Room", "OPEN_WAR")],
-      [Markup.button.callback("Sezon", "OPEN_SEASON"), Markup.button.callback("Dukkan", "OPEN_SHOP")],
-      [Markup.button.callback("Token", "OPEN_TOKEN"), Markup.button.callback("Cekim", "OPEN_PAYOUT")]
-    ],
-    { columns: 2 }
-  );
-}
-
 async function readLatestReleaseMarkerSummary(db) {
   try {
     const hasTable = await db
@@ -1076,186 +1072,6 @@ async function readBotFeatureFlagSummary(db) {
     sourceMode,
     critical
   };
-}
-
-function buildGuideKeyboard() {
-  return Markup.inlineKeyboard(
-    [
-      Markup.button.callback("1) Gorev Ac", "OPEN_TASKS"),
-      Markup.button.callback("2) Dengeli Bitir", "GUIDE_FINISH_BALANCED"),
-      Markup.button.callback("3) Reveal Ac", "GUIDE_REVEAL"),
-      Markup.button.callback("4) Arena 3D", "OPEN_PLAY"),
-      Markup.button.callback("Nexus Pulse", "OPEN_NEXUS"),
-      Markup.button.callback("Cuzdan", "OPEN_WALLET"),
-      Markup.button.callback("Misyonlar", "OPEN_MISSIONS")
-    ],
-    { columns: 2 }
-  );
-}
-
-function buildHelpKeyboard() {
-  return Markup.inlineKeyboard(
-    [
-      [Markup.button.callback("Onboard", "OPEN_ONBOARD"), Markup.button.callback("Gorev", "OPEN_TASKS")],
-      [Markup.button.callback("PvP Raid", "ARENA_RAID:balanced"), Markup.button.callback("Vault", "OPEN_PAYOUT")],
-      [Markup.button.callback("Arena 3D", "OPEN_PLAY"), Markup.button.callback("Story", "OPEN_GUIDE")],
-      [Markup.button.callback("Ana Launcher", "OPEN_HOME_MENU")]
-    ],
-    { columns: 2 }
-  );
-}
-
-function buildCompleteKeyboard(attemptId) {
-  return Markup.inlineKeyboard(
-    [
-      Markup.button.callback("Temkinli Bitir", `TASK_COMPLETE:${attemptId}:safe`),
-      Markup.button.callback("Dengeli Bitir", `TASK_COMPLETE:${attemptId}:balanced`),
-      Markup.button.callback("Saldirgan Bitir", `TASK_COMPLETE:${attemptId}:aggressive`)
-    ],
-    { columns: 1 }
-  );
-}
-
-function buildRevealKeyboard(attemptId) {
-  return Markup.inlineKeyboard([Markup.button.callback("Reveal", `REVEAL:${attemptId}`)]);
-}
-
-function buildPostRevealKeyboard() {
-  return Markup.inlineKeyboard(
-    [
-      Markup.button.callback("Yeni Gorev", "OPEN_TASKS"),
-      Markup.button.callback("Cuzdan", "OPEN_WALLET"),
-      Markup.button.callback("Token", "OPEN_TOKEN"),
-      Markup.button.callback("Liderlik", "OPEN_LEADERBOARD"),
-      Markup.button.callback("Dukkan", "OPEN_SHOP"),
-      Markup.button.callback("Misyonlar", "OPEN_MISSIONS")
-    ],
-    { columns: 2 }
-  );
-}
-
-function buildShopKeyboard(offers) {
-  const buttons = offers.map((offer, index) =>
-    Markup.button.callback(`Satin Al ${index + 1}`, `BUY_OFFER:${offer.id}`)
-  );
-  return Markup.inlineKeyboard(buttons, { columns: 2 });
-}
-
-function buildMissionKeyboard(board) {
-  const buttons = (board || [])
-    .filter((mission) => mission.completed && !mission.claimed)
-    .map((mission) => Markup.button.callback(`Odulu Al: ${mission.title}`, `CLAIM_MISSION:${mission.key}`));
-
-  if (buttons.length === 0) {
-    return undefined;
-  }
-  return Markup.inlineKeyboard(buttons, { columns: 1 });
-}
-
-function buildPayoutKeyboard(canRequest) {
-  const buttons = [];
-  if (canRequest) {
-    buttons.push(Markup.button.callback("BTC Cekim Talebi", "REQ_PAYOUT:BTC"));
-  }
-  buttons.push(Markup.button.callback("Durumu Yenile", "OPEN_PAYOUT"));
-  return Markup.inlineKeyboard(buttons, { columns: 1 });
-}
-
-function buildTokenKeyboard() {
-  return Markup.inlineKeyboard(
-    [
-      [
-        Markup.button.callback("Token Durumu", "OPEN_TOKEN"),
-        Markup.button.callback("Token Mint (Max)", "TOKEN_MINT")
-      ],
-      [Markup.button.callback("Satinalma Talep Ornegi", "TOKEN_BUY_SAMPLE")],
-      [Markup.button.callback("Bot Paneline Don", "OPEN_TASKS")]
-    ],
-    { columns: 1 }
-  );
-}
-
-function buildPlayKeyboard(url) {
-  const isHttps = /^https:\/\//i.test(String(url || ""));
-  const canUseWebAppButton = isHttps && typeof Markup.button.webApp === "function";
-  const openButton = canUseWebAppButton
-    ? Markup.button.webApp("Arena 3D Ac", url)
-    : Markup.button.url("Arena 3D Ac", url);
-  return Markup.inlineKeyboard(
-    [
-      [openButton],
-      [Markup.button.url("Tarayici ile Ac", url)],
-      [Markup.button.callback("Bot Paneline Don", "OPEN_TASKS")]
-    ],
-    { columns: 1 }
-  );
-}
-
-function buildRaidKeyboard() {
-  return Markup.inlineKeyboard(
-    [
-      Markup.button.callback("Raid Temkinli", "ARENA_RAID:safe"),
-      Markup.button.callback("Raid Dengeli", "ARENA_RAID:balanced"),
-      Markup.button.callback("Raid Saldirgan", "ARENA_RAID:aggressive"),
-      Markup.button.callback("Arena Siralama", "OPEN_ARENA_RANK"),
-      Markup.button.callback("Arena 3D", "OPEN_PLAY")
-    ],
-    { columns: 1 }
-  );
-}
-
-function buildAdminKeyboard(snapshot = {}) {
-  const payoutButtons = (snapshot.pendingPayouts || [])
-    .slice(0, 3)
-    .map((row) => [Markup.button.callback(`Payout #${row.id}`, `ADMIN_PAYOUT_PICK:${row.id}`)]);
-  const tokenButtons = (snapshot.pendingTokenRequests || [])
-    .slice(0, 3)
-    .map((row) => [Markup.button.callback(`Token #${row.id}`, `ADMIN_TOKEN_PICK:${row.id}`)]);
-
-  const freezeToggle = snapshot.freeze?.freeze
-    ? Markup.button.callback("Freeze Kapat", "ADMIN_FREEZE_OFF")
-    : Markup.button.callback("Freeze Ac", "ADMIN_FREEZE_ON");
-
-  return Markup.inlineKeyboard(
-    [
-      [Markup.button.callback("Yenile", "ADMIN_PANEL_REFRESH"), freezeToggle],
-      [Markup.button.callback("Unified Queue", "ADMIN_OPEN_QUEUE")],
-      [Markup.button.callback("Payout Queue", "ADMIN_OPEN_PAYOUTS"), Markup.button.callback("Token Queue", "ADMIN_OPEN_TOKENS")],
-      ...payoutButtons,
-      ...tokenButtons
-    ],
-    { columns: 1 }
-  );
-}
-
-function buildAdminPayoutActionKeyboard(requestId) {
-  const id = Number(requestId || 0);
-  if (!id) {
-    return undefined;
-  }
-  return Markup.inlineKeyboard(
-    [
-      [Markup.button.callback("Payout Reddet", `ADMIN_PAYOUT_REJECT:${id}`)],
-      [Markup.button.callback("Payout Queue", "ADMIN_OPEN_PAYOUTS"), Markup.button.callback("Unified Queue", "ADMIN_OPEN_QUEUE")]
-    ],
-    { columns: 2 }
-  );
-}
-
-function buildAdminTokenActionKeyboard(row = {}) {
-  const id = Number(row.id || 0);
-  if (!id) {
-    return undefined;
-  }
-  const buttons = [];
-  if (String(row.tx_hash || "").trim()) {
-    buttons.push(Markup.button.callback("Token Onayla", `ADMIN_TOKEN_APPROVE:${id}`));
-  }
-  buttons.push(Markup.button.callback("Token Reddet", `ADMIN_TOKEN_REJECT:${id}`));
-  return Markup.inlineKeyboard(
-    [buttons, [Markup.button.callback("Token Queue", "ADMIN_OPEN_TOKENS"), Markup.button.callback("Unified Queue", "ADMIN_OPEN_QUEUE")]],
-    { columns: 2 }
-  );
 }
 
 async function playRevealAnimation(ctx, paceMs) {
@@ -1428,7 +1244,7 @@ async function sendTasks(ctx, pool, appConfig) {
       anomaly: payload.anomaly,
       contract: payload.contract
     }),
-    buildTaskKeyboard(payload.offers)
+    buildTaskKeyboard(payload.offers, resolvePreferredLanguage(payload.profile, ctx, "tr"))
   );
 }
 
@@ -1494,7 +1310,7 @@ async function handleRerollTasks(ctx, pool, appConfig) {
       anomaly: payload.anomaly,
       contract: payload.contract
     }),
-    buildTaskKeyboard(payload.offers)
+    buildTaskKeyboard(payload.offers, resolvePreferredLanguage(payload.profile, ctx, "tr"))
   );
 }
 
@@ -1549,7 +1365,10 @@ async function handleTaskAccept(ctx, pool, appConfig) {
   }
 
   await ctx.answerCbQuery();
-  await ctx.replyWithMarkdown(messages.formatTaskStarted(payload.task, payload.profile.current_streak), buildCompleteKeyboard(payload.attempt.id));
+  await ctx.replyWithMarkdown(
+    messages.formatTaskStarted(payload.task, payload.profile.current_streak),
+    buildCompleteKeyboard(payload.attempt.id, resolvePreferredLanguage(payload.profile, ctx, "tr"))
+  );
   logEvent("task_accept", {
     user_id: payload.profile.user_id,
     offer_id: offerId,
@@ -1797,10 +1616,11 @@ async function sendNexus(ctx, pool, appConfig) {
       anomaly,
       contract
     );
-    return { anomaly, contract, tactical };
+    return { profile, anomaly, contract, tactical };
   });
 
-  await ctx.replyWithMarkdown(messages.formatNexusPulse(payload), buildGuideKeyboard());
+  const lang = resolvePreferredLanguage(payload.profile, ctx, "tr");
+  await ctx.replyWithMarkdown(messages.formatNexusPulse(payload), buildGuideKeyboard(lang));
 }
 
 async function sendRaidContract(ctx, pool) {
@@ -2182,7 +2002,7 @@ async function handleReveal(ctx, pool, appConfig) {
         contractMatch: Boolean(payload.contract?.match?.matched || payload.loot?.rng_rolls_json?.nexus_contract_eval?.matched)
       }
     ),
-    buildPostRevealKeyboard()
+    buildPostRevealKeyboard(resolvePreferredLanguage(payload.profile, ctx, "tr"))
   );
 
   logEvent("reveal", {
@@ -3074,7 +2894,7 @@ async function createTokenBuyIntent(ctx, pool, appConfig, usdAmountRaw, chainRaw
   await ctx.replyWithMarkdown(messages.formatTokenBuyIntent(payload.request, payload.quote, payload.tokenConfig), buildTokenKeyboard());
 }
 
-async function submitTokenTx(ctx, pool, requestIdRaw, txHashRaw) {
+async function submitTokenTx(ctx, pool, appConfig, requestIdRaw, txHashRaw) {
   const requestId = Number(requestIdRaw || 0);
   const txHash = normalizeTxHash(txHashRaw);
   if (!requestId || !txHash || txHash.length < 24) {
@@ -3083,6 +2903,8 @@ async function submitTokenTx(ctx, pool, requestIdRaw, txHashRaw) {
     });
     return;
   }
+
+  const verifyConfig = appConfig && typeof appConfig === "object" ? appConfig : {};
 
   let payload;
   try {
@@ -3105,10 +2927,10 @@ async function submitTokenTx(ctx, pool, requestIdRaw, txHashRaw) {
       }
 
       const verifyResult = await txVerifier.verifyOnchain(request.chain, formatCheck.normalizedHash, {
-        enabled: Boolean(appConfig.tokenTxVerifyEnabled)
+        enabled: Boolean(verifyConfig.tokenTxVerifyEnabled)
       });
       if (
-        appConfig.tokenTxVerifyStrict &&
+        Boolean(verifyConfig.tokenTxVerifyStrict) &&
         !["confirmed", "found_unconfirmed", "unsupported", "skipped"].includes(verifyResult.status)
       ) {
         return { ok: false, reason: "tx_not_found_onchain", request };
@@ -3589,6 +3411,7 @@ async function sendStatus(ctx, pool, appConfig) {
     const risk = await riskStore.getRiskState(db, profile.user_id);
     const tokenView = await buildTokenView(db, profile, appConfig);
     return {
+      profile,
       freeze,
       season,
       anomaly,
@@ -3603,19 +3426,43 @@ async function sendStatus(ctx, pool, appConfig) {
     };
   });
 
+  const lang = resolvePreferredLanguage(payload.profile, ctx, "tr");
+  const freezeText = payload.freeze.freeze ? (lang === "en" ? "on" : "acik") : lang === "en" ? "off" : "kapali";
+  const loopText = appConfig.loopV2Enabled ? (lang === "en" ? "enabled" : "acik") : lang === "en" ? "disabled" : "kapali";
+  const payoutText = payload.payout.canRequest ? (lang === "en" ? "yes" : "evet") : lang === "en" ? "no" : "hayir";
+  const safeAnomalyTitle = escapeMarkdownText(payload.anomaly.title || "-");
+  const safeAnomalyMode = escapeMarkdownText(payload.anomaly.preferred_mode || "balanced");
+  const safeContractTitle = escapeMarkdownText(payload.contract.title || "-");
+  const safeContractMode = escapeMarkdownText(payload.contract.required_mode || "balanced");
+  const safeTokenSymbol = escapeMarkdownText(payload.tokenView.symbol || "NXT");
+  const safeWarTier = escapeMarkdownText(payload.war.tier || "seed");
+
   await ctx.replyWithMarkdown(
-    `*Sistem Durumu*\n` +
-      `Loop v2: *${appConfig.loopV2Enabled ? "acik" : "kapali"}*\n` +
-      `Freeze: *${payload.freeze.freeze ? "acik" : "kapali"}*\n` +
-      `Config Kaynagi: *${payload.configCache.source}*\n` +
-      `Sezon: *S${payload.season.seasonId}* (${payload.season.daysLeft} gun)\n` +
-      `Nexus: *${payload.anomaly.title}* (${payload.anomaly.pressure_pct}% basinc, ${payload.anomaly.preferred_mode})\n` +
-      `Kontrat: *${payload.contract.title}* [${payload.contract.required_mode}]\n` +
-      `War Tier: *${payload.war.tier}* (${Math.floor(payload.war.value)})\n` +
-      `Misyon: *${payload.readyMissions} hazir / ${payload.openMissions} aktif*\n` +
-      `Risk: *${Math.round(payload.risk * 100)}%*\n` +
-      `Payout Uygunluk: *${payload.payout.canRequest ? "evet" : "hayir"}*\n` +
-      `${payload.tokenView.symbol}: *${Number(payload.tokenView.balance || 0).toFixed(payload.tokenView.tokenConfig.decimals)}*`
+    lang === "en"
+      ? `*System Status*\n` +
+        `Loop v2: *${loopText}*\n` +
+        `Freeze: *${freezeText}*\n` +
+        `Config Source: *${escapeMarkdownText(payload.configCache.source || "unknown")}*\n` +
+        `Season: *S${payload.season.seasonId}* (${payload.season.daysLeft} days)\n` +
+        `Nexus: *${safeAnomalyTitle}* (${payload.anomaly.pressure_pct}% pressure, ${safeAnomalyMode})\n` +
+        `Contract: *${safeContractTitle}* [${safeContractMode}]\n` +
+        `War Tier: *${safeWarTier}* (${Math.floor(payload.war.value)})\n` +
+        `Missions: *${payload.readyMissions} ready / ${payload.openMissions} active*\n` +
+        `Risk: *${Math.round(payload.risk * 100)}%*\n` +
+        `Payout Eligible: *${payoutText}*\n` +
+        `${safeTokenSymbol}: *${Number(payload.tokenView.balance || 0).toFixed(payload.tokenView.tokenConfig.decimals)}*`
+      : `*Sistem Durumu*\n` +
+        `Loop v2: *${loopText}*\n` +
+        `Freeze: *${freezeText}*\n` +
+        `Config Kaynagi: *${escapeMarkdownText(payload.configCache.source || "bilinmeyen")}*\n` +
+        `Sezon: *S${payload.season.seasonId}* (${payload.season.daysLeft} gun)\n` +
+        `Nexus: *${safeAnomalyTitle}* (${payload.anomaly.pressure_pct}% basinc, ${safeAnomalyMode})\n` +
+        `Kontrat: *${safeContractTitle}* [${safeContractMode}]\n` +
+        `War Tier: *${safeWarTier}* (${Math.floor(payload.war.value)})\n` +
+        `Misyon: *${payload.readyMissions} hazir / ${payload.openMissions} aktif*\n` +
+        `Risk: *${Math.round(payload.risk * 100)}%*\n` +
+        `Payout Uygunluk: *${payoutText}*\n` +
+        `${safeTokenSymbol}: *${Number(payload.tokenView.balance || 0).toFixed(payload.tokenView.tokenConfig.decimals)}*`
   );
 }
 
@@ -3804,7 +3651,8 @@ async function sendGuide(ctx, pool) {
       riskScore: Number(risk.riskScore || 0)
     };
   });
-  await ctx.replyWithMarkdown(messages.formatGuide(snapshot), buildGuideKeyboard());
+  const lang = resolvePreferredLanguage(snapshot.profile, ctx, "tr");
+  await ctx.replyWithMarkdown(messages.formatGuide(snapshot, { lang }), buildGuideKeyboard(lang));
 }
 
 async function sendOnboard(ctx, pool, appConfig) {
@@ -3827,25 +3675,34 @@ async function sendOnboard(ctx, pool, appConfig) {
       }
     };
   });
-  await ctx.replyWithMarkdown(messages.formatOnboard(payload), buildGuideKeyboard());
+  const lang = resolvePreferredLanguage(payload.profile, ctx, "tr");
+  await ctx.replyWithMarkdown(messages.formatOnboard(payload, { lang }), buildGuideKeyboard(lang));
 }
 
 async function sendPlay(ctx, pool, appConfig) {
   const profile = await ensureProfile(pool, ctx);
+  const lang = resolvePreferredLanguage(profile, ctx, "tr");
   const launchBaseUrl = await resolveWebAppLaunchBaseUrl(pool, appConfig, ctx.from?.id);
   const url = buildSignedWebAppUrl(appConfig, ctx.from?.id, launchBaseUrl);
   if (!url) {
     await ctx.replyWithMarkdown(
-      "*Arena 3D Hazir Degil*\nWEBAPP_PUBLIC_URL veya WEBAPP_HMAC_SECRET eksik."
+      lang === "en"
+        ? "*Arena 3D Not Ready*\nWEBAPP_PUBLIC_URL or WEBAPP_HMAC_SECRET is missing."
+        : "*Arena 3D Hazir Degil*\nWEBAPP_PUBLIC_URL veya WEBAPP_HMAC_SECRET eksik."
     );
     return;
   }
 
+  const safeName = escapeMarkdownText(profile.public_name || "Kral");
   await ctx.replyWithMarkdown(
     /^https:\/\//i.test(String(url))
-      ? `*Arena 3D*\nKral: *${profile.public_name}*\nCanli UI, animasyon ve gorev panelleri burada.`
-      : `*Arena 3D (Local Test)*\nKral: *${profile.public_name}*\nTelegram Mini App butonu HTTPS ister. Local test icin URL butonu ile ac.`,
-    buildPlayKeyboard(url)
+      ? lang === "en"
+        ? `*Arena 3D*\nPlayer: *${safeName}*\nLive UI, animation and task panels are here.`
+        : `*Arena 3D*\nKral: *${safeName}*\nCanli UI, animasyon ve gorev panelleri burada.`
+      : lang === "en"
+        ? `*Arena 3D (Local Test)*\nPlayer: *${safeName}*\nTelegram Mini App buttons require HTTPS. Use URL button for local test.`
+        : `*Arena 3D (Local Test)*\nKral: *${safeName}*\nTelegram Mini App butonu HTTPS ister. Local test icin URL butonu ile ac.`,
+    buildPlayKeyboard(url, lang)
   );
 }
 
@@ -3856,9 +3713,10 @@ async function sendLauncherMenu(ctx, pool) {
     return false;
   }
   const snapshot = await getSnapshot(pool, ctx);
+  const lang = resolvePreferredLanguage(snapshot.profile, ctx, "tr");
   await ctx.replyWithMarkdown(
-    messages.formatStart(snapshot.profile, snapshot.balances, snapshot.season, snapshot.anomaly, snapshot.contract),
-    buildStartKeyboard()
+    messages.formatStart(snapshot.profile, snapshot.balances, snapshot.season, snapshot.anomaly, snapshot.contract, { lang }),
+    buildStartKeyboard(lang)
   );
   return true;
 }
@@ -3880,7 +3738,7 @@ async function sendUnknownIntentHint(ctx, pool) {
         `- \`reveal\`\n` +
         `- \`pvp aggressive\`\n\n` +
         `Detayli komut kartlari icin \`/help\` yazabilirsin.`;
-  await ctx.replyWithMarkdown(text, buildHelpKeyboard());
+  await ctx.replyWithMarkdown(text, buildHelpKeyboard(lang));
 }
 
 async function setLanguagePreference(ctx, pool, rawArgs = "") {
@@ -3893,7 +3751,7 @@ async function setLanguagePreference(ctx, pool, rawArgs = "") {
       current === "en"
         ? `*Language Preference*\nUsage: \`/lang tr\` or \`/lang en\`\nCurrent: *${String(current).toUpperCase()}*`
         : `*Dil Tercihi*\nKullanim: \`/lang tr\` veya \`/lang en\`\nMevcut: *${String(current).toUpperCase()}*`;
-    await ctx.replyWithMarkdown(usage, buildHelpKeyboard());
+    await ctx.replyWithMarkdown(usage, buildHelpKeyboard(current));
     return;
   }
 
@@ -3909,15 +3767,48 @@ async function setLanguagePreference(ctx, pool, rawArgs = "") {
   if (selected === "en") {
     await ctx.replyWithMarkdown(
       `*Language Updated*\nBot language is now set to *EN*.\nUse \`/help\` for command cards.`,
-      buildHelpKeyboard()
+      buildHelpKeyboard("en")
     );
     return;
   }
 
   await ctx.replyWithMarkdown(
     `*Dil Guncellendi*\nBot dili *TR* olarak kaydedildi.\nKomut kartlari icin \`/help\` yazabilirsin.`,
-    buildHelpKeyboard()
+    buildHelpKeyboard("tr")
   );
+}
+
+function reserveWebAppActionIdempotency(ctx, action, payload = {}) {
+  const normalizedAction = String(action || "")
+    .trim()
+    .toLowerCase();
+  if (!WEBAPP_CRITICAL_ACTIONS.has(normalizedAction)) {
+    return { ok: true, requestId: "" };
+  }
+
+  const requestId = String(payload.action_request_id || payload.request_id || "")
+    .trim()
+    .slice(0, 128);
+  if (!requestId || requestId.length < 6) {
+    return { ok: false, reason: "missing_request_id" };
+  }
+
+  const now = Date.now();
+  for (const [key, expireAt] of WEBAPP_ACTION_IDEMPOTENCY_CACHE.entries()) {
+    if (expireAt <= now) {
+      WEBAPP_ACTION_IDEMPOTENCY_CACHE.delete(key);
+    }
+  }
+
+  const actorId = Number(ctx.from?.id || 0);
+  const key = `${actorId}:${normalizedAction}:${requestId}`;
+  const existing = Number(WEBAPP_ACTION_IDEMPOTENCY_CACHE.get(key) || 0);
+  if (existing > now) {
+    return { ok: false, reason: "idempotency_conflict", requestId };
+  }
+
+  WEBAPP_ACTION_IDEMPOTENCY_CACHE.set(key, now + WEBAPP_ACTION_IDEMPOTENCY_TTL_MS);
+  return { ok: true, requestId };
 }
 
 async function handleWebAppAction(ctx, pool, appConfig) {
@@ -3937,6 +3828,16 @@ async function handleWebAppAction(ctx, pool, appConfig) {
   const action = String(payload.action || "").toLowerCase();
   if (!action) {
     await ctx.replyWithMarkdown("*WebApp Veri Hatasi*\nAksiyon eksik.");
+    return;
+  }
+
+  const idempotency = reserveWebAppActionIdempotency(ctx, action, payload);
+  if (!idempotency.ok) {
+    if (idempotency.reason === "missing_request_id") {
+      await ctx.replyWithMarkdown("*WebApp Veri Hatasi*\nKritik aksiyonlarda `request_id` zorunlu.");
+      return;
+    }
+    await ctx.replyWithMarkdown("*WebApp Aksiyon Tekrari*\nAyni istek zaten islenmis, paneli yenile.");
     return;
   }
 
@@ -4019,11 +3920,11 @@ async function handleWebAppAction(ctx, pool, appConfig) {
     return;
   }
   if (action === "submit_token_tx") {
-    await submitTokenTx(ctx, pool, payload.request_id, payload.tx_hash);
+    await submitTokenTx(ctx, pool, appConfig, payload.request_id, payload.tx_hash);
     return;
   }
   if (action === "reroll_tasks") {
-    const sourceRef = payload.request_id || payload.client_ts || Date.now();
+    const sourceRef = payload.action_request_id || payload.request_id || payload.client_ts || Date.now();
     const result = await withTransaction(pool, async (db) => {
       const profile = await ensureProfileTx(db, ctx);
       return rerollTasksTx(db, profile, appConfig, `webapp:${sourceRef}`);
@@ -4042,12 +3943,12 @@ async function handleWebAppAction(ctx, pool, appConfig) {
         anomaly: result.anomaly,
         contract: result.contract
       }),
-      buildTaskKeyboard(result.offers)
+      buildTaskKeyboard(result.offers, normalizeLanguage(ctx.from?.language_code, "tr"))
     );
     return;
   }
 
-  await ctx.replyWithMarkdown(`*WebApp Aksiyon Bilinmiyor*\n${action}`);
+  await ctx.replyWithMarkdown(`*WebApp Aksiyon Bilinmiyor*\n${escapeMarkdownText(action)}`);
 }
 
 function normalizeModeFromText(input) {
@@ -4489,7 +4390,7 @@ function buildCommandHandlerMap({ pool, appConfig }) {
       .split(" ")
       .map((x) => x.trim())
       .filter(Boolean);
-    await submitTokenTx(ctx, pool, parts[0], parts.slice(1).join(" "));
+    await submitTokenTx(ctx, pool, appConfig, parts[0], parts.slice(1).join(" "));
   });
   map.set("daily", async (ctx) => sendDaily(ctx, pool));
   map.set("kingdom", async (ctx) => sendKingdom(ctx, pool));
@@ -4521,7 +4422,7 @@ function buildCommandHandlerMap({ pool, appConfig }) {
   map.set("help", async (ctx) => {
     const profile = await ensureProfile(pool, ctx);
     const lang = resolvePreferredLanguage(profile, ctx, "tr");
-    await ctx.replyWithMarkdown(messages.formatHelp({ commands: getPrimaryCommands(COMMAND_REGISTRY), lang }), buildHelpKeyboard());
+    await ctx.replyWithMarkdown(messages.formatHelp({ commands: getPrimaryCommands(COMMAND_REGISTRY), lang }), buildHelpKeyboard(lang));
   });
   map.set("menu", async (ctx) => sendLauncherMenu(ctx, pool));
   map.set("story", async (ctx) => sendGuide(ctx, pool));
@@ -4767,6 +4668,17 @@ async function start() {
   });
 
   const bot = new Telegraf(appConfig.botToken);
+  bot.use(createSafeMarkdownReplyMiddleware({ logEvent }));
+  bot.use(
+    createSlashCommandTelemetryMiddleware({
+      parseSlashCommandText,
+      commandAliasLookup: COMMAND_ALIAS_LOOKUP,
+      ensureProfile: (ctx) => ensureProfile(pool, ctx),
+      resolvePreferredLanguage,
+      logV5CommandEvent: (ctx, payload) => logV5CommandEvent(pool, ctx, payload),
+      logEvent
+    })
+  );
 
   bot.start(async (ctx) => {
     await sendLauncherMenu(ctx, pool);
@@ -4786,20 +4698,6 @@ async function start() {
     if (typeof ctx.message?.text === "string") {
       const incomingText = String(ctx.message.text || "").trim();
       const slash = parseSlashCommandText(incomingText);
-      if (slash) {
-        const profile = await ensureProfile(pool, ctx);
-        const locale = resolvePreferredLanguage(profile, ctx, "tr");
-        await logV5CommandEvent(pool, ctx, {
-          userId: Number(profile.user_id || 0),
-          commandKey: slash.key,
-          handlerKey: COMMAND_ALIAS_LOOKUP.get(slash.key) || slash.key,
-          source: "bot_slash",
-          locale,
-          text: String(ctx.message.text || ""),
-          argsText: slash.argsText,
-          isSlash: true
-        });
-      }
       const handled = await handleTextIntent(ctx, pool, commandHandlerMap);
       if (handled) {
         return;
@@ -4832,8 +4730,15 @@ async function start() {
     OPEN_NEXUS: async (ctx) => sendNexus(ctx, pool, appConfig),
     OPEN_GUIDE: async (ctx) => sendGuide(ctx, pool),
     OPEN_ONBOARD: async (ctx) => sendOnboard(ctx, pool, appConfig),
-    OPEN_MORE_MENU: async (ctx) =>
-      ctx.replyWithMarkdown("*Ek Komut Merkezi*\nIleri paneller ve ekonomik islemler:", buildMoreMenuKeyboard()),
+    OPEN_MORE_MENU: async (ctx) => {
+      const profile = await ensureProfile(pool, ctx).catch(() => null);
+      const lang = resolvePreferredLanguage(profile, ctx, "tr");
+      const text =
+        lang === "en"
+          ? "*Extra Command Hub*\nAdvanced panels and economy actions:"
+          : "*Ek Komut Merkezi*\nIleri paneller ve ekonomik islemler:";
+      return ctx.replyWithMarkdown(text, buildMoreMenuKeyboard(lang));
+    },
     OPEN_HOME_MENU: async (ctx) => sendLauncherMenu(ctx, pool),
     GUIDE_FINISH_BALANCED: async (ctx) => completeLatestAttemptFromCommand(ctx, pool, appConfig, "balanced"),
     GUIDE_REVEAL: async (ctx) => revealLatestFromCommand(ctx, pool, appConfig),
@@ -5038,10 +4943,21 @@ async function start() {
     }).catch(() => {});
   });
 
-  try {
-    await bot.telegram.setMyCommands(toTelegramCommands(COMMAND_REGISTRY, "tr"));
-  } catch (err) {
-    console.warn("setMyCommands failed", err?.message || err);
+  const commandLocales = [
+    { lang: "tr", scope: undefined },
+    { lang: "tr", scope: { language_code: "tr" } },
+    { lang: "en", scope: { language_code: "en" } }
+  ];
+  for (const item of commandLocales) {
+    try {
+      if (item.scope) {
+        await bot.telegram.setMyCommands(toTelegramCommands(COMMAND_REGISTRY, item.lang), item.scope);
+      } else {
+        await bot.telegram.setMyCommands(toTelegramCommands(COMMAND_REGISTRY, item.lang));
+      }
+    } catch (err) {
+      console.warn(`setMyCommands failed (${item.lang}${item.scope ? ":scoped" : ":default"})`, err?.message || err);
+    }
   }
 
   bot.launch();

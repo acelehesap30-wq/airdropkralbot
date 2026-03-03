@@ -68,7 +68,7 @@ test("critical policy cooldown blocks rapid repeats", async () => {
   assert.ok(Number(second.wait_sec) >= 1);
 });
 
-test("queue idempotency key is deterministic", () => {
+test("queue idempotency key is deterministic and stable across confirm token rotation", () => {
   const service = createCriticalAdminPolicyService({
     pool: createPoolStub(),
     crypto,
@@ -81,6 +81,7 @@ test("queue idempotency key is deterministic", () => {
     actionKey: "payout_pay",
     kind: "payout_request",
     requestId: 99,
+    actionRequestId: "admin_action_99_a1",
     confirmToken: "token_x",
     reason: "ok",
     txHash: "0xabc"
@@ -90,10 +91,22 @@ test("queue idempotency key is deterministic", () => {
     actionKey: "payout_pay",
     kind: "payout_request",
     requestId: 99,
+    actionRequestId: "admin_action_99_a1",
+    confirmToken: "token_rotated",
+    reason: "changed_reason",
+    txHash: "0xdef"
+  });
+  const c = service.buildQueueActionIdempotencyKey({
+    uid: 1,
+    actionKey: "payout_pay",
+    kind: "payout_request",
+    requestId: 99,
+    actionRequestId: "admin_action_99_b2",
     confirmToken: "token_x",
     reason: "ok",
     txHash: "0xabc"
   });
   assert.equal(a, b);
+  assert.notEqual(a, c);
   assert.ok(String(a).startsWith("uqa_"));
 });

@@ -210,6 +210,11 @@ const DEFAULT_V5_COSMETIC_CATALOG = Object.freeze([
 const ADMIN_CONFIRM_TTL_MS = Math.max(30000, Number(process.env.ADMIN_CONFIRM_TTL_MS || 90000));
 const ADMIN_CRITICAL_COOLDOWN_MS = Math.max(1000, Number(process.env.ADMIN_CRITICAL_COOLDOWN_MS || 8000));
 const ADMIN_CRITICAL_TABLES_CACHE_TTL_MS = Math.max(5000, Number(process.env.ADMIN_CRITICAL_TABLES_CACHE_TTL_MS || 30000));
+const WEBAPP_ACTION_IDEMPOTENCY_FALLBACK_TTL_MS = Math.max(
+  60 * 1000,
+  Number(process.env.WEBAPP_ACTION_IDEMPOTENCY_TTL_MS || 15 * 60 * 1000)
+);
+const WEBAPP_ACTION_IDEMPOTENCY_FALLBACK = new Map();
 
 if (!ADMIN_API_TOKEN) {
   throw new Error("Missing required env: ADMIN_API_TOKEN");
@@ -744,6 +749,82 @@ function newUuid() {
     return crypto.randomUUID();
   }
   return deterministicUuid(`release:${Date.now()}:${Math.random()}`);
+}
+
+function normalizeActionRequestId(value) {
+  const normalized = String(value || "")
+    .trim()
+    .slice(0, 120);
+  if (!/^[a-zA-Z0-9:_-]{6,120}$/.test(normalized)) {
+    return "";
+  }
+  return normalized;
+}
+
+function reserveWebAppActionIdempotencyFallback(idempotencyKey, ttlMs = WEBAPP_ACTION_IDEMPOTENCY_FALLBACK_TTL_MS) {
+  const key = String(idempotencyKey || "").trim();
+  if (!key) {
+    return { ok: false, reason: "invalid_action_request_id" };
+  }
+  const now = Date.now();
+  for (const [entryKey, expireAt] of WEBAPP_ACTION_IDEMPOTENCY_FALLBACK.entries()) {
+    if (expireAt <= now) {
+      WEBAPP_ACTION_IDEMPOTENCY_FALLBACK.delete(entryKey);
+    }
+  }
+  if (WEBAPP_ACTION_IDEMPOTENCY_FALLBACK.has(key)) {
+    return { ok: false, reason: "idempotency_conflict" };
+  }
+  WEBAPP_ACTION_IDEMPOTENCY_FALLBACK.set(key, now + Math.max(1000, Number(ttlMs || WEBAPP_ACTION_IDEMPOTENCY_FALLBACK_TTL_MS)));
+  return { ok: true };
+}
+
+async function reserveWebAppActionIdempotency(db, { userId, actionKey, requestId, meta = {} }) {
+  const normalizedRequestId = normalizeActionRequestId(requestId);
+  if (!normalizedRequestId) {
+    return { ok: false, reason: "invalid_action_request_id" };
+  }
+  const actorId = Number(userId || 0);
+  const normalizedAction = String(actionKey || "webapp_action")
+    .trim()
+    .toLowerCase()
+    .slice(0, 64);
+  const idempotencyKey = `${actorId}:${normalizedAction}:${normalizedRequestId}`;
+  const eventRef = deterministicUuid(`webapp:idempotency:${idempotencyKey}`);
+  try {
+    const inserted = await db.query(
+      `WITH ins AS (
+         INSERT INTO webapp_events (event_ref, user_id, event_type, event_state, latency_ms, meta_json)
+         VALUES ($1, $2, $3, 'idempotency_guard', 0, $4::jsonb)
+         ON CONFLICT DO NOTHING
+         RETURNING id
+       )
+       SELECT count(*)::int AS inserted FROM ins;`,
+      [
+        eventRef,
+        actorId || null,
+        `webapp_${normalizedAction}`,
+        JSON.stringify({
+          idempotency_key: idempotencyKey,
+          request_id: normalizedRequestId,
+          ...(meta && typeof meta === "object" ? meta : {})
+        })
+      ]
+    );
+    if (Number(inserted.rows?.[0]?.inserted || 0) === 0) {
+      return { ok: false, reason: "idempotency_conflict", requestId: normalizedRequestId };
+    }
+    return { ok: true, requestId: normalizedRequestId, idempotencyKey };
+  } catch (err) {
+    if (String(err?.code || "") !== "42P01") {
+      throw err;
+    }
+    const fallback = reserveWebAppActionIdempotencyFallback(idempotencyKey);
+    if (!fallback.ok) {
+      return { ok: false, reason: fallback.reason || "idempotency_conflict", requestId: normalizedRequestId };
+    }
+    return { ok: true, requestId: normalizedRequestId, idempotencyKey, fallback: true };
+  }
 }
 
 async function hasReleaseMarkersTable(db) {
@@ -6589,6 +6670,18 @@ fastify.post(
         return;
       }
 
+      const idempotency = await reserveWebAppActionIdempotency(client, {
+        userId: profile.user_id,
+        actionKey: "tasks_reroll",
+        requestId: request.body.request_id
+      });
+      if (!idempotency.ok) {
+        await client.query("ROLLBACK");
+        const statusCode = idempotency.reason === "invalid_action_request_id" ? 400 : 409;
+        reply.code(statusCode).send({ success: false, error: idempotency.reason });
+        return;
+      }
+
       const refEventId = deterministicUuid(`webapp_reroll:${profile.user_id}:${request.body.request_id}`);
       const debit = await client.query(
         `WITH ins AS (
@@ -6601,36 +6694,39 @@ fastify.post(
         [profile.user_id, refEventId, JSON.stringify({ source: "webapp" })]
       );
       const inserted = Number(debit.rows[0]?.inserted || 0);
-
-      if (inserted > 0) {
-        const lockedBalance = await client.query(
-          `SELECT balance
-           FROM currency_balances
-           WHERE user_id = $1
-             AND currency = 'RC'
-           FOR UPDATE;`,
-          [profile.user_id]
-        );
-        const rcBalance = Number(lockedBalance.rows[0]?.balance || 0);
-        if (rcBalance < 1) {
-          await client.query(
-            `DELETE FROM currency_ledger
-             WHERE ref_event_id = $1;`,
-            [refEventId]
-          );
-          await client.query("ROLLBACK");
-          reply.code(409).send({ success: false, error: "insufficient_rc" });
-          return;
-        }
-        await client.query(
-          `UPDATE currency_balances
-           SET balance = balance - 1,
-               updated_at = now()
-           WHERE user_id = $1
-             AND currency = 'RC';`,
-          [profile.user_id]
-        );
+      if (inserted === 0) {
+        await client.query("ROLLBACK");
+        reply.code(409).send({ success: false, error: "idempotency_conflict" });
+        return;
       }
+
+      const lockedBalance = await client.query(
+        `SELECT balance
+         FROM currency_balances
+         WHERE user_id = $1
+           AND currency = 'RC'
+         FOR UPDATE;`,
+        [profile.user_id]
+      );
+      const rcBalance = Number(lockedBalance.rows[0]?.balance || 0);
+      if (rcBalance < 1) {
+        await client.query(
+          `DELETE FROM currency_ledger
+           WHERE ref_event_id = $1;`,
+          [refEventId]
+        );
+        await client.query("ROLLBACK");
+        reply.code(409).send({ success: false, error: "insufficient_rc" });
+        return;
+      }
+      await client.query(
+        `UPDATE currency_balances
+         SET balance = balance - 1,
+             updated_at = now()
+         WHERE user_id = $1
+           AND currency = 'RC';`,
+        [profile.user_id]
+      );
 
       await client.query(
         `UPDATE task_offers
@@ -6701,12 +6797,13 @@ fastify.post(
     schema: {
       body: {
         type: "object",
-        required: ["uid", "ts", "sig", "offer_id"],
+        required: ["uid", "ts", "sig", "offer_id", "request_id"],
         properties: {
           uid: { type: "string" },
           ts: { type: "string" },
           sig: { type: "string" },
-          offer_id: { type: "integer", minimum: 1 }
+          offer_id: { type: "integer", minimum: 1 },
+          request_id: { type: "string", minLength: 6, maxLength: 120 }
         }
       }
     }
@@ -6725,6 +6822,19 @@ fastify.post(
       if (!profile) {
         await client.query("ROLLBACK");
         reply.code(404).send({ success: false, error: "user_not_started" });
+        return;
+      }
+
+      const idempotency = await reserveWebAppActionIdempotency(client, {
+        userId: profile.user_id,
+        actionKey: "action_accept_offer",
+        requestId: request.body.request_id,
+        meta: { offer_id: Number(request.body.offer_id || 0) }
+      });
+      if (!idempotency.ok) {
+        await client.query("ROLLBACK");
+        const statusCode = idempotency.reason === "invalid_action_request_id" ? 400 : 409;
+        reply.code(statusCode).send({ success: false, error: idempotency.reason });
         return;
       }
 
@@ -6816,11 +6926,12 @@ fastify.post(
     schema: {
       body: {
         type: "object",
-        required: ["uid", "ts", "sig"],
+        required: ["uid", "ts", "sig", "request_id"],
         properties: {
           uid: { type: "string" },
           ts: { type: "string" },
           sig: { type: "string" },
+          request_id: { type: "string", minLength: 6, maxLength: 120 },
           attempt_id: { type: "integer", minimum: 1 },
           mode: { type: "string" }
         }
@@ -6841,6 +6952,22 @@ fastify.post(
       if (!profile) {
         await client.query("ROLLBACK");
         reply.code(404).send({ success: false, error: "user_not_started" });
+        return;
+      }
+
+      const idempotency = await reserveWebAppActionIdempotency(client, {
+        userId: profile.user_id,
+        actionKey: "action_complete_latest",
+        requestId: request.body.request_id,
+        meta: {
+          attempt_id: Number(request.body.attempt_id || 0),
+          mode: String(request.body.mode || "")
+        }
+      });
+      if (!idempotency.ok) {
+        await client.query("ROLLBACK");
+        const statusCode = idempotency.reason === "invalid_action_request_id" ? 400 : 409;
+        reply.code(statusCode).send({ success: false, error: idempotency.reason });
         return;
       }
       const runtimeConfig = await configService.getEconomyConfig(client);
@@ -7036,11 +7163,12 @@ fastify.post(
     schema: {
       body: {
         type: "object",
-        required: ["uid", "ts", "sig"],
+        required: ["uid", "ts", "sig", "request_id"],
         properties: {
           uid: { type: "string" },
           ts: { type: "string" },
           sig: { type: "string" },
+          request_id: { type: "string", minLength: 6, maxLength: 120 },
           attempt_id: { type: "integer", minimum: 1 }
         }
       }
@@ -7060,6 +7188,19 @@ fastify.post(
       if (!profile) {
         await client.query("ROLLBACK");
         reply.code(404).send({ success: false, error: "user_not_started" });
+        return;
+      }
+
+      const idempotency = await reserveWebAppActionIdempotency(client, {
+        userId: profile.user_id,
+        actionKey: "action_reveal_latest",
+        requestId: request.body.request_id,
+        meta: { attempt_id: Number(request.body.attempt_id || 0) }
+      });
+      if (!idempotency.ok) {
+        await client.query("ROLLBACK");
+        const statusCode = idempotency.reason === "invalid_action_request_id" ? 400 : 409;
+        reply.code(statusCode).send({ success: false, error: idempotency.reason });
         return;
       }
       const runtimeConfig = await configService.getEconomyConfig(client);
@@ -7341,12 +7482,13 @@ fastify.post(
     schema: {
       body: {
         type: "object",
-        required: ["uid", "ts", "sig", "mission_key"],
+        required: ["uid", "ts", "sig", "mission_key", "request_id"],
         properties: {
           uid: { type: "string" },
           ts: { type: "string" },
           sig: { type: "string" },
-          mission_key: { type: "string", minLength: 3, maxLength: 64 }
+          mission_key: { type: "string", minLength: 3, maxLength: 64 },
+          request_id: { type: "string", minLength: 6, maxLength: 120 }
         }
       }
     }
@@ -7365,6 +7507,19 @@ fastify.post(
       if (!profile) {
         await client.query("ROLLBACK");
         reply.code(404).send({ success: false, error: "user_not_started" });
+        return;
+      }
+
+      const idempotency = await reserveWebAppActionIdempotency(client, {
+        userId: profile.user_id,
+        actionKey: "action_claim_mission",
+        requestId: request.body.request_id,
+        meta: { mission_key: String(request.body.mission_key || "") }
+      });
+      if (!idempotency.ok) {
+        await client.query("ROLLBACK");
+        const statusCode = idempotency.reason === "invalid_action_request_id" ? 400 : 409;
+        reply.code(statusCode).send({ success: false, error: idempotency.reason });
         return;
       }
 
@@ -8094,7 +8249,7 @@ fastify.post(
     schema: {
       body: {
         type: "object",
-        required: ["uid", "ts", "sig"],
+        required: ["uid", "ts", "sig", "request_id"],
         properties: {
           uid: { type: "string" },
           ts: { type: "string" },
@@ -8119,6 +8274,19 @@ fastify.post(
       if (!profile) {
         await client.query("ROLLBACK");
         reply.code(404).send({ success: false, error: "user_not_started" });
+        return;
+      }
+
+      const idempotency = await reserveWebAppActionIdempotency(client, {
+        userId: profile.user_id,
+        actionKey: "action_arena_raid",
+        requestId: request.body.request_id,
+        meta: { mode: String(request.body.mode || "") }
+      });
+      if (!idempotency.ok) {
+        await client.query("ROLLBACK");
+        const statusCode = idempotency.reason === "invalid_action_request_id" ? 400 : 409;
+        reply.code(statusCode).send({ success: false, error: idempotency.reason });
         return;
       }
 
@@ -9633,11 +9801,12 @@ fastify.post(
     schema: {
       body: {
         type: "object",
-        required: ["uid", "ts", "sig"],
+        required: ["uid", "ts", "sig", "request_id"],
         properties: {
           uid: { type: "string" },
           ts: { type: "string" },
           sig: { type: "string" },
+          request_id: { type: "string", minLength: 6, maxLength: 120 },
           amount: { type: "number", minimum: 0.0001 }
         }
       }
@@ -9657,6 +9826,19 @@ fastify.post(
       if (!profile) {
         await client.query("ROLLBACK");
         reply.code(404).send({ success: false, error: "user_not_started" });
+        return;
+      }
+
+      const idempotency = await reserveWebAppActionIdempotency(client, {
+        userId: profile.user_id,
+        actionKey: "token_mint",
+        requestId: request.body.request_id,
+        meta: { amount: Number(request.body.amount || 0) }
+      });
+      if (!idempotency.ok) {
+        await client.query("ROLLBACK");
+        const statusCode = idempotency.reason === "invalid_action_request_id" ? 400 : 409;
+        reply.code(statusCode).send({ success: false, error: idempotency.reason });
         return;
       }
       const runtimeConfig = await configService.getEconomyConfig(client);
@@ -9682,7 +9864,7 @@ fastify.post(
         return;
       }
 
-      const mintRef = deterministicUuid(`webapp:token_mint:${profile.user_id}:${Date.now()}:${Math.random()}`);
+      const mintRef = deterministicUuid(`webapp:token_mint:${profile.user_id}:${idempotency.requestId}`);
       for (const [currency, amount] of Object.entries(plan.debits || {})) {
         const safeAmount = Number(amount || 0);
         if (safeAmount <= 0) {
@@ -9756,11 +9938,12 @@ fastify.post(
     schema: {
       body: {
         type: "object",
-        required: ["uid", "ts", "sig", "usd_amount", "chain"],
+        required: ["uid", "ts", "sig", "usd_amount", "chain", "request_id"],
         properties: {
           uid: { type: "string" },
           ts: { type: "string" },
           sig: { type: "string" },
+          request_id: { type: "string", minLength: 6, maxLength: 120 },
           usd_amount: { type: "number", minimum: 0.5 },
           chain: { type: "string", minLength: 2, maxLength: 12 }
         }
@@ -9781,6 +9964,22 @@ fastify.post(
       if (!profile) {
         await client.query("ROLLBACK");
         reply.code(404).send({ success: false, error: "user_not_started" });
+        return;
+      }
+
+      const idempotency = await reserveWebAppActionIdempotency(client, {
+        userId: profile.user_id,
+        actionKey: "token_buy_intent",
+        requestId: request.body.request_id,
+        meta: {
+          chain: String(request.body.chain || ""),
+          usd_amount: Number(request.body.usd_amount || 0)
+        }
+      });
+      if (!idempotency.ok) {
+        await client.query("ROLLBACK");
+        const statusCode = idempotency.reason === "invalid_action_request_id" ? 400 : 409;
+        reply.code(statusCode).send({ success: false, error: idempotency.reason });
         return;
       }
       const runtimeConfig = await configService.getEconomyConfig(client);
@@ -9826,11 +10025,12 @@ fastify.post(
         payAddress,
         usdAmount: quote.usdAmount,
         tokenAmount: quote.tokenAmount,
-        requestRef: deterministicUuid(`webapp:token_buy:${profile.user_id}:${Date.now()}:${Math.random()}`),
+        requestRef: deterministicUuid(`webapp:token_buy:${profile.user_id}:${idempotency.requestId}`),
         meta: {
           source: "webapp",
           spot_usd: tokenConfig.usd_price,
-          token_min_receive: quote.tokenMinReceive
+          token_min_receive: quote.tokenMinReceive,
+          action_request_id: idempotency.requestId
         }
       });
       await tokenStore.incrementVelocityBucket(client, {
@@ -9877,7 +10077,7 @@ fastify.post(
         return;
       }
       if (err.code === "23505") {
-        reply.code(409).send({ success: false, error: "tx_hash_already_used" });
+        reply.code(409).send({ success: false, error: "idempotency_conflict" });
         return;
       }
       throw err;
@@ -9893,13 +10093,14 @@ fastify.post(
     schema: {
       body: {
         type: "object",
-        required: ["uid", "ts", "sig", "request_id", "tx_hash"],
+        required: ["uid", "ts", "sig", "request_id", "tx_hash", "action_request_id"],
         properties: {
           uid: { type: "string" },
           ts: { type: "string" },
           sig: { type: "string" },
           request_id: { type: "integer", minimum: 1 },
-          tx_hash: { type: "string", minLength: 24, maxLength: 256 }
+          tx_hash: { type: "string", minLength: 24, maxLength: 256 },
+          action_request_id: { type: "string", minLength: 6, maxLength: 120 }
         }
       }
     }
@@ -9918,6 +10119,21 @@ fastify.post(
       if (!profile) {
         await client.query("ROLLBACK");
         reply.code(404).send({ success: false, error: "user_not_started" });
+        return;
+      }
+      const idempotency = await reserveWebAppActionIdempotency(client, {
+        userId: profile.user_id,
+        actionKey: "token_submit_tx",
+        requestId: request.body.action_request_id,
+        meta: {
+          request_id: Number(request.body.request_id || 0),
+          tx_hash: String(request.body.tx_hash || "").slice(0, 24)
+        }
+      });
+      if (!idempotency.ok) {
+        await client.query("ROLLBACK");
+        const statusCode = idempotency.reason === "invalid_action_request_id" ? 400 : 409;
+        reply.code(statusCode).send({ success: false, error: idempotency.reason });
         return;
       }
       const requestId = Number(request.body.request_id || 0);

@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-03-03T23:28:34.287Z",
-  "window_hours": 24,
+  "generated_at": "2026-03-03T23:26:04.891Z",
+  "window_hours": 72,
   "schema": {
     "tables_checked": {
       "v5_command_events": true,
@@ -32,10 +32,10 @@
     "tx_verify_timeout_rate_pct": 0,
     "idempotency_conflict_events_24h": 0,
     "invalid_action_request_id_events_24h": 0,
-    "queue_action_events_24h": 0,
-    "admin_audit_entries_24h": 20,
-    "audit_coverage_proxy_pct": 0,
-    "wallet_challenge_verify_rate_pct": 0,
+    "queue_action_events_24h": 52,
+    "admin_audit_entries_24h": 83,
+    "audit_coverage_proxy_pct": 159.62,
+    "wallet_challenge_verify_rate_pct": 100,
     "kyc_manual_review_rate_pct": 0,
     "pvp_progression_updates_24h": 0,
     "pvp_progression_unique_users_24h": 0
@@ -65,21 +65,21 @@
     },
     "payout_release_events": [],
     "queue_actions": {
-      "total_events": 0,
-      "success_events": 0,
+      "total_events": 52,
+      "success_events": 52,
       "non_ok_events": 0,
-      "completed_events": 0,
+      "completed_events": 52,
       "failed_events": 0,
       "queued_events": 0,
       "ok_events": 0
     },
     "queue_failure_reasons": [],
     "admin_audit": {
-      "total_entries": "20"
+      "total_entries": "83"
     },
     "wallet": {
-      "issued_challenges": "0",
-      "consumed_challenges": "0"
+      "issued_challenges": "19",
+      "consumed_challenges": "19"
     },
     "kyc": {
       "total_decisions": "0",

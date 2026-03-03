@@ -1,9 +1,11 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import dotenv from "dotenv";
 import { Pool } from "pg";
+import { buildSnapshot } from "./v5_kpi_snapshot.mjs";
+import { evaluateCanary, parseThresholds } from "./v5_canary_guard.mjs";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "..");
@@ -41,10 +43,26 @@ function parseBool(value, fallback = false) {
   return fallback;
 }
 
+function toNumber(value, fallback = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
 function requireEnv(name) {
   const value = String(process.env[name] || "").trim();
   if (!value) throw new Error(`missing_env:${name}`);
   return value;
+}
+
+function resolveAdminApiBaseUrl() {
+  const explicitBaseUrl = String(process.env.ADMIN_API_BASE_URL || "").trim();
+  if (explicitBaseUrl) {
+    return explicitBaseUrl.replace(/\/+$/, "");
+  }
+  const rawPort = String(process.env.ADMIN_API_PORT || "4000").trim();
+  const parsedPort = Number.parseInt(rawPort, 10);
+  const port = Number.isInteger(parsedPort) && parsedPort > 0 && parsedPort <= 65535 ? parsedPort : 4000;
+  return `http://127.0.0.1:${port}`;
 }
 
 function sign(secret, uid, ts) {
@@ -166,9 +184,143 @@ function resolveStage(rawStage) {
   return { key: "admin_canary", pct: 5, run: false };
 }
 
+const STAGE_CANARY_DEFAULTS = Object.freeze({
+  admin_canary: Object.freeze({
+    min_command_events_24h: 1,
+    min_queue_success_rate_pct: 80,
+    max_queue_failed_rate_pct: 25,
+    max_queue_queued_events: 3,
+    max_tx_verify_error_rate_pct: 20,
+    max_idempotency_conflict_events_24h: 3,
+    max_invalid_action_request_id_events_24h: 1,
+    require_command_events: false,
+    require_queue_events: false,
+    require_tx_verify_events: false
+  }),
+  rollout_25: Object.freeze({
+    min_command_events_24h: 2,
+    min_queue_success_rate_pct: 85,
+    max_queue_failed_rate_pct: 15,
+    max_queue_queued_events: 2,
+    max_tx_verify_error_rate_pct: 12,
+    max_idempotency_conflict_events_24h: 2,
+    max_invalid_action_request_id_events_24h: 1,
+    require_command_events: true,
+    require_queue_events: true,
+    require_tx_verify_events: false
+  }),
+  rollout_100: Object.freeze({
+    min_command_events_24h: 3,
+    min_queue_success_rate_pct: 90,
+    max_queue_failed_rate_pct: 10,
+    max_queue_queued_events: 1,
+    max_tx_verify_error_rate_pct: 8,
+    max_idempotency_conflict_events_24h: 1,
+    max_invalid_action_request_id_events_24h: 0,
+    require_command_events: true,
+    require_queue_events: true,
+    require_tx_verify_events: false
+  })
+});
+
+function buildCanaryThresholdInput(args = {}, stageKey = "admin_canary") {
+  const defaults = STAGE_CANARY_DEFAULTS[stageKey] || STAGE_CANARY_DEFAULTS.admin_canary;
+
+  return {
+    min_command_events_24h:
+      args.canary_min_command_events_24h ?? process.env.V5_CANARY_MIN_COMMAND_EVENTS_24H ?? defaults.min_command_events_24h,
+    min_queue_success_rate_pct:
+      args.canary_min_queue_success_rate_pct ??
+      process.env.V5_CANARY_MIN_QUEUE_SUCCESS_RATE_PCT ??
+      defaults.min_queue_success_rate_pct,
+    max_queue_failed_rate_pct:
+      args.canary_max_queue_failed_rate_pct ??
+      process.env.V5_CANARY_MAX_QUEUE_FAILED_RATE_PCT ??
+      defaults.max_queue_failed_rate_pct,
+    max_queue_queued_events:
+      args.canary_max_queue_queued_events ?? process.env.V5_CANARY_MAX_QUEUE_QUEUED_EVENTS ?? defaults.max_queue_queued_events,
+    max_tx_verify_error_rate_pct:
+      args.canary_max_tx_verify_error_rate_pct ??
+      process.env.V5_CANARY_MAX_TX_VERIFY_ERROR_RATE_PCT ??
+      defaults.max_tx_verify_error_rate_pct,
+    max_idempotency_conflict_events_24h:
+      args.canary_max_idempotency_conflict_events_24h ??
+      process.env.V5_CANARY_MAX_IDEMPOTENCY_CONFLICT_EVENTS_24H ??
+      defaults.max_idempotency_conflict_events_24h,
+    max_invalid_action_request_id_events_24h:
+      args.canary_max_invalid_action_request_id_events_24h ??
+      process.env.V5_CANARY_MAX_INVALID_ACTION_REQUEST_ID_EVENTS_24H ??
+      defaults.max_invalid_action_request_id_events_24h,
+    require_command_events:
+      args.canary_require_command_events ?? process.env.V5_CANARY_REQUIRE_COMMAND_EVENTS ?? String(defaults.require_command_events),
+    require_queue_events:
+      args.canary_require_queue_events ?? process.env.V5_CANARY_REQUIRE_QUEUE_EVENTS ?? String(defaults.require_queue_events),
+    require_tx_verify_events:
+      args.canary_require_tx_verify_events ?? process.env.V5_CANARY_REQUIRE_TX_VERIFY_EVENTS ?? String(defaults.require_tx_verify_events)
+  };
+}
+
+async function runRolloutCanaryGate({ args, stage }) {
+  const skipCanaryGuard = parseBool(args.skip_canary_guard ?? process.env.V5_SKIP_CANARY_GUARD, false);
+  if (skipCanaryGuard) {
+    console.log("[canary] gate skipped by override (--skip_canary_guard)");
+    return { ok: true, skipped: true };
+  }
+
+  const canaryHours = Math.max(1, Math.min(168, toNumber(args.canary_hours ?? process.env.V5_CANARY_WINDOW_HOURS, 24)));
+  const thresholdInput = buildCanaryThresholdInput(args, stage.key);
+  const thresholds = parseThresholds(thresholdInput);
+  const snapshot = await buildSnapshot({ windowHours: canaryHours });
+  const evaluation = evaluateCanary(snapshot, thresholds);
+
+  const outDir = path.join(repoRoot, "docs");
+  if (!fs.existsSync(outDir)) {
+    fs.mkdirSync(outDir, { recursive: true });
+  }
+  const now = new Date();
+  const stamp = `${now.getUTCFullYear()}${String(now.getUTCMonth() + 1).padStart(2, "0")}${String(now.getUTCDate()).padStart(
+    2,
+    "0"
+  )}_${String(now.getUTCHours()).padStart(2, "0")}${String(now.getUTCMinutes()).padStart(2, "0")}${String(
+    now.getUTCSeconds()
+  ).padStart(2, "0")}Z`;
+  const reportPayload = {
+    generated_at: new Date().toISOString(),
+    stage: stage.key,
+    rollout_pct: stage.pct,
+    snapshot_generated_at: String(snapshot?.generated_at || ""),
+    window_hours: canaryHours,
+    thresholds,
+    evaluation
+  };
+  const reportPath = path.join(outDir, `V5_CANARY_GUARD_rollout_${stamp}.json`);
+  const latestPath = path.join(outDir, "V5_CANARY_GUARD_rollout_latest.json");
+  fs.writeFileSync(reportPath, `${JSON.stringify(reportPayload, null, 2)}\n`, "utf8");
+  fs.writeFileSync(latestPath, `${JSON.stringify(reportPayload, null, 2)}\n`, "utf8");
+
+  console.log(`[canary] gate ok=${evaluation.ok} failed=${evaluation.failed_checks} warned=${evaluation.warned_checks}`);
+  for (const check of evaluation.checks) {
+    const note = check.note ? ` | ${check.note}` : "";
+    console.log(`[canary:${check.status}] ${check.metric} observed=${check.observed} threshold=${check.threshold}${note}`);
+  }
+  console.log(`[canary] rollout gate report: ${reportPath}`);
+
+  if (!evaluation.ok) {
+    throw new Error(`canary_guard_failed:${evaluation.failed_checks}_checks`);
+  }
+  return {
+    ok: true,
+    skipped: false,
+    reportPath,
+    latestPath,
+    failedChecks: evaluation.failed_checks,
+    warnedChecks: evaluation.warned_checks
+  };
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
-  const baseUrl = String(process.env.ADMIN_API_BASE_URL || "http://127.0.0.1:3000").replace(/\/+$/, "");
+  const baseUrl = resolveAdminApiBaseUrl();
   const secret = requireEnv("WEBAPP_HMAC_SECRET");
   const adminUid = requireEnv("ADMIN_TELEGRAM_ID");
   const stage = resolveStage(args.stage || process.env.V5_STAGE || "admin");
@@ -231,6 +383,8 @@ async function main() {
     });
   }
 
+  const canaryGate = await runRolloutCanaryGate({ args, stage });
+
   const effective = runtimeRes?.data?.effective_flags || {};
   console.log(`[ok] v5 rollout stage=${stage.key} pct=${stage.pct}`);
   console.log(`[flags] UX_V5=${Boolean(effective.UX_V5_ENABLED)} PAYOUT_RELEASE_V2=${Boolean(effective.PAYOUT_RELEASE_V2_ENABLED)}`);
@@ -244,9 +398,17 @@ async function main() {
   } else {
     console.log("[release_run] skipped");
   }
+  if (canaryGate && !canaryGate.skipped) {
+    console.log(`[canary] rollout gate passed report=${canaryGate.reportPath}`);
+  }
 }
 
-main().catch((err) => {
-  console.error("[err] v5 rollout failed:", err?.message || err);
-  process.exitCode = 1;
-});
+export { resolveStage, buildCanaryThresholdInput, STAGE_CANARY_DEFAULTS, resolveAdminApiBaseUrl };
+
+const invokedPath = process.argv[1] ? pathToFileURL(path.resolve(process.argv[1])).href : "";
+if (invokedPath === import.meta.url) {
+  main().catch((err) => {
+    console.error("[err] v5 rollout failed:", err?.message || err);
+    process.exitCode = 1;
+  });
+}

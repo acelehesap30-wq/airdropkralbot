@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-03T21:34:14.052Z",
+  "generated_at": "2026-03-03T20:04:09.836Z",
   "config": {
     "hours_short": 24,
     "hours_long": 72,
@@ -8,17 +8,15 @@
   },
   "snapshots": {
     "h24": {
-      "generated_at": "2026-03-03T21:34:09.939Z",
+      "generated_at": "2026-03-03T20:04:05.249Z",
       "window_hours": 24,
       "schema": {
         "tables_checked": {
           "v5_command_events": true,
           "v5_intent_resolution_events": true,
-          "behavior_events": true,
           "payout_requests": true,
           "payout_release_events": true,
           "v5_unified_admin_queue_action_events": true,
-          "chain_verify_logs": true,
           "admin_audit": true,
           "v5_wallet_challenges": true,
           "v5_kyc_threshold_decisions": true,
@@ -35,12 +33,6 @@
         "payout_requests_24h": 0,
         "payout_rejected_24h": 0,
         "payout_rejected_rate_pct": 0,
-        "tx_submit_events_24h": 0,
-        "tx_verify_events_24h": 0,
-        "tx_verify_error_rate_pct": 0,
-        "tx_verify_timeout_rate_pct": 0,
-        "idempotency_conflict_events_24h": 0,
-        "invalid_action_request_id_events_24h": 0,
         "queue_action_events_24h": 0,
         "admin_audit_entries_24h": 0,
         "audit_coverage_proxy_pct": 0,
@@ -60,17 +52,6 @@
           "paid_requests": "0",
           "rejected_requests": "0",
           "active_requests": "0"
-        },
-        "tx_submit": {
-          "submitted_events": 0,
-          "verify_events": 0,
-          "verify_success_events": 0,
-          "verify_error_events": 0,
-          "verify_timeout_events": 0
-        },
-        "webapp_action_errors": {
-          "idempotency_conflict_events": 0,
-          "invalid_action_request_id_events": 0
         },
         "payout_release_events": [],
         "queue_actions": {
@@ -105,42 +86,42 @@
             "metric_value": "0.00000000",
             "sample_size": "0",
             "window_key": "24h",
-            "measured_at": "2026-03-03T20:04:11.611Z"
+            "measured_at": "2026-03-03T15:08:48.690Z"
           },
           {
             "metric_key": "payout_dispute_rate_pct",
             "metric_value": "0.00000000",
             "sample_size": "0",
             "window_key": "7d",
-            "measured_at": "2026-03-03T20:04:11.737Z"
+            "measured_at": "2026-03-03T15:08:48.805Z"
           },
           {
             "metric_key": "payout_rejected_rate_pct",
             "metric_value": "0.00000000",
             "sample_size": "0",
             "window_key": "72h",
-            "measured_at": "2026-03-03T20:04:11.569Z"
+            "measured_at": "2026-03-03T15:08:48.651Z"
           },
           {
             "metric_key": "revenue_amount",
             "metric_value": "0.00000000",
             "sample_size": "0",
             "window_key": "7d",
-            "measured_at": "2026-03-03T20:04:11.695Z"
+            "measured_at": "2026-03-03T15:08:48.767Z"
           },
           {
             "metric_key": "unknown_intent_rate_pct",
             "metric_value": "0.00000000",
             "sample_size": "0",
             "window_key": "72h",
-            "measured_at": "2026-03-03T20:04:11.485Z"
+            "measured_at": "2026-03-03T15:08:48.575Z"
           },
           {
             "metric_key": "wallet_challenge_verify_rate_pct",
             "metric_value": "0.00000000",
             "sample_size": "0",
             "window_key": "24h",
-            "measured_at": "2026-03-03T20:04:11.653Z"
+            "measured_at": "2026-03-03T15:08:48.728Z"
           }
         ],
         "cutover_switch_events": [],
@@ -148,17 +129,15 @@
       }
     },
     "h72": {
-      "generated_at": "2026-03-03T21:34:11.682Z",
+      "generated_at": "2026-03-03T20:04:07.597Z",
       "window_hours": 72,
       "schema": {
         "tables_checked": {
           "v5_command_events": true,
           "v5_intent_resolution_events": true,
-          "behavior_events": true,
           "payout_requests": true,
           "payout_release_events": true,
           "v5_unified_admin_queue_action_events": true,
-          "chain_verify_logs": true,
           "admin_audit": true,
           "v5_wallet_challenges": true,
           "v5_kyc_threshold_decisions": true,
@@ -175,12 +154,6 @@
         "payout_requests_24h": 0,
         "payout_rejected_24h": 0,
         "payout_rejected_rate_pct": 0,
-        "tx_submit_events_24h": 0,
-        "tx_verify_events_24h": 0,
-        "tx_verify_error_rate_pct": 0,
-        "tx_verify_timeout_rate_pct": 0,
-        "idempotency_conflict_events_24h": 0,
-        "invalid_action_request_id_events_24h": 0,
         "queue_action_events_24h": 52,
         "admin_audit_entries_24h": 69,
         "audit_coverage_proxy_pct": 132.69,
@@ -200,17 +173,6 @@
           "paid_requests": "0",
           "rejected_requests": "0",
           "active_requests": "0"
-        },
-        "tx_submit": {
-          "submitted_events": 0,
-          "verify_events": 0,
-          "verify_success_events": 0,
-          "verify_error_events": 0,
-          "verify_timeout_events": 0
-        },
-        "webapp_action_errors": {
-          "idempotency_conflict_events": 0,
-          "invalid_action_request_id_events": 0
         },
         "payout_release_events": [],
         "queue_actions": {
@@ -245,42 +207,42 @@
             "metric_value": "0.00000000",
             "sample_size": "0",
             "window_key": "24h",
-            "measured_at": "2026-03-03T20:04:11.611Z"
+            "measured_at": "2026-03-03T15:08:48.690Z"
           },
           {
             "metric_key": "payout_dispute_rate_pct",
             "metric_value": "0.00000000",
             "sample_size": "0",
             "window_key": "7d",
-            "measured_at": "2026-03-03T20:04:11.737Z"
+            "measured_at": "2026-03-03T15:08:48.805Z"
           },
           {
             "metric_key": "payout_rejected_rate_pct",
             "metric_value": "0.00000000",
             "sample_size": "0",
             "window_key": "72h",
-            "measured_at": "2026-03-03T20:04:11.569Z"
+            "measured_at": "2026-03-03T15:08:48.651Z"
           },
           {
             "metric_key": "revenue_amount",
             "metric_value": "0.00000000",
             "sample_size": "0",
             "window_key": "7d",
-            "measured_at": "2026-03-03T20:04:11.695Z"
+            "measured_at": "2026-03-03T15:08:48.767Z"
           },
           {
             "metric_key": "unknown_intent_rate_pct",
             "metric_value": "0.00000000",
             "sample_size": "0",
             "window_key": "72h",
-            "measured_at": "2026-03-03T20:04:11.485Z"
+            "measured_at": "2026-03-03T15:08:48.575Z"
           },
           {
             "metric_key": "wallet_challenge_verify_rate_pct",
             "metric_value": "0.00000000",
             "sample_size": "0",
             "window_key": "24h",
-            "measured_at": "2026-03-03T20:04:11.653Z"
+            "measured_at": "2026-03-03T15:08:48.728Z"
           }
         ],
         "cutover_switch_events": [],

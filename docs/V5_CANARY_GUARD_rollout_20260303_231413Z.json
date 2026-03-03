@@ -1,0 +1,68 @@
+{
+  "generated_at": "2026-03-03T23:14:13.080Z",
+  "stage": "rollout_100",
+  "rollout_pct": 100,
+  "snapshot_generated_at": "2026-03-03T23:14:09.729Z",
+  "window_hours": 24,
+  "thresholds": {
+    "min_command_events_24h": 3,
+    "min_queue_success_rate_pct": 90,
+    "max_queue_failed_rate_pct": 10,
+    "max_queue_queued_events": 1,
+    "max_tx_verify_error_rate_pct": 8,
+    "max_idempotency_conflict_events_24h": 1,
+    "max_invalid_action_request_id_events_24h": 0,
+    "require_queue_events": false,
+    "require_tx_verify_events": false,
+    "require_command_events": false
+  },
+  "evaluation": {
+    "ok": true,
+    "failed_checks": 0,
+    "warned_checks": 2,
+    "checks": [
+      {
+        "status": "pass",
+        "metric": "command_events_24h",
+        "observed": 0,
+        "threshold": ">= 3",
+        "note": ""
+      },
+      {
+        "status": "warn",
+        "metric": "queue_action_events_24h",
+        "observed": 0,
+        "threshold": "optional",
+        "note": "No queue events in selected window."
+      },
+      {
+        "status": "pass",
+        "metric": "queue_queued_events",
+        "observed": 0,
+        "threshold": "<= 1",
+        "note": ""
+      },
+      {
+        "status": "warn",
+        "metric": "tx_verify_events_24h",
+        "observed": 0,
+        "threshold": "optional",
+        "note": "No tx verify samples."
+      },
+      {
+        "status": "pass",
+        "metric": "idempotency_conflict_events_24h",
+        "observed": 0,
+        "threshold": "<= 1",
+        "note": ""
+      },
+      {
+        "status": "pass",
+        "metric": "invalid_action_request_id_events_24h",
+        "observed": 0,
+        "threshold": "<= 0",
+        "note": ""
+      }
+    ]
+  }
+}

@@ -28,18 +28,45 @@ function localizeText(value, lang = "tr") {
     : String(value.tr || value.en || "");
 }
 
-function formatStart(profile, balances, season, anomaly, contract) {
+function formatStart(profile, balances, season, anomaly, contract, options = {}) {
+  const lang = String(options.lang || "tr")
+    .trim()
+    .toLowerCase()
+    .startsWith("en")
+    ? "en"
+    : "tr";
   const publicName = escapeMarkdown(profile.public_name);
   const sc = balances?.SC || 0;
   const hc = balances?.HC || 0;
   const rc = balances?.RC || 0;
-  const seasonLine = season ? `\nSezon: *S${season.seasonId}* - ${season.daysLeft} gun` : "";
+  const seasonLine = season
+    ? lang === "en"
+      ? `\nSeason: *S${season.seasonId}* - ${season.daysLeft} days`
+      : `\nSezon: *S${season.seasonId}* - ${season.daysLeft} gun`
+    : "";
   const anomalyLine = anomaly
-    ? `\nNexus: *${escapeMarkdown(anomaly.title)}* (${anomaly.pressure_pct}% basinc, ${anomaly.preferred_mode})`
+    ? lang === "en"
+      ? `\nNexus: *${escapeMarkdown(anomaly.title)}* (${anomaly.pressure_pct}% pressure, ${anomaly.preferred_mode})`
+      : `\nNexus: *${escapeMarkdown(anomaly.title)}* (${anomaly.pressure_pct}% basinc, ${anomaly.preferred_mode})`
     : "";
   const contractLine = contract
-    ? `\nKontrat: *${escapeMarkdown(contract.title)}* [${escapeMarkdown(contract.required_mode)}]`
+    ? lang === "en"
+      ? `\nContract: *${escapeMarkdown(contract.title)}* [${escapeMarkdown(contract.required_mode)}]`
+      : `\nKontrat: *${escapeMarkdown(contract.title)}* [${escapeMarkdown(contract.required_mode)}]`
     : "";
+  if (lang === "en") {
+    return (
+      `*AirdropKralBot // Launcher*\n` +
+      `Player: *${publicName}* | Tier *${profile.kingdom_tier}*\n` +
+      `Streak: *${profile.current_streak} days* | Balance: *${sc} SC / ${hc} HC / ${rc} RC*${seasonLine}${anomalyLine}${contractLine}\n\n` +
+      `*Why here?* Progress via Task -> Finish -> Reveal; season, rank and token panels build on it.\n\n` +
+      `*First 2 steps*\n` +
+      `1) *Open Arena 3D* (main panel)\n` +
+      `2) *Onboard* (3-step quick setup)\n\n` +
+      `Hud: ${progressBar(profile.current_streak, 14, 14)}\n` +
+      `Shortcuts: /play | /onboard | /tasks | /wallet`
+    );
+  }
   return (
     `*AirdropKralBot // Launcher*\n` +
     `Kral: *${publicName}* | Tier *${profile.kingdom_tier}*\n` +
@@ -53,7 +80,13 @@ function formatStart(profile, balances, season, anomaly, contract) {
   );
 }
 
-function formatGuide(snapshot) {
+function formatGuide(snapshot, options = {}) {
+  const lang = String(options.lang || "tr")
+    .trim()
+    .toLowerCase()
+    .startsWith("en")
+    ? "en"
+    : "tr";
   const profile = snapshot?.profile || {};
   const daily = snapshot?.daily || {};
   const attempts = snapshot?.attempts || {};
@@ -67,22 +100,62 @@ function formatGuide(snapshot) {
   const pvpArc = pvpContent?.season_arc_boss || {};
   const hasActive = Boolean(attempts.active);
   const hasReveal = Boolean(attempts.revealable);
-  const nextStep = hasReveal
-    ? "1) /reveal ile mevcut kasayi ac."
-    : hasActive
-      ? "1) /finish dengeli ile denemeyi tamamla."
-      : offers.length > 0
-        ? "1) /tasks ile panelden bir gorev sec."
-        : Number(balances.RC || 0) > 0
-        ? "1) /tasks ac, gerekirse Panel Yenile kullan."
-          : "1) RC kazanmak icin gorev dongusunu ac.";
+  const nextStep =
+    lang === "en"
+      ? hasReveal
+        ? "1) Open your current chest with /reveal."
+        : hasActive
+          ? "1) Complete the active run with /finish balanced."
+          : offers.length > 0
+            ? "1) Pick a task from /tasks."
+            : Number(balances.RC || 0) > 0
+              ? "1) Open /tasks and use Refresh Panel if needed."
+              : "1) Start the task loop to earn RC."
+      : hasReveal
+        ? "1) /reveal ile mevcut kasayi ac."
+        : hasActive
+          ? "1) /finish dengeli ile denemeyi tamamla."
+          : offers.length > 0
+            ? "1) /tasks ile panelden bir gorev sec."
+            : Number(balances.RC || 0) > 0
+              ? "1) /tasks ac, gerekirse Panel Yenile kullan."
+              : "1) RC kazanmak icin gorev dongusunu ac.";
   const pvpLine = pvpContent
-    ? `\nPvP Akis: Gunluk *${Number(pvpDaily.wins || 0)}/${Number(pvpDaily.target_wins || 0)}* | Haftalik *${Number(
-        pvpWeekly.points || 0
-      )}/${Number(pvpWeekly.next_milestone_points || pvpWeekly.target_points || 0)}* | Arc *W${Number(
-        pvpArc.wave_index || 1
-      )}/${Number(pvpArc.wave_total || 1)}*`
+    ? lang === "en"
+      ? `\nPvP Flow: Daily *${Number(pvpDaily.wins || 0)}/${Number(pvpDaily.target_wins || 0)}* | Weekly *${Number(
+          pvpWeekly.points || 0
+        )}/${Number(pvpWeekly.next_milestone_points || pvpWeekly.target_points || 0)}* | Arc *W${Number(
+          pvpArc.wave_index || 1
+        )}/${Number(pvpArc.wave_total || 1)}*`
+      : `\nPvP Akis: Gunluk *${Number(pvpDaily.wins || 0)}/${Number(pvpDaily.target_wins || 0)}* | Haftalik *${Number(
+          pvpWeekly.points || 0
+        )}/${Number(pvpWeekly.next_milestone_points || pvpWeekly.target_points || 0)}* | Arc *W${Number(
+          pvpArc.wave_index || 1
+        )}/${Number(pvpArc.wave_total || 1)}*`
     : "";
+  if (lang === "en") {
+    return (
+      `*Nexus Guide*\n` +
+      `Player: *${escapeMarkdown(profile.public_name || "player")}*\n` +
+      `Tier: *${profile.kingdom_tier || 0}* | Streak: *${profile.current_streak || 0} days*\n` +
+      `Daily: *${Number(daily.tasksDone || 0)}/${Number(daily.dailyCap || 0)} tasks*` +
+      (anomaly ? `\nNexus: *${escapeMarkdown(anomaly.title || "-")}* (${anomaly.preferred_mode || "balanced"})` : "") +
+      (contract
+        ? `\nContract: *${escapeMarkdown(contract.title || "-")}* [${escapeMarkdown(contract.required_mode || "balanced")}]`
+        : "") +
+      pvpLine +
+      `\n\n` +
+      `*Best Next Move*\n` +
+      `${nextStep}\n\n` +
+      `*Standard Flow*\n` +
+      `- /tasks -> accept a task\n` +
+      `- /finish [safe|balanced|aggressive] -> run result\n` +
+      `- /reveal -> final reward\n` +
+      `- /missions and /daily -> extra rewards\n` +
+      `- /play -> Nexus Arena web panel\n\n` +
+      `Short form: "tasks", "finish balanced", "reveal", "raid aggressive"`
+    );
+  }
 
   return (
     `*Nexus Rehber*\n` +
@@ -107,7 +180,13 @@ function formatGuide(snapshot) {
   );
 }
 
-function formatOnboard(payload = {}) {
+function formatOnboard(payload = {}, options = {}) {
+  const lang = String(options.lang || "tr")
+    .trim()
+    .toLowerCase()
+    .startsWith("en")
+    ? "en"
+    : "tr";
   const profile = payload.profile || {};
   const balances = payload.balances || {};
   const daily = payload.daily || {};
@@ -115,6 +194,24 @@ function formatOnboard(payload = {}) {
   const token = payload.token || {};
   const symbol = String(token.symbol || "NXT").toUpperCase();
   const remaining = Math.max(0, Number(daily.dailyCap || 0) - Number(daily.tasksDone || 0));
+  if (lang === "en") {
+    return (
+      `*Onboard // 3 Steps*\n` +
+      `Player: *${escapeMarkdown(profile.public_name || "player")}* | Tier *${profile.kingdom_tier || 0}* | Season *S${Number(
+        season.seasonId || 0
+      )}* (${Number(season.daysLeft || 0)} days)\n` +
+      `Balance: *${Number(balances.SC || 0)} SC / ${Number(balances.HC || 0)} HC / ${Number(balances.RC || 0)} RC*\n\n` +
+      `1) Pick a task with */tasks*\n` +
+      `2) Close the run with */finish balanced*\n` +
+      `3) Open reward with */reveal*\n\n` +
+      `*Today* ${Number(daily.tasksDone || 0)}/${Number(daily.dailyCap || 0)} tasks | Remaining: *${remaining}*\n` +
+      `SC today: *${Number(daily.scEarned || 0)}* | Token: *${Number(token.balance || 0).toFixed(4)} ${symbol}* (@ $${Number(
+        token.spotUsd || 0
+      ).toFixed(8)})\n\n` +
+      `Then: */play* (Nexus panel) -> */wallet* -> */token*`
+    );
+  }
+
   return (
     `*Onboard // 3 Adim*\n` +
     `Kral: *${escapeMarkdown(profile.public_name || "oyuncu")}* | Tier *${profile.kingdom_tier || 0}* | Sezon *S${Number(

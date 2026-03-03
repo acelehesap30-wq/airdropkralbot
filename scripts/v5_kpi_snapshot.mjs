@@ -40,6 +40,25 @@ function pct(numerator, denominator) {
   return Number(((toNumber(numerator, 0) / d) * 100).toFixed(2));
 }
 
+function normalizeQueueActionStats(raw = {}) {
+  return {
+    total_events: toNumber(raw.total_events, 0),
+    success_events: toNumber(raw.success_events, 0),
+    non_ok_events: toNumber(raw.non_ok_events, 0),
+    completed_events: toNumber(raw.completed_events, 0),
+    failed_events: toNumber(raw.failed_events, 0),
+    queued_events: toNumber(raw.queued_events, 0),
+    ok_events: toNumber(raw.ok_events, 0)
+  };
+}
+
+function normalizeQueueFailureReasons(rows = []) {
+  return (Array.isArray(rows) ? rows : []).map((row) => ({
+    reason: String(row.reason || "unknown"),
+    event_count: toNumber(row.event_count, 0)
+  }));
+}
+
 function sign(secret, uid, ts) {
   return crypto.createHmac("sha256", secret).update(`${uid}.${ts}`).digest("hex");
 }
@@ -96,9 +115,11 @@ async function buildSnapshot({ windowHours = 24 }) {
     const exists = {
       v5_command_events: await hasTable(pool, "v5_command_events"),
       v5_intent_resolution_events: await hasTable(pool, "v5_intent_resolution_events"),
+      behavior_events: await hasTable(pool, "behavior_events"),
       payout_requests: await hasTable(pool, "payout_requests"),
       payout_release_events: await hasTable(pool, "payout_release_events"),
       v5_unified_admin_queue_action_events: await hasTable(pool, "v5_unified_admin_queue_action_events"),
+      chain_verify_logs: await hasTable(pool, "chain_verify_logs"),
       admin_audit: await hasTable(pool, "admin_audit"),
       v5_wallet_challenges: await hasTable(pool, "v5_wallet_challenges"),
       v5_kyc_threshold_decisions: await hasTable(pool, "v5_kyc_threshold_decisions"),
@@ -163,9 +184,75 @@ async function buildSnapshot({ windowHours = 24 }) {
           pool,
           `SELECT
              COUNT(*)::bigint AS total_events,
-             COUNT(*) FILTER (WHERE status = 'ok')::bigint AS success_events,
-             COUNT(*) FILTER (WHERE status <> 'ok')::bigint AS non_ok_events
+             COUNT(*) FILTER (WHERE COALESCE(status, '') IN ('completed','ok'))::bigint AS success_events,
+             COUNT(*) FILTER (WHERE COALESCE(status, '') NOT IN ('completed','ok'))::bigint AS non_ok_events,
+             COUNT(*) FILTER (WHERE COALESCE(status, '') = 'completed')::bigint AS completed_events,
+             COUNT(*) FILTER (WHERE COALESCE(status, '') = 'failed')::bigint AS failed_events,
+             COUNT(*) FILTER (WHERE COALESCE(status, '') = 'queued')::bigint AS queued_events,
+             COUNT(*) FILTER (WHERE COALESCE(status, '') = 'ok')::bigint AS ok_events
            FROM v5_unified_admin_queue_action_events
+           WHERE created_at >= now() - ($1::interval);`,
+          [windowExpr]
+        )
+      : {};
+    const queueFailureReasons = exists.v5_unified_admin_queue_action_events
+      ? await queryRows(
+          pool,
+          `SELECT
+             COALESCE(
+               NULLIF(result_json->>'error', ''),
+               NULLIF(result_json->'data'->>'error', ''),
+               NULLIF(result_json->'data'->'kyc_guard'->>'reason_code', ''),
+               NULLIF(result_json->'data'->>'reason', ''),
+               NULLIF(status, ''),
+               'unknown'
+             ) AS reason,
+             COUNT(*)::bigint AS event_count
+           FROM v5_unified_admin_queue_action_events
+           WHERE created_at >= now() - ($1::interval)
+             AND COALESCE(status, '') NOT IN ('completed','ok')
+           GROUP BY reason
+           ORDER BY event_count DESC, reason ASC
+           LIMIT 20;`,
+          [windowExpr]
+        ).catch(() => [])
+      : [];
+    const idempotencyErrorStats = exists.v5_unified_admin_queue_action_events
+      ? await queryOne(
+          pool,
+          `SELECT
+             COUNT(*) FILTER (
+               WHERE LOWER(COALESCE(NULLIF(result_json->>'error', ''), NULLIF(result_json->'data'->>'error', ''), '')) = 'idempotency_conflict'
+             )::bigint AS idempotency_conflict_events,
+             COUNT(*) FILTER (
+               WHERE LOWER(COALESCE(NULLIF(result_json->>'error', ''), NULLIF(result_json->'data'->>'error', ''), '')) = 'invalid_action_request_id'
+             )::bigint AS invalid_action_request_id_events
+           FROM v5_unified_admin_queue_action_events
+           WHERE created_at >= now() - ($1::interval);`,
+          [windowExpr]
+        ).catch(() => ({}))
+      : {};
+
+    const txSubmitStats = exists.behavior_events
+      ? await queryOne(
+          pool,
+          `SELECT
+             COUNT(*)::bigint AS submitted_events
+           FROM behavior_events
+           WHERE event_at >= now() - ($1::interval)
+             AND event_type = 'webapp_token_tx_submitted';`,
+          [windowExpr]
+        )
+      : {};
+    const txVerifyStats = exists.chain_verify_logs
+      ? await queryOne(
+          pool,
+          `SELECT
+             COUNT(*)::bigint AS verify_events,
+             COUNT(*) FILTER (WHERE verify_status IN ('verified','format_only'))::bigint AS verify_success_events,
+             COUNT(*) FILTER (WHERE verify_status IN ('failed','timeout'))::bigint AS verify_error_events,
+             COUNT(*) FILTER (WHERE verify_status = 'timeout')::bigint AS verify_timeout_events
+           FROM chain_verify_logs
            WHERE created_at >= now() - ($1::interval);`,
           [windowExpr]
         )
@@ -260,7 +347,8 @@ async function buildSnapshot({ windowHours = 24 }) {
 
     const intentTotal = toNumber(intentStats.total_events, 0);
     const intentUnknown = toNumber(intentStats.unknown_events, 0);
-    const queueEventsTotal = toNumber(queueActionStats.total_events, 0);
+    const normalizedQueueStats = normalizeQueueActionStats(queueActionStats);
+    const queueEventsTotal = toNumber(normalizedQueueStats.total_events, 0);
     const auditEventsTotal = toNumber(auditStats.total_entries, 0);
 
     return {
@@ -277,6 +365,12 @@ async function buildSnapshot({ windowHours = 24 }) {
         payout_requests_24h: toNumber(payoutStats.total_requests, 0),
         payout_rejected_24h: toNumber(payoutStats.rejected_requests, 0),
         payout_rejected_rate_pct: pct(toNumber(payoutStats.rejected_requests, 0), toNumber(payoutStats.total_requests, 0)),
+        tx_submit_events_24h: toNumber(txSubmitStats.submitted_events, 0),
+        tx_verify_events_24h: toNumber(txVerifyStats.verify_events, 0),
+        tx_verify_error_rate_pct: pct(toNumber(txVerifyStats.verify_error_events, 0), toNumber(txVerifyStats.verify_events, 0)),
+        tx_verify_timeout_rate_pct: pct(toNumber(txVerifyStats.verify_timeout_events, 0), toNumber(txVerifyStats.verify_events, 0)),
+        idempotency_conflict_events_24h: toNumber(idempotencyErrorStats.idempotency_conflict_events, 0),
+        invalid_action_request_id_events_24h: toNumber(idempotencyErrorStats.invalid_action_request_id_events, 0),
         queue_action_events_24h: queueEventsTotal,
         admin_audit_entries_24h: auditEventsTotal,
         audit_coverage_proxy_pct: pct(auditEventsTotal, queueEventsTotal),
@@ -288,8 +382,20 @@ async function buildSnapshot({ windowHours = 24 }) {
       details: {
         intent: intentStats,
         payout: payoutStats,
+        tx_submit: {
+          submitted_events: toNumber(txSubmitStats.submitted_events, 0),
+          verify_events: toNumber(txVerifyStats.verify_events, 0),
+          verify_success_events: toNumber(txVerifyStats.verify_success_events, 0),
+          verify_error_events: toNumber(txVerifyStats.verify_error_events, 0),
+          verify_timeout_events: toNumber(txVerifyStats.verify_timeout_events, 0)
+        },
+        webapp_action_errors: {
+          idempotency_conflict_events: toNumber(idempotencyErrorStats.idempotency_conflict_events, 0),
+          invalid_action_request_id_events: toNumber(idempotencyErrorStats.invalid_action_request_id_events, 0)
+        },
         payout_release_events: releaseEventStats,
-        queue_actions: queueActionStats,
+        queue_actions: normalizedQueueStats,
+        queue_failure_reasons: normalizeQueueFailureReasons(queueFailureReasons),
         admin_audit: auditStats,
         wallet: walletStats,
         kyc: kycStats,
@@ -336,7 +442,7 @@ async function main() {
   );
 }
 
-export { buildSnapshot, parseArgs, toNumber, pct };
+export { buildSnapshot, normalizeQueueActionStats, normalizeQueueFailureReasons, parseArgs, toNumber, pct };
 
 const invokedPath = process.argv[1] ? pathToFileURL(path.resolve(process.argv[1])).href : "";
 if (invokedPath === import.meta.url) {

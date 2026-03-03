@@ -316,14 +316,24 @@ function createCriticalAdminPolicyService(options = {}) {
   }
 
   function buildQueueActionIdempotencyKey(input = {}) {
+    const actionRequestId = String(input.actionRequestId || "").trim();
+    const legacyFingerprint = crypto
+      .createHash("sha256")
+      .update(
+        [
+          String(input.confirmToken || "").trim(),
+          String(input.reason || "").trim(),
+          String(input.txHash || "").trim()
+        ].join("|")
+      )
+      .digest("hex")
+      .slice(0, 24);
     const parts = [
       String(input.uid || "").trim(),
       String(input.actionKey || "").trim().toLowerCase(),
       String(input.kind || "").trim().toLowerCase(),
       String(input.requestId || "").trim(),
-      String(input.confirmToken || "").trim(),
-      String(input.reason || "").trim(),
-      String(input.txHash || "").trim()
+      actionRequestId || `legacy_${legacyFingerprint}`
     ];
     return `uqa_${crypto.createHash("sha256").update(parts.join("|")).digest("hex").slice(0, 48)}`;
   }

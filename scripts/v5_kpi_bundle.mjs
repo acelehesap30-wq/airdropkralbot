@@ -251,7 +251,38 @@ function renderMarkdownReport(bundle) {
   lines.push(
     `| Audit coverage proxy % | ${toNumber(short.kpis?.audit_coverage_proxy_pct, 0)} | ${toNumber(long.kpis?.audit_coverage_proxy_pct, 0)} |`
   );
+  lines.push(
+    `| TX verify error rate % | ${toNumber(short.kpis?.tx_verify_error_rate_pct, 0)} | ${toNumber(long.kpis?.tx_verify_error_rate_pct, 0)} |`
+  );
+  lines.push(
+    `| Idempotency conflicts | ${toNumber(short.kpis?.idempotency_conflict_events_24h, 0)} | ${toNumber(long.kpis?.idempotency_conflict_events_24h, 0)} |`
+  );
+  lines.push(
+    `| Invalid action request id | ${toNumber(short.kpis?.invalid_action_request_id_events_24h, 0)} | ${toNumber(
+      long.kpis?.invalid_action_request_id_events_24h,
+      0
+    )} |`
+  );
+  const shortQueueTotal = toNumber(short.details?.queue_actions?.total_events, 0);
+  const longQueueTotal = toNumber(long.details?.queue_actions?.total_events, 0);
+  const shortQueueSuccess = toNumber(short.details?.queue_actions?.success_events, 0);
+  const longQueueSuccess = toNumber(long.details?.queue_actions?.success_events, 0);
+  lines.push(`| Queue success rate % | ${pct(shortQueueSuccess, shortQueueTotal)} | ${pct(longQueueSuccess, longQueueTotal)} |`);
+  lines.push(`| Queue failed events | ${toNumber(short.details?.queue_actions?.failed_events, 0)} | ${toNumber(long.details?.queue_actions?.failed_events, 0)} |`);
+  lines.push(`| Queue queued events | ${toNumber(short.details?.queue_actions?.queued_events, 0)} | ${toNumber(long.details?.queue_actions?.queued_events, 0)} |`);
   lines.push("");
+  const queueReasons = Array.isArray(short.details?.queue_failure_reasons) ? short.details.queue_failure_reasons : [];
+  if (queueReasons.length > 0) {
+    lines.push("## Queue Failure Reasons (24h)");
+    lines.push("");
+    lines.push("| Reason | Events |");
+    lines.push("|---|---:|");
+    for (const row of queueReasons.slice(0, 10)) {
+      lines.push(`| ${String(row.reason || "unknown")} | ${toNumber(row.event_count, 0)} |`);
+    }
+    lines.push("");
+  }
+
   lines.push("## Weekly Revenue / Dispute Trend");
   lines.push("");
   lines.push("| Day | Revenue | Payout Requests | Rejected | Rejected % |");
@@ -313,6 +344,20 @@ async function emitSloMetrics(pool, bundle) {
   pushMetric("audit_coverage_proxy_pct", s24.kpis?.audit_coverage_proxy_pct, s24.kpis?.queue_action_events_24h, "24h", {
     source: "v5_kpi_bundle"
   });
+  pushMetric(
+    "tx_verify_error_rate_pct",
+    s24.kpis?.tx_verify_error_rate_pct,
+    toNumber(s24.kpis?.tx_verify_events_24h, 0),
+    "24h",
+    { source: "v5_kpi_bundle" }
+  );
+  pushMetric(
+    "idempotency_conflict_events_24h",
+    s24.kpis?.idempotency_conflict_events_24h,
+    s24.kpis?.queue_action_events_24h,
+    "24h",
+    { source: "v5_kpi_bundle" }
+  );
   pushMetric(
     "wallet_challenge_verify_rate_pct",
     s24.kpis?.wallet_challenge_verify_rate_pct,
@@ -445,4 +490,3 @@ if (invokedPath === import.meta.url) {
     process.exitCode = 1;
   });
 }
-

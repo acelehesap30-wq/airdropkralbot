@@ -1,0 +1,382 @@
+const { Markup } = require("telegraf");
+const { normalizeLanguage } = require("../i18n");
+
+const BOT_UI_TEXT = Object.freeze({
+  tr: Object.freeze({
+    task_label: "Gorev",
+    reroll_tasks: "Panel Yenile (1 RC)",
+    daily: "Gunluk",
+    open_play: "Arena 3D Ac",
+    onboard: "Onboard",
+    open_tasks: "Gorev Al",
+    pvp_raid: "PvP Raid",
+    vault: "Vault",
+    wallet: "Cuzdan",
+    status: "Durum",
+    story: "Story",
+    more: "Daha Fazla",
+    quick_guide: "Hizli Rehber",
+    launcher: "Ana Launcher",
+    missions: "Misyonlar",
+    kingdom: "Kingdom",
+    nexus: "Nexus",
+    arena_raid: "Arena Raid",
+    war_room: "War Room",
+    season: "Sezon",
+    shop: "Dukkan",
+    token: "Token",
+    payout: "Cekim",
+    guide_open_task: "1) Gorev Ac",
+    guide_finish_balanced: "2) Dengeli Bitir",
+    guide_reveal: "3) Reveal Ac",
+    guide_arena: "4) Arena 3D",
+    guide_nexus: "Nexus Pulse",
+    help_onboard: "Onboard",
+    help_tasks: "Gorev",
+    help_launcher: "Ana Launcher",
+    complete_safe: "Temkinli Bitir",
+    complete_balanced: "Dengeli Bitir",
+    complete_aggressive: "Saldirgan Bitir",
+    post_new_task: "Yeni Gorev",
+    post_leaderboard: "Liderlik",
+    reveal_action: "Reveal",
+    shop_buy_prefix: "Satin Al",
+    mission_claim_prefix: "Odulu Al",
+    payout_request_btc: "BTC Cekim Talebi",
+    refresh_status: "Durumu Yenile",
+    token_status: "Token Durumu",
+    token_mint_max: "Token Mint (Max)",
+    token_buy_sample: "Satinalma Talep Ornegi",
+    back_to_panel: "Bot Paneline Don",
+    open_browser: "Tarayici ile Ac",
+    raid_safe: "Raid Temkinli",
+    raid_balanced: "Raid Dengeli",
+    raid_aggressive: "Raid Saldirgan",
+    arena_rank: "Arena Siralama",
+    admin_freeze_off: "Freeze Kapat",
+    admin_freeze_on: "Freeze Ac",
+    admin_refresh: "Yenile",
+    admin_unified_queue: "Unified Queue",
+    admin_payout_queue: "Payout Queue",
+    admin_token_queue: "Token Queue",
+    admin_reject_payout: "Payout Reddet",
+    admin_approve_token: "Token Onayla",
+    admin_reject_token: "Token Reddet"
+  }),
+  en: Object.freeze({
+    task_label: "Task",
+    reroll_tasks: "Refresh Panel (1 RC)",
+    daily: "Daily",
+    open_play: "Open Arena 3D",
+    onboard: "Onboard",
+    open_tasks: "Take Task",
+    pvp_raid: "PvP Raid",
+    vault: "Vault",
+    wallet: "Wallet",
+    status: "Status",
+    story: "Story",
+    more: "More",
+    quick_guide: "Quick Guide",
+    launcher: "Home Launcher",
+    missions: "Missions",
+    kingdom: "Kingdom",
+    nexus: "Nexus",
+    arena_raid: "Arena Raid",
+    war_room: "War Room",
+    season: "Season",
+    shop: "Shop",
+    token: "Token",
+    payout: "Payout",
+    guide_open_task: "1) Open Tasks",
+    guide_finish_balanced: "2) Finish Balanced",
+    guide_reveal: "3) Reveal",
+    guide_arena: "4) Arena 3D",
+    guide_nexus: "Nexus Pulse",
+    help_onboard: "Onboard",
+    help_tasks: "Tasks",
+    help_launcher: "Home Launcher",
+    complete_safe: "Finish Safe",
+    complete_balanced: "Finish Balanced",
+    complete_aggressive: "Finish Aggressive",
+    post_new_task: "New Task",
+    post_leaderboard: "Leaderboard",
+    reveal_action: "Reveal",
+    shop_buy_prefix: "Buy",
+    mission_claim_prefix: "Claim Reward",
+    payout_request_btc: "Request BTC Payout",
+    refresh_status: "Refresh Status",
+    token_status: "Token Status",
+    token_mint_max: "Token Mint (Max)",
+    token_buy_sample: "Buy Request Sample",
+    back_to_panel: "Back to Bot Panel",
+    open_browser: "Open in Browser",
+    raid_safe: "Raid Safe",
+    raid_balanced: "Raid Balanced",
+    raid_aggressive: "Raid Aggressive",
+    arena_rank: "Arena Rank",
+    admin_freeze_off: "Disable Freeze",
+    admin_freeze_on: "Enable Freeze",
+    admin_refresh: "Refresh",
+    admin_unified_queue: "Unified Queue",
+    admin_payout_queue: "Payout Queue",
+    admin_token_queue: "Token Queue",
+    admin_reject_payout: "Reject Payout",
+    admin_approve_token: "Approve Token",
+    admin_reject_token: "Reject Token"
+  })
+});
+
+function uiText(lang, key) {
+  const locale = normalizeLanguage(lang, "tr");
+  return BOT_UI_TEXT[locale]?.[key] || BOT_UI_TEXT.tr[key] || key;
+}
+
+function buildTaskKeyboard(offers, lang = "tr") {
+  const buttons = offers.map((offer, index) =>
+    Markup.button.callback(`${uiText(lang, "task_label")} ${index + 1}`, `TASK_ACCEPT:${offer.id}`)
+  );
+  const rows = [];
+  for (let i = 0; i < buttons.length; i += 3) {
+    rows.push(buttons.slice(i, i + 3));
+  }
+  rows.push([
+    Markup.button.callback(uiText(lang, "reroll_tasks"), "REROLL_TASKS"),
+    Markup.button.callback(uiText(lang, "daily"), "OPEN_DAILY")
+  ]);
+  return Markup.inlineKeyboard(rows);
+}
+
+function buildStartKeyboard(lang = "tr") {
+  return Markup.inlineKeyboard(
+    [
+      [Markup.button.callback(uiText(lang, "open_play"), "OPEN_PLAY")],
+      [Markup.button.callback(uiText(lang, "onboard"), "OPEN_ONBOARD"), Markup.button.callback(uiText(lang, "open_tasks"), "OPEN_TASKS")],
+      [Markup.button.callback(uiText(lang, "pvp_raid"), "ARENA_RAID:balanced"), Markup.button.callback(uiText(lang, "vault"), "OPEN_PAYOUT")],
+      [Markup.button.callback(uiText(lang, "wallet"), "OPEN_WALLET"), Markup.button.callback(uiText(lang, "status"), "OPEN_STATUS")],
+      [Markup.button.callback(uiText(lang, "story"), "OPEN_GUIDE"), Markup.button.callback(uiText(lang, "more"), "OPEN_MORE_MENU")]
+    ],
+    { columns: 2 }
+  );
+}
+
+function buildMoreMenuKeyboard(lang = "tr") {
+  return Markup.inlineKeyboard(
+    [
+      [Markup.button.callback(uiText(lang, "quick_guide"), "OPEN_GUIDE"), Markup.button.callback(uiText(lang, "launcher"), "OPEN_HOME_MENU")],
+      [Markup.button.callback(uiText(lang, "missions"), "OPEN_MISSIONS"), Markup.button.callback(uiText(lang, "daily"), "OPEN_DAILY")],
+      [Markup.button.callback(uiText(lang, "kingdom"), "OPEN_KINGDOM"), Markup.button.callback(uiText(lang, "nexus"), "OPEN_NEXUS")],
+      [Markup.button.callback(uiText(lang, "arena_raid"), "ARENA_RAID:balanced"), Markup.button.callback(uiText(lang, "war_room"), "OPEN_WAR")],
+      [Markup.button.callback(uiText(lang, "season"), "OPEN_SEASON"), Markup.button.callback(uiText(lang, "shop"), "OPEN_SHOP")],
+      [Markup.button.callback(uiText(lang, "token"), "OPEN_TOKEN"), Markup.button.callback(uiText(lang, "payout"), "OPEN_PAYOUT")]
+    ],
+    { columns: 2 }
+  );
+}
+
+function buildGuideKeyboard(lang = "tr") {
+  return Markup.inlineKeyboard(
+    [
+      Markup.button.callback(uiText(lang, "guide_open_task"), "OPEN_TASKS"),
+      Markup.button.callback(uiText(lang, "guide_finish_balanced"), "GUIDE_FINISH_BALANCED"),
+      Markup.button.callback(uiText(lang, "guide_reveal"), "GUIDE_REVEAL"),
+      Markup.button.callback(uiText(lang, "guide_arena"), "OPEN_PLAY"),
+      Markup.button.callback(uiText(lang, "guide_nexus"), "OPEN_NEXUS"),
+      Markup.button.callback(uiText(lang, "wallet"), "OPEN_WALLET"),
+      Markup.button.callback(uiText(lang, "missions"), "OPEN_MISSIONS")
+    ],
+    { columns: 2 }
+  );
+}
+
+function buildHelpKeyboard(lang = "tr") {
+  return Markup.inlineKeyboard(
+    [
+      [Markup.button.callback(uiText(lang, "help_onboard"), "OPEN_ONBOARD"), Markup.button.callback(uiText(lang, "help_tasks"), "OPEN_TASKS")],
+      [Markup.button.callback(uiText(lang, "pvp_raid"), "ARENA_RAID:balanced"), Markup.button.callback(uiText(lang, "vault"), "OPEN_PAYOUT")],
+      [Markup.button.callback(uiText(lang, "guide_arena"), "OPEN_PLAY"), Markup.button.callback(uiText(lang, "story"), "OPEN_GUIDE")],
+      [Markup.button.callback(uiText(lang, "help_launcher"), "OPEN_HOME_MENU")]
+    ],
+    { columns: 2 }
+  );
+}
+
+function buildCompleteKeyboard(attemptId, lang = "tr") {
+  return Markup.inlineKeyboard(
+    [
+      Markup.button.callback(uiText(lang, "complete_safe"), `TASK_COMPLETE:${attemptId}:safe`),
+      Markup.button.callback(uiText(lang, "complete_balanced"), `TASK_COMPLETE:${attemptId}:balanced`),
+      Markup.button.callback(uiText(lang, "complete_aggressive"), `TASK_COMPLETE:${attemptId}:aggressive`)
+    ],
+    { columns: 1 }
+  );
+}
+
+function buildRevealKeyboard(attemptId, lang = "tr") {
+  return Markup.inlineKeyboard([Markup.button.callback(uiText(lang, "reveal_action"), `REVEAL:${attemptId}`)]);
+}
+
+function buildPostRevealKeyboard(lang = "tr") {
+  return Markup.inlineKeyboard(
+    [
+      Markup.button.callback(uiText(lang, "post_new_task"), "OPEN_TASKS"),
+      Markup.button.callback(uiText(lang, "wallet"), "OPEN_WALLET"),
+      Markup.button.callback(uiText(lang, "token"), "OPEN_TOKEN"),
+      Markup.button.callback(uiText(lang, "post_leaderboard"), "OPEN_LEADERBOARD"),
+      Markup.button.callback(uiText(lang, "shop"), "OPEN_SHOP"),
+      Markup.button.callback(uiText(lang, "missions"), "OPEN_MISSIONS")
+    ],
+    { columns: 2 }
+  );
+}
+
+function buildShopKeyboard(offers, lang = "tr") {
+  const buttons = offers.map((offer, index) =>
+    Markup.button.callback(`${uiText(lang, "shop_buy_prefix")} ${index + 1}`, `BUY_OFFER:${offer.id}`)
+  );
+  return Markup.inlineKeyboard(buttons, { columns: 2 });
+}
+
+function buildMissionKeyboard(board, lang = "tr") {
+  const buttons = (board || [])
+    .filter((mission) => mission.completed && !mission.claimed)
+    .map((mission) => Markup.button.callback(`${uiText(lang, "mission_claim_prefix")}: ${mission.title}`, `CLAIM_MISSION:${mission.key}`));
+
+  if (buttons.length === 0) {
+    return undefined;
+  }
+  return Markup.inlineKeyboard(buttons, { columns: 1 });
+}
+
+function buildPayoutKeyboard(canRequest, lang = "tr") {
+  const buttons = [];
+  if (canRequest) {
+    buttons.push(Markup.button.callback(uiText(lang, "payout_request_btc"), "REQ_PAYOUT:BTC"));
+  }
+  buttons.push(Markup.button.callback(uiText(lang, "refresh_status"), "OPEN_PAYOUT"));
+  return Markup.inlineKeyboard(buttons, { columns: 1 });
+}
+
+function buildTokenKeyboard(lang = "tr") {
+  return Markup.inlineKeyboard(
+    [
+      [
+        Markup.button.callback(uiText(lang, "token_status"), "OPEN_TOKEN"),
+        Markup.button.callback(uiText(lang, "token_mint_max"), "TOKEN_MINT")
+      ],
+      [Markup.button.callback(uiText(lang, "token_buy_sample"), "TOKEN_BUY_SAMPLE")],
+      [Markup.button.callback(uiText(lang, "back_to_panel"), "OPEN_TASKS")]
+    ],
+    { columns: 1 }
+  );
+}
+
+function buildPlayKeyboard(url, lang = "tr") {
+  const isHttps = /^https:\/\//i.test(String(url || ""));
+  const canUseWebAppButton = isHttps && typeof Markup.button.webApp === "function";
+  const openButton = canUseWebAppButton
+    ? Markup.button.webApp(uiText(lang, "open_play"), url)
+    : Markup.button.url(uiText(lang, "open_play"), url);
+  return Markup.inlineKeyboard(
+    [[openButton], [Markup.button.url(uiText(lang, "open_browser"), url)], [Markup.button.callback(uiText(lang, "back_to_panel"), "OPEN_TASKS")]],
+    { columns: 1 }
+  );
+}
+
+function buildRaidKeyboard(lang = "tr") {
+  return Markup.inlineKeyboard(
+    [
+      Markup.button.callback(uiText(lang, "raid_safe"), "ARENA_RAID:safe"),
+      Markup.button.callback(uiText(lang, "raid_balanced"), "ARENA_RAID:balanced"),
+      Markup.button.callback(uiText(lang, "raid_aggressive"), "ARENA_RAID:aggressive"),
+      Markup.button.callback(uiText(lang, "arena_rank"), "OPEN_ARENA_RANK"),
+      Markup.button.callback(uiText(lang, "guide_arena"), "OPEN_PLAY")
+    ],
+    { columns: 1 }
+  );
+}
+
+function buildAdminKeyboard(snapshot = {}, lang = "tr") {
+  const payoutButtons = (snapshot.pendingPayouts || [])
+    .slice(0, 3)
+    .map((row) => [Markup.button.callback(`Payout #${row.id}`, `ADMIN_PAYOUT_PICK:${row.id}`)]);
+  const tokenButtons = (snapshot.pendingTokenRequests || [])
+    .slice(0, 3)
+    .map((row) => [Markup.button.callback(`Token #${row.id}`, `ADMIN_TOKEN_PICK:${row.id}`)]);
+
+  const freezeToggle = snapshot.freeze?.freeze
+    ? Markup.button.callback(uiText(lang, "admin_freeze_off"), "ADMIN_FREEZE_OFF")
+    : Markup.button.callback(uiText(lang, "admin_freeze_on"), "ADMIN_FREEZE_ON");
+
+  return Markup.inlineKeyboard(
+    [
+      [Markup.button.callback(uiText(lang, "admin_refresh"), "ADMIN_PANEL_REFRESH"), freezeToggle],
+      [Markup.button.callback(uiText(lang, "admin_unified_queue"), "ADMIN_OPEN_QUEUE")],
+      [
+        Markup.button.callback(uiText(lang, "admin_payout_queue"), "ADMIN_OPEN_PAYOUTS"),
+        Markup.button.callback(uiText(lang, "admin_token_queue"), "ADMIN_OPEN_TOKENS")
+      ],
+      ...payoutButtons,
+      ...tokenButtons
+    ],
+    { columns: 1 }
+  );
+}
+
+function buildAdminPayoutActionKeyboard(requestId, lang = "tr") {
+  const id = Number(requestId || 0);
+  if (!id) {
+    return undefined;
+  }
+  return Markup.inlineKeyboard(
+    [
+      [Markup.button.callback(uiText(lang, "admin_reject_payout"), `ADMIN_PAYOUT_REJECT:${id}`)],
+      [
+        Markup.button.callback(uiText(lang, "admin_payout_queue"), "ADMIN_OPEN_PAYOUTS"),
+        Markup.button.callback(uiText(lang, "admin_unified_queue"), "ADMIN_OPEN_QUEUE")
+      ]
+    ],
+    { columns: 2 }
+  );
+}
+
+function buildAdminTokenActionKeyboard(row = {}, lang = "tr") {
+  const id = Number(row.id || 0);
+  if (!id) {
+    return undefined;
+  }
+  const buttons = [];
+  if (String(row.tx_hash || "").trim()) {
+    buttons.push(Markup.button.callback(uiText(lang, "admin_approve_token"), `ADMIN_TOKEN_APPROVE:${id}`));
+  }
+  buttons.push(Markup.button.callback(uiText(lang, "admin_reject_token"), `ADMIN_TOKEN_REJECT:${id}`));
+  return Markup.inlineKeyboard(
+    [
+      buttons,
+      [
+        Markup.button.callback(uiText(lang, "admin_token_queue"), "ADMIN_OPEN_TOKENS"),
+        Markup.button.callback(uiText(lang, "admin_unified_queue"), "ADMIN_OPEN_QUEUE")
+      ]
+    ],
+    { columns: 2 }
+  );
+}
+
+module.exports = {
+  buildTaskKeyboard,
+  buildStartKeyboard,
+  buildMoreMenuKeyboard,
+  buildGuideKeyboard,
+  buildHelpKeyboard,
+  buildCompleteKeyboard,
+  buildRevealKeyboard,
+  buildPostRevealKeyboard,
+  buildShopKeyboard,
+  buildMissionKeyboard,
+  buildPayoutKeyboard,
+  buildTokenKeyboard,
+  buildPlayKeyboard,
+  buildRaidKeyboard,
+  buildAdminKeyboard,
+  buildAdminPayoutActionKeyboard,
+  buildAdminTokenActionKeyboard
+};

@@ -17,6 +17,17 @@ function requireEnv(name) {
   return value;
 }
 
+function resolveAdminApiBaseUrl() {
+  const explicitBaseUrl = String(process.env.ADMIN_API_BASE_URL || "").trim();
+  if (explicitBaseUrl) {
+    return explicitBaseUrl.replace(/\/+$/, "");
+  }
+  const rawPort = String(process.env.ADMIN_API_PORT || "4000").trim();
+  const parsedPort = Number.parseInt(rawPort, 10);
+  const port = Number.isInteger(parsedPort) && parsedPort > 0 && parsedPort <= 65535 ? parsedPort : 4000;
+  return `http://127.0.0.1:${port}`;
+}
+
 function sign(secret, uid, ts) {
   return crypto.createHmac("sha256", secret).update(`${uid}.${ts}`).digest("hex");
 }
@@ -79,7 +90,7 @@ async function postJsonWithCriticalConfirm(baseUrl, path, payload) {
 }
 
 async function main() {
-  const baseUrl = String(process.env.ADMIN_API_BASE_URL || "http://127.0.0.1:3000").replace(/\/+$/, "");
+  const baseUrl = resolveAdminApiBaseUrl();
   const secret = requireEnv("WEBAPP_HMAC_SECRET");
   const adminUid = requireEnv("ADMIN_TELEGRAM_ID");
 

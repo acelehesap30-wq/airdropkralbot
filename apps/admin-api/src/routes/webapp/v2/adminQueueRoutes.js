@@ -1,5 +1,31 @@
 "use strict";
 
+const IDEMPOTENCY_FALLBACK_TTL_MS = 15 * 60 * 1000;
+const queueActionIdempotencyFallback = new Map();
+
+function cleanupQueueActionFallback(now = Date.now()) {
+  for (const [key, expiresAt] of queueActionIdempotencyFallback.entries()) {
+    if (!expiresAt || Number(expiresAt) <= now) {
+      queueActionIdempotencyFallback.delete(key);
+    }
+  }
+}
+
+function reserveQueueActionFallback(idempotencyKey, ttlMs = IDEMPOTENCY_FALLBACK_TTL_MS) {
+  const now = Date.now();
+  cleanupQueueActionFallback(now);
+  const key = String(idempotencyKey || "").trim();
+  if (!key) {
+    return { ok: false, reason: "missing_idempotency_key" };
+  }
+  const existing = Number(queueActionIdempotencyFallback.get(key) || 0);
+  if (existing > now) {
+    return { ok: false, reason: "idempotency_conflict" };
+  }
+  queueActionIdempotencyFallback.set(key, now + Math.max(1000, Number(ttlMs || IDEMPOTENCY_FALLBACK_TTL_MS)));
+  return { ok: true };
+}
+
 function normalizeUnifiedQueueActionPolicy(actionPolicy) {
   const input = actionPolicy && typeof actionPolicy === "object" ? actionPolicy : {};
   const out = {};
@@ -102,7 +128,7 @@ function registerWebappV2AdminQueueRoutes(fastify, deps = {}) {
       schema: {
         body: {
           type: "object",
-          required: ["uid", "ts", "sig", "action_key", "request_id"],
+          required: ["uid", "ts", "sig", "action_key", "request_id", "action_request_id"],
           properties: {
             uid: { type: "string" },
             ts: { type: "string" },
@@ -110,6 +136,7 @@ function registerWebappV2AdminQueueRoutes(fastify, deps = {}) {
             action_key: { type: "string", minLength: 3, maxLength: 64 },
             kind: { type: "string", minLength: 3, maxLength: 64 },
             request_id: { type: "integer", minimum: 1 },
+            action_request_id: { type: "string", minLength: 6, maxLength: 120, pattern: "^[a-zA-Z0-9:_-]{6,120}$" },
             confirm_token: { type: "string", minLength: 16, maxLength: 128 },
             reason: { type: "string", maxLength: 300 },
             tx_hash: { type: "string", maxLength: 180 }
@@ -127,8 +154,13 @@ function registerWebappV2AdminQueueRoutes(fastify, deps = {}) {
       const actionKey = String(request.body.action_key || "").trim().toLowerCase();
       const kind = String(request.body.kind || "").trim().toLowerCase();
       const requestId = Math.max(0, Number(request.body.request_id || 0));
+      const actionRequestId = String(request.body.action_request_id || "").trim();
       if (!actionKey || requestId <= 0) {
         reply.code(400).send({ success: false, error: "invalid_admin_queue_action_payload" });
+        return;
+      }
+      if (!/^[a-zA-Z0-9:_-]{6,120}$/.test(actionRequestId)) {
+        reply.code(400).send({ success: false, error: "invalid_action_request_id" });
         return;
       }
 
@@ -138,6 +170,7 @@ function registerWebappV2AdminQueueRoutes(fastify, deps = {}) {
         ts: request.body.ts,
         sig: request.body.sig
       };
+      basePayload.action_request_id = actionRequestId;
       if (confirmToken) {
         basePayload.confirm_token = confirmToken;
       }
@@ -205,6 +238,7 @@ function registerWebappV2AdminQueueRoutes(fastify, deps = {}) {
         payload: {
           kind,
           request_id: requestId,
+          action_request_id: actionRequestId,
           reason,
           tx_hash: txHash
         },
@@ -217,6 +251,7 @@ function registerWebappV2AdminQueueRoutes(fastify, deps = {}) {
           session: issueWebAppSession(auth.uid),
           data: {
             action_key: String(confirmation.policy?.action_key || queueCriticalAction),
+            action_request_id: actionRequestId,
             confirmation_required: true,
             confirm_token: confirmation.signature,
             expires_in_sec: Number(confirmation.expires_in_sec || 0),
@@ -250,10 +285,16 @@ function registerWebappV2AdminQueueRoutes(fastify, deps = {}) {
         actionKey,
         kind,
         requestId,
+        actionRequestId,
         confirmToken,
         reason,
         txHash
       });
+      const fallbackIdempotency = reserveQueueActionFallback(idempotencyKey);
+      if (!fallbackIdempotency.ok) {
+        reply.code(409).send({ success: false, error: "idempotency_conflict" });
+        return;
+      }
       let queueActionEventAvailable = true;
       const queueActionEventClient = await pool.connect();
       try {
@@ -285,6 +326,7 @@ function registerWebappV2AdminQueueRoutes(fastify, deps = {}) {
               action_key: actionKey,
               kind: kind || null,
               request_id: requestId,
+              action_request_id: actionRequestId,
               confirm_token: confirmToken || null,
               reason: reason || null,
               tx_hash: txHash || null
@@ -352,6 +394,7 @@ function registerWebappV2AdminQueueRoutes(fastify, deps = {}) {
         payload.data.action_key = actionKey;
         payload.data.kind = kind || null;
         payload.data.request_id = requestId;
+        payload.data.action_request_id = actionRequestId;
         reply.code(injectRes.statusCode).send(payload);
         return;
       }

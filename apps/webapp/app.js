@@ -19,7 +19,8 @@
       deployStatus: null,
       decisionTraces: null,
       auditPhaseStatus: null,
-      dataIntegrity: null
+      dataIntegrity: null,
+      pendingActionRequests: {}
     },
     suggestion: null,
     arena: null,
@@ -4259,11 +4260,18 @@
   }
 
   function buildPacket(action, extra = {}) {
+    const actionRequestId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const merged = extra && typeof extra === "object" ? { ...extra } : {};
+    if (!merged.action_request_id) {
+      merged.action_request_id = actionRequestId;
+    }
+    if (!merged.request_id) {
+      merged.request_id = actionRequestId;
+    }
     return {
       action,
-      request_id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       client_ts: Date.now(),
-      ...extra
+      ...merged
     };
   }
 
@@ -11597,11 +11605,12 @@
   async function postActionApi(action, payload = {}) {
     const path = actionApiPath(action);
     if (!path) return null;
+    const packet = buildPacket(action, payload);
     const body = {
       uid: state.auth.uid,
       ts: state.auth.ts,
       sig: state.auth.sig,
-      ...payload
+      ...packet
     };
     const t0 = performance.now();
     const response = await fetch(path, {
@@ -15603,7 +15612,27 @@
     const cleanPath = String(path || "").trim();
     const payload = extraBody && typeof extraBody === "object" ? { ...extraBody } : {};
     delete payload.confirm_token;
+    delete payload.action_request_id;
     return `${cleanPath}:${JSON.stringify(payload)}`;
+  }
+
+  function createActionRequestId(prefix = "webapp_admin") {
+    const cleanPrefix = String(prefix || "webapp_admin")
+      .replace(/[^a-zA-Z0-9:_-]+/g, "_")
+      .replace(/^_+|_+$/g, "")
+      .slice(0, 32);
+    const seed = `${cleanPrefix || "webapp_admin"}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+    return seed.slice(0, 120);
+  }
+
+  function normalizeActionRequestId(value) {
+    const clean = String(value || "")
+      .trim()
+      .slice(0, 120);
+    if (!/^[a-zA-Z0-9:_-]{6,120}$/.test(clean)) {
+      return "";
+    }
+    return clean;
   }
 
   function readAdminPendingConfirmation(cacheKey) {
@@ -15653,16 +15682,65 @@
     }
   }
 
+  function readAdminPendingActionRequest(cacheKey) {
+    const key = String(cacheKey || "");
+    if (!key) {
+      return "";
+    }
+    const store = state.admin.pendingActionRequests || {};
+    const entry = store[key];
+    if (!entry) {
+      return "";
+    }
+    const expiresAt = Number(entry.expiresAt || 0);
+    if (!expiresAt || Date.now() > expiresAt) {
+      delete store[key];
+      return "";
+    }
+    return String(entry.actionRequestId || "");
+  }
+
+  function writeAdminPendingActionRequest(cacheKey, actionRequestId, expiresInSec = 900) {
+    const key = String(cacheKey || "");
+    const requestId = String(actionRequestId || "").trim();
+    if (!key || !requestId) {
+      return;
+    }
+    if (!state.admin.pendingActionRequests || typeof state.admin.pendingActionRequests !== "object") {
+      state.admin.pendingActionRequests = {};
+    }
+    const ttlSec = Math.max(30, Math.min(3600, asNum(expiresInSec || 900)));
+    state.admin.pendingActionRequests[key] = {
+      actionRequestId: requestId,
+      expiresAt: Date.now() + ttlSec * 1000
+    };
+  }
+
+  function clearAdminPendingActionRequest(cacheKey) {
+    const key = String(cacheKey || "");
+    if (!key) {
+      return;
+    }
+    if (state.admin.pendingActionRequests && typeof state.admin.pendingActionRequests === "object") {
+      delete state.admin.pendingActionRequests[key];
+    }
+  }
+
   async function postAdmin(path, extraBody = {}) {
     const cleanPath = String(path || "").trim();
     const cacheKey = buildAdminConfirmCacheKey(cleanPath, extraBody);
     const pending = readAdminPendingConfirmation(cacheKey);
+    const pendingActionRequestId = readAdminPendingActionRequest(cacheKey);
     const requestBody = {
       uid: state.auth.uid,
       ts: state.auth.ts,
       sig: state.auth.sig,
       ...extraBody
     };
+    const explicitActionRequestId = normalizeActionRequestId(requestBody.action_request_id);
+    requestBody.action_request_id =
+      explicitActionRequestId || normalizeActionRequestId(pendingActionRequestId) || createActionRequestId("admin");
+    writeAdminPendingActionRequest(cacheKey, requestBody.action_request_id);
     if (!requestBody.confirm_token && pending?.token) {
       requestBody.confirm_token = pending.token;
     }
@@ -15705,9 +15783,12 @@
         err.code = 429;
         throw err;
       }
+      clearAdminPendingConfirmation(cacheKey);
+      clearAdminPendingActionRequest(cacheKey);
       throw new Error(code);
     }
     clearAdminPendingConfirmation(cacheKey);
+    clearAdminPendingActionRequest(cacheKey);
     renewAuth(payload);
     return payload.data || {};
   }
@@ -19040,7 +19121,8 @@
       daily_drip_exhausted: "Gunluk payout damla limiti doldu, yarin tekrar dene.",
       payout_not_eligible: "Mevcut tier payout acmaya uygun degil.",
       tier_locked: "Mevcut tier payout acmaya uygun degil.",
-      idempotency_conflict: "Ayni payout talebi tekrar gonderilemez, once mevcut talebi kontrol et.",
+      idempotency_conflict: "Ayni aksiyon istegi tekrar kullanilamaz, paneli yenileyip tekrar dene.",
+      invalid_action_request_id: "Aksiyon kimligi gecersiz. Paneli yenileyip tekrar dene.",
       cooldown_active: "Cooldown aktif, kisa sure sonra tekrar dene.",
       unsupported_payout_currency: "Bu payout para birimi su an desteklenmiyor.",
       invalid_requestable_amount: "Payout talebi icin uygun miktar bulunamadi.",
