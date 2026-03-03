@@ -111,6 +111,33 @@
 `npm run typecheck`
 15. Admin API integration test paketi:
 `npm run test:admin-api`
+16. Canary guard (snapshot tabanli alarm esikleri):
+`npm run canary:v5:guard`
+
+## V5.3 staging + canary checklist
+1. Staging preflight:
+`npm run test:bot`
+2. Staging preflight:
+`npm run test:admin-api`
+3. Staging KPI snapshot:
+`npm run kpi:v5:snapshot -- --hours 24`
+4. Staging canary guard:
+`npm run canary:v5:guard -- --snapshot docs/V5_KPI_SNAPSHOT_latest.json`
+5. Canary 24h izleme (opsiyonel taze snapshot):
+`npm run canary:v5:guard -- --refresh_snapshot true --hours 24`
+6. Varsayilan alarm esikleri:
+- `command_events_24h >= 1`
+- `queue_success_rate_pct >= 80`
+- `queue_failed_rate_pct <= 25`
+- `queue_queued_events <= 3`
+- `tx_verify_error_rate_pct <= 20`
+- `idempotency_conflict_events_24h <= 3`
+- `invalid_action_request_id_events_24h <= 1`
+7. Gerekirse esik override:
+`npm run canary:v5:guard -- --max_queue_failed_rate_pct 15 --max_tx_verify_error_rate_pct 10 --max_idempotency_conflict_events_24h 1`
+8. Guard rapor dosyalari:
+- `docs/V5_CANARY_GUARD_latest.json`
+- `docs/V5_CANARY_GUARD_<UTCSTAMP>.json`
 
 ## Freeze mode
 1. Admin panelden freeze ac: `/admin_freeze on <reason>` veya WebApp admin freeze.
@@ -137,6 +164,27 @@
 `npm run rollout:v5` -> admin canary
 `npm run rollout:v5:25` -> %25 rollout + payout release run
 `npm run rollout:v5:100` -> %100 rollout + payout release run
+7. `rollout:v5`, `rollout:v5:25`, `rollout:v5:100` stage sonlarinda canary guard otomatik calisir.
+8. Stage default guardrail seviyesi:
+- `admin_canary`: temel esikler (lenient)
+- `rollout_25`: daha siki esikler
+- `rollout_100`: en siki esikler
+9. Stage varsayilan canary esikleri:
+- `admin_canary`: `queue_success>=80`, `queue_failed<=25`, `queued<=3`, `tx_verify_error<=20`, `idempotency_conflict<=3`, `invalid_action_request_id<=1`
+- `rollout_25`: `queue_success>=85`, `queue_failed<=15`, `queued<=2`, `tx_verify_error<=12`, `idempotency_conflict<=2`, `invalid_action_request_id<=1`
+- `rollout_100`: `queue_success>=90`, `queue_failed<=10`, `queued<=1`, `tx_verify_error<=8`, `idempotency_conflict<=1`, `invalid_action_request_id<=0`
+10. Acil bypass gerekiyorsa (onerilmez):
+`npm run rollout:v5 -- --skip_canary_guard true`
+11. Rollout gate raporu:
+- `docs/V5_CANARY_GUARD_rollout_latest.json`
+- `docs/V5_CANARY_GUARD_rollout_<UTCSTAMP>.json`
+12. API hedefi:
+- `ADMIN_API_BASE_URL` set edilirse scriptler onu kullanir.
+- `ADMIN_API_BASE_URL` bos ise scriptler `http://127.0.0.1:${ADMIN_API_PORT}` (default `4000`) fallback ile calisir.
+13. Go-live strict checklist + auto dogrulama:
+- `npm run golive:v5:check` -> strict metrik readiness raporu uretir (`docs/V5_GOLIVE_CHECK_latest.json`, `docs/V5_GOLIVE_CHECK_latest.md`).
+- `npm run golive:v5:auto` -> once strict readiness kontrolu yapar, gecerse otomatik `rollout_25 -> rollout_100` strict zinciri tetikler.
+- `golive:v5:auto` hicbir fake/backfill veri yazmaz; yalnizca canli metrikler gecerliyse rollout calisir.
 
 ## Rollback
 1. Feature flag kapat (`ARENA_AUTH_ENABLED=0` vb).
