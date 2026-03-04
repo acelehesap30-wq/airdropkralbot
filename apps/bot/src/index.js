@@ -735,39 +735,72 @@ function logEvent(event, payload) {
   );
 }
 
-async function acquireInstanceLock(pool, lockKey) {
-  const client = await pool.connect();
+async function tryAcquireBotRuntimeLease(pool, payload) {
   try {
-    const key = Number(lockKey || 0);
-    if (!Number.isFinite(key) || key <= 0) {
-      client.release();
-      return { acquired: false, client: null, reason: "invalid_lock_key" };
-    }
-    const lockRes = await client.query("SELECT pg_try_advisory_lock($1) AS acquired;", [key]);
-    const acquired = Boolean(lockRes.rows?.[0]?.acquired);
-    if (!acquired) {
-      client.release();
-      return { acquired: false, client: null, reason: "lock_not_acquired" };
-    }
-    return { acquired: true, client, key };
+    return await withTransaction(pool, async (db) => {
+      const hasTables = await botRuntimeStore.hasBotRuntimeTables(db);
+      if (!hasTables) {
+        return { acquired: false, reason: "runtime_tables_missing", state: null };
+      }
+      const state = await botRuntimeStore.tryAcquireRuntimeLease(db, payload);
+      if (state) {
+        return { acquired: true, reason: "", state };
+      }
+      const current = await botRuntimeStore.getRuntimeState(db, payload?.stateKey || botRuntimeStore.DEFAULT_STATE_KEY);
+      return { acquired: false, reason: "lock_not_acquired", state: current };
+    });
   } catch (err) {
-    try {
-      client.release();
-    } catch {}
-    throw err;
+    if (err?.code === "42P01") {
+      return { acquired: false, reason: "runtime_tables_missing", state: null };
+    }
+    logEvent("bot_runtime_lease_acquire_failed", {
+      error: String(err?.message || err),
+      state_key: String(payload?.stateKey || botRuntimeStore.DEFAULT_STATE_KEY)
+    });
+    return { acquired: false, reason: "lease_acquire_failed", state: null };
   }
 }
 
-async function releaseInstanceLock(lock) {
-  if (!lock?.client || !lock?.acquired || !lock?.key) {
-    return;
+async function renewBotRuntimeLease(pool, payload) {
+  try {
+    return await withTransaction(pool, async (db) => {
+      const hasTables = await botRuntimeStore.hasBotRuntimeTables(db);
+      if (!hasTables) {
+        return null;
+      }
+      return botRuntimeStore.renewRuntimeLease(db, payload);
+    });
+  } catch (err) {
+    if (err?.code === "42P01") {
+      return null;
+    }
+    logEvent("bot_runtime_lease_renew_failed", {
+      error: String(err?.message || err),
+      state_key: String(payload?.stateKey || botRuntimeStore.DEFAULT_STATE_KEY)
+    });
+    return null;
   }
+}
+
+async function releaseBotRuntimeLease(pool, payload) {
   try {
-    await lock.client.query("SELECT pg_advisory_unlock($1);", [lock.key]);
-  } catch {}
-  try {
-    lock.client.release();
-  } catch {}
+    return await withTransaction(pool, async (db) => {
+      const hasTables = await botRuntimeStore.hasBotRuntimeTables(db);
+      if (!hasTables) {
+        return null;
+      }
+      return botRuntimeStore.releaseRuntimeLease(db, payload);
+    });
+  } catch (err) {
+    if (err?.code === "42P01") {
+      return null;
+    }
+    logEvent("bot_runtime_lease_release_failed", {
+      error: String(err?.message || err),
+      state_key: String(payload?.stateKey || botRuntimeStore.DEFAULT_STATE_KEY)
+    });
+    return null;
+  }
 }
 
 async function upsertBotRuntimeState(pool, payload) {
@@ -4575,36 +4608,11 @@ async function start() {
     serviceEnv: appConfig.nodeEnv,
     updatedBy: Number(appConfig.adminTelegramId || 0)
   };
-  let lock = null;
   let heartbeatTimer = null;
 
   await ping(pool);
   console.log("Database connection OK");
   logEvent("boot", { loop_v2_enabled: appConfig.loopV2Enabled });
-  await upsertBotRuntimeState(pool, {
-    ...runtimeIdentity,
-    mode: "disabled",
-    alive: false,
-    lockAcquired: false,
-    startedAt: new Date(),
-    stoppedAt: null,
-    lastError: "",
-    stateJson: {
-      phase: "startup",
-      bot_enabled: appConfig.botEnabled,
-      dry_run: appConfig.dryRun
-    }
-  });
-  await appendBotRuntimeEvent(pool, {
-    stateKey: runtimeIdentity.stateKey,
-    eventType: "startup_begin",
-    eventJson: {
-      node_env: appConfig.nodeEnv,
-      lock_key: appConfig.botInstanceLockKey,
-      bot_enabled: appConfig.botEnabled,
-      dry_run: appConfig.dryRun
-    }
-  });
 
   if (!appConfig.botEnabled) {
     console.log("BOT_ENABLED=0, bot process disabled.");
@@ -4656,47 +4664,46 @@ async function start() {
     return;
   }
 
-  lock = await acquireInstanceLock(pool, appConfig.botInstanceLockKey);
-  if (!lock.acquired) {
+  const lease = await tryAcquireBotRuntimeLease(pool, {
+    ...runtimeIdentity,
+    startedAt: new Date(),
+    lastHeartbeatAt: new Date(),
+    lastError: "",
+    stateJson: {
+      phase: "lock_acquired",
+      lock_key: appConfig.botInstanceLockKey
+    },
+    staleAfterSec: botRuntimeStore.DEFAULT_LEASE_STALE_AFTER_SEC
+  });
+  if (!lease.acquired) {
+    const holder = lease.state || {};
     console.error(
       "Bot startup skipped: another instance likely running (instance lock not acquired). " +
         "Ayni BOT_TOKEN ile birden fazla polling instance calistirma."
     );
-    await upsertBotRuntimeState(pool, {
-      ...runtimeIdentity,
-      mode: "disabled",
-      alive: false,
-      lockAcquired: false,
-      stoppedAt: new Date(),
-      lastError: lock.reason || "lock_not_acquired",
-      stateJson: {
-        phase: "lock_failed",
-        lock_reason: lock.reason || "lock_not_acquired"
-      }
-    });
     await appendBotRuntimeEvent(pool, {
       stateKey: runtimeIdentity.stateKey,
       eventType: "lock_not_acquired",
       eventJson: {
-        reason: lock.reason || "lock_not_acquired",
-        lock_key: appConfig.botInstanceLockKey
+        reason: lease.reason || "lock_not_acquired",
+        lock_key: appConfig.botInstanceLockKey,
+        holder_instance_ref: String(holder.instance_ref || ""),
+        holder_pid: Number(holder.pid || 0),
+        holder_hostname: String(holder.hostname || "")
       }
     });
     await pool.end();
     return;
   }
 
-  await upsertBotRuntimeState(pool, {
-    ...runtimeIdentity,
-    mode: "polling",
-    alive: true,
-    lockAcquired: true,
-    startedAt: new Date(),
-    lastHeartbeatAt: new Date(),
-    stoppedAt: null,
-    lastError: "",
-    stateJson: {
-      phase: "lock_acquired"
+  await appendBotRuntimeEvent(pool, {
+    stateKey: runtimeIdentity.stateKey,
+    eventType: "startup_begin",
+    eventJson: {
+      node_env: appConfig.nodeEnv,
+      lock_key: appConfig.botInstanceLockKey,
+      bot_enabled: appConfig.botEnabled,
+      dry_run: appConfig.dryRun
     }
   });
   await appendBotRuntimeEvent(pool, {
@@ -4970,11 +4977,8 @@ async function start() {
         error: String(err?.message || err)
       }
     }).catch(() => {});
-    upsertBotRuntimeState(pool, {
+    renewBotRuntimeLease(pool, {
       ...runtimeIdentity,
-      mode: "polling",
-      alive: true,
-      lockAcquired: true,
       lastHeartbeatAt: new Date(),
       lastError: String(err?.message || "polling_error"),
       stateJson: {
@@ -5041,6 +5045,8 @@ async function start() {
 
   bot.launch();
   console.log("Bot running...");
+  let shuttingDown = false;
+  let heartbeatInFlight = false;
   await appendBotRuntimeEvent(pool, {
     stateKey: runtimeIdentity.stateKey,
     eventType: "polling_start",
@@ -5048,34 +5054,18 @@ async function start() {
       lock_key: appConfig.botInstanceLockKey
     }
   });
-  await upsertBotRuntimeState(pool, {
+  const activatedLease = await renewBotRuntimeLease(pool, {
     ...runtimeIdentity,
-    mode: "polling",
-    alive: true,
-    lockAcquired: true,
     lastHeartbeatAt: new Date(),
     lastError: "",
     stateJson: {
       phase: "polling_active"
     }
   });
+  if (!activatedLease) {
+    throw new Error("runtime_lease_lost_after_launch");
+  }
 
-  heartbeatTimer = setInterval(() => {
-    upsertBotRuntimeState(pool, {
-      ...runtimeIdentity,
-      mode: "polling",
-      alive: true,
-      lockAcquired: true,
-      lastHeartbeatAt: new Date(),
-      lastError: "",
-      stateJson: {
-        phase: "heartbeat"
-      }
-    }).catch(() => {});
-  }, 10000);
-  heartbeatTimer.unref?.();
-
-  let shuttingDown = false;
   async function shutdown(signal) {
     if (shuttingDown) {
       return;
@@ -5097,14 +5087,8 @@ async function start() {
     try {
       bot.stop(signal);
     } catch {}
-    try {
-      await releaseInstanceLock(lock);
-    } catch {}
-    await upsertBotRuntimeState(pool, {
+    await releaseBotRuntimeLease(pool, {
       ...runtimeIdentity,
-      mode: "disabled",
-      alive: false,
-      lockAcquired: false,
       stoppedAt: new Date(),
       lastHeartbeatAt: new Date(),
       lastError: "",
@@ -5124,6 +5108,43 @@ async function start() {
       await pool.end();
     } catch {}
   }
+
+  heartbeatTimer = setInterval(() => {
+    if (heartbeatInFlight || shuttingDown) {
+      return;
+    }
+    heartbeatInFlight = true;
+    renewBotRuntimeLease(pool, {
+      ...runtimeIdentity,
+      lastHeartbeatAt: new Date(),
+      lastError: "",
+      stateJson: {
+        phase: "heartbeat"
+      }
+    })
+      .then(async (leaseState) => {
+        if (leaseState) {
+          return;
+        }
+        logEvent("bot_runtime_lease_lost", {
+          state_key: runtimeIdentity.stateKey,
+          instance_ref: runtimeIdentity.instanceRef
+        });
+        await appendBotRuntimeEvent(pool, {
+          stateKey: runtimeIdentity.stateKey,
+          eventType: "lease_lost",
+          eventJson: {
+            state_key: runtimeIdentity.stateKey,
+            instance_ref: runtimeIdentity.instanceRef
+          }
+        }).catch(() => {});
+        await shutdown("LEASE_LOST").catch(() => {});
+      })
+      .finally(() => {
+        heartbeatInFlight = false;
+      });
+  }, 10000);
+  heartbeatTimer.unref?.();
 
   process.once("SIGINT", () => {
     shutdown("SIGINT").catch(() => {});
