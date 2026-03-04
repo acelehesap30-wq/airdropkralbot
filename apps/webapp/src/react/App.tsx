@@ -9,7 +9,7 @@ import {
 import { createUiAnalyticsClient, type UiAnalyticsClient } from "./analytics";
 import { normalizeLang, t, tabLabel } from "./i18n";
 import { useReactShellStore } from "./store";
-import type { BootstrapV2Payload, TabKey, WebAppAuth } from "./types";
+import type { AnalyticsConfig, BootstrapV2Payload, TabKey, WebAppAuth } from "./types";
 import "./styles.css";
 
 type ReactWebAppV1Props = {
@@ -20,6 +20,31 @@ type ReactWebAppV1Props = {
 function safeNum(value: unknown): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function formatNumber(value: unknown, digits = 0, fallback = "-"): string {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+  return parsed.toFixed(Math.max(0, Math.min(8, Number(digits) || 0)));
+}
+
+function resolveAnalyticsConfig(raw: unknown): AnalyticsConfig | null {
+  const analytics = raw && typeof raw === "object" ? (raw as Partial<AnalyticsConfig>) : null;
+  const sessionRef = String(analytics?.session_ref || "").trim();
+  if (!sessionRef) {
+    return null;
+  }
+  const flushInterval = Number(analytics?.flush_interval_ms);
+  const maxBatch = Number(analytics?.max_batch_size);
+  const sampleRate = Number(analytics?.sample_rate);
+  return {
+    session_ref: sessionRef,
+    flush_interval_ms: Number.isFinite(flushInterval) && flushInterval > 0 ? Math.floor(flushInterval) : 6000,
+    max_batch_size: Number.isFinite(maxBatch) && maxBatch > 0 ? Math.floor(maxBatch) : 40,
+    sample_rate: Number.isFinite(sampleRate) ? Math.max(0, Math.min(1, sampleRate)) : 1
+  };
 }
 
 function shortTime(iso: string): string {
@@ -74,14 +99,15 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
     if (!data) {
       return;
     }
+    const analyticsConfig = resolveAnalyticsConfig(data.analytics);
+    if (!analyticsConfig) {
+      analyticsRef.current?.dispose();
+      analyticsRef.current = null;
+      return;
+    }
     const analytics = createUiAnalyticsClient({
       auth,
-      config: data.analytics || {
-        session_ref: `react_${Date.now()}`,
-        flush_interval_ms: 6000,
-        max_batch_size: 40,
-        sample_rate: 1
-      },
+      config: analyticsConfig,
       language: normalizeLang(lang),
       variantKey: data.experiment?.variant === "treatment" ? "treatment" : "control",
       experimentKey: String(data.experiment?.key || "webapp_react_v1"),
@@ -200,6 +226,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
   const balances = data?.balances || {};
   const season = data?.season || {};
   const daily = data?.daily || {};
+  const publicName = String(profile.public_name || "").trim();
 
   return (
     <div className="akrReactRoot">
@@ -227,7 +254,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
       </header>
 
       <section className="akrMetaStrip akrGlass">
-        <span>{t(lang, "variant")}: {data?.experiment?.variant || "control"}</span>
+        <span>{t(lang, "variant")}: {data?.experiment?.variant || "-"}</span>
         <span>{t(lang, "analytics")}: {data?.analytics?.session_ref || "-"}</span>
         <span>
           {t(lang, "quality")}: {String(data?.ui_prefs?.quality_mode || "auto").toUpperCase()}
@@ -252,27 +279,27 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
             {tab === "home" && (
               <section className="akrCard akrCardWide">
                 <h2>{t(lang, "home_overview")}</h2>
-                <p className="akrHeroName">{String(profile.public_name || "Kral")}</p>
+                <p className="akrHeroName">{publicName || t(lang, "unknown_player")}</p>
                 <p className="akrMuted">
-                  Tier {String(profile.kingdom_tier || "-")} | Streak {safeNum(profile.current_streak)}
+                  Tier {String(profile.kingdom_tier ?? "-")} | Streak {formatNumber(profile.current_streak)}
                 </p>
                 <div className="akrChipRow">
-                  <span className="akrChip">SC {safeNum(balances.SC).toFixed(0)}</span>
-                  <span className="akrChip">HC {safeNum(balances.HC).toFixed(0)}</span>
-                  <span className="akrChip">RC {safeNum(balances.RC).toFixed(0)}</span>
-                  <span className="akrChip">NXT {safeNum(balances.NXT).toFixed(0)}</span>
+                  <span className="akrChip">SC {formatNumber(balances.SC)}</span>
+                  <span className="akrChip">HC {formatNumber(balances.HC)}</span>
+                  <span className="akrChip">RC {formatNumber(balances.RC)}</span>
+                  <span className="akrChip">NXT {formatNumber(balances.NXT)}</span>
                 </div>
                 <div className="akrSplit">
                   <div>
                     <h3>{t(lang, "home_season")}</h3>
-                    <p className="akrValue">S{safeNum(season.season_id)} · {safeNum(season.days_left)}d</p>
-                    <p className="akrMuted">SP {safeNum(season.points).toFixed(0)}</p>
+                    <p className="akrValue">S{formatNumber(season.season_id)} | {formatNumber(season.days_left)}d</p>
+                    <p className="akrMuted">SP {formatNumber(season.points)}</p>
                   </div>
                   <div>
                     <h3>{t(lang, "home_daily")}</h3>
-                    <p className="akrValue">{safeNum(daily.tasks_done)} / {safeNum(daily.daily_cap)}</p>
+                    <p className="akrValue">{formatNumber(daily.tasks_done)} / {formatNumber(daily.daily_cap)}</p>
                     <p className="akrMuted">
-                      {safeNum(daily.sc_earned)} SC · {safeNum(daily.rc_earned)} RC
+                      {formatNumber(daily.sc_earned)} SC | {formatNumber(daily.rc_earned)} RC
                     </p>
                   </div>
                 </div>
@@ -291,7 +318,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
                     {t(lang, "pvp_refresh")}
                   </button>
                 </div>
-                <pre className="akrJsonBlock">{JSON.stringify(pvpRuntime.session || data?.pvp_content || {}, null, 2)}</pre>
+                <pre className="akrJsonBlock">{JSON.stringify(pvpRuntime.session || data?.pvp_content || null, null, 2)}</pre>
               </section>
             )}
 
@@ -304,8 +331,8 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
                 <ul className="akrList">
                   {(data?.missions?.list || []).slice(0, advanced ? 20 : 8).map((row: any, idx) => (
                     <li key={`${idx}_${String(row?.key || row?.task_key || "task")}`}>
-                      <strong>{String(row?.title || row?.task_key || row?.id || "task")}</strong>
-                      <span>{String(row?.status || row?.state || "open")}</span>
+                      <strong>{String(row?.title || row?.task_key || row?.id || t(lang, "unknown_task"))}</strong>
+                      <span>{String(row?.status || row?.state || t(lang, "status_unknown"))}</span>
                     </li>
                   ))}
                 </ul>
@@ -343,8 +370,11 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
               <ul className="akrList">
                 {(adminRuntime.queue || []).slice(0, advanced ? 100 : 20).map((row, idx) => (
                   <li key={`${idx}_${String(row?.queue_key || row?.request_id || "row")}`}>
-                    <strong>{String(row?.kind || "-")} #{safeNum(row?.request_id).toFixed(0)}</strong>
-                    <span>{String(row?.status || "pending")}</span>
+                    <strong>
+                      {String(row?.kind || t(lang, "unknown_request"))}
+                      {Number.isFinite(Number(row?.request_id)) && Number(row?.request_id) > 0 ? ` #${formatNumber(row?.request_id)}` : ""}
+                    </strong>
+                    <span>{String(row?.status || t(lang, "status_unknown"))}</span>
                   </li>
                 ))}
               </ul>
@@ -390,3 +420,4 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
     </div>
   );
 }
+

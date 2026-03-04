@@ -29,6 +29,11 @@ export function createUiAnalyticsClient(initial: AnalyticsContext): UiAnalyticsC
   let queue: UiEventRecord[] = [];
   let timer: number | null = null;
 
+  const hasTelemetryIdentity = () => {
+    const sessionRef = String(ctx.config.session_ref || "").trim();
+    return Boolean(sessionRef && ctx.auth.uid && ctx.auth.ts && ctx.auth.sig);
+  };
+
   const schedule = () => {
     if (timer != null) {
       window.clearTimeout(timer);
@@ -39,6 +44,10 @@ export function createUiAnalyticsClient(initial: AnalyticsContext): UiAnalyticsC
   };
 
   const flush = async () => {
+    if (!hasTelemetryIdentity()) {
+      queue = [];
+      return;
+    }
     if (queue.length <= 0) {
       return;
     }
@@ -76,6 +85,9 @@ export function createUiAnalyticsClient(initial: AnalyticsContext): UiAnalyticsC
   };
 
   const track = (event: UiEventRecord) => {
+    if (!hasTelemetryIdentity()) {
+      return;
+    }
     const sample = Number(ctx.config.sample_rate || 1);
     if (sample < 1 && Math.random() > sample) {
       return;

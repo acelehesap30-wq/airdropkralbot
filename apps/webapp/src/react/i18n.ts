@@ -37,7 +37,11 @@ const DICT = {
     analytics: "Analitik",
     variant: "Variant",
     quality: "Kalite",
-    language: "Dil"
+    language: "Dil",
+    unknown_player: "Bilinmeyen Oyuncu",
+    unknown_task: "Bilinmeyen Gorev",
+    unknown_request: "Bilinmeyen Talep",
+    status_unknown: "Durum bilinmiyor"
   },
   en: {
     app_title: "Nexus Arena React V1",
@@ -73,7 +77,11 @@ const DICT = {
     analytics: "Analytics",
     variant: "Variant",
     quality: "Quality",
-    language: "Language"
+    language: "Language",
+    unknown_player: "Unknown Player",
+    unknown_task: "Unknown Task",
+    unknown_request: "Unknown Request",
+    status_unknown: "Status unavailable"
   }
 } as const;
 

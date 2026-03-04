@@ -580,14 +580,14 @@ function toFailureSet(command, scope = "player", lang = "tr") {
   const key = String(command.key || "");
   if (lang === "en") {
     const base = [
-      "Invalid arguments: check syntax and placeholders.",
+      "Invalid arguments: check syntax and required parameters.",
       "Rate/cooldown guard: retry after waiting."
     ];
     if (scope === "admin") {
       base.push("Permission/confirmation required for critical admin actions.");
     }
     if (ARG_SENSITIVE_COMMANDS.has(key)) {
-      base.push("Argument mismatch: validate required placeholders and argument order.");
+      base.push("Argument mismatch: validate required parameters and argument order.");
     }
     if (ADMIN_CONFIRM_COMMANDS.has(key)) {
       base.push("Critical command may require explicit `confirm` prefix.");
@@ -599,7 +599,7 @@ function toFailureSet(command, scope = "player", lang = "tr") {
     return uniqueStrings([...base, ...extras]).slice(0, 5);
   }
   const base = [
-    "Arguman hatasi: komut soz dizimini ve placeholder alanlarini kontrol et.",
+    "Arguman hatasi: komut soz dizimini ve zorunlu parametreleri kontrol et.",
     "Cooldown/rate limit: kisa sure bekleyip tekrar dene."
   ];
   if (scope === "admin") {
@@ -648,7 +648,7 @@ function buildOperationFlow(commandKey, category, scope, syntaxRows = [], lang =
     rows.push("Kritik aksiyonlarda confirm/cooldown policy adimini tamamlamadan tekrar deneme.");
   }
   if (ARG_SENSITIVE_COMMANDS.has(commandKey)) {
-    rows.push("Arguman sirasini sabit tut; placeholder alanlari pozisyoneldir.");
+    rows.push("Arguman sirasini sabit tut; parametreler pozisyoneldir.");
   }
   return uniqueStrings(rows).slice(0, 4);
 }

@@ -3147,6 +3147,47 @@ async function buildTokenView(db, profile, appConfig) {
   };
 }
 
+function resolveQuickTokenBuyPlan(tokenConfig, appConfig) {
+  const minUsdRaw = Number(tokenConfig?.purchase?.min_usd || 0);
+  const minUsd = minUsdRaw > 0 ? Number(minUsdRaw.toFixed(2)) : 1;
+  const chainKeys = Object.keys(tokenConfig?.purchase?.chains || {});
+  for (const chainKey of chainKeys) {
+    const chainConfig = tokenEngine.getChainConfig(tokenConfig, chainKey);
+    if (!chainConfig) {
+      continue;
+    }
+    const payAddress = tokenEngine.resolvePaymentAddress(appConfig, chainConfig);
+    if (!payAddress) {
+      continue;
+    }
+    return {
+      usdAmount: minUsd,
+      chain: String(chainConfig.chain || chainKey).toUpperCase()
+    };
+  }
+  return null;
+}
+
+async function fetchQuickTokenBuyPlan(pool, appConfig) {
+  return withTransaction(pool, async (db) => {
+    const runtimeConfig = await configService.getEconomyConfig(db);
+    const tokenConfig = tokenEngine.normalizeTokenConfig(runtimeConfig);
+    if (!tokenConfig.enabled) {
+      return null;
+    }
+    return resolveQuickTokenBuyPlan(tokenConfig, appConfig);
+  });
+}
+
+async function sendQuickTokenBuyIntent(ctx, pool, appConfig) {
+  const quickPlan = await fetchQuickTokenBuyPlan(pool, appConfig).catch(() => null);
+  if (!quickPlan) {
+    await ctx.replyWithMarkdown("*Token Satin Alma*\nAktif odeme kanali bulunamadi. Token panelinden durumu kontrol et.");
+    return;
+  }
+  await createTokenBuyIntent(ctx, pool, appConfig, quickPlan.usdAmount, quickPlan.chain);
+}
+
 async function sendToken(ctx, pool, appConfig) {
   const payload = await withTransaction(pool, async (db) => {
     const profile = await ensureProfileTx(db, ctx);
@@ -4807,8 +4848,13 @@ function buildCommandHandlerMap({ pool, appConfig }) {
   map.set("buytoken", async (ctx) => {
     const args = parseTokenBuyArgs(extractCommandArgs(ctx));
     if (!args.usdAmount || !args.chain) {
+      const quickPlan = await fetchQuickTokenBuyPlan(pool, appConfig).catch(() => null);
+      if (!quickPlan) {
+        await ctx.replyWithMarkdown("*Token Satin Alma*\nAktif odeme kanali bulunamadi. Token panelinden durumu kontrol et.");
+        return;
+      }
       await ctx.replyWithMarkdown(
-        "*Token Satin Alma*\nKullanim: `/buytoken <usd> <chain>`\nOrnek: `/buytoken 5 TON`",
+        `*Token Satin Alma*\nHazir komut: \`/buytoken ${Number(quickPlan.usdAmount).toFixed(2)} ${quickPlan.chain}\``,
         { parse_mode: "Markdown" }
       );
       return;
@@ -5147,11 +5193,7 @@ async function start() {
     OPEN_PLAY: async (ctx) => sendPlay(ctx, pool, appConfig),
     OPEN_ARENA_RANK: async (ctx) => sendArenaRank(ctx, pool),
     TOKEN_MINT: async (ctx) => mintToken(ctx, pool, appConfig),
-    TOKEN_BUY_SAMPLE: async (ctx) =>
-      ctx.replyWithMarkdown(
-        "*Token Satin Alma Ornegi*\n`/buytoken 5 TON`\nOdemeden sonra tx gonder:\n`/tx <requestId> <txHash>`",
-        { parse_mode: "Markdown" }
-      ),
+    TOKEN_BUY_QUICK: async (ctx) => sendQuickTokenBuyIntent(ctx, pool, appConfig),
     ADMIN_PANEL_REFRESH: async (ctx) => sendAdminPanel(ctx, pool, appConfig),
     ADMIN_OPEN_PAYOUTS: async (ctx) => sendAdminPayoutQueue(ctx, pool, appConfig),
     ADMIN_OPEN_QUEUE: async (ctx) => sendAdminQueue(ctx, pool, appConfig),

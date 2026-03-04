@@ -46,7 +46,7 @@ const BOT_UI_TEXT = Object.freeze({
     refresh_status: "Durumu Yenile",
     token_status: "Token Durumu",
     token_mint_max: "Token Mint (Max)",
-    token_buy_sample: "Satinalma Talep Ornegi",
+    token_buy_quick: "Hizli Satin Alma",
     back_to_panel: "Bot Paneline Don",
     open_browser: "Tarayici ile Ac",
     raid_safe: "Raid Temkinli",
@@ -115,7 +115,7 @@ const BOT_UI_TEXT = Object.freeze({
     refresh_status: "Refresh Status",
     token_status: "Token Status",
     token_mint_max: "Token Mint (Max)",
-    token_buy_sample: "Buy Request Sample",
+    token_buy_quick: "Quick Buy Intent",
     back_to_panel: "Back to Bot Panel",
     open_browser: "Open in Browser",
     raid_safe: "Raid Safe",
@@ -334,7 +334,7 @@ function buildTokenKeyboard(lang = "tr") {
         Markup.button.callback(uiText(lang, "token_status"), "OPEN_TOKEN"),
         Markup.button.callback(uiText(lang, "token_mint_max"), "TOKEN_MINT")
       ],
-      [Markup.button.callback(uiText(lang, "token_buy_sample"), "TOKEN_BUY_SAMPLE")],
+      [Markup.button.callback(uiText(lang, "token_buy_quick"), "TOKEN_BUY_QUICK")],
       [Markup.button.callback(uiText(lang, "back_to_panel"), "OPEN_TASKS")]
     ],
     { columns: 1 }
