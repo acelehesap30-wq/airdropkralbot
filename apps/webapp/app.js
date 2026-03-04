@@ -842,6 +842,7 @@
     const assetRuntime = state.admin?.assetRuntimeMetrics || {};
     const assetManifest = state.v3?.assetManifestMeta || {};
     const diagnostics = state.v3?.pvpTickMeta?.diagnostics || state.v3?.pvpTickMeta?.state_json?.diagnostics || {};
+    const stateMutatorBridge = getStateMutatorBridge();
     const queueSize = Math.max(0, asNum(state.v3?.pvpQueue?.length || 0));
     const tickMs = Math.max(220, asNum(state.v3?.pvpTickMs || state.v3?.pvpTickMeta?.tick_ms || 1000));
     const windowMs = clamp(asNum(state.v3?.pvpActionWindowMs || state.v3?.pvpTickMeta?.action_window_ms || 800), 80, tickMs);

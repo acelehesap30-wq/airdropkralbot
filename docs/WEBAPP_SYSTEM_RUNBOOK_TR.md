@@ -1,0 +1,155 @@
+# WebApp Sistem Kurulum + Gelistirme Runbook (TR)
+
+## 1) Amac
+Bu runbook, Telegram Mini App (webapp) tarafini uretim/staging/local ortamlarda deterministik sekilde ayaga kaldirmak, calisma kosullarini dogrulamak ve gelistirme akislarini standartlastirmak icin hazirlandi.
+
+Kapsam:
+- `apps/webapp`
+- `apps/admin-api` (webapp endpointleri)
+- `apps/bot` (launch url + auth imza)
+- `scripts/*` calistirma/dogrulama araclari
+
+## 2) Sistem Akisi (Kisa)
+1. Bot, kullanici icin imzali webapp URL uretir (`uid`, `ts`, `sig`).
+2. WebApp, bootstrap endpointinden profil/flag/runtime verisini ceker.
+3. Kritik aksiyonlarda `action_request_id` ile idempotency zorunlu uygulanir.
+4. Admin API, auth/imza ve actor kontrollerinden sonra aksiyonu isler.
+
+## 3) Yerel Kurulum (Local Bootstrap)
+### 3.1 On kosullar
+- Node + npm
+- Postgres baglantisi (`DATABASE_URL`)
+- Telegram bot token + admin id
+
+### 3.2 `.env` saglik kontrolu
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\doctor.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\check_render_env.ps1 -Strict
+```
+
+### 3.3 Migration + build + servis kaldirma
+```powershell
+npm run migrate:node
+npm run build:webapp
+npm run dev:admin
+npm run dev:bot
+```
+
+Tek komutta acmak icin:
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\dev_up.ps1
+```
+
+HTTPS tunnel gerekiyorsa:
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\dev_up.ps1 -WithTunnel -Port 4000
+```
+
+## 4) Uretim Hazirlik Kontrol Listesi
+### 4.1 Zorunlu env
+- `DATABASE_URL`
+- `ADMIN_API_TOKEN`
+- `ADMIN_TELEGRAM_ID`
+- `BOT_TOKEN`
+- `BOT_INSTANCE_LOCK_KEY`
+- `WEBAPP_PUBLIC_URL`
+- `WEBAPP_HMAC_SECRET`
+
+### 4.2 WebApp kritik env
+- `WEBAPP_TS_BUNDLE_ENABLED=1`
+- `WEBAPP_V3_ENABLED=1`
+- `FLAG_SOURCE_MODE=env_locked` veya `db_override`
+
+### 4.3 Onerilen runtime
+- `BOT_ENABLED=1`
+- `BOT_DRY_RUN=0`
+- `KEEP_ADMIN_ON_BOT_EXIT=1`
+- `BOT_AUTO_RESTART=1`
+
+### 4.4 Deploy sirasi
+1. `npm run build:webapp`
+2. `npm run test:webapp`
+3. `npm run test:admin-api`
+4. `npm run test:bot`
+5. `npm run check:release`
+
+## 5) Sik Hata Kodlari ve Kisa Cozum
+### `stateMutatorBridge is not defined`
+Neden:
+- eski bundle cache
+- dist/sourcemap karisimi
+- yari deploy
+
+Cozum:
+1. `npm run build:webapp`
+2. `WEBAPP_TS_BUNDLE_ENABLED=1` ve dist dosyalari mevcut mu kontrol et
+3. CDN/telegram cache temizleyip yeni `?v=` ile ac
+4. Admin API restart + bot restart
+
+### `webapp_secret_missing`
+Neden: `WEBAPP_HMAC_SECRET` bos.
+Cozum: env tanimla, redeploy et.
+
+### `expired`, `skew`, `bad_sig`, `missing`
+Neden: imza/ts uyumsuzlugu.
+Cozum:
+- Bot ve API ayni secret kullanmali
+- sunucu saati drift olmamali
+- URL parametreleri truncation olmamali
+
+### `idempotency_conflict`
+Neden: ayni `action_request_id` farkli payload ile tekrarlandi.
+Cozum:
+- yeni `action_request_id` uret
+- UI retry sadece network/timeout durumunda tekrar etsin
+
+### `invalid_action_request_id`
+Neden: request id formati gecersiz.
+Cozum: UI helper disinda id olusturma; tek helper kullan.
+
+## 6) Gozlemlenebilirlik
+Canary/prod izlenecek metrikler:
+- `/webapp/api/v2/bootstrap` hata orani
+- auth reason dagilimi (`expired/bad_sig/skew/missing`)
+- `409 idempotency_conflict` orani
+- admin queue status dagilimi
+- `/tx` hata orani + token queue backlog
+
+## 7) Gelistirme Faz Plani
+### Faz A - Stabilite Kilidi
+1. Auth reason dagilimini dashboard'a bagla
+2. Idempotency conflict loglarinda payload hash karsilastirma sinyalini zorunlu tut
+3. Bootstrap fallback zincirini testlerle sabitle
+
+### Faz B - Performans ve UX
+1. Ýlk yukleme (bootstrap + assets) suresini butun cihaz segmentlerinde olc
+2. Retry politikasini sadece transport hatalarina sinirla
+3. WebApp hata paneline operasyonel cozum ipuclari ekle
+
+### Faz C - Moduler Sertlestirme
+1. `apps/webapp/app.js` sorumluluklarini `action-dispatch`, `auth-client`, `i18n`, `scene-runtime` katmanlarina ayir
+2. Her katman icin smoke test ve contract test ekle
+3. Davranis degismeyen parcali PR stratejisi uygula
+
+## 8) Rollback Plani
+Trigger:
+- bootstrap error rate baseline +%30 ustu
+- auth reasonlarinda `bad_sig` beklenmeyen sicrama
+- 409 conflict oraninda kalici artis
+
+Aksiyon:
+1. Son stabil release revision'a don
+2. `WEBAPP_VERSION_OVERRIDE` ile sabit versiyon pinle
+3. Bot + admin-api yeniden baslat
+4. KPI/guard scriptleri ile 30 dk dogrula
+
+## 9) Operasyon Komutlari (Kisa Referans)
+```powershell
+npm run build:webapp
+npm run test:webapp
+npm run test:admin-api
+npm run test:bot
+npm run kpi:v5:snapshot
+npm run kpi:v5:bundle
+powershell -ExecutionPolicy Bypass -File .\scripts\check_render_env.ps1 -Strict
+```

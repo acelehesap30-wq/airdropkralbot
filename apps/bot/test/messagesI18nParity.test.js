@@ -2,6 +2,8 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const messages = require("../src/messages");
 const { buildPlayKeyboard } = require("../src/ui/keyboards");
+const { getCommandRegistry } = require("../src/commands/registry");
+const { buildHelpCards } = require("../src/commands/helpCards");
 
 test("formatGuide renders English copy when lang is en", () => {
   const text = messages.formatGuide(
@@ -42,4 +44,58 @@ test("buildPlayKeyboard uses English labels for en locale", () => {
   const labels = rows.flat().map((button) => button.text);
 
   assert.deepEqual(labels, ["Open Arena 3D", "Open in Browser", "Back to Bot Panel"]);
+});
+
+test("help index rendering stays within budget and includes navigation hints", () => {
+  const cards = buildHelpCards(getCommandRegistry()).slice(0, 6);
+  const text = messages.formatHelpIndex({
+    lang: "tr",
+    categoryLabel: "Core Loop",
+    categories: [
+      { key: "core_loop", label: "Core Loop", active: true },
+      { key: "economy", label: "Ekonomi", active: false }
+    ],
+    items: cards,
+    page: 1,
+    totalPages: 1,
+    totalItems: cards.length
+  });
+
+  assert.ok(text.length <= 1800);
+  assert.match(text, /\*Komut Merkezi \/\/ Indeks\*/);
+  assert.match(text, /\/help <komut>/);
+});
+
+test("help command card keeps TR/EN limits", () => {
+  const cards = buildHelpCards(getCommandRegistry());
+  const tokenCard = cards.find((row) => row.key === "token");
+  assert.ok(tokenCard);
+
+  const trText = messages.formatHelpCommandCard(tokenCard, { lang: "tr", categoryLabel: "Ekonomi" });
+  const enText = messages.formatHelpCommandCard(tokenCard, { lang: "en", categoryLabel: "Economy" });
+
+  assert.ok(trText.length <= 2400);
+  assert.ok(enText.length <= 1400);
+  assert.match(trText, /\*Operasyon Akisi\*/);
+  assert.match(enText, /\*Operation Flow\*/);
+  assert.match(trText, /\*Kullanim\*/);
+  assert.match(enText, /\*Syntax\*/);
+});
+
+test("help not-found and access-denied templates are explicit", () => {
+  const notFound = messages.formatHelpNotFound({
+    lang: "tr",
+    query: "tokn",
+    suggestions: ["token", "tasks"]
+  });
+  assert.match(notFound, /Help Sorgusu Bulunamadi/);
+  assert.match(notFound, /\/token/);
+
+  const denied = messages.formatHelpAccessDenied({
+    lang: "tr",
+    commandKey: "admin_freeze",
+    alternatives: ["status", "ops"]
+  });
+  assert.match(denied, /admin kapsamindadir/);
+  assert.match(denied, /\/status/);
 });

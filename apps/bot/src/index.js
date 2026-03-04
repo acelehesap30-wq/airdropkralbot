@@ -34,7 +34,7 @@ const {
   evaluateAdminPolicy,
   buildAdminActionSignature: buildAdminPolicySignature
 } = require("../../../packages/shared/src/v5/adminPolicyEngine");
-const { getCommandRegistry, toTelegramCommands, buildAliasLookup, getPrimaryCommands } = require("./commands/registry");
+const { getCommandRegistry, toTelegramCommands, buildAliasLookup } = require("./commands/registry");
 const { buildIntentIndex, resolveIntent, normalizeMode } = require("./commands/intentRouter");
 const { normalizeLanguage } = require("./i18n");
 const {
@@ -43,6 +43,8 @@ const {
   buildMoreMenuKeyboard,
   buildGuideKeyboard,
   buildHelpKeyboard,
+  buildHelpIndexKeyboard,
+  buildHelpCommandCardKeyboard,
   buildCompleteKeyboard,
   buildRevealKeyboard,
   buildPostRevealKeyboard,
@@ -56,6 +58,15 @@ const {
   buildAdminPayoutActionKeyboard,
   buildAdminTokenActionKeyboard
 } = require("./ui/keyboards");
+const {
+  buildHelpCards,
+  buildHelpCardMap,
+  validateHelpCardsCoverage,
+  getHelpCategories,
+  categoryLabel,
+  resolveHelpTarget,
+  suggestHelpKeys
+} = require("./commands/helpCards");
 const { createSafeMarkdownReplyMiddleware } = require("./utils/safeMarkdownReply");
 const { createSlashCommandTelemetryMiddleware } = require("./telemetry/slashTelemetry");
 
@@ -192,6 +203,16 @@ const WEBAPP_BOOTSTRAP_CACHE = new Map();
 const COMMAND_REGISTRY = getCommandRegistry();
 const COMMAND_ALIAS_LOOKUP = buildAliasLookup(COMMAND_REGISTRY);
 const COMMAND_INTENT_INDEX = buildIntentIndex(COMMAND_REGISTRY);
+const HELP_CARDS = Object.freeze(buildHelpCards(COMMAND_REGISTRY));
+const HELP_CARD_MAP = buildHelpCardMap(HELP_CARDS);
+const HELP_CARD_COVERAGE = validateHelpCardsCoverage(COMMAND_REGISTRY, HELP_CARDS);
+if (!HELP_CARD_COVERAGE.ok) {
+  if (HELP_CARD_COVERAGE.missing.length > 0) {
+    throw new Error(`missing_help_card:${HELP_CARD_COVERAGE.missing[0]}`);
+  }
+  throw new Error(`orphan_help_card:${HELP_CARD_COVERAGE.orphan[0]}`);
+}
+const HELP_INDEX_PAGE_SIZE = 6;
 const ADMIN_CONFIRM_TTL_MS = 90_000;
 const ADMIN_COOLDOWN_MS = 8_000;
 const ADMIN_CONFIRM_STATE = new Map();
@@ -455,6 +476,340 @@ function parseLanguageChoice(input) {
     return "en";
   }
   return "";
+}
+
+function normalizeHelpPage(rawValue, fallback = 1) {
+  const parsed = Number(rawValue);
+  if (!Number.isFinite(parsed)) {
+    return Math.max(1, Number(fallback || 1));
+  }
+  return Math.max(1, Math.floor(parsed));
+}
+
+function paginateRows(rows, page = 1, pageSize = HELP_INDEX_PAGE_SIZE) {
+  const safeRows = Array.isArray(rows) ? rows : [];
+  const safePageSize = Math.max(1, Number(pageSize || HELP_INDEX_PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(safeRows.length / safePageSize));
+  const safePage = Math.max(1, Math.min(totalPages, normalizeHelpPage(page, 1)));
+  const start = (safePage - 1) * safePageSize;
+  const items = safeRows.slice(start, start + safePageSize);
+  return {
+    items,
+    page: safePage,
+    totalPages,
+    totalItems: safeRows.length
+  };
+}
+
+function resolveHelpSource(ctx, fallback = "slash") {
+  if (ctx?.callbackQuery) {
+    return "callback";
+  }
+  const text = String(ctx?.message?.text || "").trim();
+  if (text.startsWith("/")) {
+    return "slash";
+  }
+  return fallback;
+}
+
+function orderedHelpCards(includeAdmin = false, category = "") {
+  const order = new Map(COMMAND_REGISTRY.map((row, idx) => [String(row.key || ""), idx]));
+  return HELP_CARDS.filter((card) => {
+    if (!includeAdmin && card.scope === "admin") {
+      return false;
+    }
+    if (category && String(card.category) !== String(category)) {
+      return false;
+    }
+    return true;
+  }).sort((a, b) => {
+    const left = order.get(String(a.key || "")) ?? Number.MAX_SAFE_INTEGER;
+    const right = order.get(String(b.key || "")) ?? Number.MAX_SAFE_INTEGER;
+    return left - right;
+  });
+}
+
+function buildHelpCategoriesForView(includeAdmin = false, lang = "tr") {
+  const cards = orderedHelpCards(includeAdmin);
+  const countByCategory = new Map();
+  for (const card of cards) {
+    countByCategory.set(card.category, Number(countByCategory.get(card.category) || 0) + 1);
+  }
+  const categories = getHelpCategories({ includeAdmin }).map((category) => ({
+    key: category.key,
+    label: categoryLabel(category.key, lang),
+    count: Number(countByCategory.get(category.key) || 0)
+  }));
+  return categories.filter((row) => row.count > 0);
+}
+
+function logHelpInteractionEvent(eventName, ctx, payload = {}) {
+  logEvent(eventName, {
+    user_id: Number(ctx?.from?.id || 0),
+    locale: String(payload.locale || "tr"),
+    query: String(payload.query || ""),
+    resolved_key: String(payload.resolvedKey || ""),
+    category: String(payload.category || ""),
+    source: String(payload.source || "slash")
+  });
+}
+
+async function resolveHelpViewerContext(ctx, pool, appConfig) {
+  const profile = await ensureProfile(pool, ctx).catch(() => null);
+  const locale = resolvePreferredLanguage(profile, ctx, "tr");
+  const includeAdmin = isAdminCtx(ctx, appConfig);
+  return { profile, locale, includeAdmin };
+}
+
+function normalizeHelpAlternatives(suggestions = [], includeAdmin = false, fallback = []) {
+  const allowed = new Set(orderedHelpCards(includeAdmin).map((card) => String(card.key || "")));
+  const out = [];
+  const seen = new Set();
+  const source = [...(Array.isArray(suggestions) ? suggestions : []), ...(Array.isArray(fallback) ? fallback : [])];
+  for (const key of source) {
+    const normalized = String(key || "").trim();
+    if (!normalized || seen.has(normalized) || !allowed.has(normalized)) {
+      continue;
+    }
+    out.push(normalized);
+    seen.add(normalized);
+  }
+  return out.slice(0, 6);
+}
+
+async function sendHelpIndex(ctx, pool, appConfig, payload = {}) {
+  const source = String(payload.source || resolveHelpSource(ctx, "slash"));
+  const query = String(payload.query || "").trim();
+  const requestedCategory = String(payload.category || "core_loop");
+  const requestedPage = normalizeHelpPage(payload.page || 1, 1);
+  const viewer = payload.viewer || (await resolveHelpViewerContext(ctx, pool, appConfig));
+  const categories = buildHelpCategoriesForView(viewer.includeAdmin, viewer.locale);
+  const allowedCategorySet = new Set(categories.map((row) => row.key));
+  const fallbackCategory = categories[0]?.key || "core_loop";
+  const activeCategory = allowedCategorySet.has(requestedCategory) ? requestedCategory : fallbackCategory;
+  const allRows = orderedHelpCards(viewer.includeAdmin, activeCategory);
+  const paged = paginateRows(allRows, requestedPage, HELP_INDEX_PAGE_SIZE);
+  const categoryItems = categories.map((row) => ({
+    ...row,
+    active: row.key === activeCategory
+  }));
+  const text = messages.formatHelpIndex({
+    lang: viewer.locale,
+    categoryLabel: categoryLabel(activeCategory, viewer.locale),
+    categories: categoryItems,
+    items: paged.items,
+    page: paged.page,
+    totalPages: paged.totalPages,
+    totalItems: paged.totalItems
+  });
+  const keyboard = buildHelpIndexKeyboard(
+    {
+      categories: categoryItems,
+      activeCategory,
+      items: paged.items,
+      page: paged.page,
+      totalPages: paged.totalPages
+    },
+    viewer.locale
+  );
+  logHelpInteractionEvent("help_index_opened", ctx, {
+    locale: viewer.locale,
+    query,
+    category: activeCategory,
+    source
+  });
+  await ctx.replyWithMarkdown(text, keyboard);
+}
+
+async function sendHelpCommandCard(ctx, pool, appConfig, payload = {}) {
+  const source = String(payload.source || resolveHelpSource(ctx, "slash"));
+  const key = String(payload.key || "").trim().toLowerCase();
+  const query = String(payload.query || key).trim();
+  const fallbackCategory = String(payload.backCategory || "core_loop");
+  const fallbackPage = normalizeHelpPage(payload.backPage || 1, 1);
+  const viewer = payload.viewer || (await resolveHelpViewerContext(ctx, pool, appConfig));
+  const card = HELP_CARD_MAP.get(key);
+  if (!card) {
+    const suggestions = suggestHelpKeys(query, {
+      cards: HELP_CARDS,
+      aliasLookup: COMMAND_ALIAS_LOOKUP,
+      includeAdmin: viewer.includeAdmin,
+      limit: 4
+    });
+    logHelpInteractionEvent("help_not_found", ctx, {
+      locale: viewer.locale,
+      query,
+      source
+    });
+    await ctx.replyWithMarkdown(
+      messages.formatHelpNotFound({
+        lang: viewer.locale,
+        query,
+        suggestions
+      }),
+      buildHelpIndexKeyboard(
+        {
+          categories: buildHelpCategoriesForView(viewer.includeAdmin, viewer.locale).map((row) => ({ ...row, active: row.key === fallbackCategory })),
+          activeCategory: fallbackCategory,
+          items: paginateRows(orderedHelpCards(viewer.includeAdmin, fallbackCategory), fallbackPage, HELP_INDEX_PAGE_SIZE).items,
+          page: fallbackPage,
+          totalPages: paginateRows(orderedHelpCards(viewer.includeAdmin, fallbackCategory), fallbackPage, HELP_INDEX_PAGE_SIZE).totalPages
+        },
+        viewer.locale
+      )
+    );
+    return;
+  }
+  if (!viewer.includeAdmin && card.scope === "admin") {
+    const alternatives = normalizeHelpAlternatives(
+      [...(Array.isArray(card.related_commands) ? card.related_commands : []), ...suggestHelpKeys("status", { cards: HELP_CARDS, includeAdmin: false, aliasLookup: COMMAND_ALIAS_LOOKUP, limit: 4 })],
+      false,
+      ["status", "help", "menu", "tasks", "wallet"]
+    );
+    logHelpInteractionEvent("help_card_opened", ctx, {
+      locale: viewer.locale,
+      query,
+      resolvedKey: key,
+      category: card.category,
+      source
+    });
+    await ctx.replyWithMarkdown(
+      messages.formatHelpAccessDenied({
+        lang: viewer.locale,
+        commandKey: key,
+        alternatives
+      }),
+      buildHelpCommandCardKeyboard(
+        {
+          relatedCommands: alternatives,
+          backCategory: fallbackCategory,
+          backPage: fallbackPage
+        },
+        viewer.locale
+      )
+    );
+    return;
+  }
+  const categoryRows = orderedHelpCards(viewer.includeAdmin, card.category);
+  const cardIndex = Math.max(
+    0,
+    categoryRows.findIndex((row) => String(row.key || "") === key)
+  );
+  const page = Math.floor(cardIndex / HELP_INDEX_PAGE_SIZE) + 1;
+  const relatedCommands = normalizeHelpAlternatives(card.related_commands, viewer.includeAdmin, ["help", "menu"]);
+  const text = messages.formatHelpCommandCard(card, {
+    lang: viewer.locale,
+    categoryLabel: categoryLabel(card.category, viewer.locale)
+  });
+  logHelpInteractionEvent("help_card_opened", ctx, {
+    locale: viewer.locale,
+    query,
+    resolvedKey: key,
+    category: card.category,
+    source
+  });
+  await ctx.replyWithMarkdown(
+    text,
+    buildHelpCommandCardKeyboard(
+      {
+        relatedCommands,
+        backCategory: card.category,
+        backPage: page
+      },
+      viewer.locale
+    )
+  );
+}
+
+async function sendHelpFromCommand(ctx, pool, appConfig) {
+  const queryRaw = String(extractCommandArgs(ctx) || "").trim();
+  const viewer = await resolveHelpViewerContext(ctx, pool, appConfig);
+  const resolved = resolveHelpTarget(queryRaw, {
+    includeAdmin: viewer.includeAdmin,
+    cards: HELP_CARDS,
+    cardMap: HELP_CARD_MAP,
+    aliasLookup: COMMAND_ALIAS_LOOKUP
+  });
+  const source = resolveHelpSource(ctx, "text_intent");
+  if (resolved.kind === "index") {
+    await sendHelpIndex(ctx, pool, appConfig, {
+      source,
+      query: queryRaw,
+      category: resolved.category,
+      page: 1,
+      viewer
+    });
+    return;
+  }
+  if (resolved.kind === "card") {
+    await sendHelpCommandCard(ctx, pool, appConfig, {
+      source,
+      query: queryRaw,
+      key: resolved.key,
+      viewer
+    });
+    return;
+  }
+  if (resolved.kind === "forbidden") {
+    const forbiddenCard = HELP_CARD_MAP.get(String(resolved.key || ""));
+    const alternatives = normalizeHelpAlternatives(
+      [
+        ...(Array.isArray(forbiddenCard?.related_commands) ? forbiddenCard.related_commands : []),
+        ...suggestHelpKeys("status", {
+          cards: HELP_CARDS,
+          aliasLookup: COMMAND_ALIAS_LOOKUP,
+          includeAdmin: false,
+          limit: 4
+        })
+      ],
+      false,
+      ["status", "help", "menu", "tasks", "wallet"]
+    );
+    logHelpInteractionEvent("help_card_opened", ctx, {
+      locale: viewer.locale,
+      query: queryRaw,
+      resolvedKey: resolved.key,
+      category: resolved.category,
+      source
+    });
+    await ctx.replyWithMarkdown(
+      messages.formatHelpAccessDenied({
+        lang: viewer.locale,
+        commandKey: resolved.key,
+        alternatives
+      }),
+      buildHelpCommandCardKeyboard(
+        {
+          relatedCommands: alternatives,
+          backCategory: "core_loop",
+          backPage: 1
+        },
+        viewer.locale
+      )
+    );
+    return;
+  }
+  const suggestions = normalizeHelpAlternatives(resolved.suggestions, viewer.includeAdmin, ["help", "menu", "tasks", "status"]);
+  logHelpInteractionEvent("help_not_found", ctx, {
+    locale: viewer.locale,
+    query: queryRaw,
+    source
+  });
+  await ctx.replyWithMarkdown(
+    messages.formatHelpNotFound({
+      lang: viewer.locale,
+      query: queryRaw,
+      suggestions
+    }),
+    buildHelpCommandCardKeyboard(
+      {
+        relatedCommands: suggestions,
+        backCategory: "core_loop",
+        backPage: 1
+      },
+      viewer.locale
+    )
+  );
 }
 
 async function insertV5Event(pool, sql, params) {
@@ -3795,18 +4150,20 @@ async function sendUnknownIntentHint(ctx, pool) {
   const lang = resolvePreferredLanguage(profile, ctx, "tr");
   const text =
     lang === "en"
-      ? `*I couldn't resolve that command.*\nTry one of these:\n` +
+      ? `*I couldn't resolve that command.*\nTry one of these quick routes:\n` +
+        `- \`/menu\` -> launcher and shortcuts\n` +
         `- \`tasks\` or \`/tasks\`\n` +
         `- \`finish balanced\`\n` +
         `- \`reveal\`\n` +
         `- \`pvp aggressive\`\n\n` +
-        `You can also use \`/help\` for detailed command cards.`
-      : `*Bu komutu anlayamadim.*\nSunlardan biriyle devam et:\n` +
+        `Open \`/help\` for detailed cards, or \`/lang tr\` / \`/lang en\` to switch language.`
+      : `*Bu komutu anlayamadim.*\nSu hizli rotalardan biriyle devam et:\n` +
+        `- \`/menu\` -> launcher ve kisayollar\n` +
         `- \`gorev\` veya \`/tasks\`\n` +
         `- \`bitir dengeli\`\n` +
         `- \`reveal\`\n` +
         `- \`pvp aggressive\`\n\n` +
-        `Detayli komut kartlari icin \`/help\` yazabilirsin.`;
+        `Detayli kartlar icin \`/help\`, dil degisimi icin \`/lang tr\` veya \`/lang en\` kullan.`;
   await ctx.replyWithMarkdown(text, buildHelpKeyboard(lang));
 }
 
@@ -4493,9 +4850,7 @@ function buildCommandHandlerMap({ pool, appConfig }) {
   });
   map.set("reveal", async (ctx) => revealLatestFromCommand(ctx, pool, appConfig));
   map.set("help", async (ctx) => {
-    const profile = await ensureProfile(pool, ctx);
-    const lang = resolvePreferredLanguage(profile, ctx, "tr");
-    await ctx.replyWithMarkdown(messages.formatHelp({ commands: getPrimaryCommands(COMMAND_REGISTRY), lang }), buildHelpKeyboard(lang));
+    await sendHelpFromCommand(ctx, pool, appConfig);
   });
   map.set("menu", async (ctx) => sendLauncherMenu(ctx, pool));
   map.set("story", async (ctx) => sendGuide(ctx, pool));
@@ -4782,8 +5137,8 @@ async function start() {
       const lang = resolvePreferredLanguage(profile, ctx, "tr");
       const text =
         lang === "en"
-          ? "*Extra Command Hub*\nAdvanced panels and economy actions:"
-          : "*Ek Komut Merkezi*\nIleri paneller ve ekonomik islemler:";
+          ? "*Extra Command Hub*\nAdvanced panels, economy actions and meta controls:"
+          : "*Ek Komut Merkezi*\nIleri paneller, ekonomi aksiyonlari ve meta kontroller:";
       return ctx.replyWithMarkdown(text, buildMoreMenuKeyboard(lang));
     },
     OPEN_HOME_MENU: async (ctx) => sendLauncherMenu(ctx, pool),
@@ -4843,6 +5198,52 @@ async function start() {
       pattern: /REQ_PAYOUT:([A-Z]+)/,
       policy: { actionKey: "payout_request" },
       handler: async (ctx) => handlePayoutRequest(ctx, pool, appConfig)
+    },
+    {
+      pattern: /HELP_SECTION:([a-z_]+):(\d+)/,
+      policy: { actionKey: "help_nav", cooldownMs: 700 },
+      answerCbQuery: true,
+      handler: async (ctx) => {
+        const category = String(ctx.match?.[1] || "core_loop");
+        const page = normalizeHelpPage(ctx.match?.[2] || 1, 1);
+        await sendHelpIndex(ctx, pool, appConfig, {
+          source: "callback",
+          query: category,
+          category,
+          page
+        });
+      }
+    },
+    {
+      pattern: /HELP_CARD:([a-z0-9_]+)/,
+      policy: { actionKey: "help_nav", cooldownMs: 700 },
+      answerCbQuery: true,
+      handler: async (ctx) => {
+        const key = String(ctx.match?.[1] || "").trim().toLowerCase();
+        const card = HELP_CARD_MAP.get(key);
+        await sendHelpCommandCard(ctx, pool, appConfig, {
+          source: "callback",
+          query: key,
+          key,
+          backCategory: card?.category || "core_loop",
+          backPage: 1
+        });
+      }
+    },
+    {
+      pattern: /HELP_BACK:([a-z_]+):(\d+)/,
+      policy: { actionKey: "help_nav", cooldownMs: 700 },
+      answerCbQuery: true,
+      handler: async (ctx) => {
+        const category = String(ctx.match?.[1] || "core_loop");
+        const page = normalizeHelpPage(ctx.match?.[2] || 1, 1);
+        await sendHelpIndex(ctx, pool, appConfig, {
+          source: "callback",
+          query: category,
+          category,
+          page
+        });
+      }
     }
   ]);
 

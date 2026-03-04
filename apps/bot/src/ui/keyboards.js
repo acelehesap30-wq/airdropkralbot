@@ -3,29 +3,29 @@ const { normalizeLanguage } = require("../i18n");
 
 const BOT_UI_TEXT = Object.freeze({
   tr: Object.freeze({
-    task_label: "Gorev",
+    task_label: "Gorev Sec",
     reroll_tasks: "Panel Yenile (1 RC)",
-    daily: "Gunluk",
+    daily: "Gunluk Panel",
     open_play: "Arena 3D Ac",
     onboard: "Onboard",
-    open_tasks: "Gorev Al",
-    pvp_raid: "PvP Raid",
+    open_tasks: "Gorev Havuzu",
+    pvp_raid: "PvP Raid Baslat",
     vault: "Vault",
     wallet: "Cuzdan",
     status: "Durum",
-    story: "Story",
-    more: "Daha Fazla",
+    story: "Story/Rehber",
+    more: "Komut Merkezi+",
     quick_guide: "Hizli Rehber",
     launcher: "Ana Launcher",
-    missions: "Misyonlar",
-    kingdom: "Kingdom",
-    nexus: "Nexus",
+    missions: "Misyonlar/Claim",
+    kingdom: "Kingdom Tier",
+    nexus: "Nexus Pulse",
     arena_raid: "Arena Raid",
     war_room: "War Room",
-    season: "Sezon",
-    shop: "Dukkan",
-    token: "Token",
-    payout: "Cekim",
+    season: "Sezon Panel",
+    shop: "Boost Dukkan",
+    token: "Token Treasury",
+    payout: "Vault Cekim",
     guide_open_task: "1) Gorev Ac",
     guide_finish_balanced: "2) Dengeli Bitir",
     guide_reveal: "3) Reveal Ac",
@@ -61,32 +61,40 @@ const BOT_UI_TEXT = Object.freeze({
     admin_token_queue: "Token Queue",
     admin_reject_payout: "Payout Reddet",
     admin_approve_token: "Token Onayla",
-    admin_reject_token: "Token Reddet"
+    admin_reject_token: "Token Reddet",
+    help_prev: "Geri",
+    help_next: "Ileri",
+    help_back_index: "Indekse Don",
+    help_category_core_loop: "Core Loop",
+    help_category_economy: "Ekonomi",
+    help_category_progression: "Ilerleme",
+    help_category_system: "Sistem",
+    help_category_admin: "Admin"
   }),
   en: Object.freeze({
-    task_label: "Task",
+    task_label: "Select Task",
     reroll_tasks: "Refresh Panel (1 RC)",
-    daily: "Daily",
+    daily: "Daily Panel",
     open_play: "Open Arena 3D",
     onboard: "Onboard",
-    open_tasks: "Take Task",
-    pvp_raid: "PvP Raid",
+    open_tasks: "Task Pool",
+    pvp_raid: "Start PvP Raid",
     vault: "Vault",
     wallet: "Wallet",
     status: "Status",
-    story: "Story",
-    more: "More",
+    story: "Story/Guide",
+    more: "Command Hub+",
     quick_guide: "Quick Guide",
     launcher: "Home Launcher",
-    missions: "Missions",
-    kingdom: "Kingdom",
-    nexus: "Nexus",
+    missions: "Missions/Claim",
+    kingdom: "Kingdom Tier",
+    nexus: "Nexus Pulse",
     arena_raid: "Arena Raid",
     war_room: "War Room",
-    season: "Season",
-    shop: "Shop",
-    token: "Token",
-    payout: "Payout",
+    season: "Season Panel",
+    shop: "Boost Shop",
+    token: "Token Treasury",
+    payout: "Vault Payout",
     guide_open_task: "1) Open Tasks",
     guide_finish_balanced: "2) Finish Balanced",
     guide_reveal: "3) Reveal",
@@ -122,7 +130,15 @@ const BOT_UI_TEXT = Object.freeze({
     admin_token_queue: "Token Queue",
     admin_reject_payout: "Reject Payout",
     admin_approve_token: "Approve Token",
-    admin_reject_token: "Reject Token"
+    admin_reject_token: "Reject Token",
+    help_prev: "Prev",
+    help_next: "Next",
+    help_back_index: "Back to Index",
+    help_category_core_loop: "Core Loop",
+    help_category_economy: "Economy",
+    help_category_progression: "Progression",
+    help_category_system: "System",
+    help_category_admin: "Admin"
   })
 });
 
@@ -198,6 +214,61 @@ function buildHelpKeyboard(lang = "tr") {
     ],
     { columns: 2 }
   );
+}
+
+function helpCategoryLabel(lang, categoryKey) {
+  const key = `help_category_${String(categoryKey || "").toLowerCase()}`;
+  return uiText(lang, key);
+}
+
+function buildHelpIndexKeyboard(payload = {}, lang = "tr") {
+  const categories = Array.isArray(payload.categories) ? payload.categories : [];
+  const items = Array.isArray(payload.items) ? payload.items : [];
+  const activeCategory = String(payload.activeCategory || "core_loop");
+  const totalPages = Math.max(1, Number(payload.totalPages || 1));
+  const page = Math.max(1, Math.min(totalPages, Number(payload.page || 1)));
+  const rows = [];
+
+  const categoryButtons = categories.map((category) => {
+    const key = String(category.key || "");
+    const label = helpCategoryLabel(lang, key) || String(category.label || key || "category");
+    const text = key === activeCategory ? `[${label}]` : label;
+    return Markup.button.callback(text, `HELP_SECTION:${key}:1`);
+  });
+  for (let i = 0; i < categoryButtons.length; i += 2) {
+    rows.push(categoryButtons.slice(i, i + 2));
+  }
+
+  const commandButtons = items.map((card) => Markup.button.callback(`/${String(card.key || "help")}`, `HELP_CARD:${String(card.key || "help")}`));
+  for (let i = 0; i < commandButtons.length; i += 2) {
+    rows.push(commandButtons.slice(i, i + 2));
+  }
+
+  const navRow = [];
+  if (page > 1) {
+    navRow.push(Markup.button.callback(uiText(lang, "help_prev"), `HELP_SECTION:${activeCategory}:${page - 1}`));
+  }
+  navRow.push(Markup.button.callback(`${page}/${totalPages}`, `HELP_SECTION:${activeCategory}:${page}`));
+  if (page < totalPages) {
+    navRow.push(Markup.button.callback(uiText(lang, "help_next"), `HELP_SECTION:${activeCategory}:${page + 1}`));
+  }
+  rows.push(navRow);
+  return Markup.inlineKeyboard(rows, { columns: 2 });
+}
+
+function buildHelpCommandCardKeyboard(payload = {}, lang = "tr") {
+  const relatedCommands = Array.isArray(payload.relatedCommands) ? payload.relatedCommands : [];
+  const backCategory = String(payload.backCategory || "core_loop");
+  const backPage = Math.max(1, Number(payload.backPage || 1));
+  const rows = [];
+  const relatedButtons = relatedCommands
+    .slice(0, 6)
+    .map((key) => Markup.button.callback(`/${String(key || "help")}`, `HELP_CARD:${String(key || "help")}`));
+  for (let i = 0; i < relatedButtons.length; i += 2) {
+    rows.push(relatedButtons.slice(i, i + 2));
+  }
+  rows.push([Markup.button.callback(uiText(lang, "help_back_index"), `HELP_BACK:${backCategory}:${backPage}`)]);
+  return Markup.inlineKeyboard(rows, { columns: 2 });
 }
 
 function buildCompleteKeyboard(attemptId, lang = "tr") {
@@ -367,6 +438,8 @@ module.exports = {
   buildMoreMenuKeyboard,
   buildGuideKeyboard,
   buildHelpKeyboard,
+  buildHelpIndexKeyboard,
+  buildHelpCommandCardKeyboard,
   buildCompleteKeyboard,
   buildRevealKeyboard,
   buildPostRevealKeyboard,

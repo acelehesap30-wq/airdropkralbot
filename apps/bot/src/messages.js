@@ -60,10 +60,14 @@ function formatStart(profile, balances, season, anomaly, contract, options = {})
       `Player: *${publicName}* | Tier *${profile.kingdom_tier}*\n` +
       `Streak: *${profile.current_streak} days* | Balance: *${sc} SC / ${hc} HC / ${rc} RC*${seasonLine}${anomalyLine}${contractLine}\n\n` +
       `*Why here?* Progress via Task -> Finish -> Reveal; season, rank and token panels build on it.\n\n` +
+      `*Quick Routes*\n` +
+      `- Economy: /wallet -> /vault -> /token\n` +
+      `- Progress: /tasks -> /finish balanced -> /reveal\n` +
+      `- Combat: /pvp balanced -> /arena_rank\n\n` +
       `*First 2 steps*\n` +
       `1) *Open Arena 3D* (main panel)\n` +
       `2) *Onboard* (3-step quick setup)\n\n` +
-      `Hud: ${progressBar(profile.current_streak, 14, 14)}\n` +
+      `HUD: ${progressBar(profile.current_streak, 14, 14)}\n` +
       `Shortcuts: /play | /onboard | /tasks | /wallet`
     );
   }
@@ -72,10 +76,14 @@ function formatStart(profile, balances, season, anomaly, contract, options = {})
     `Kral: *${publicName}* | Tier *${profile.kingdom_tier}*\n` +
     `Streak: *${profile.current_streak} gun* | Bakiye: *${sc} SC / ${hc} HC / ${rc} RC*${seasonLine}${anomalyLine}${contractLine}\n\n` +
     `*Neden burada?* Gorev -> Finish -> Reveal dongusu ile ilerlersin; sezon, rank ve token paneli ustune kurulur.\n\n` +
+    `*Hizli Rotalar*\n` +
+    `- Ekonomi: /wallet -> /vault -> /token\n` +
+    `- Ilerleme: /tasks -> /finish dengeli -> /reveal\n` +
+    `- Savas: /pvp dengeli -> /arena_rank\n\n` +
     `*Ilk 2 adim*\n` +
     `1) *Arena 3D Ac* (ana panel)\n` +
     `2) *Onboard* (3 adim hizli kurulum)\n\n` +
-    `Hud: ${progressBar(profile.current_streak, 14, 14)}\n` +
+    `HUD: ${progressBar(profile.current_streak, 14, 14)}\n` +
     `Kisayol: /play | /onboard | /tasks | /wallet`
   );
 }
@@ -153,6 +161,10 @@ function formatGuide(snapshot, options = {}) {
       `- /reveal -> final reward\n` +
       `- /missions and /daily -> extra rewards\n` +
       `- /play -> Nexus Arena web panel\n\n` +
+      `*Command Packs*\n` +
+      `- Economy: /wallet, /vault, /token\n` +
+      `- Meta: /season, /leaderboard, /nexus\n` +
+      `- Utility: /status, /lang, /help\n\n` +
       `Short form: "tasks", "finish balanced", "reveal", "raid aggressive"`
     );
   }
@@ -176,6 +188,10 @@ function formatGuide(snapshot, options = {}) {
     `- /reveal -> kesin odul\n` +
     `- /missions ve /daily -> ek odul\n` +
     `- /play -> Nexus Arena web paneli\n\n` +
+    `*Komut Paketleri*\n` +
+    `- Ekonomi: /wallet, /vault, /token\n` +
+    `- Meta: /season, /leaderboard, /nexus\n` +
+    `- Yardimci: /status, /lang, /help\n\n` +
     `Kisa yazim: "gorev", "bitir dengeli", "reveal", "raid aggressive"`
   );
 }
@@ -208,7 +224,8 @@ function formatOnboard(payload = {}, options = {}) {
       `SC today: *${Number(daily.scEarned || 0)}* | Token: *${Number(token.balance || 0).toFixed(4)} ${symbol}* (@ $${Number(
         token.spotUsd || 0
       ).toFixed(8)})\n\n` +
-      `Then: */play* (Nexus panel) -> */wallet* -> */token*`
+      `Then: */play* (Nexus panel) -> */wallet* -> */token*\n` +
+      `Need fallback? Use */help* for detailed command cards.`
     );
   }
 
@@ -225,7 +242,8 @@ function formatOnboard(payload = {}, options = {}) {
     `SC bugun: *${Number(daily.scEarned || 0)}* | Token: *${Number(token.balance || 0).toFixed(4)} ${symbol}* (@ $${Number(
       token.spotUsd || 0
     ).toFixed(8)})\n\n` +
-    `Sonra: */play* (Nexus panel) -> */wallet* -> */token*`
+    `Sonra: */play* (Nexus panel) -> */wallet* -> */token*\n` +
+    `Takildiginda */help* ile detayli komut kartlarini ac.`
   );
 }
 
@@ -851,31 +869,35 @@ function formatNexusPulse(payload) {
 
 function formatHelp(options = {}) {
   const lang = String(options.lang || "tr").toLowerCase().startsWith("en") ? "en" : "tr";
-  const commands = Array.isArray(options.commands) ? options.commands : null;
+  const commands = Array.isArray(options.commands) ? options.commands.filter(Boolean) : null;
   if (!commands || commands.length === 0) {
     return (
-      `*Komutlar*\n` +
-      `/menu - Launcher menusu\n` +
-      `/play - Arena 3D web paneli\n` +
-      `/tasks - Gorev havuzu\n` +
-      `/finish [safe|balanced|aggressive] - Aktif gorevi bitir\n` +
-      `/reveal - Son biten gorevi ac\n` +
-      `/pvp [safe|balanced|aggressive] - PvP raid baslat\n` +
-      `/arena_rank - Arena siralama + rating\n` +
-      `/wallet - Bakiye ve gunluk cap\n` +
-      `/vault - Payout/Vault paneli\n` +
-      `/token - Token treasury ve talepler\n` +
-      `/story - Hikaye + hizli rehber\n` +
+      `*Komut Merkezi*\n` +
+      `/menu - Ana launcher + hizli rota paneli\n` +
+      `/play - Nexus Arena web paneli\n` +
+      `/tasks - Gorev havuzu (sure/odul)\n` +
+      `/finish [safe|balanced|aggressive] - Aktif denemeyi bitir\n` +
+      `/reveal - Son denemenin odulunu ac\n` +
+      `/pvp [safe|balanced|aggressive] - Raid baslat\n` +
+      `/wallet - SC/HC/RC bakiye\n` +
+      `/vault - Cekim/Vault paneli\n` +
+      `/token - Token cuzdani + talepler\n` +
+      `/status - Runtime durum ozeti\n` +
+      `/story - Hikaye + rota rehberi\n` +
       `/lang <tr|en> - Kalici dil tercihi\n` +
       `/help - Detayli komut kartlari\n\n` +
       `Alias: /raid -> /pvp, /payout -> /vault, /guide -> /story\n` +
       `Slashsiz kisayollar: "gorev", "bitir dengeli", "reveal", "raid aggressive"\n\n` +
-      `Admin: /admin, /admin_live, /admin_config, /admin_metrics, /admin_freeze, /admin_token_price, /admin_token_gate`
+      `Admin: /admin, /admin_live, /admin_queue, /admin_metrics, /admin_config`
     );
   }
 
-  const title = lang === "en" ? "*Commands*" : "*Komutlar*";
-  const lines = commands.map((command, idx) => {
+  const primaryCommands = commands.filter((command) => command.primary);
+  const focusCommands = primaryCommands.length > 0 ? primaryCommands : commands.filter((command) => !command.adminOnly);
+  const advancedCommands = commands.filter((command) => !command.primary && !command.adminOnly);
+  const adminCommands = commands.filter((command) => command.adminOnly);
+  const title = lang === "en" ? "*Command Center*" : "*Komut Merkezi*";
+  const lines = focusCommands.map((command, idx) => {
     const desc = localizeText(
       {
         tr: command.description_tr || command.description || "",
@@ -914,7 +936,157 @@ function formatHelp(options = {}) {
     lang === "en"
       ? `Free text shortcuts: "tasks", "finish balanced", "reveal", "pvp aggressive"`
       : `Slashsiz kisayollar: "gorev", "bitir dengeli", "reveal", "pvp aggressive"`;
-  return `${title}\n${lines.join("\n")}\n\n${shortcuts}`;
+  const advancedHeader = lang === "en" ? "*Advanced Commands*" : "*Gelismis Komutlar*";
+  const advancedLine =
+    advancedCommands.length > 0
+      ? advancedCommands.map((command) => `/${command.key}`).join(", ")
+      : lang === "en"
+        ? "None"
+        : "Yok";
+  const adminHeader = lang === "en" ? "*Admin Commands*" : "*Admin Komutlari*";
+  const adminLine =
+    adminCommands.length > 0
+      ? adminCommands.map((command) => `/${command.key}`).join(", ")
+      : lang === "en"
+        ? "None"
+        : "Yok";
+  const languageHint =
+    lang === "en"
+      ? `Language: /lang tr or /lang en`
+      : `Dil: /lang tr veya /lang en`;
+  return (
+    `${title}\n` +
+    `${lines.join("\n")}\n\n` +
+    `${advancedHeader}\n${advancedLine}\n\n` +
+    `${adminHeader}\n${adminLine}\n\n` +
+    `${shortcuts}\n${languageHint}`
+  );
+}
+
+function clipTextToLimit(text, maxLen, suffix = "...") {
+  const safeMax = Math.max(32, Number(maxLen || 0));
+  const raw = String(text || "");
+  if (raw.length <= safeMax) {
+    return raw;
+  }
+  const trimmed = raw.slice(0, Math.max(0, safeMax - suffix.length));
+  return `${trimmed}${suffix}`;
+}
+
+function formatListForCard(items = [], lang = "tr") {
+  const rows = (Array.isArray(items) ? items : []).map((row, idx) => `${idx + 1}) ${escapeMarkdown(String(row || ""))}`);
+  if (rows.length > 0) {
+    return rows.join("\n");
+  }
+  return lang === "en" ? "1) -" : "1) -";
+}
+
+function formatHelpIndex(payload = {}) {
+  const lang = String(payload.lang || "tr").toLowerCase().startsWith("en") ? "en" : "tr";
+  const categoryLabel = escapeMarkdown(String(payload.categoryLabel || (lang === "en" ? "Core Loop" : "Core Loop")));
+  const page = Math.max(1, Number(payload.page || 1));
+  const totalPages = Math.max(1, Number(payload.totalPages || 1));
+  const totalItems = Math.max(0, Number(payload.totalItems || 0));
+  const categories = Array.isArray(payload.categories) ? payload.categories : [];
+  const items = Array.isArray(payload.items) ? payload.items : [];
+  const categoryLine = categories
+    .map((row) => {
+      const label = escapeMarkdown(String(row.label || row.key || "-"));
+      return row.active ? `[${label}]` : label;
+    })
+    .join(" | ");
+  const lines = items.map((card, idx) => {
+    const purpose = lang === "en" ? card.purpose_en : card.purpose_tr;
+    const shortPurpose = clipTextToLimit(String(purpose || ""), lang === "en" ? 84 : 110);
+    return `${idx + 1}) */${escapeMarkdown(card.key || "")}*\n${escapeMarkdown(shortPurpose)}`;
+  });
+  const header =
+    lang === "en"
+      ? `*Command Center // Index*\nCategory: *${categoryLabel}* | Page: *${page}/${totalPages}* | Commands: *${totalItems}*`
+      : `*Komut Merkezi // Indeks*\nKategori: *${categoryLabel}* | Sayfa: *${page}/${totalPages}* | Komut: *${totalItems}*`;
+  const usage =
+    lang === "en"
+      ? `Use: \`/help <command>\` or \`/help <category>\``
+      : `Kullanim: \`/help <komut>\` veya \`/help <kategori>\``;
+  const text =
+    `${header}\n` +
+    `${lang === "en" ? "Categories" : "Kategoriler"}: ${categoryLine || "-"}\n\n` +
+    `${lines.join("\n\n") || "-"}\n\n` +
+    `${usage}`;
+  return clipTextToLimit(text, 1800);
+}
+
+function formatHelpCommandCard(card = {}, payload = {}) {
+  const lang = String(payload.lang || "tr").toLowerCase().startsWith("en") ? "en" : "tr";
+  const categoryLabel = escapeMarkdown(String(payload.categoryLabel || card.category || "-"));
+  const scopeLabel = card.scope === "admin" ? (lang === "en" ? "admin" : "admin") : lang === "en" ? "player" : "oyuncu";
+  const flowTitle = lang === "en" ? "Operation Flow" : "Operasyon Akisi";
+  const guardTitle = lang === "en" ? "Decision Guards" : "Karar Guard";
+  const syntaxTitle = lang === "en" ? "Syntax" : "Kullanim";
+  const examplesTitle = lang === "en" ? "Examples" : "Ornekler";
+  const expectedTitle = lang === "en" ? "Expected Output" : "Beklenen Cikti";
+  const failuresTitle = lang === "en" ? "Common Failures" : "Sik Hata/Cozum";
+  const relatedTitle = lang === "en" ? "Related Commands" : "Ilgili Komutlar";
+  const flowText = formatListForCard(lang === "en" ? card.operation_flow_en : card.operation_flow_tr, lang);
+  const guardText = formatListForCard(lang === "en" ? card.decision_guards_en : card.decision_guards_tr, lang);
+  const syntaxText = formatListForCard(card.syntax || [], lang);
+  const examplesText = formatListForCard(lang === "en" ? card.examples_en : card.examples_tr, lang);
+  const expectedText = formatListForCard(lang === "en" ? card.expected_en : card.expected_tr, lang);
+  const failuresText = formatListForCard(lang === "en" ? card.failures_en : card.failures_tr, lang);
+  const related =
+    Array.isArray(card.related_commands) && card.related_commands.length > 0
+      ? card.related_commands.map((cmd) => `/${escapeMarkdown(String(cmd || ""))}`).join(" | ")
+      : "-";
+  const title = escapeMarkdown(String(lang === "en" ? card.title_en : card.title_tr || `/${card.key || "help"}`));
+  const purpose = escapeMarkdown(String(lang === "en" ? card.purpose_en : card.purpose_tr || ""));
+  const whenToUse = escapeMarkdown(String(lang === "en" ? card.when_to_use_en : card.when_to_use_tr || ""));
+  const text =
+    `*${title}*\n` +
+    `${lang === "en" ? "Category" : "Kategori"}: *${categoryLabel}* | ${lang === "en" ? "Scope" : "Scope"}: *${scopeLabel}*\n\n` +
+    `${lang === "en" ? "Purpose" : "Amac"}: ${purpose}\n` +
+    `${lang === "en" ? "When to use" : "Ne zaman kullanilir"}: ${whenToUse}\n\n` +
+    `*${flowTitle}*\n${flowText}\n\n` +
+    `*${guardTitle}*\n${guardText}\n\n` +
+    `*${syntaxTitle}*\n${syntaxText}\n\n` +
+    `*${examplesTitle}*\n${examplesText}\n\n` +
+    `*${expectedTitle}*\n${expectedText}\n\n` +
+    `*${failuresTitle}*\n${failuresText}\n\n` +
+    `*${relatedTitle}*\n${related}`;
+  return clipTextToLimit(text, lang === "en" ? 1400 : 2400);
+}
+
+function formatHelpNotFound(payload = {}) {
+  const lang = String(payload.lang || "tr").toLowerCase().startsWith("en") ? "en" : "tr";
+  const query = escapeMarkdown(String(payload.query || "-"));
+  const suggestions = Array.isArray(payload.suggestions) ? payload.suggestions : [];
+  const suggestionLine =
+    suggestions.length > 0
+      ? suggestions.map((key) => `/${escapeMarkdown(String(key || ""))}`).join(" | ")
+      : lang === "en"
+        ? "No close match."
+        : "Yakin eslesme bulunamadi.";
+  const text =
+    lang === "en"
+      ? `*Help Query Not Found*\nQuery: \`${query}\`\nSuggestions: ${suggestionLine}\n\nUse \`/help\`, \`/help token\`, \`/help economy\`.`
+      : `*Help Sorgusu Bulunamadi*\nSorgu: \`${query}\`\nOneriler: ${suggestionLine}\n\nKullanim: \`/help\`, \`/help token\`, \`/help ekonomi\`.`;
+  return clipTextToLimit(text, 1200);
+}
+
+function formatHelpAccessDenied(payload = {}) {
+  const lang = String(payload.lang || "tr").toLowerCase().startsWith("en") ? "en" : "tr";
+  const commandKey = escapeMarkdown(String(payload.commandKey || "admin"));
+  const alternatives = Array.isArray(payload.alternatives) ? payload.alternatives : [];
+  const altLine =
+    alternatives.length > 0
+      ? alternatives.map((key) => `/${escapeMarkdown(String(key || ""))}`).join(" | ")
+      : lang === "en"
+        ? "/help | /status | /menu"
+        : "/help | /status | /menu";
+  const text =
+    lang === "en"
+      ? `*Admin Command Scope*\nThis command is admin-only: /${commandKey}\nTry these player commands: ${altLine}`
+      : `*Admin Komut Kapsami*\nBu komut admin kapsamindadir: /${commandKey}\nOyuncu alternatifleri: ${altLine}`;
+  return clipTextToLimit(text, 1200);
 }
 
 function formatAdminQueue(payload = {}) {
@@ -1182,6 +1354,10 @@ module.exports = {
   formatArenaStatus,
   formatArenaRaidResult,
   formatHelp,
+  formatHelpIndex,
+  formatHelpCommandCard,
+  formatHelpNotFound,
+  formatHelpAccessDenied,
   formatRaidContract,
   formatUiMode,
   formatPerf,
