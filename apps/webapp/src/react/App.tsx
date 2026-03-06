@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  buildActionRequestId,
   fetchTokenRouteStatusV2,
   fetchTokenSummaryV2,
 } from "./api";
@@ -24,7 +23,6 @@ import { createUiAnalyticsClient, type UiAnalyticsClient } from "./analytics";
 import { normalizeLang } from "./i18n";
 import { useReactShellStore } from "./store";
 import type {
-  AdminQueueActionRequest,
   AnalyticsConfig,
   BootstrapV2Payload,
   TabKey,
@@ -33,6 +31,7 @@ import type {
   WebAppAuth
 } from "./types";
 import { AdminPanel } from "./features/admin/AdminPanel";
+import { useAdminQueueController } from "./features/admin/useAdminQueueController";
 import { HomePanel } from "./features/home/HomePanel";
 import { OnboardingOverlay } from "./features/onboarding/OnboardingOverlay";
 import { PvpPanel } from "./features/pvp/PvpPanel";
@@ -1205,68 +1204,18 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
     });
   };
 
-  const runQueueAction = async () => {
-    if (!hasActiveAuth) return;
-    if (!ensureAdminPanelEnabled("queue")) return;
-    const payload: AdminQueueActionRequest = {
-      action_key: String(queueAction.action_key || ""),
-      kind: String(queueAction.kind || "") || undefined,
-      request_id: Math.max(1, Number(queueAction.request_id || 0)),
-      action_request_id: buildActionRequestId("admin_queue"),
-      tx_hash: String(queueAction.tx_hash || "") || undefined,
-      reason: String(queueAction.reason || "") || undefined,
-      confirm_token: String(queueAction.confirm_token || "") || undefined
-    };
-    trackUiEvent({
-      event_key: UI_EVENT_KEY.ACTION_REQUEST,
-      panel_key: UI_SURFACE_KEY.PANEL_ADMIN_QUEUE,
-      funnel_key: UI_FUNNEL_KEY.ADMIN_OPS,
-      surface_key: UI_SURFACE_KEY.PANEL_ADMIN_QUEUE,
-      payload_json: {
-        action_key: payload.action_key,
-        request_id: payload.request_id
-      }
-    });
-    const res = await adminQueueAction({
-      auth: activeAuth,
-      payload
-    })
-      .unwrap()
-      .catch(() => null);
-    if (!res?.success) {
-      setError(asError(res, "admin_queue_action_failed"));
-      trackUiEvent({
-        event_key: UI_EVENT_KEY.ACTION_FAILED,
-        panel_key: UI_SURFACE_KEY.PANEL_ADMIN_QUEUE,
-        funnel_key: UI_FUNNEL_KEY.ADMIN_OPS,
-        surface_key: UI_SURFACE_KEY.PANEL_ADMIN_QUEUE,
-        payload_json: {
-          action_key: payload.action_key,
-          request_id: payload.request_id,
-          error: asError(res, "admin_queue_action_failed")
-        }
-      });
-      return;
-    }
-    trackUiEvent({
-      event_key: UI_EVENT_KEY.ACTION_SUCCESS,
-      panel_key: UI_SURFACE_KEY.PANEL_ADMIN_QUEUE,
-      funnel_key: UI_FUNNEL_KEY.ADMIN_OPS,
-      surface_key: UI_SURFACE_KEY.PANEL_ADMIN_QUEUE,
-      payload_json: {
-        action_key: payload.action_key,
-        request_id: payload.request_id
-      }
-    });
-    await refreshAdmin();
-  };
-
-  const patchQueueAction = (patch: Partial<QueueActionForm>) => {
-    setQueueAction((prev) => ({
-      ...prev,
-      ...(patch || {})
-    }));
-  };
+  const { runQueueAction, patchQueueAction } = useAdminQueueController({
+    hasActiveAuth,
+    activeAuth,
+    queueAction,
+    setQueueAction: (updater) => setQueueAction(updater),
+    setError,
+    asError,
+    ensureAdminPanelEnabled,
+    trackUiEvent,
+    adminQueueAction,
+    refreshAdmin
+  });
 
   const handleWorkspace = async (next: "player" | "admin") => {
     trackUiEvent({
