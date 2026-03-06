@@ -31,6 +31,7 @@ import { usePvpController } from "./features/pvp/usePvpController";
 import { useRetriableAction } from "./features/shared/useRetriableAction";
 import { MetaStrip } from "./features/shell/MetaStrip";
 import { PlayerTabs } from "./features/shell/PlayerTabs";
+import { useShellTopBarController } from "./features/shell/useShellTopBarController";
 import { ShellStatus } from "./features/shell/ShellStatus";
 import { TopBar } from "./features/shell/TopBar";
 import { TasksPanel } from "./features/tasks/TasksPanel";
@@ -660,32 +661,27 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
     refreshAdmin
   });
 
-  const handleWorkspace = async (next: "player" | "admin") => {
-    trackUiEvent({
-      event_key: UI_EVENT_KEY.WORKSPACE_SWITCH,
-      panel_key: UI_SURFACE_KEY.TOPBAR,
-      funnel_key: next === "admin" ? UI_FUNNEL_KEY.ADMIN_OPS : UI_FUNNEL_KEY.PLAYER_LOOP,
-      surface_key: UI_SURFACE_KEY.TOPBAR,
-      payload_json: {
-        from: workspace,
-        to: next
-      }
-    });
-    setWorkspace(next);
-    void syncPrefs({ workspace: next });
-  };
-
   const reducedMotion = Boolean(data?.ui_prefs?.reduced_motion);
   const largeText = Boolean(data?.ui_prefs?.large_text);
-  const patchLocalUiPrefs = (patch: Record<string, unknown>) => {
-    patchData({
-      ui_prefs: {
-        ...(data?.ui_prefs || {}),
-        ...(patch || {})
-      } as any
-    });
-  };
   const rootClassName = `akrReactRoot${reducedMotion ? " isReducedMotion" : ""}${largeText ? " isLargeText" : ""}`;
+  const {
+    onRefresh,
+    onToggleAdvanced,
+    onToggleReducedMotion,
+    onToggleLargeText,
+    onToggleLanguage,
+    onToggleWorkspace
+  } = useShellTopBarController({
+    workspace,
+    uiPrefs: (data?.ui_prefs as Record<string, unknown> | undefined) || null,
+    patchData,
+    trackUiEvent,
+    syncPrefs,
+    toggleAdvanced,
+    setLang,
+    setWorkspace,
+    refreshBootstrap
+  });
   const pvpSessionMachine = useMemo(
     () =>
       buildPvpSessionMachine({
@@ -777,42 +773,12 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
         reducedMotion={reducedMotion}
         largeText={largeText}
         workspace={workspace}
-        onRefresh={() => void refreshBootstrap()}
-        onToggleAdvanced={(next) => {
-          trackUiEvent({
-            event_key: UI_EVENT_KEY.ADVANCED_TOGGLE,
-            panel_key: UI_SURFACE_KEY.TOPBAR,
-            funnel_key: workspace === "admin" ? UI_FUNNEL_KEY.ADMIN_OPS : UI_FUNNEL_KEY.PLAYER_LOOP,
-            surface_key: UI_SURFACE_KEY.TOPBAR,
-            payload_json: {
-              next
-            }
-          });
-          toggleAdvanced();
-          void syncPrefs({ advanced_view: next });
-        }}
-        onToggleReducedMotion={(next) => {
-          patchLocalUiPrefs({ reduced_motion: next });
-          void syncPrefs({ reduced_motion: next });
-        }}
-        onToggleLargeText={(next) => {
-          patchLocalUiPrefs({ large_text: next });
-          void syncPrefs({ large_text: next });
-        }}
-        onToggleLanguage={(next) => {
-          trackUiEvent({
-            event_key: UI_EVENT_KEY.LANGUAGE_SWITCH,
-            panel_key: UI_SURFACE_KEY.TOPBAR,
-            funnel_key: workspace === "admin" ? UI_FUNNEL_KEY.ADMIN_OPS : UI_FUNNEL_KEY.PLAYER_LOOP,
-            surface_key: UI_SURFACE_KEY.TOPBAR,
-            payload_json: {
-              next
-            }
-          });
-          setLang(next);
-          void syncPrefs({ language: next });
-        }}
-        onToggleWorkspace={(next) => void handleWorkspace(next)}
+        onRefresh={onRefresh}
+        onToggleAdvanced={onToggleAdvanced}
+        onToggleReducedMotion={onToggleReducedMotion}
+        onToggleLargeText={onToggleLargeText}
+        onToggleLanguage={onToggleLanguage}
+        onToggleWorkspace={onToggleWorkspace}
       />
       <MetaStrip lang={lang} variant={data?.experiment?.variant || ""} sessionRef={data?.analytics?.session_ref || ""} />
 
