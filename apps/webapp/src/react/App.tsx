@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { buildPvpSessionMachine } from "../core/player/pvpSessionMachine";
 import {
   UI_EVENT_KEY,
@@ -26,6 +26,7 @@ import { useBootstrapRefreshController } from "./features/shell/useBootstrapRefr
 import { MetaStrip } from "./features/shell/MetaStrip";
 import { PlayerTabs } from "./features/shell/PlayerTabs";
 import { usePlayerTabsController } from "./features/shell/usePlayerTabsController";
+import { useShellDataSyncController } from "./features/shell/useShellDataSyncController";
 import { useShellSessionPrefsController } from "./features/shell/useShellSessionPrefsController";
 import { useShellTelemetryController } from "./features/shell/useShellTelemetryController";
 import { useShellTopBarController } from "./features/shell/useShellTopBarController";
@@ -258,164 +259,6 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
     data: (data as Record<string, any> | null | undefined) || null
   });
 
-  useEffect(() => {
-    setAuth(props.auth);
-    if (props.bootstrap?.success && props.bootstrap.data) {
-      setBootstrap(props.bootstrap.data);
-    } else {
-      setLoading(false);
-      setError(String(props.bootstrap?.error || "bootstrap_failed"));
-    }
-  }, [props.auth, props.bootstrap, setAuth, setBootstrap, setError, setLoading]);
-
-  useEffect(() => {
-    const payload = bootstrapQuery.data;
-    if (!payload) return;
-    if (!payload.success || !payload.data) {
-      setLoading(false);
-      setError(asError(payload, "bootstrap_failed"));
-      return;
-    }
-    setBootstrap(payload.data);
-  }, [bootstrapQuery.data, setBootstrap, setError, setLoading]);
-
-  useEffect(() => {
-    const payload = homeFeedQuery.data;
-    if (!payload?.success) return;
-    setHomeFeed(payload.data || null);
-  }, [homeFeedQuery.data]);
-
-  useEffect(() => {
-    const payload = leagueOverviewQuery.data;
-    if (!payload?.success) return;
-    setLeagueOverview(payload.data || null);
-  }, [leagueOverviewQuery.data]);
-
-  useEffect(() => {
-    if (!vaultOverviewQuery.data && !monetizationOverviewQuery.data && !walletSessionQuery.data && !payoutStatusQuery.data) return;
-    setVaultData((prev: any) => ({
-      ...prev,
-      ...(vaultOverviewQuery.data?.success ? { overview: vaultOverviewQuery.data.data || null } : {}),
-      ...(monetizationOverviewQuery.data?.success ? { monetization: monetizationOverviewQuery.data.data || null } : {}),
-      ...(walletSessionQuery.data?.success ? { wallet: walletSessionQuery.data.data || null } : {}),
-      ...(payoutStatusQuery.data?.success ? { payout: payoutStatusQuery.data.data || null } : {})
-    }));
-  }, [vaultOverviewQuery.data, monetizationOverviewQuery.data, walletSessionQuery.data, payoutStatusQuery.data]);
-
-  useEffect(() => {
-    if (!adminQueryEnabled) return;
-    if (!adminBootstrapQuery.data && !adminQueueQuery.data) return;
-    const summary = adminBootstrapQuery.data?.success ? adminBootstrapQuery.data.data || null : null;
-    const queueItems = adminQueueQuery.data?.success
-      ? ((adminQueueQuery.data.data as { items?: Array<Record<string, unknown>> } | undefined)?.items || [])
-      : [];
-    setAdminRuntime(summary, Array.isArray(queueItems) ? queueItems : []);
-  }, [adminQueryEnabled, adminBootstrapQuery.data, adminQueueQuery.data, setAdminRuntime]);
-
-  useEffect(() => {
-    if (!adminQueryEnabled) return;
-    if (!adminMetricsQuery.data && !adminAssetsQuery.data && !adminOpsKpiLatestQuery.data) return;
-    setAdminPanels((prev: any) => ({
-      ...(prev || {}),
-      ...(adminMetricsQuery.data?.success ? { metrics: adminMetricsQuery.data.data || null } : {}),
-      ...(adminOpsKpiLatestQuery.data?.success ? { ops_kpi: adminOpsKpiLatestQuery.data.data || null } : {}),
-      ...(adminAssetsQuery.data?.success ? { assets: adminAssetsQuery.data.data || null } : {})
-    }));
-  }, [adminQueryEnabled, adminMetricsQuery.data, adminOpsKpiLatestQuery.data, adminAssetsQuery.data]);
-
-  useEffect(() => {
-    if (!adminQueryEnabled) return;
-    const payload = adminDynamicPolicyQuery.data;
-    if (!payload?.success) return;
-    const tokenSymbol = String((payload.data as { token_symbol?: string } | undefined)?.token_symbol || "")
-      .trim()
-      .toUpperCase();
-    if (tokenSymbol) {
-      setDynamicPolicyTokenSymbol(tokenSymbol);
-    }
-    const segments = Array.isArray((payload.data as { segments?: Array<Record<string, unknown>> } | undefined)?.segments)
-      ? ((payload.data as { segments?: Array<Record<string, unknown>> }).segments as Array<Record<string, unknown>>)
-      : [];
-    setDynamicPolicyDraft((prev) => (String(prev || "").trim() ? prev : JSON.stringify(segments, null, 2)));
-    setAdminPanels((prev: any) => ({
-      ...(prev || {}),
-      dynamic_policy: payload.data || null
-    }));
-  }, [adminQueryEnabled, adminDynamicPolicyQuery.data]);
-
-  useEffect(() => {
-    if (!adminQueryEnabled) return;
-    const payload = adminRuntimeFlagsQuery.data;
-    if (!payload?.success) return;
-    const flagsPayload = (payload.data as { flags?: Record<string, unknown> } | undefined)?.flags || {};
-    const boolFlags = Object.fromEntries(
-      Object.entries(flagsPayload).filter((entry): entry is [string, boolean] => typeof entry[1] === "boolean")
-    );
-    setRuntimeFlagsDraft((prev) => {
-      const current = String(prev || "").trim();
-      if (current && current !== "{}") {
-        return prev;
-      }
-      return JSON.stringify(boolFlags, null, 2);
-    });
-    setAdminPanels((prev: any) => ({
-      ...(prev || {}),
-      runtime_flags: payload.data || null
-    }));
-  }, [adminQueryEnabled, adminRuntimeFlagsQuery.data]);
-
-  useEffect(() => {
-    if (!adminQueryEnabled) return;
-    const payload = adminRuntimeBotQuery.data;
-    if (!payload?.success) return;
-    const fallbackStateKey = String((payload.data as { latest?: { state_key?: string } } | undefined)?.latest?.state_key || "");
-    if (fallbackStateKey) {
-      setBotReconcileDraft((prev) => {
-        const current = String(prev || "").trim();
-        if (!current || current === '{"state_key":"","reason":"","force_stop":false}') {
-          return JSON.stringify({ state_key: fallbackStateKey, reason: "", force_stop: false }, null, 2);
-        }
-        return prev;
-      });
-    }
-    setAdminPanels((prev: any) => ({
-      ...(prev || {}),
-      runtime_bot: payload.data || null
-    }));
-  }, [adminQueryEnabled, adminRuntimeBotQuery.data]);
-
-  useEffect(() => {
-    if (!adminQueryEnabled) return;
-    setAdminPanels((prev: any) => ({
-      ...(prev || {}),
-      deploy_status: adminDeployStatusQuery.data?.success ? adminDeployStatusQuery.data.data || null : prev?.deploy_status || null,
-      audit_phase_status: adminAuditPhaseStatusQuery.data?.success
-        ? adminAuditPhaseStatusQuery.data.data || null
-        : prev?.audit_phase_status || null,
-      audit_data_integrity: adminAuditIntegrityQuery.data?.success
-        ? adminAuditIntegrityQuery.data.data || null
-        : prev?.audit_data_integrity || null
-    }));
-  }, [adminQueryEnabled, adminDeployStatusQuery.data, adminAuditPhaseStatusQuery.data, adminAuditIntegrityQuery.data]);
-
-  useEffect(() => {
-    if (!hasActiveAuth) return;
-    if (workspace !== "player") {
-      return;
-    }
-    if (tab === "home") {
-      void refreshHome();
-      return;
-    }
-    if (tab === "pvp") {
-      void Promise.all([refreshLeagueOverview(), refreshPvpLive()]);
-      return;
-    }
-    if (tab === "vault") {
-      void refreshVault();
-    }
-  }, [tab, workspace, hasActiveAuth, activeAuth.uid, activeAuth.ts, activeAuth.sig]);
-
   const { refreshBootstrap } = useBootstrapRefreshController({
     hasActiveAuth,
     workspace,
@@ -518,6 +361,51 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
     monetizationOverviewQuery,
     walletSessionQuery,
     payoutStatusQuery
+  });
+  useShellDataSyncController({
+    propsAuth: props.auth,
+    propsBootstrap: props.bootstrap,
+    activeAuth,
+    hasActiveAuth,
+    workspace,
+    tab,
+    adminQueryEnabled,
+    bootstrapQueryData: bootstrapQuery.data,
+    homeFeedQueryData: homeFeedQuery.data,
+    leagueOverviewQueryData: leagueOverviewQuery.data,
+    vaultOverviewQueryData: vaultOverviewQuery.data,
+    monetizationOverviewQueryData: monetizationOverviewQuery.data,
+    walletSessionQueryData: walletSessionQuery.data,
+    payoutStatusQueryData: payoutStatusQuery.data,
+    adminBootstrapQueryData: adminBootstrapQuery.data,
+    adminQueueQueryData: adminQueueQuery.data,
+    adminMetricsQueryData: adminMetricsQuery.data,
+    adminOpsKpiLatestQueryData: adminOpsKpiLatestQuery.data,
+    adminAssetsQueryData: adminAssetsQuery.data,
+    adminRuntimeFlagsQueryData: adminRuntimeFlagsQuery.data,
+    adminRuntimeBotQueryData: adminRuntimeBotQuery.data,
+    adminDeployStatusQueryData: adminDeployStatusQuery.data,
+    adminAuditPhaseStatusQueryData: adminAuditPhaseStatusQuery.data,
+    adminAuditIntegrityQueryData: adminAuditIntegrityQuery.data,
+    adminDynamicPolicyQueryData: adminDynamicPolicyQuery.data,
+    setAuth,
+    setBootstrap,
+    setLoading,
+    setError,
+    setHomeFeed,
+    setLeagueOverview,
+    setVaultData,
+    setAdminRuntime,
+    setAdminPanels,
+    setDynamicPolicyTokenSymbol,
+    setDynamicPolicyDraft,
+    setRuntimeFlagsDraft,
+    setBotReconcileDraft,
+    refreshHome,
+    refreshLeagueOverview,
+    refreshPvpLive,
+    refreshVault,
+    asError
   });
 
   const { runQueueAction, patchQueueAction } = useAdminQueueController({
