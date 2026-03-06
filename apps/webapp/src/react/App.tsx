@@ -29,6 +29,7 @@ import { PvpPanel } from "./features/pvp/PvpPanel";
 import { usePvpAutoRefresh } from "./features/pvp/usePvpAutoRefresh";
 import { usePvpController } from "./features/pvp/usePvpController";
 import { useRetriableAction } from "./features/shared/useRetriableAction";
+import { useBootstrapRefreshController } from "./features/shell/useBootstrapRefreshController";
 import { MetaStrip } from "./features/shell/MetaStrip";
 import { PlayerTabs } from "./features/shell/PlayerTabs";
 import { usePlayerTabsController } from "./features/shell/usePlayerTabsController";
@@ -513,48 +514,16 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
     }
   }, [tab, workspace, hasActiveAuth, activeAuth.uid, activeAuth.ts, activeAuth.sig]);
 
-  const refreshBootstrap = async () => {
-    if (!hasActiveAuth) return;
-    setLoading(true);
-    setError("");
-    trackUiEvent({
-      event_key: UI_EVENT_KEY.REFRESH_REQUEST,
-      panel_key: UI_SURFACE_KEY.TOPBAR,
-      funnel_key: workspace === "admin" ? UI_FUNNEL_KEY.ADMIN_OPS : UI_FUNNEL_KEY.PLAYER_LOOP,
-      surface_key: UI_SURFACE_KEY.TOPBAR,
-      payload_json: {
-        target: "bootstrap",
-        workspace
-      }
-    });
-    const refreshed = await bootstrapQuery.refetch().catch(() => null);
-    const payload = (refreshed?.data || null) as BootstrapV2Payload | null;
-    if (!payload?.success || !payload.data) {
-      setLoading(false);
-      setError(asError(payload, "bootstrap_failed"));
-      trackUiEvent({
-        event_key: UI_EVENT_KEY.REFRESH_FAILED,
-        panel_key: UI_SURFACE_KEY.TOPBAR,
-        funnel_key: workspace === "admin" ? UI_FUNNEL_KEY.ADMIN_OPS : UI_FUNNEL_KEY.PLAYER_LOOP,
-        surface_key: UI_SURFACE_KEY.TOPBAR,
-        payload_json: {
-          target: "bootstrap",
-          error: asError(payload, "bootstrap_failed")
-        }
-      });
-      return;
-    }
-    setBootstrap(payload.data);
-    trackUiEvent({
-      event_key: UI_EVENT_KEY.REFRESH_SUCCESS,
-      panel_key: UI_SURFACE_KEY.TOPBAR,
-      funnel_key: workspace === "admin" ? UI_FUNNEL_KEY.ADMIN_OPS : UI_FUNNEL_KEY.PLAYER_LOOP,
-      surface_key: UI_SURFACE_KEY.TOPBAR,
-      payload_json: {
-        target: "bootstrap"
-      }
-    });
-  };
+  const { refreshBootstrap } = useBootstrapRefreshController({
+    hasActiveAuth,
+    workspace,
+    bootstrapQuery,
+    setLoading,
+    setError,
+    setBootstrap,
+    trackUiEvent,
+    asError
+  });
 
   const {
     refreshAdmin,
