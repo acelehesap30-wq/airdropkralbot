@@ -1,17 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { buildPvpSessionMachine } from "../core/player/pvpSessionMachine";
 import {
-  buildRouteKey,
-  buildUiEventRecord,
   UI_EVENT_KEY,
   UI_FUNNEL_KEY,
   UI_SURFACE_KEY
 } from "../core/telemetry/uiEventTaxonomy";
-import { createUiAnalyticsClient, type UiAnalyticsClient } from "./analytics";
-import { normalizeLang } from "./i18n";
 import { useReactShellStore } from "./store";
 import type {
-  AnalyticsConfig,
   BootstrapV2Payload,
   TabKey,
   WebAppApiResponse,
@@ -32,6 +27,7 @@ import { MetaStrip } from "./features/shell/MetaStrip";
 import { PlayerTabs } from "./features/shell/PlayerTabs";
 import { usePlayerTabsController } from "./features/shell/usePlayerTabsController";
 import { useShellSessionPrefsController } from "./features/shell/useShellSessionPrefsController";
+import { useShellTelemetryController } from "./features/shell/useShellTelemetryController";
 import { useShellTopBarController } from "./features/shell/useShellTopBarController";
 import { ShellStatus } from "./features/shell/ShellStatus";
 import { TopBar } from "./features/shell/TopBar";
@@ -105,24 +101,11 @@ type QueueActionForm = {
   confirm_token: string;
 };
 
-function resolveAnalyticsConfig(raw: unknown): AnalyticsConfig | null {
-  const row = raw && typeof raw === "object" ? (raw as Partial<AnalyticsConfig>) : null;
-  const sessionRef = String(row?.session_ref || "").trim();
-  if (!sessionRef) return null;
-  return {
-    session_ref: sessionRef,
-    flush_interval_ms: Math.max(1000, Number(row?.flush_interval_ms || 6000)),
-    max_batch_size: Math.max(1, Number(row?.max_batch_size || 40)),
-    sample_rate: Math.max(0, Math.min(1, Number(row?.sample_rate || 1)))
-  };
-}
-
 function asError(payload: WebAppApiResponse | null | undefined, fallback = "request_failed"): string {
   return String(payload?.error || payload?.message || fallback);
 }
 
 export function ReactWebAppV1(props: ReactWebAppV1Props) {
-  const analyticsRef = useRef<UiAnalyticsClient | null>(null);
   const pvpLiveRefreshInFlightRef = useRef(false);
   const {
     auth,
@@ -267,19 +250,13 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
     patchUiPreferences: patchUiPreferences as any,
     patchData
   });
-
-  const resolveTelemetryTabKey = (): string => (workspace === "admin" ? "admin" : tab);
-  const resolveTelemetryRouteKey = (): string => buildRouteKey(workspace, resolveTelemetryTabKey());
-  const trackUiEvent = (row: Record<string, unknown>) => {
-    if (!analyticsRef.current) return;
-    analyticsRef.current.track(
-      buildUiEventRecord({
-        tab_key: resolveTelemetryTabKey(),
-        route_key: resolveTelemetryRouteKey(),
-        ...row
-      })
-    );
-  };
+  const { trackUiEvent } = useShellTelemetryController({
+    activeAuth,
+    lang,
+    tab,
+    workspace,
+    data: (data as Record<string, any> | null | undefined) || null
+  });
 
   useEffect(() => {
     setAuth(props.auth);
@@ -420,47 +397,6 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
         : prev?.audit_data_integrity || null
     }));
   }, [adminQueryEnabled, adminDeployStatusQuery.data, adminAuditPhaseStatusQuery.data, adminAuditIntegrityQuery.data]);
-
-  useEffect(() => {
-    if (!data) return;
-    const cfg = resolveAnalyticsConfig(data.analytics);
-    if (!cfg) return;
-    const client = createUiAnalyticsClient({
-      auth: activeAuth,
-      config: cfg,
-      language: normalizeLang(lang),
-      variantKey: data.experiment?.variant === "treatment" ? "treatment" : "control",
-      experimentKey: String(data.experiment?.key || "webapp_react_v1"),
-      cohortBucket: Number(data.experiment?.cohort_bucket || 0),
-      tabKey: workspace === "admin" ? "admin" : tab,
-      routeKey: buildRouteKey(workspace, workspace === "admin" ? "admin" : tab)
-    });
-    analyticsRef.current = client;
-    client.track(
-      buildUiEventRecord({
-        event_key: UI_EVENT_KEY.SHELL_OPEN,
-        panel_key: UI_SURFACE_KEY.SHELL,
-        funnel_key: workspace === "admin" ? UI_FUNNEL_KEY.ADMIN_OPS : UI_FUNNEL_KEY.PLAYER_LOOP,
-        surface_key: UI_SURFACE_KEY.SHELL,
-        payload_json: {
-          workspace,
-          tab,
-          ui_version: String(data?.ui_shell?.ui_version || "react_v1")
-        },
-        event_value: 1
-      })
-    );
-    return () => client.dispose();
-  }, [activeAuth.uid, activeAuth.ts, activeAuth.sig, data]);
-
-  useEffect(() => {
-    if (!analyticsRef.current) return;
-    analyticsRef.current.setContext({
-      language: normalizeLang(lang),
-      tabKey: workspace === "admin" ? "admin" : tab,
-      routeKey: buildRouteKey(workspace, workspace === "admin" ? "admin" : tab)
-    });
-  }, [lang, tab, workspace]);
 
   useEffect(() => {
     if (!hasActiveAuth) return;
