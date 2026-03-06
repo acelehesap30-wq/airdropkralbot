@@ -29,6 +29,7 @@ import { useAdminQueueController } from "./features/admin/useAdminQueueControlle
 import { useAdminRuntimeController } from "./features/admin/useAdminRuntimeController";
 import { HomePanel } from "./features/home/HomePanel";
 import { OnboardingOverlay } from "./features/onboarding/OnboardingOverlay";
+import { usePlayerRefreshController } from "./features/player/usePlayerRefreshController";
 import { PvpPanel } from "./features/pvp/PvpPanel";
 import { usePvpAutoRefresh } from "./features/pvp/usePvpAutoRefresh";
 import { usePvpController } from "./features/pvp/usePvpController";
@@ -118,10 +119,6 @@ function resolveAnalyticsConfig(raw: unknown): AnalyticsConfig | null {
 
 function asError(payload: WebAppApiResponse | null | undefined, fallback = "request_failed"): string {
   return String(payload?.error || payload?.message || fallback);
-}
-
-function readSessionRef(payload: any): string {
-  return String(payload?.session?.session_ref || payload?.session_ref || "").trim();
 }
 
 export function ReactWebAppV1(props: ReactWebAppV1Props) {
@@ -610,141 +607,24 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
     adminAssetsReload
   });
 
-  const refreshHome = async () => {
-    if (!hasActiveAuth) return;
-    trackUiEvent({
-      event_key: UI_EVENT_KEY.REFRESH_REQUEST,
-      panel_key: UI_SURFACE_KEY.PANEL_HOME,
-      funnel_key: UI_FUNNEL_KEY.PLAYER_LOOP,
-      surface_key: UI_SURFACE_KEY.PANEL_HOME,
-      payload_json: { target: "home_feed" }
-    });
-    const refreshed = await homeFeedQuery.refetch().catch(() => null);
-    const payload = (refreshed?.data || null) as WebAppApiResponse | null;
-    if (!payload?.success) {
-      setError(asError(payload, "home_feed_failed"));
-      trackUiEvent({
-        event_key: UI_EVENT_KEY.REFRESH_FAILED,
-        panel_key: UI_SURFACE_KEY.PANEL_HOME,
-        funnel_key: UI_FUNNEL_KEY.PLAYER_LOOP,
-        surface_key: UI_SURFACE_KEY.PANEL_HOME,
-        payload_json: { target: "home_feed", error: asError(payload, "home_feed_failed") }
-      });
-      return;
-    }
-    setHomeFeed(payload.data || null);
-    trackUiEvent({
-      event_key: UI_EVENT_KEY.REFRESH_SUCCESS,
-      panel_key: UI_SURFACE_KEY.PANEL_HOME,
-      funnel_key: UI_FUNNEL_KEY.PLAYER_LOOP,
-      surface_key: UI_SURFACE_KEY.PANEL_HOME,
-      payload_json: { target: "home_feed" }
-    });
-  };
-
-  const refreshLeagueOverview = async () => {
-    if (!hasActiveAuth) return;
-    trackUiEvent({
-      event_key: UI_EVENT_KEY.REFRESH_REQUEST,
-      panel_key: UI_SURFACE_KEY.PANEL_PVP,
-      funnel_key: UI_FUNNEL_KEY.PVP_LOOP,
-      surface_key: UI_SURFACE_KEY.PANEL_PVP,
-      payload_json: { target: "league_overview" }
-    });
-    const refreshed = await leagueOverviewQuery.refetch().catch(() => null);
-    const payload = (refreshed?.data || null) as WebAppApiResponse | null;
-    if (!payload?.success) {
-      setError(asError(payload, "league_overview_failed"));
-      trackUiEvent({
-        event_key: UI_EVENT_KEY.REFRESH_FAILED,
-        panel_key: UI_SURFACE_KEY.PANEL_PVP,
-        funnel_key: UI_FUNNEL_KEY.PVP_LOOP,
-        surface_key: UI_SURFACE_KEY.PANEL_PVP,
-        payload_json: { target: "league_overview", error: asError(payload, "league_overview_failed") }
-      });
-      return;
-    }
-    setLeagueOverview(payload.data || null);
-    trackUiEvent({
-      event_key: UI_EVENT_KEY.REFRESH_SUCCESS,
-      panel_key: UI_SURFACE_KEY.PANEL_PVP,
-      funnel_key: UI_FUNNEL_KEY.PVP_LOOP,
-      surface_key: UI_SURFACE_KEY.PANEL_PVP,
-      payload_json: { target: "league_overview" }
-    });
-  };
-
-  const refreshPvpLive = async (sessionRefHint = "") => {
-    if (!hasActiveAuth) return;
-    if (pvpLiveRefreshInFlightRef.current) return;
-    pvpLiveRefreshInFlightRef.current = true;
-    const sessionRef = String(sessionRefHint || readSessionRef(pvpRuntime.session || null) || "").trim();
-    try {
-      trackUiEvent({
-        event_key: UI_EVENT_KEY.REFRESH_REQUEST,
-        panel_key: UI_SURFACE_KEY.PANEL_PVP,
-        funnel_key: UI_FUNNEL_KEY.PVP_LOOP,
-        surface_key: UI_SURFACE_KEY.PANEL_PVP,
-        payload_json: { target: "pvp_live" }
-      });
-      const [leaderboard, diagnostics, tick] = await Promise.all([
-        loadPvpLeaderboardLive({
-          auth: activeAuth,
-          limit: 25
-        })
-          .unwrap()
-          .catch(() => null),
-        loadPvpDiagnosticsLive({
-          auth: activeAuth,
-          window: "1h"
-        })
-          .unwrap()
-          .catch(() => null),
-        sessionRef
-          ? loadPvpMatchTick({
-              auth: activeAuth,
-              session_ref: sessionRef
-            })
-              .unwrap()
-              .catch(() => null)
-          : Promise.resolve(null)
-      ]);
-      applySession(leaderboard);
-      applySession(diagnostics);
-      applySession(tick);
-      const hasData = Boolean(leaderboard?.success || diagnostics?.success || tick?.success);
-      if (!hasData) {
-        setError("pvp_live_failed");
-        trackUiEvent({
-          event_key: UI_EVENT_KEY.REFRESH_FAILED,
-          panel_key: UI_SURFACE_KEY.PANEL_PVP,
-          funnel_key: UI_FUNNEL_KEY.PVP_LOOP,
-          surface_key: UI_SURFACE_KEY.PANEL_PVP,
-          payload_json: { target: "pvp_live", error: "pvp_live_failed" }
-        });
-        return;
-      }
-      setPvpLive({
-        leaderboard: leaderboard?.data || null,
-        diagnostics: diagnostics?.data || null,
-        tick: tick?.data || null
-      });
-      trackUiEvent({
-        event_key: UI_EVENT_KEY.REFRESH_SUCCESS,
-        panel_key: UI_SURFACE_KEY.PANEL_PVP,
-        funnel_key: UI_FUNNEL_KEY.PVP_LOOP,
-        surface_key: UI_SURFACE_KEY.PANEL_PVP,
-        payload_json: {
-          target: "pvp_live",
-          leaderboard_success: Boolean(leaderboard?.success),
-          diagnostics_success: Boolean(diagnostics?.success),
-          tick_success: Boolean(tick?.success)
-        }
-      });
-    } finally {
-      pvpLiveRefreshInFlightRef.current = false;
-    }
-  };
+  const { refreshHome, refreshLeagueOverview, refreshPvpLive } = usePlayerRefreshController({
+    hasActiveAuth,
+    activeAuth,
+    pvpRuntimeSession: (pvpRuntime.session as Record<string, unknown> | null) || null,
+    pvpLiveRefreshInFlightRef,
+    trackUiEvent,
+    setError,
+    asError,
+    applySession,
+    setHomeFeed,
+    setLeagueOverview,
+    setPvpLive,
+    homeFeedQuery,
+    leagueOverviewQuery,
+    loadPvpLeaderboardLive,
+    loadPvpDiagnosticsLive,
+    loadPvpMatchTick
+  });
 
   const runRetriableApiCall = async (
     runner: (attempt: number) => Promise<any>,
