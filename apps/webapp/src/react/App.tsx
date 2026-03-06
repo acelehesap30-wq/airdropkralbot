@@ -38,6 +38,7 @@ import { PlayerTabs } from "./features/shell/PlayerTabs";
 import { ShellStatus } from "./features/shell/ShellStatus";
 import { TopBar } from "./features/shell/TopBar";
 import { TasksPanel } from "./features/tasks/TasksPanel";
+import { useTaskMutationRunner } from "./features/tasks/useTaskMutationRunner";
 import { useTasksController } from "./features/tasks/useTasksController";
 import { VaultPanel } from "./features/vault/VaultPanel";
 import { useVaultController } from "./features/vault/useVaultController";
@@ -631,32 +632,12 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
     applySession,
     asError
   });
-
-  const runMutation = async (
-    runner: (attempt: number) => Promise<any>,
-    fallback: string,
-    telemetry: {
-      panelKey?: string;
-      funnelKey?: string;
-      surfaceKey?: string;
-      economyEventKey?: string;
-      txState?: string;
-      actionKey?: string;
-    } = {}
-  ) => {
-    setLoading(true);
-    const res = await runRetriableApiCall(runner, fallback, {
-      maxAttempts: 3,
-      baseDelayMs: 220,
-      telemetry
-    });
-    if (!res?.success) {
-      setLoading(false);
-      return;
-    }
-    setTaskResult(res.data || null);
-    await refreshBootstrap();
-  };
+  const { runMutation } = useTaskMutationRunner({
+    runRetriableApiCall,
+    setLoading,
+    setTaskResult,
+    refreshBootstrap
+  });
 
   const refreshVault = async () => {
     if (!hasActiveAuth) return;
