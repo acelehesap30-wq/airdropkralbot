@@ -212,6 +212,12 @@ test("live ops chat campaign service snapshot includes approval summary schedule
             if (text.includes("meta_json->>'primary_surface_key'")) {
               return { rows: [{ bucket_key: "wallet_panel", item_count: 3 }] };
             }
+            if (text.includes("lower(a.variant_key)")) {
+              return { rows: [{ bucket_key: "treatment", item_count: 2 }, { bucket_key: "control", item_count: 1 }] };
+            }
+            if (text.includes("a.cohort_bucket::text")) {
+              return { rows: [{ bucket_key: "17", item_count: 2 }, { bucket_key: "42", item_count: 1 }] };
+            }
             if (text.includes("FROM config_versions") && text.includes("LIMIT 8")) {
               return {
                 rows: [
@@ -312,8 +318,12 @@ test("live ops chat campaign service snapshot includes approval summary schedule
   assert.equal(snapshot.operator_timeline.length, 2);
   assert.equal(snapshot.operator_timeline[0].action, "live_ops_campaign_dispatch");
   assert.equal(snapshot.delivery_summary.sent_24h, 2);
+  assert.equal(snapshot.delivery_summary.experiment_assignment_available, true);
+  assert.equal(snapshot.delivery_summary.experiment_key, "webapp_react_v1");
   assert.equal(snapshot.delivery_summary.locale_breakdown[0].bucket_key, "en");
   assert.equal(snapshot.delivery_summary.surface_breakdown[0].bucket_key, "wallet_panel");
+  assert.equal(snapshot.delivery_summary.variant_breakdown[0].bucket_key, "treatment");
+  assert.equal(snapshot.delivery_summary.cohort_breakdown[0].bucket_key, "17");
 });
 
 test("live ops chat campaign service updateCampaignApproval promotes pending campaign to approved and writes audit", async () => {
@@ -382,7 +392,13 @@ test("live ops chat campaign service updateCampaignApproval promotes pending cam
         ]
       };
     }
-    if (text.includes("meta_json->>'locale'" ) || text.includes("meta_json->>'segment_key'") || text.includes("meta_json->>'primary_surface_key'")) {
+    if (
+      text.includes("meta_json->>'locale'") ||
+      text.includes("meta_json->>'segment_key'") ||
+      text.includes("meta_json->>'primary_surface_key'") ||
+      text.includes("lower(a.variant_key)") ||
+      text.includes("a.cohort_bucket::text")
+    ) {
       return { rows: [] };
     }
     if (text.includes("FROM config_versions") && text.includes("LIMIT 8")) {

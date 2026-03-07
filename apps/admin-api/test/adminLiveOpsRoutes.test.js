@@ -110,9 +110,13 @@ function buildSnapshot(version, approvalState) {
       sent_24h: 0,
       sent_7d: 0,
       unique_users_7d: 0,
+      experiment_key: "webapp_react_v1",
+      experiment_assignment_available: true,
       locale_breakdown: [],
       segment_breakdown: [],
-      surface_breakdown: []
+      surface_breakdown: [],
+      variant_breakdown: [],
+      cohort_breakdown: []
     },
     latest_dispatch: {
       event_type: "live_ops_campaign_sent",

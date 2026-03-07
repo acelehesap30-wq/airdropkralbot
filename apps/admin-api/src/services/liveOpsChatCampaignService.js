@@ -14,6 +14,7 @@ const {
   buildDefaultLiveOpsCampaignConfig
 } = require("../../../../packages/shared/src/liveOpsCampaignContract");
 const { normalizeTrustMessageLanguage, escapeMarkdown } = require("../../../../packages/shared/src/chatTrustMessages");
+const { DEFAULT_EXPERIMENT_KEY } = require("./webapp/reactV1Service");
 const { resolveLaunchSurface } = require("../../../bot/src/ui/launchSurfaceCatalog");
 const { buildNavigationFromCommand } = require("../../../bot/src/utils/miniAppLaunchResolver");
 const { resolvePlayerCommandNavigation } = require("../../../../packages/shared/src/playerCommandNavigation");
@@ -615,13 +616,66 @@ async function loadDeliverySummary(client, campaignKey) {
       item_count: Number(row.item_count || 0)
     }));
 
+  let experimentAssignmentAvailable = false;
+  let variantBreakdown = [];
+  let cohortBreakdown = [];
+
+  try {
+    const assignmentParams = [LIVE_OPS_CAMPAIGN_EVENT_TYPE, String(campaignKey || ""), DEFAULT_EXPERIMENT_KEY];
+    const [variantRes, cohortRes] = await Promise.all([
+      client.query(
+        `SELECT
+           COALESCE(NULLIF(lower(a.variant_key), ''), 'control') AS bucket_key,
+           COUNT(*)::int AS item_count
+         FROM behavior_events be
+         JOIN v5_webapp_experiment_assignments a
+           ON a.uid = be.user_id
+          AND a.experiment_key = $3
+         WHERE be.event_type = $1
+           AND COALESCE(be.meta_json->>'campaign_key', '') = $2
+           AND be.event_at >= now() - interval '7 days'
+         GROUP BY 1
+         ORDER BY item_count DESC, bucket_key ASC
+         LIMIT 4;`,
+        assignmentParams
+      ),
+      client.query(
+        `SELECT
+           a.cohort_bucket::text AS bucket_key,
+           COUNT(*)::int AS item_count
+         FROM behavior_events be
+         JOIN v5_webapp_experiment_assignments a
+           ON a.uid = be.user_id
+          AND a.experiment_key = $3
+         WHERE be.event_type = $1
+           AND COALESCE(be.meta_json->>'campaign_key', '') = $2
+           AND be.event_at >= now() - interval '7 days'
+         GROUP BY 1
+         ORDER BY item_count DESC, bucket_key ASC
+         LIMIT 8;`,
+        assignmentParams
+      )
+    ]);
+    experimentAssignmentAvailable = true;
+    variantBreakdown = normalizeBuckets(variantRes.rows);
+    cohortBreakdown = normalizeBuckets(cohortRes.rows);
+  } catch (err) {
+    if (err.code !== "42P01") {
+      throw err;
+    }
+  }
+
   return {
     sent_24h: Number(totals.sent_24h || 0),
     sent_7d: Number(totals.sent_7d || 0),
     unique_users_7d: Number(totals.unique_users_7d || 0),
+    experiment_key: DEFAULT_EXPERIMENT_KEY,
+    experiment_assignment_available: experimentAssignmentAvailable,
     locale_breakdown: normalizeBuckets(localeRes.rows),
     segment_breakdown: normalizeBuckets(segmentRes.rows),
-    surface_breakdown: normalizeBuckets(surfaceRes.rows)
+    surface_breakdown: normalizeBuckets(surfaceRes.rows),
+    variant_breakdown: variantBreakdown,
+    cohort_breakdown: cohortBreakdown
   };
 }
 

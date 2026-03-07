@@ -672,9 +672,13 @@ const LiveOpsCampaignDeliverySummarySchema = z.object({
   sent_24h: z.number().int().nonnegative().default(0),
   sent_7d: z.number().int().nonnegative().default(0),
   unique_users_7d: z.number().int().nonnegative().default(0),
+  experiment_key: z.string().default("webapp_react_v1"),
+  experiment_assignment_available: z.boolean().default(false),
   locale_breakdown: z.array(LiveOpsCampaignAnalyticsBucketSchema).default([]),
   segment_breakdown: z.array(LiveOpsCampaignAnalyticsBucketSchema).default([]),
-  surface_breakdown: z.array(LiveOpsCampaignAnalyticsBucketSchema).default([])
+  surface_breakdown: z.array(LiveOpsCampaignAnalyticsBucketSchema).default([]),
+  variant_breakdown: z.array(LiveOpsCampaignAnalyticsBucketSchema).default([]),
+  cohort_breakdown: z.array(LiveOpsCampaignAnalyticsBucketSchema).default([])
 });
 
 const LiveOpsCampaignSnapshotSchema = z.object({

@@ -75,6 +75,8 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
   const localeBreakdown = asArray(deliverySummary.locale_breakdown);
   const segmentBreakdown = asArray(deliverySummary.segment_breakdown);
   const surfaceBreakdown = asArray(deliverySummary.surface_breakdown);
+  const variantBreakdown = asArray(deliverySummary.variant_breakdown);
+  const cohortBreakdown = asArray(deliverySummary.cohort_breakdown);
   const liveReady = approvalSummary.live_dispatch_ready === true;
   const approvalState = asText(approvalSummary.approval_state);
   const scheduleState = asText(approvalSummary.schedule_state);
@@ -295,6 +297,38 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
             <p className="akrMuted">{t(props.lang, "admin_live_ops_no_history")}</p>
           )}
         </section>
+        <div className="akrSplit">
+          <section className="akrMiniPanel">
+            <h4>{t(props.lang, "admin_live_ops_variant_breakdown_title")}</h4>
+            {variantBreakdown.length ? (
+              <ul className="akrList">
+                {variantBreakdown.map((row, index) => (
+                  <li key={`${asText(row.bucket_key, "unknown")}_${index}`}>
+                    <span>{formatBucketCode(asText(row.bucket_key, "unknown"))}</span>
+                    <strong>{asCount(row.item_count)}</strong>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="akrMuted">{t(props.lang, "admin_live_ops_no_history")}</p>
+            )}
+          </section>
+          <section className="akrMiniPanel">
+            <h4>{t(props.lang, "admin_live_ops_cohort_breakdown_title")}</h4>
+            {cohortBreakdown.length ? (
+              <ul className="akrList">
+                {cohortBreakdown.map((row, index) => (
+                  <li key={`${asText(row.bucket_key, "unknown")}_${index}`}>
+                    <span>{formatBucketCode(asText(row.bucket_key, "unknown"))}</span>
+                    <strong>{asCount(row.item_count)}</strong>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="akrMuted">{t(props.lang, "admin_live_ops_no_history")}</p>
+            )}
+          </section>
+        </div>
       </section>
       <section className="akrMiniPanel" data-akr-focus-key="version_history">
         <h4>{t(props.lang, "admin_live_ops_versions_title")}</h4>
