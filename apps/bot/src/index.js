@@ -40,6 +40,7 @@ const {
   buildStartAppPayload,
   encodeStartAppPayload
 } = require("../../../packages/shared/src/navigationContract");
+const { resolvePlayerCommandNavigation } = require("../../../packages/shared/src/playerCommandNavigation");
 const { resolveLocalePreference } = require("../../../packages/shared/src/localeContract");
 const { getCommandRegistry, toTelegramCommands, buildAliasLookup } = require("./commands/registry");
 const { buildIntentIndex, resolveIntent, normalizeMode } = require("./commands/intentRouter");
@@ -456,6 +457,18 @@ async function resolveAdminWorkspaceUrls(pool, appConfig, telegramId) {
     policyUrl: policyUrl || "",
     runtimeUrl: runtimeUrl || ""
   };
+}
+
+async function resolveMiniAppCommandUrl(pool, appConfig, telegramId, commandKey, overrides = {}) {
+  const navigation = resolvePlayerCommandNavigation(commandKey);
+  if (!navigation) {
+    return null;
+  }
+  return resolveMiniAppRouteUrl(pool, appConfig, telegramId, {
+    routeKey: overrides.routeKey || navigation.route_key,
+    panelKey: overrides.panelKey || navigation.panel_key || "",
+    focusKey: overrides.focusKey || navigation.focus_key || ""
+  });
 }
 
 function buildSignedWebAppUrl(appConfig, telegramId, baseUrlOverride = "", navigation = {}) {
@@ -2537,16 +2550,8 @@ async function sendProfile(ctx, pool, appConfig) {
   const snapshot = await getSnapshot(pool, ctx);
   const lang = resolvePreferredLanguage(snapshot.profile, ctx, "tr");
   const [profileUrl, walletUrl] = await Promise.all([
-    resolveMiniAppRouteUrl(pool, appConfig, ctx.from?.id, {
-      routeKey: CANONICAL_ROUTE_KEY.HUB,
-      panelKey: CANONICAL_PANEL_KEY.PROFILE,
-      focusKey: "identity"
-    }),
-    resolveMiniAppRouteUrl(pool, appConfig, ctx.from?.id, {
-      routeKey: CANONICAL_ROUTE_KEY.EXCHANGE,
-      panelKey: CANONICAL_PANEL_KEY.WALLET,
-      focusKey: "connect"
-    })
+    resolveMiniAppCommandUrl(pool, appConfig, ctx.from?.id, "profile"),
+    resolveMiniAppCommandUrl(pool, appConfig, ctx.from?.id, "wallet")
   ]);
   await ctx.replyWithMarkdown(
     messages.formatProfile(snapshot.profile, snapshot.balances),
@@ -2563,16 +2568,8 @@ async function sendRewards(ctx, pool, appConfig) {
     return { profile, balances, payout };
   });
   const lang = resolvePreferredLanguage(payload.profile, ctx, "tr");
-  const rewardsUrl = await resolveMiniAppRouteUrl(pool, appConfig, ctx.from?.id, {
-    routeKey: CANONICAL_ROUTE_KEY.VAULT,
-    panelKey: CANONICAL_PANEL_KEY.REWARDS,
-    focusKey: "premium_pass"
-  });
-  const leaderboardUrl = await resolveMiniAppRouteUrl(pool, appConfig, ctx.from?.id, {
-    routeKey: CANONICAL_ROUTE_KEY.SEASON,
-    panelKey: CANONICAL_PANEL_KEY.LEADERBOARD,
-    focusKey: "leaderboard"
-  });
+  const rewardsUrl = await resolveMiniAppCommandUrl(pool, appConfig, ctx.from?.id, "rewards");
+  const leaderboardUrl = await resolveMiniAppCommandUrl(pool, appConfig, ctx.from?.id, "leaderboard");
   const entitled = Number(payload.payout.entitledBtc || 0).toFixed(8);
   const requestable = Number(payload.payout.requestableBtc || 0).toFixed(8);
   const latestRef = escapeMarkdownText(
@@ -2597,11 +2594,7 @@ async function sendRewards(ctx, pool, appConfig) {
 async function sendWallet(ctx, pool, appConfig) {
   const snapshot = await getSnapshot(pool, ctx);
   const lang = resolvePreferredLanguage(snapshot.profile, ctx, "tr");
-  const walletUrl = await resolveMiniAppRouteUrl(pool, appConfig, ctx.from?.id, {
-    routeKey: CANONICAL_ROUTE_KEY.EXCHANGE,
-    panelKey: CANONICAL_PANEL_KEY.WALLET,
-    focusKey: "connect"
-  });
+  const walletUrl = await resolveMiniAppCommandUrl(pool, appConfig, ctx.from?.id, "wallet");
   await ctx.replyWithMarkdown(
     messages.formatWallet(snapshot.profile, snapshot.balances, snapshot.daily, snapshot.anomaly, snapshot.contract),
     buildWalletKeyboard(walletUrl || "", lang)
@@ -2617,14 +2610,8 @@ async function sendSeason(ctx, pool, appConfig) {
     const rank = await seasonStore.getUserRank(db, { userId: profile.user_id, seasonId: season.seasonId });
     return { profile, season, stat, rank };
   });
-  const seasonUrl = await resolveMiniAppRouteUrl(pool, appConfig, ctx.from?.id, {
-    routeKey: CANONICAL_ROUTE_KEY.SEASON
-  });
-  const leaderboardUrl = await resolveMiniAppRouteUrl(pool, appConfig, ctx.from?.id, {
-    routeKey: CANONICAL_ROUTE_KEY.SEASON,
-    panelKey: CANONICAL_PANEL_KEY.LEADERBOARD,
-    focusKey: "leaderboard"
-  });
+  const seasonUrl = await resolveMiniAppCommandUrl(pool, appConfig, ctx.from?.id, "season");
+  const leaderboardUrl = await resolveMiniAppCommandUrl(pool, appConfig, ctx.from?.id, "leaderboard");
   await ctx.replyWithMarkdown(
     messages.formatSeason(payload.season, payload.stat, payload.rank),
     buildSeasonKeyboard(seasonUrl || "", leaderboardUrl || "", resolvePreferredLanguage(payload.profile, ctx, "tr"))
@@ -2648,19 +2635,9 @@ async function sendEvents(ctx, pool, appConfig) {
   });
   const lang = resolvePreferredLanguage(payload.profile, ctx, "tr");
   const [eventsUrl, seasonUrl, leaderboardUrl] = await Promise.all([
-    resolveMiniAppRouteUrl(pool, appConfig, ctx.from?.id, {
-      routeKey: CANONICAL_ROUTE_KEY.EVENTS,
-      panelKey: CANONICAL_PANEL_KEY.DISCOVER,
-      focusKey: "command_center"
-    }),
-    resolveMiniAppRouteUrl(pool, appConfig, ctx.from?.id, {
-      routeKey: CANONICAL_ROUTE_KEY.SEASON
-    }),
-    resolveMiniAppRouteUrl(pool, appConfig, ctx.from?.id, {
-      routeKey: CANONICAL_ROUTE_KEY.SEASON,
-      panelKey: CANONICAL_PANEL_KEY.LEADERBOARD,
-      focusKey: "leaderboard"
-    })
+    resolveMiniAppCommandUrl(pool, appConfig, ctx.from?.id, "events"),
+    resolveMiniAppCommandUrl(pool, appConfig, ctx.from?.id, "season"),
+    resolveMiniAppCommandUrl(pool, appConfig, ctx.from?.id, "leaderboard")
   ]);
   const lead = (payload.rows || [])
     .slice(0, 3)
@@ -2693,14 +2670,8 @@ async function sendLeaderboard(ctx, pool, appConfig) {
     return { profile, season, rows };
   });
   const lang = resolvePreferredLanguage(payload.profile, ctx, "tr");
-  const seasonUrl = await resolveMiniAppRouteUrl(pool, appConfig, ctx.from?.id, {
-    routeKey: CANONICAL_ROUTE_KEY.SEASON
-  });
-  const leaderboardUrl = await resolveMiniAppRouteUrl(pool, appConfig, ctx.from?.id, {
-    routeKey: CANONICAL_ROUTE_KEY.SEASON,
-    panelKey: CANONICAL_PANEL_KEY.LEADERBOARD,
-    focusKey: "leaderboard"
-  });
+  const seasonUrl = await resolveMiniAppCommandUrl(pool, appConfig, ctx.from?.id, "season");
+  const leaderboardUrl = await resolveMiniAppCommandUrl(pool, appConfig, ctx.from?.id, "leaderboard");
   await ctx.replyWithMarkdown(
     messages.formatLeaderboard(payload.season, payload.rows),
     buildSeasonKeyboard(seasonUrl || "", leaderboardUrl || "", lang)
@@ -2717,11 +2688,7 @@ async function sendShop(ctx, pool, appConfig) {
     return { profile, offers, balances, effects };
   });
   const lang = resolvePreferredLanguage(payload.profile, ctx, "tr");
-  const rewardsUrl = await resolveMiniAppRouteUrl(pool, appConfig, ctx.from?.id, {
-    routeKey: CANONICAL_ROUTE_KEY.VAULT,
-    panelKey: CANONICAL_PANEL_KEY.REWARDS,
-    focusKey: "premium_pass"
-  });
+  const rewardsUrl = await resolveMiniAppCommandUrl(pool, appConfig, ctx.from?.id, "rewards");
   await ctx.replyWithMarkdown(
     messages.formatShop(payload.offers, payload.balances, payload.effects),
     buildShopKeyboard(payload.offers, lang, rewardsUrl || "")
@@ -2746,19 +2713,9 @@ async function sendDiscover(ctx, pool, appConfig) {
   const readyMissions = payload.missions.filter((row) => row.completed && !row.claimed).length;
   const openOffers = payload.offers.length;
   const [discoverUrl, missionsUrl, playUrl] = await Promise.all([
-    resolveMiniAppRouteUrl(pool, appConfig, ctx.from?.id, {
-      routeKey: CANONICAL_ROUTE_KEY.EVENTS,
-      panelKey: CANONICAL_PANEL_KEY.DISCOVER,
-      focusKey: "command_center"
-    }),
-    resolveMiniAppRouteUrl(pool, appConfig, ctx.from?.id, {
-      routeKey: CANONICAL_ROUTE_KEY.MISSIONS,
-      panelKey: CANONICAL_PANEL_KEY.QUESTS,
-      focusKey: "board"
-    }),
-    resolveMiniAppRouteUrl(pool, appConfig, ctx.from?.id, {
-      routeKey: CANONICAL_ROUTE_KEY.HUB
-    })
+    resolveMiniAppCommandUrl(pool, appConfig, ctx.from?.id, "discover"),
+    resolveMiniAppCommandUrl(pool, appConfig, ctx.from?.id, "missions"),
+    resolveMiniAppCommandUrl(pool, appConfig, ctx.from?.id, "play")
   ]);
   await ctx.replyWithMarkdown(
     lang === "en"
@@ -2780,11 +2737,7 @@ async function sendMissions(ctx, pool, appConfig) {
     const board = await missionStore.getMissionBoard(db, profile.user_id);
     return { profile, board };
   });
-  const missionsUrl = await resolveMiniAppRouteUrl(pool, appConfig, ctx.from?.id, {
-    routeKey: CANONICAL_ROUTE_KEY.MISSIONS,
-    panelKey: CANONICAL_PANEL_KEY.CLAIM,
-    focusKey: "missions"
-  });
+  const missionsUrl = await resolveMiniAppCommandUrl(pool, appConfig, ctx.from?.id, "claim");
   await ctx.replyWithMarkdown(
     messages.formatMissions(payload.board),
     buildMissionKeyboard(payload.board, resolvePreferredLanguage(payload.profile, ctx, "tr"), missionsUrl || "")
@@ -2808,11 +2761,7 @@ async function sendDaily(ctx, pool, appConfig) {
     const daily = buildDailyView(runtimeConfig, profile, dailyRaw);
     return { profile, balances, daily, board, anomaly, contract };
   });
-  const missionsUrl = await resolveMiniAppRouteUrl(pool, appConfig, ctx.from?.id, {
-    routeKey: CANONICAL_ROUTE_KEY.MISSIONS,
-    panelKey: CANONICAL_PANEL_KEY.QUESTS,
-    focusKey: "board"
-  });
+  const missionsUrl = await resolveMiniAppCommandUrl(pool, appConfig, ctx.from?.id, "missions");
   await ctx.replyWithMarkdown(
     messages.formatDaily(payload.profile, payload.daily, payload.board, payload.balances, payload.anomaly, payload.contract),
     buildMissionKeyboard(payload.board, resolvePreferredLanguage(payload.profile, ctx, "tr"), missionsUrl || "")
@@ -2833,16 +2782,8 @@ async function sendSettings(ctx, pool, appConfig) {
     return { profile, prefs, perf };
   });
   const lang = resolvePreferredLanguage(payload.profile, ctx, "tr");
-  const settingsUrl = await resolveMiniAppRouteUrl(pool, appConfig, ctx.from?.id, {
-    routeKey: CANONICAL_ROUTE_KEY.SETTINGS,
-    panelKey: CANONICAL_PANEL_KEY.LANGUAGE,
-    focusKey: "locale_override"
-  });
-  const supportUrl = await resolveMiniAppRouteUrl(pool, appConfig, ctx.from?.id, {
-    routeKey: CANONICAL_ROUTE_KEY.SETTINGS,
-    panelKey: CANONICAL_PANEL_KEY.SUPPORT,
-    focusKey: "faq_cards"
-  });
+  const settingsUrl = await resolveMiniAppCommandUrl(pool, appConfig, ctx.from?.id, "settings");
+  const supportUrl = await resolveMiniAppCommandUrl(pool, appConfig, ctx.from?.id, "support");
   await ctx.replyWithMarkdown(
     lang === "en"
       ? `*Settings*\n` +
@@ -2872,26 +2813,10 @@ async function sendSupport(ctx, pool, appConfig) {
   });
   const lang = resolvePreferredLanguage(payload.profile, ctx, "tr");
   const [statusUrl, payoutUrl, settingsUrl, faqUrl] = await Promise.all([
-    resolveMiniAppRouteUrl(pool, appConfig, ctx.from?.id, {
-      routeKey: CANONICAL_ROUTE_KEY.HUB,
-      panelKey: CANONICAL_PANEL_KEY.STATUS,
-      focusKey: "system_status"
-    }),
-    resolveMiniAppRouteUrl(pool, appConfig, ctx.from?.id, {
-      routeKey: CANONICAL_ROUTE_KEY.VAULT,
-      panelKey: CANONICAL_PANEL_KEY.PAYOUT,
-      focusKey: "request"
-    }),
-    resolveMiniAppRouteUrl(pool, appConfig, ctx.from?.id, {
-      routeKey: CANONICAL_ROUTE_KEY.SETTINGS,
-      panelKey: CANONICAL_PANEL_KEY.LANGUAGE,
-      focusKey: "locale_override"
-    }),
-    resolveMiniAppRouteUrl(pool, appConfig, ctx.from?.id, {
-      routeKey: CANONICAL_ROUTE_KEY.SETTINGS,
-      panelKey: CANONICAL_PANEL_KEY.SUPPORT,
-      focusKey: "faq_cards"
-    })
+    resolveMiniAppCommandUrl(pool, appConfig, ctx.from?.id, "status"),
+    resolveMiniAppCommandUrl(pool, appConfig, ctx.from?.id, "payout"),
+    resolveMiniAppCommandUrl(pool, appConfig, ctx.from?.id, "settings"),
+    resolveMiniAppCommandUrl(pool, appConfig, ctx.from?.id, "faq")
   ]);
   await ctx.replyWithMarkdown(
     lang === "en"
@@ -2917,26 +2842,10 @@ async function sendFaq(ctx, pool, appConfig) {
   const profile = await ensureProfile(pool, ctx);
   const lang = resolvePreferredLanguage(profile, ctx, "tr");
   const [statusUrl, payoutUrl, settingsUrl, faqUrl] = await Promise.all([
-    resolveMiniAppRouteUrl(pool, appConfig, ctx.from?.id, {
-      routeKey: CANONICAL_ROUTE_KEY.HUB,
-      panelKey: CANONICAL_PANEL_KEY.STATUS,
-      focusKey: "system_status"
-    }),
-    resolveMiniAppRouteUrl(pool, appConfig, ctx.from?.id, {
-      routeKey: CANONICAL_ROUTE_KEY.VAULT,
-      panelKey: CANONICAL_PANEL_KEY.PAYOUT,
-      focusKey: "request"
-    }),
-    resolveMiniAppRouteUrl(pool, appConfig, ctx.from?.id, {
-      routeKey: CANONICAL_ROUTE_KEY.SETTINGS,
-      panelKey: CANONICAL_PANEL_KEY.LANGUAGE,
-      focusKey: "locale_override"
-    }),
-    resolveMiniAppRouteUrl(pool, appConfig, ctx.from?.id, {
-      routeKey: CANONICAL_ROUTE_KEY.SETTINGS,
-      panelKey: CANONICAL_PANEL_KEY.SUPPORT,
-      focusKey: "faq_cards"
-    })
+    resolveMiniAppCommandUrl(pool, appConfig, ctx.from?.id, "status"),
+    resolveMiniAppCommandUrl(pool, appConfig, ctx.from?.id, "payout"),
+    resolveMiniAppCommandUrl(pool, appConfig, ctx.from?.id, "settings"),
+    resolveMiniAppCommandUrl(pool, appConfig, ctx.from?.id, "faq")
   ]);
   await ctx.replyWithMarkdown(
     lang === "en"

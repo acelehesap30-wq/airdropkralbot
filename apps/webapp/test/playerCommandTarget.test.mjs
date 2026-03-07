@@ -14,7 +14,7 @@ test("resolvePlayerCommandTarget maps core command keys into canonical targets",
   const mod = await loadModule();
 
   assert.deepEqual(mod.resolvePlayerCommandTarget("/wallet"), {
-    route_key: "vault",
+    route_key: "exchange",
     panel_key: "wallet",
     focus_key: "connect",
     workspace: "player",
