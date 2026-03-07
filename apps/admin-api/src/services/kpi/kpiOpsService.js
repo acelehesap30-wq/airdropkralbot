@@ -4,6 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const { spawn } = require("child_process");
 const { createKpiBundleRunsRepository } = require("../../db/kpiBundleRunsRepository");
+const { resolveKpiBundleArtifactPaths } = require("../../../../../packages/shared/src/runtimeArtifactPaths.js");
 
 function toInt(value, fallback, min, max) {
   const parsed = Number(value);
@@ -37,11 +38,14 @@ function createRunRef() {
 }
 
 function resolveKpiPaths(repoRootDir) {
+  const artifactPaths = resolveKpiBundleArtifactPaths(repoRootDir);
   const docsDir = path.join(repoRootDir, "docs");
   return {
     scriptPath: path.join(repoRootDir, "scripts", "v5_kpi_bundle.mjs"),
-    latestBundlePath: path.join(docsDir, "V5_KPI_BUNDLE_latest.json"),
-    latestBundleMdPath: path.join(docsDir, "V5_KPI_BUNDLE_latest.md")
+    latestBundlePath: artifactPaths.latestJsonPath,
+    latestBundleMdPath: artifactPaths.latestMdPath,
+    legacyBundlePath: path.join(docsDir, "V5_KPI_BUNDLE_latest.json"),
+    legacyBundleMdPath: path.join(docsDir, "V5_KPI_BUNDLE_latest.md")
   };
 }
 
@@ -109,17 +113,19 @@ function createKpiOpsService({ repoRootDir, pool, logger }) {
   const repository = pool ? createKpiBundleRunsRepository({ pool, logger }) : null;
 
   async function getLatestBundle() {
-    if (!fs.existsSync(paths.latestBundlePath)) {
+    const sourceJsonPath = fs.existsSync(paths.latestBundlePath) ? paths.latestBundlePath : paths.legacyBundlePath;
+    const sourceMdPath = fs.existsSync(paths.latestBundleMdPath) ? paths.latestBundleMdPath : paths.legacyBundleMdPath;
+    if (!fs.existsSync(sourceJsonPath)) {
       const err = new Error("kpi_bundle_not_found");
       err.code = "kpi_bundle_not_found";
       throw err;
     }
-    const bundle = readJsonFile(paths.latestBundlePath);
-    const stat = fs.statSync(paths.latestBundlePath);
+    const bundle = readJsonFile(sourceJsonPath);
+    const stat = fs.statSync(sourceJsonPath);
     return {
       bundle,
-      source_file: paths.latestBundlePath,
-      markdown_file: paths.latestBundleMdPath,
+      source_file: sourceJsonPath,
+      markdown_file: sourceMdPath,
       updated_at: stat.mtime.toISOString()
     };
   }

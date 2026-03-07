@@ -96,8 +96,8 @@
 8. Scheduler health kontrolu:
 `npm run kpi:v5:task:check`
 9. Uretilen dosyalar:
-- `docs/V5_KPI_BUNDLE_latest.json`
-- `docs/V5_KPI_BUNDLE_latest.md`
+- `.runtime-artifacts/kpi/V5_KPI_BUNDLE_latest.json`
+- `.runtime-artifacts/kpi/V5_KPI_BUNDLE_latest.md`
 - `docs/V5_KPI_SNAPSHOT_latest.json`
 10. KPI bundle scripti `v5_operational_slo_metrics` tablosuna metrik yazar (emit_slo=true).
 11. SLO yazimini kapatmak icin:

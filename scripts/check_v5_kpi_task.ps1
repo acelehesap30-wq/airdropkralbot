@@ -6,8 +6,8 @@ param(
 $ErrorActionPreference = "Stop"
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
-$latestJson = Join-Path $repoRoot "docs\V5_KPI_BUNDLE_latest.json"
-$latestMd = Join-Path $repoRoot "docs\V5_KPI_BUNDLE_latest.md"
+$latestJson = Join-Path $repoRoot ".runtime-artifacts\kpi\V5_KPI_BUNDLE_latest.json"
+$latestMd = Join-Path $repoRoot ".runtime-artifacts\kpi\V5_KPI_BUNDLE_latest.md"
 
 function Get-TaskStatus {
   param([string]$Name)

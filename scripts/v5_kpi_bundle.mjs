@@ -4,9 +4,11 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import dotenv from "dotenv";
 import { Pool } from "pg";
 import dbConnection from "../packages/shared/src/v5/dbConnection.js";
+import runtimeArtifactPaths from "../packages/shared/src/runtimeArtifactPaths.js";
 import { buildSnapshot, parseArgs, toNumber, pct } from "./v5_kpi_snapshot.mjs";
 
 const { buildPgPoolConfig } = dbConnection;
+const { resolveKpiBundleArtifactPaths } = runtimeArtifactPaths;
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "..");
 const envPath = path.join(repoRoot, ".env");
@@ -450,7 +452,8 @@ async function buildKpiBundle(opts = {}) {
       weekly
     };
 
-    const outDir = path.join(repoRoot, "docs");
+    const outputPaths = resolveKpiBundleArtifactPaths(repoRoot);
+    const outDir = outputPaths.outDir;
     if (!fs.existsSync(outDir)) {
       fs.mkdirSync(outDir, { recursive: true });
     }
@@ -463,8 +466,8 @@ async function buildKpiBundle(opts = {}) {
     ).padStart(2, "0")}Z`;
     const jsonPath = path.join(outDir, `V5_KPI_BUNDLE_${stamp}.json`);
     const mdPath = path.join(outDir, `V5_KPI_BUNDLE_${stamp}.md`);
-    const jsonLatest = path.join(outDir, "V5_KPI_BUNDLE_latest.json");
-    const mdLatest = path.join(outDir, "V5_KPI_BUNDLE_latest.md");
+    const jsonLatest = outputPaths.latestJsonPath;
+    const mdLatest = outputPaths.latestMdPath;
 
     fs.writeFileSync(jsonPath, `${JSON.stringify(bundle, null, 2)}\n`, "utf8");
     fs.writeFileSync(jsonLatest, `${JSON.stringify(bundle, null, 2)}\n`, "utf8");
