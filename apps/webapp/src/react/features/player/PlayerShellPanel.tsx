@@ -1,4 +1,5 @@
 import { buildHomeFeedViewModel } from "../../../core/player/homeFeedViewModel.js";
+import { resolvePlayerCommandTarget } from "../../../core/player/playerCommandTarget.js";
 import { buildVaultViewModel } from "../../../core/player/vaultViewModel.js";
 import { normalizeLang, t, type Lang } from "../../i18n";
 import type { BootstrapV2Data } from "../../types";
@@ -14,7 +15,13 @@ type PlayerShellPanelProps = {
   onClose: () => void;
   onOpenPanel: (panelKey: PlayerShellPanelKey, focusKey?: string) => void;
   onTabChange: (tab: "home" | "pvp" | "tasks" | "vault") => void;
-  onRouteTarget: (input: { routeKey?: string; panelKey?: string; focusKey?: string; tab?: "home" | "pvp" | "tasks" | "vault" }) => void;
+  onRouteTarget: (input: {
+    routeKey?: string;
+    panelKey?: string;
+    focusKey?: string;
+    tab?: "home" | "pvp" | "tasks" | "vault" | string;
+    sourcePanelKey?: string;
+  }) => void;
   onToggleReducedMotion: (next: boolean) => void;
   onToggleLargeText: (next: boolean) => void;
   onToggleLanguage: (next: Lang) => void;
@@ -269,10 +276,32 @@ export function PlayerShellPanel(props: PlayerShellPanelProps) {
               <button className="akrBtn akrBtnAccent" onClick={() => props.onTabChange("tasks")}>
                 {t(props.lang, "shell_panel_go_tasks")}
               </button>
-              <button className="akrBtn akrBtnGhost" onClick={() => props.onTabChange("pvp")}>
+              <button
+                className="akrBtn akrBtnGhost"
+                onClick={() =>
+                  props.onRouteTarget({
+                    routeKey: "pvp",
+                    panelKey: "panel_pvp",
+                    focusKey: "daily_duel",
+                    tab: "pvp",
+                    sourcePanelKey: "discover"
+                  })
+                }
+              >
                 {t(props.lang, "shell_panel_go_pvp")}
               </button>
-              <button className="akrBtn akrBtnGhost" onClick={() => props.onTabChange("vault")}>
+              <button
+                className="akrBtn akrBtnGhost"
+                onClick={() =>
+                  props.onRouteTarget({
+                    routeKey: "vault",
+                    panelKey: "payout",
+                    focusKey: "request",
+                    tab: "vault",
+                    sourcePanelKey: "discover"
+                  })
+                }
+              >
                 {t(props.lang, "shell_panel_go_vault")}
               </button>
             </div>
@@ -284,7 +313,22 @@ export function PlayerShellPanel(props: PlayerShellPanelProps) {
                 {homeView.command_hints.map((row) => (
                   <li key={row.key}>
                     <strong>/{row.key}</strong>
-                    <span>{row.description || "-"}</span>
+                    <span>
+                      {row.description || "-"}
+                      {resolvePlayerCommandTarget(row.key) ? (
+                        <button
+                          className="akrBtn akrBtnGhost"
+                          onClick={() =>
+                            props.onRouteTarget({
+                              ...resolvePlayerCommandTarget(row.key)!,
+                              sourcePanelKey: "discover"
+                            })
+                          }
+                        >
+                          {t(props.lang, "command_handoff_open")}
+                        </button>
+                      ) : null}
+                    </span>
                   </li>
                 ))}
               </ul>

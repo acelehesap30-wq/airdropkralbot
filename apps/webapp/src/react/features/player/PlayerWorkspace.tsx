@@ -134,6 +134,7 @@ export function PlayerWorkspace(props: PlayerWorkspaceProps) {
             data={props.data}
             onRefresh={props.onRefreshHome}
             onOpenShellPanel={openPanel}
+            onRouteTarget={routeToTarget}
           />
         )}
         {props.tab === "pvp" && (

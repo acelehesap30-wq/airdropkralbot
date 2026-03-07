@@ -7,7 +7,7 @@ type RouteTargetInput = {
   routeKey?: string;
   panelKey?: string;
   focusKey?: string;
-  tab?: TabKey;
+  tab?: TabKey | string;
   sourcePanelKey?: string;
 };
 
