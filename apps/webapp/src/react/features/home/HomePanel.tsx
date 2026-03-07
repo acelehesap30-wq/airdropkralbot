@@ -8,6 +8,7 @@ type HomePanelProps = {
   homeFeed: Record<string, unknown> | null;
   data: BootstrapV2Data | null;
   onRefresh: () => void;
+  onOpenShellPanel: (panelKey: "settings" | "support" | "discover", focusKey?: string) => void;
 };
 
 export function HomePanel(props: HomePanelProps) {
@@ -86,6 +87,11 @@ export function HomePanel(props: HomePanelProps) {
 
       <section className="akrMiniPanel" data-akr-panel-key="discover" data-akr-focus-key="command_center">
         <h4>{t(props.lang, "home_commands_title")}</h4>
+        <div className="akrActionRow">
+          <button className="akrBtn akrBtnGhost" onClick={() => props.onOpenShellPanel("discover", "command_center")}>
+            {t(props.lang, "shell_panel_open_discover")}
+          </button>
+        </div>
         {view.command_hints.length ? (
           <ul className="akrList">
             {view.command_hints.map((row) => (
@@ -103,6 +109,11 @@ export function HomePanel(props: HomePanelProps) {
       <div className="akrSplit">
         <section className="akrMiniPanel" data-akr-panel-key="language" data-akr-focus-key="locale_override">
           <h4>{t(props.lang, "home_settings_title")}</h4>
+          <div className="akrActionRow">
+            <button className="akrBtn akrBtnGhost" onClick={() => props.onOpenShellPanel("settings", "locale_override")}>
+              {t(props.lang, "shell_panel_open_settings")}
+            </button>
+          </div>
           <div className="akrChipRow">
             <span className="akrChip">{String(props.lang).toUpperCase()}</span>
             <span className="akrChip">{prefs.reduced_motion ? "motion_reduced" : "motion_normal"}</span>
@@ -112,6 +123,11 @@ export function HomePanel(props: HomePanelProps) {
         </section>
         <section className="akrMiniPanel" data-akr-panel-key="support" data-akr-focus-key="faq_cards">
           <h4>{t(props.lang, "home_support_title")}</h4>
+          <div className="akrActionRow">
+            <button className="akrBtn akrBtnGhost" onClick={() => props.onOpenShellPanel("support", "faq_cards")}>
+              {t(props.lang, "shell_panel_open_support")}
+            </button>
+          </div>
           <ul className="akrList">
             <li>
               <strong>/status</strong>

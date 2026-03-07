@@ -15,6 +15,8 @@ const SAFE_TX_STATE = /^[a-z0-9:_-]{2,32}$/;
 
 const UI_EVENT_KEY = Object.freeze({
   SHELL_OPEN: "ui.shell.open",
+  PANEL_OPEN: "ui.panel.open",
+  PANEL_CLOSE: "ui.panel.close",
   TAB_SWITCH: "ui.tab.switch",
   WORKSPACE_SWITCH: "ui.workspace.switch",
   LANGUAGE_SWITCH: "ui.locale.switch",

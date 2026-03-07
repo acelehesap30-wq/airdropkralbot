@@ -158,6 +158,27 @@ body {
   font-size: 0.7rem;
 }
 
+.akrShellSurface {
+  position: relative;
+  overflow: hidden;
+}
+
+.akrShellSurface::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(47, 255, 181, 0.68), rgba(0, 214, 255, 0));
+}
+
+.akrShellSurfaceHero {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
 .akrTabs {
   margin-top: 14px;
   display: grid;
@@ -399,6 +420,10 @@ body {
 
   .akrSplit {
     grid-template-columns: 1fr;
+  }
+
+  .akrShellSurfaceHero {
+    flex-direction: column;
   }
 }
 

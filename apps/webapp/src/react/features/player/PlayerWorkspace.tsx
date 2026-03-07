@@ -1,7 +1,9 @@
 import type { Lang } from "../../i18n";
-import type { BootstrapV2Payload, TabKey } from "../../types";
+import type { BootstrapV2Payload, LaunchContext, TabKey } from "../../types";
 import { HomePanel } from "../home/HomePanel";
 import { PvpPanel } from "../pvp/PvpPanel";
+import { PlayerShellPanel } from "./PlayerShellPanel";
+import { usePlayerShellPanelController } from "./usePlayerShellPanelController";
 import { PlayerTabs } from "../shell/PlayerTabs";
 import { TasksPanel } from "../tasks/TasksPanel";
 import { VaultPanel } from "../vault/VaultPanel";
@@ -43,7 +45,12 @@ type PlayerWorkspaceProps = {
   payoutRequestLoading: boolean;
   passPurchaseLoading: boolean;
   cosmeticPurchaseLoading: boolean;
+  launchContext: LaunchContext | null;
+  trackUiEvent: (payload: Record<string, unknown>) => void;
   onTabChange: (next: TabKey) => void;
+  onToggleReducedMotion: (next: boolean) => void;
+  onToggleLargeText: (next: boolean) => void;
+  onToggleLanguage: (next: Lang) => void;
   onRefreshHome: () => void;
   onPvpStart: () => void;
   onPvpRefreshState: () => void;
@@ -78,10 +85,32 @@ type PlayerWorkspaceProps = {
 };
 
 export function PlayerWorkspace(props: PlayerWorkspaceProps) {
+  const { activePanelKey, activeFocusKey, openPanel, closePanel } = usePlayerShellPanelController({
+    launchContext: props.launchContext,
+    tab: props.tab,
+    trackUiEvent: props.trackUiEvent
+  });
+
   return (
     <>
       <PlayerTabs lang={props.lang} tab={props.tab} tabs={props.tabs} onChange={props.onTabChange} />
       <main className="akrPanelGrid">
+        {props.tab === "home" && activePanelKey ? (
+          <PlayerShellPanel
+            lang={props.lang}
+            panelKey={activePanelKey}
+            focusKey={activeFocusKey}
+            data={props.data || null}
+            homeFeed={props.homeFeed}
+            vaultData={props.vaultData}
+            onClose={closePanel}
+            onOpenPanel={openPanel}
+            onTabChange={props.onTabChange}
+            onToggleReducedMotion={props.onToggleReducedMotion}
+            onToggleLargeText={props.onToggleLargeText}
+            onToggleLanguage={props.onToggleLanguage}
+          />
+        ) : null}
         {props.tab === "home" && (
           <HomePanel
             lang={props.lang}
@@ -89,6 +118,7 @@ export function PlayerWorkspace(props: PlayerWorkspaceProps) {
             homeFeed={props.homeFeed}
             data={props.data}
             onRefresh={props.onRefreshHome}
+            onOpenShellPanel={openPanel}
           />
         )}
         {props.tab === "pvp" && (

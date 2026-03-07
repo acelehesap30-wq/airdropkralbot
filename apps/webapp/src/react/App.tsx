@@ -599,7 +599,12 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
           payoutRequestLoading={payoutRequestLoading}
           passPurchaseLoading={passPurchaseLoading}
           cosmeticPurchaseLoading={cosmeticPurchaseLoading}
+          launchContext={launchContext}
+          trackUiEvent={trackUiEvent}
           onTabChange={onTabChange}
+          onToggleReducedMotion={onToggleReducedMotion}
+          onToggleLargeText={onToggleLargeText}
+          onToggleLanguage={onToggleLanguage}
           onRefreshHome={() => void refreshHome()}
           onPvpStart={() => void handlePvpStart()}
           onPvpRefreshState={() => void handlePvpRefreshState()}
