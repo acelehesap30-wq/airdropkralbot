@@ -19,6 +19,13 @@ type PvpPanelProps = {
   onRefreshLive: () => void;
   onStrike: () => void;
   onResolve: () => void;
+  onRouteTarget: (input: {
+    routeKey?: string;
+    panelKey?: string;
+    focusKey?: string;
+    tab?: "home" | "pvp" | "tasks" | "vault" | string;
+    sourcePanelKey?: string;
+  }) => void;
 };
 
 export function PvpPanel(props: PvpPanelProps) {
@@ -52,6 +59,48 @@ export function PvpPanel(props: PvpPanelProps) {
         </button>
         <button className="akrBtn akrBtnGhost" disabled={!props.canResolve} onClick={props.onResolve}>
           Resolve
+        </button>
+        <button
+          className="akrBtn akrBtnGhost"
+          onClick={() =>
+            props.onRouteTarget({
+              routeKey: "pvp",
+              panelKey: "panel_pvp",
+              focusKey: "daily_duel",
+              tab: "pvp",
+              sourcePanelKey: "panel_pvp"
+            })
+          }
+        >
+          {t(props.lang, "pvp_focus_daily_duel")}
+        </button>
+        <button
+          className="akrBtn akrBtnGhost"
+          onClick={() =>
+            props.onRouteTarget({
+              routeKey: "season",
+              panelKey: "rank",
+              focusKey: "weekly_ladder",
+              tab: "pvp",
+              sourcePanelKey: "panel_pvp"
+            })
+          }
+        >
+          {t(props.lang, "pvp_focus_weekly_ladder")}
+        </button>
+        <button
+          className="akrBtn akrBtnGhost"
+          onClick={() =>
+            props.onRouteTarget({
+              routeKey: "season",
+              panelKey: "leaderboard",
+              focusKey: "leaderboard",
+              tab: "pvp",
+              sourcePanelKey: "panel_pvp"
+            })
+          }
+        >
+          {t(props.lang, "pvp_focus_leaderboard")}
         </button>
       </div>
       <h3>{t(props.lang, "pvp_runtime_title")}</h3>

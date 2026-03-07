@@ -156,6 +156,7 @@ export function PlayerWorkspace(props: PlayerWorkspaceProps) {
             onRefreshLive={props.onPvpRefreshLive}
             onStrike={props.onPvpStrike}
             onResolve={props.onPvpResolve}
+            onRouteTarget={routeToTarget}
           />
         )}
         {props.tab === "tasks" && (
@@ -172,6 +173,7 @@ export function PlayerWorkspace(props: PlayerWorkspaceProps) {
             onReveal={props.onTaskReveal}
             onAccept={props.onTaskAccept}
             onClaim={props.onMissionClaim}
+            onRouteTarget={routeToTarget}
           />
         )}
         {props.tab === "vault" && (
