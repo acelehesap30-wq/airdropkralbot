@@ -101,6 +101,7 @@ export function PlayerWorkspace(props: PlayerWorkspaceProps) {
       panelKey: target.panel_key,
       focusKey: target.focus_key,
       tab: target.tab,
+      actionKey: target.action_key,
       sourcePanelKey
     });
   };

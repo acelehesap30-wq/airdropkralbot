@@ -14,6 +14,7 @@ function resolveLaunchContext(search: string) {
   const startapp = String(qs.get("startapp") || "").trim();
   const decoded = startapp ? decodeStartAppPayload(startapp) : null;
   const launchEventKey = String(qs.get("launch_event_key") || "").trim();
+  const shellActionKey = String(qs.get("shell_action_key") || "").trim();
   const target = resolveLaunchTarget({
     routeKey: String(qs.get("route_key") || decoded?.route_key || "").trim(),
     panelKey: String(qs.get("panel_key") || decoded?.panel_key || "").trim(),
@@ -21,7 +22,8 @@ function resolveLaunchContext(search: string) {
   });
   return {
     ...target,
-    launch_event_key: launchEventKey
+    launch_event_key: launchEventKey,
+    shell_action_key: shellActionKey
   };
 }
 

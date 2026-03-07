@@ -23,6 +23,7 @@ test("resolvePlayerRouteHandoff routes payout and wallet surfaces into vault tab
       panel_key: "wallet",
       focus_key: "connect",
       launch_event_key: "launch.internal.player_route_wallet.open",
+      shell_action_key: "",
       workspace: "player",
       tab: "vault"
     }
@@ -38,6 +39,7 @@ test("resolvePlayerRouteHandoff routes payout and wallet surfaces into vault tab
       panel_key: "payout",
       focus_key: "request",
       launch_event_key: "launch.internal.player_route_payout.open",
+      shell_action_key: "",
       workspace: "player",
       tab: "vault"
     }
@@ -58,8 +60,30 @@ test("resolvePlayerRouteHandoff preserves player-side home support routes", asyn
       panel_key: "support",
       focus_key: "faq_cards",
       launch_event_key: "launch.internal.player_route_support.open",
+      shell_action_key: "",
       workspace: "player",
       tab: "home"
+    }
+  );
+});
+
+test("resolvePlayerRouteHandoff preserves explicit shell action keys", async () => {
+  const mod = await loadModule();
+
+  assert.deepEqual(
+    mod.resolvePlayerRouteHandoff({
+      panelKey: "wallet",
+      focusKey: "connect",
+      actionKey: "player.route.wallet_connect"
+    }),
+    {
+      route_key: "vault",
+      panel_key: "wallet",
+      focus_key: "connect",
+      launch_event_key: "launch.internal.player_route_wallet.open",
+      shell_action_key: "player.route.wallet_connect",
+      workspace: "player",
+      tab: "vault"
     }
   );
 });

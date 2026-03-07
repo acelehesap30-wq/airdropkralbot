@@ -393,7 +393,8 @@ const navigationSlice = createSlice({
     },
     routeLaunchContext(state, action: PayloadAction<LaunchContext | null | undefined>) {
       const next = normalizeLaunchContext(action.payload || null, {
-        launch_event_key: state.launchContext?.launch_event_key || state.bootstrapContext?.launch_event_key || ""
+        launch_event_key: state.launchContext?.launch_event_key || state.bootstrapContext?.launch_event_key || "",
+        shell_action_key: state.launchContext?.shell_action_key || state.bootstrapContext?.shell_action_key || ""
       });
       if (!next) {
         return;

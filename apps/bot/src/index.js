@@ -43,6 +43,7 @@ const {
 const { resolvePlayerCommandNavigation } = require("../../../packages/shared/src/playerCommandNavigation");
 const { resolveAdminCommandNavigation } = require("../../../packages/shared/src/adminCommandNavigation");
 const { resolveLocalePreference } = require("../../../packages/shared/src/localeContract");
+const { resolveShellActionKeyForBotHandler } = require("../../../packages/shared/src/shellActionCatalog");
 const { getCommandRegistry, toTelegramCommands, buildAliasLookup } = require("./commands/registry");
 const { buildIntentIndex, resolveIntent, normalizeMode } = require("./commands/intentRouter");
 const { buildSimpleCallbackActionMap, buildSimpleWebAppActionMap } = require("./commands/callbackActionCatalog");
@@ -467,7 +468,16 @@ async function resolveMiniAppLaunchSurfaceBundle(pool, appConfig, telegramId, su
 }
 
 async function resolveMiniAppCommandUrl(pool, appConfig, telegramId, commandKey, overrides = {}) {
-  const bundle = await resolveMiniAppCommandUrlBundle(pool, appConfig, telegramId, [{ key: "url", commandKey, overrides }]);
+  const bundle = await resolveMiniAppCommandUrlBundle(pool, appConfig, telegramId, [
+    {
+      key: "url",
+      commandKey,
+      overrides: {
+        ...overrides,
+        shellActionKey: overrides.shellActionKey || resolveShellActionKeyForBotHandler(commandKey)
+      }
+    }
+  ]);
   return bundle.url || null;
 }
 
@@ -485,7 +495,16 @@ async function resolveMiniAppAdminLaunchSurfaceBundle(pool, appConfig, telegramI
 }
 
 async function resolveMiniAppAdminCommandUrl(pool, appConfig, telegramId, commandKey, overrides = {}) {
-  const bundle = await resolveMiniAppAdminCommandUrlBundle(pool, appConfig, telegramId, [{ key: "url", commandKey, overrides }]);
+  const bundle = await resolveMiniAppAdminCommandUrlBundle(pool, appConfig, telegramId, [
+    {
+      key: "url",
+      commandKey,
+      overrides: {
+        ...overrides,
+        shellActionKey: overrides.shellActionKey || resolveShellActionKeyForBotHandler(commandKey)
+      }
+    }
+  ]);
   return bundle.url || null;
 }
 
@@ -516,6 +535,9 @@ function buildSignedWebAppUrl(appConfig, telegramId, baseUrlOverride = "", navig
     }
     if (navigation.launchEventKey) {
       url.searchParams.set("launch_event_key", String(navigation.launchEventKey));
+    }
+    if (navigation.shellActionKey) {
+      url.searchParams.set("shell_action_key", String(navigation.shellActionKey));
     }
     return url.toString();
   } catch {

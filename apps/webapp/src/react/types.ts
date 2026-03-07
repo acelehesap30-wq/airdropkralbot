@@ -141,6 +141,7 @@ export type LaunchContext = {
   panel_key?: string;
   focus_key?: string;
   launch_event_key?: string;
+  shell_action_key?: string;
   workspace?: WorkspaceKey | string;
   tab?: TabKey | string;
 };

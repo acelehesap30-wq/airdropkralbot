@@ -110,6 +110,15 @@ test("launch event contract keeps command, surface and callback launch reasons c
 });
 
 test("shell action catalog resolves canonical player and admin targets", () => {
+  assert.deepEqual(shellActionCatalog.resolveShellActionTarget(shellActionCatalog.SHELL_ACTION_KEY.PLAYER_WORLD_HUB), {
+    action_key: "player.route.world_hub",
+    workspace: "player",
+    route_key: "hub",
+    panel_key: "",
+    focus_key: "",
+    tab: "home"
+  });
+
   assert.deepEqual(shellActionCatalog.resolveShellActionTarget(shellActionCatalog.SHELL_ACTION_KEY.PLAYER_WALLET_CONNECT), {
     action_key: "player.route.wallet_connect",
     workspace: "player",
@@ -129,4 +138,6 @@ test("shell action catalog resolves canonical player and admin targets", () => {
   });
 
   assert.equal(shellActionCatalog.resolveShellActionKeyForBotHandler("wallet"), shellActionCatalog.SHELL_ACTION_KEY.PLAYER_WALLET_CONNECT);
+  assert.equal(shellActionCatalog.resolveShellActionKeyForLaunchSurface("play_world"), shellActionCatalog.SHELL_ACTION_KEY.PLAYER_WORLD_HUB);
+  assert.equal(shellActionCatalog.resolveShellActionKeyForLaunchSurface("admin_workspace"), shellActionCatalog.SHELL_ACTION_KEY.ADMIN_WORKSPACE);
 });

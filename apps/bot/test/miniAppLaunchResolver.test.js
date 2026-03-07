@@ -13,14 +13,15 @@ test("buildNavigationFromCommand applies overrides on top of resolved command na
             focus_key: "connect"
           }
         : null,
-    { focusKey: "submit_tx" }
+    { focusKey: "submit_tx", shellActionKey: "player.route.wallet_connect" }
   );
 
   assert.deepEqual(navigation, {
-    routeKey: "exchange",
+    routeKey: "vault",
     panelKey: "wallet",
     focusKey: "submit_tx",
-    launchEventKey: "launch.command.wallet.open"
+    launchEventKey: "launch.command.wallet.open",
+    shellActionKey: "player.route.wallet_connect"
   });
 });
 
@@ -29,7 +30,7 @@ test("resolveLaunchUrlBundle resolves keyed launch urls with one base url lookup
   const bundle = await resolveLaunchUrlBundle({
     entries: [
       { key: "profileUrl", commandKey: "profile" },
-      { key: "walletUrl", commandKey: "wallet", overrides: { focusKey: "submit_tx" } },
+      { key: "walletUrl", commandKey: "wallet", overrides: { focusKey: "submit_tx", shellActionKey: "player.route.wallet_connect" } },
       { key: "unknownUrl", commandKey: "unknown" }
     ],
     resolveNavigation: (commandKey) => {
@@ -46,13 +47,14 @@ test("resolveLaunchUrlBundle resolves keyed launch urls with one base url lookup
       return "https://example.com/app";
     },
     buildSignedUrl: (baseUrl, navigation) =>
-      `${baseUrl}?route_key=${navigation.routeKey}&panel_key=${navigation.panelKey}&focus_key=${navigation.focusKey}&launch_event_key=${navigation.launchEventKey}`
+      `${baseUrl}?route_key=${navigation.routeKey}&panel_key=${navigation.panelKey}&focus_key=${navigation.focusKey}&launch_event_key=${navigation.launchEventKey}&shell_action_key=${navigation.shellActionKey || ""}`
   });
 
   assert.equal(baseResolveCount, 1);
   assert.deepEqual(bundle, {
-    profileUrl: "https://example.com/app?route_key=hub&panel_key=profile&focus_key=identity&launch_event_key=launch.command.profile.open",
-    walletUrl: "https://example.com/app?route_key=exchange&panel_key=wallet&focus_key=submit_tx&launch_event_key=launch.command.wallet.open",
+    profileUrl: "https://example.com/app?route_key=hub&panel_key=profile&focus_key=identity&launch_event_key=launch.command.profile.open&shell_action_key=",
+    walletUrl:
+      "https://example.com/app?route_key=vault&panel_key=wallet&focus_key=submit_tx&launch_event_key=launch.command.wallet.open&shell_action_key=player.route.wallet_connect",
     unknownUrl: ""
   });
 });

@@ -1,26 +1,29 @@
 "use strict";
 
 const { resolveCommandLaunchEventKey } = require("../../../../packages/shared/src/launchEventContract");
+const { resolveShellActionTarget } = require("../../../../packages/shared/src/shellActionCatalog");
 
-function buildNavigationFromCommand(commandKey, resolveNavigation, overrides = {}) {
-  if (typeof resolveNavigation !== "function") {
-    return null;
-  }
-  const navigation = resolveNavigation(commandKey);
+function buildNavigationFromCommand(commandKey, resolveNavigation, overrides = {}, resolveActionNavigation = resolveShellActionTarget) {
+  const shellActionKey = String(overrides.shellActionKey || "").trim().toLowerCase();
+  const actionNavigation =
+    shellActionKey && typeof resolveActionNavigation === "function" ? resolveActionNavigation(shellActionKey) : null;
+  const navigation = actionNavigation || (typeof resolveNavigation === "function" ? resolveNavigation(commandKey) : null);
   if (!navigation) {
     return null;
   }
   return {
-    routeKey: overrides.routeKey || navigation.route_key,
-    panelKey: overrides.panelKey || navigation.panel_key || "",
-    focusKey: overrides.focusKey || navigation.focus_key || "",
-    launchEventKey: overrides.launchEventKey || resolveCommandLaunchEventKey(commandKey) || ""
+    routeKey: overrides.routeKey || navigation.route_key || navigation.routeKey,
+    panelKey: overrides.panelKey || navigation.panel_key || navigation.panelKey || "",
+    focusKey: overrides.focusKey || navigation.focus_key || navigation.focusKey || "",
+    launchEventKey: overrides.launchEventKey || resolveCommandLaunchEventKey(commandKey) || "",
+    shellActionKey: shellActionKey || navigation.action_key || navigation.actionKey || ""
   };
 }
 
 async function resolveLaunchUrlBundle({
   entries = [],
   resolveNavigation,
+  resolveActionNavigation = resolveShellActionTarget,
   resolveBaseUrl,
   buildSignedUrl
 } = {}) {
@@ -38,7 +41,7 @@ async function resolveLaunchUrlBundle({
   return Object.fromEntries(
     safeEntries.map((entry) => {
       const bundleKey = String(entry.key || entry.commandKey || "").trim();
-      const navigation = buildNavigationFromCommand(entry.commandKey, resolveNavigation, entry.overrides);
+      const navigation = buildNavigationFromCommand(entry.commandKey, resolveNavigation, entry.overrides, resolveActionNavigation);
       if (!bundleKey) {
         return [];
       }

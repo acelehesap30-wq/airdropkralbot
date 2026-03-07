@@ -1,6 +1,7 @@
 "use strict";
 
 const { resolveSurfaceLaunchEventKey } = require("../../../../packages/shared/src/launchEventContract");
+const { resolveShellActionKeyForLaunchSurface } = require("../../../../packages/shared/src/shellActionCatalog");
 
 const PLAYER_LAUNCH_SURFACE_CATALOG = Object.freeze({
   play_world: Object.freeze({ commandKey: "play", labelKey: "open_play" }),
@@ -34,18 +35,14 @@ const COMBINED_LAUNCH_SURFACE_CATALOG = Object.freeze({
 function buildLaunchSurfaceEntries(surfaceKeys = [], catalog = COMBINED_LAUNCH_SURFACE_CATALOG) {
   return (Array.isArray(surfaceKeys) ? surfaceKeys : [])
     .map((surfaceKey) => {
-      const key = String(surfaceKey || "").trim();
-      const config = catalog[key];
-      if (!key || !config?.commandKey) {
+      const surface = resolveLaunchSurface(surfaceKey, catalog);
+      if (!surface?.commandKey) {
         return null;
       }
       return {
-        key,
-        commandKey: config.commandKey,
-        overrides: {
-          ...(config.overrides || {}),
-          launchEventKey: resolveSurfaceLaunchEventKey(key)
-        }
+        key: surface.key,
+        commandKey: surface.commandKey,
+        overrides: surface.overrides
       };
     })
     .filter(Boolean);
@@ -60,12 +57,15 @@ function resolveLaunchSurface(surfaceKey, catalog = COMBINED_LAUNCH_SURFACE_CATA
   if (!config) {
     return null;
   }
+  const shellActionKey = resolveShellActionKeyForLaunchSurface(key);
   return Object.freeze({
     key,
     commandKey: config.commandKey,
     labelKey: config.labelKey,
+    shellActionKey,
     overrides: {
       ...(config.overrides || {}),
+      shellActionKey,
       launchEventKey: resolveSurfaceLaunchEventKey(key)
     }
   });

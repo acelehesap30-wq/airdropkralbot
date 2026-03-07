@@ -39,21 +39,22 @@ export function useShellTelemetryController(options: ShellTelemetryControllerOpt
       const rawPayload = row.payload_json && typeof row.payload_json === "object" ? (row.payload_json as Record<string, unknown>) : {};
       const explicitLaunchEventKey = String(rawPayload.launch_event_key || "").trim();
       const launchEventKey = explicitLaunchEventKey || String(options.launchContext?.launch_event_key || "").trim();
+      const explicitShellActionKey = String(rawPayload.shell_action_key || "").trim();
+      const shellActionKey = explicitShellActionKey || String(options.launchContext?.shell_action_key || "").trim();
       analyticsRef.current.track(
         buildUiEventRecord({
           tab_key: telemetryTabKey,
           route_key: telemetryRouteKey,
           ...row,
-          payload_json: launchEventKey
-            ? {
-                ...rawPayload,
-                launch_event_key: launchEventKey
-              }
-            : rawPayload,
+          payload_json: {
+            ...rawPayload,
+            ...(launchEventKey ? { launch_event_key: launchEventKey } : {}),
+            ...(shellActionKey ? { shell_action_key: shellActionKey, action_key: shellActionKey } : {})
+          },
         })
       );
     },
-    [options.launchContext?.launch_event_key, telemetryTabKey, telemetryRouteKey]
+    [options.launchContext?.launch_event_key, options.launchContext?.shell_action_key, telemetryTabKey, telemetryRouteKey]
   );
 
   useEffect(() => {
@@ -81,13 +82,22 @@ export function useShellTelemetryController(options: ShellTelemetryControllerOpt
           workspace: options.workspace,
           tab: options.tab,
           ui_version: String(options.data?.ui_shell?.ui_version || "react_v1"),
-          launch_event_key: String(options.launchContext?.launch_event_key || "")
+          launch_event_key: String(options.launchContext?.launch_event_key || ""),
+          shell_action_key: String(options.launchContext?.shell_action_key || ""),
+          action_key: String(options.launchContext?.shell_action_key || "")
         },
         event_value: 1
       })
     );
     return () => client.dispose();
-  }, [options.activeAuth.uid, options.activeAuth.ts, options.activeAuth.sig, options.data, options.launchContext?.launch_event_key]);
+  }, [
+    options.activeAuth.uid,
+    options.activeAuth.ts,
+    options.activeAuth.sig,
+    options.data,
+    options.launchContext?.launch_event_key,
+    options.launchContext?.shell_action_key
+  ]);
 
   useEffect(() => {
     if (!analyticsRef.current) return;

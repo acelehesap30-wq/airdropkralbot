@@ -87,6 +87,7 @@ export function AdminWorkspace(props: AdminWorkspaceProps) {
       routeKey: target.route_key,
       panelKey: target.panel_key,
       focusKey: target.focus_key,
+      actionKey: target.action_key,
       sourcePanelKey
     });
   };

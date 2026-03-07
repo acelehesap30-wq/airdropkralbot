@@ -12,6 +12,7 @@ type RouteTargetInput = {
   panelKey?: string;
   focusKey?: string;
   tab?: TabKey | string;
+  actionKey?: string;
   sourcePanelKey?: string;
 };
 
@@ -61,7 +62,8 @@ export function usePlayerNavigationController(options: PlayerNavigationControlle
         routeKey: input.routeKey,
         panelKey: input.panelKey,
         focusKey: input.focusKey,
-        tab: input.tab
+        tab: input.tab,
+        actionKey: input.actionKey
       }) as LaunchContext;
       const targetTab = (target.tab || "home") as TabKey;
 
@@ -78,6 +80,8 @@ export function usePlayerNavigationController(options: PlayerNavigationControlle
         payload_json: {
           source: "player_route_handoff",
           launch_event_key: launchEventKey,
+          shell_action_key: String(target.shell_action_key || ""),
+          action_key: String(target.shell_action_key || ""),
           source_panel_key: input.sourcePanelKey || UI_SURFACE_KEY.SHELL,
           target_panel_key: target.panel_key || "",
           from_tab: options.tab,

@@ -10,6 +10,7 @@ type AdminRouteTargetInput = {
   routeKey?: string;
   panelKey?: string;
   focusKey?: string;
+  actionKey?: string;
   sourcePanelKey?: string;
 };
 
@@ -37,7 +38,8 @@ export function useAdminNavigationController(options: AdminNavigationControllerO
       const target = resolveAdminRouteHandoff({
         routeKey: input.routeKey,
         panelKey: input.panelKey,
-        focusKey: input.focusKey
+        focusKey: input.focusKey,
+        actionKey: input.actionKey
       }) as LaunchContext;
 
       dispatch(navigationActions.routeLaunchContext(target));
@@ -53,6 +55,8 @@ export function useAdminNavigationController(options: AdminNavigationControllerO
         payload_json: {
           source: "admin_route_handoff",
           launch_event_key: launchEventKey,
+          shell_action_key: String(target.shell_action_key || ""),
+          action_key: String(target.shell_action_key || ""),
           source_panel_key: input.sourcePanelKey || UI_SURFACE_KEY.PANEL_ADMIN,
           target_panel_key: target.panel_key || "",
           target_focus_key: target.focus_key || ""
