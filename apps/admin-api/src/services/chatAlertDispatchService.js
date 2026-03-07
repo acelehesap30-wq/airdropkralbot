@@ -24,6 +24,7 @@ const DEFAULT_ALERT_OPTIONS = Object.freeze({
   chestReadyLimit: 25,
   missionRefreshLimit: 25,
   rareDropLimit: 15,
+  kingdomWarLimit: 25,
   streakRiskLimit: 25,
   eventCountdownLimit: 25,
   seasonDeadlineLimit: 25,
@@ -31,6 +32,8 @@ const DEFAULT_ALERT_OPTIONS = Object.freeze({
   chestReadyLookbackHours: 168,
   missionRefreshRecentSeenDays: 7,
   rareDropLookbackHours: 168,
+  kingdomWarRecentSeenDays: 14,
+  kingdomWarParticipationDays: 14,
   streakRiskWindowMinutes: 90,
   streakRiskActiveWithinDays: 7,
   eventCountdownRecentSeenDays: 14,
@@ -186,6 +189,8 @@ function buildAlertStateKey(alertKey, candidate = {}, seasonInfo = null) {
       return `offer_${Number(candidate.latest_offer_id || candidate.task_offer_id || candidate.id || 0)}`;
     case CHAT_ALERT_KEY.RARE_DROP:
       return `loot_${Number(candidate.loot_reveal_id || candidate.id || 0)}`;
+    case CHAT_ALERT_KEY.KINGDOM_WAR:
+      return `war_${Number(seasonInfo?.seasonId || candidate.season_id || 0)}_${String(candidate.war_tier || "seed").toLowerCase()}`;
     case CHAT_ALERT_KEY.STREAK_RISK:
       return `streak_${Number(candidate.current_streak || 0)}_${String(candidate.grace_until || "")}`;
     case CHAT_ALERT_KEY.EVENT_COUNTDOWN:
@@ -407,6 +412,72 @@ async function queryRareDropCandidates(client, options = {}) {
   return result.rows;
 }
 
+async function queryKingdomWarCandidates(client, options = {}, seasonInfo = null, warState = null) {
+  const limit = Math.max(1, toPositiveInt(options.kingdomWarLimit, DEFAULT_ALERT_OPTIONS.kingdomWarLimit));
+  const recentSeenDays = Math.max(
+    1,
+    toPositiveInt(options.kingdomWarRecentSeenDays, DEFAULT_ALERT_OPTIONS.kingdomWarRecentSeenDays)
+  );
+  const participationDays = Math.max(
+    1,
+    toPositiveInt(options.kingdomWarParticipationDays, DEFAULT_ALERT_OPTIONS.kingdomWarParticipationDays)
+  );
+  const seasonId = Number(seasonInfo?.seasonId || 0);
+  const warTier = String(warState?.tier || "Seed").trim();
+  if (!seasonId || !warTier || warTier.toLowerCase() === "seed") {
+    return [];
+  }
+  const stateKey = buildAlertStateKey(CHAT_ALERT_KEY.KINGDOM_WAR, { war_tier: warTier }, seasonInfo);
+  const result = await client.query(
+    `WITH recent_contributors AS (
+       SELECT DISTINCT be.user_id
+       FROM behavior_events be
+       WHERE be.event_type = 'war_contribution'
+         AND be.event_at >= now() - make_interval(days => $1::int)
+         AND COALESCE((be.meta_json->>'season_id')::int, 0) = $2
+     )
+     SELECT
+       u.id AS user_id,
+       u.telegram_id,
+       u.locale,
+       u.last_seen_at,
+       up.prefs_json,
+       $2::int AS season_id,
+       $3::text AS war_tier,
+       $4::numeric AS war_pool,
+       $5::numeric AS next_target
+     FROM recent_contributors rc
+     JOIN users u ON u.id = rc.user_id
+     LEFT JOIN user_ui_prefs up ON up.user_id = u.id
+     WHERE u.telegram_id IS NOT NULL
+       AND COALESCE(u.status, 'active') = 'active'
+       AND u.last_seen_at >= now() - make_interval(days => $6::int)
+       AND NOT EXISTS (
+         SELECT 1
+         FROM behavior_events be
+         WHERE be.user_id = u.id
+           AND be.event_type = $7
+           AND COALESCE(be.meta_json->>'alert_key', '') = $8
+           AND COALESCE(be.meta_json->>'state_key', '') = $9
+       )
+     ORDER BY u.last_seen_at DESC
+     LIMIT $10;`,
+    [
+      participationDays,
+      seasonId,
+      warTier,
+      Number(warState?.value || 0),
+      Number(warState?.next || 0),
+      recentSeenDays,
+      CHAT_ALERT_EVENT_TYPE,
+      CHAT_ALERT_KEY.KINGDOM_WAR,
+      stateKey,
+      limit * 4
+    ]
+  );
+  return result.rows;
+}
+
 async function queryEventCountdownCandidates(client, options = {}, seasonInfo = null) {
   const limit = Math.max(1, toPositiveInt(options.eventCountdownLimit, DEFAULT_ALERT_OPTIONS.eventCountdownLimit));
   const activeWithinDays = Math.max(
@@ -520,6 +591,7 @@ function createChatAlertDispatchService(deps = {}) {
   const resolveNow = typeof deps.resolveNow === "function" ? deps.resolveNow : () => new Date();
   const configService = deps.configService || null;
   const seasonStore = deps.seasonStore || null;
+  const globalStore = deps.globalStore || null;
   const resolveWebappVersion =
     typeof deps.resolveWebappVersion === "function" ? deps.resolveWebappVersion : async () => ({ version: "" });
   const candidateLoaders = {
@@ -529,6 +601,8 @@ function createChatAlertDispatchService(deps = {}) {
       typeof deps.loadMissionRefreshCandidates === "function" ? deps.loadMissionRefreshCandidates : queryMissionRefreshCandidates,
     [CHAT_ALERT_KEY.RARE_DROP]:
       typeof deps.loadRareDropCandidates === "function" ? deps.loadRareDropCandidates : queryRareDropCandidates,
+    [CHAT_ALERT_KEY.KINGDOM_WAR]:
+      typeof deps.loadKingdomWarCandidates === "function" ? deps.loadKingdomWarCandidates : queryKingdomWarCandidates,
     [CHAT_ALERT_KEY.STREAK_RISK]:
       typeof deps.loadStreakRiskCandidates === "function" ? deps.loadStreakRiskCandidates : queryStreakRiskCandidates,
     [CHAT_ALERT_KEY.EVENT_COUNTDOWN]:
@@ -676,6 +750,14 @@ function createChatAlertDispatchService(deps = {}) {
     return seasonInfo || null;
   }
 
+  async function resolveWarState(client, seasonInfo) {
+    const seasonId = Number(seasonInfo?.seasonId || 0);
+    if (!seasonId || typeof globalStore?.getWarStatus !== "function") {
+      return null;
+    }
+    return globalStore.getWarStatus(client, seasonId);
+  }
+
   async function runDispatchCycle(options = {}) {
     if (!isEnabled()) {
       return {
@@ -703,10 +785,12 @@ function createChatAlertDispatchService(deps = {}) {
 
     try {
       const seasonInfo = await resolveSeasonInfo(client, options);
+      const warState = seasonInfo ? await resolveWarState(client, seasonInfo) : null;
       const alertKeys = [
         CHAT_ALERT_KEY.CHEST_READY,
         CHAT_ALERT_KEY.MISSION_REFRESH,
         CHAT_ALERT_KEY.RARE_DROP,
+        CHAT_ALERT_KEY.KINGDOM_WAR,
         CHAT_ALERT_KEY.STREAK_RISK,
         CHAT_ALERT_KEY.EVENT_COUNTDOWN,
         CHAT_ALERT_KEY.SEASON_DEADLINE,
@@ -725,7 +809,7 @@ function createChatAlertDispatchService(deps = {}) {
           continue;
         }
         const config = resolveChatAlertConfig(alertKey);
-        const rows = (await loader(client, options, seasonInfo)) || [];
+        const rows = (await loader(client, options, seasonInfo, warState)) || [];
         const alertSummary = { scanned: 0, skipped_disabled: 0, sent: 0, failed: 0, recorded: 0 };
         const limitKey =
           alertKey === CHAT_ALERT_KEY.CHEST_READY
@@ -734,6 +818,8 @@ function createChatAlertDispatchService(deps = {}) {
               ? "missionRefreshLimit"
               : alertKey === CHAT_ALERT_KEY.RARE_DROP
                 ? "rareDropLimit"
+                : alertKey === CHAT_ALERT_KEY.KINGDOM_WAR
+                  ? "kingdomWarLimit"
             : alertKey === CHAT_ALERT_KEY.STREAK_RISK
               ? "streakRiskLimit"
             : alertKey === CHAT_ALERT_KEY.EVENT_COUNTDOWN
@@ -766,6 +852,9 @@ function createChatAlertDispatchService(deps = {}) {
             alertKey,
             {
               ...candidate,
+              war_tier: String(candidate.war_tier || warState?.tier || ""),
+              war_pool: Number(candidate.war_pool || warState?.value || 0),
+              next_target: Number(candidate.next_target || warState?.next || 0),
               season_id: Number(seasonInfo?.seasonId || candidate.season_id || 0),
               days_left: Number(seasonInfo?.daysLeft || candidate.days_left || 0)
             },
@@ -790,6 +879,8 @@ function createChatAlertDispatchService(deps = {}) {
                 surface_keys: entries.map((entry) => entry.surfaceKey),
                 season_id: Number(seasonInfo?.seasonId || candidate.season_id || 0) || undefined,
                 days_left: Number(seasonInfo?.daysLeft || candidate.days_left || 0) || undefined,
+                war_tier: String(candidate.war_tier || warState?.tier || ""),
+                war_pool: Number(candidate.war_pool || warState?.value || 0) || undefined,
                 task_attempt_id: Number(candidate.task_attempt_id || 0) || undefined
               }
             });

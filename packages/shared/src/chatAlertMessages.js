@@ -154,6 +154,29 @@ function formatSeasonDeadlineAlert(payload = {}, options = {}) {
   );
 }
 
+function formatKingdomWarAlert(payload = {}, options = {}) {
+  const lang = normalizeTrustMessageLanguage(options.lang);
+  const tier = escapeMarkdown(String(payload.warTier || payload.war_tier || "Alpha"));
+  const poolValue = Math.max(0, Math.floor(Number(payload.warPool || payload.war_pool || 0)));
+  const nextTarget = Number(payload.nextTarget || payload.next_target || 0);
+  if (lang === "en") {
+    return (
+      `*Kingdom War Rising*\n` +
+      `War tier: *${tier}*\n` +
+      `Pool: *${poolValue}*\n` +
+      (nextTarget > 0 ? `Next gate: *${nextTarget}*\n\n` : `\n`) +
+      `Open Event Hall to push the live war lane and check leaderboard pressure.`
+    );
+  }
+  return (
+    `*Kingdom Savaşı Yukseldi*\n` +
+    `War tier: *${tier}*\n` +
+    `Havuz: *${poolValue}*\n` +
+    (nextTarget > 0 ? `Sonraki esik: *${nextTarget}*\n\n` : `\n`) +
+    `Canli war hattini itmek ve liderlik baskisini gormek icin Etkinlikler Salonu'nu ac.`
+  );
+}
+
 function formatChatAlertMessage(alertKey, payload = {}, options = {}) {
   const normalizedKey = normalizeChatAlertKey(alertKey);
   switch (normalizedKey) {
@@ -167,6 +190,8 @@ function formatChatAlertMessage(alertKey, payload = {}, options = {}) {
       return formatStreakRiskAlert(payload, options);
     case "event_countdown":
       return formatEventCountdownAlert(payload, options);
+    case "kingdom_war":
+      return formatKingdomWarAlert(payload, options);
     case "season_deadline":
       return formatSeasonDeadlineAlert(payload, options);
     case "comeback_offer":
@@ -187,6 +212,7 @@ module.exports = {
   formatRareDropAlert,
   formatStreakRiskAlert,
   formatEventCountdownAlert,
+  formatKingdomWarAlert,
   formatSeasonDeadlineAlert,
   formatComebackOfferAlert
 };

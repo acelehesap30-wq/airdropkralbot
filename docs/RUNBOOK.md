@@ -116,7 +116,7 @@
 
 ## Chat alert automation
 1. Tek dispatch smoke:
-`npm run alerts:v5:dispatch -- --dry_run true --chest_limit 1 --mission_limit 1 --rare_limit 1 --season_limit 1 --event_limit 1 --comeback_limit 1 --streak_limit 1`
+`npm run alerts:v5:dispatch -- --dry_run true --chest_limit 1 --mission_limit 1 --rare_limit 1 --war_limit 1 --season_limit 1 --event_limit 1 --comeback_limit 1 --streak_limit 1`
 2. Normal dispatch:
 `npm run alerts:v5:dispatch`
 3. Windows Task Scheduler kaydi (saatlik):
@@ -131,6 +131,7 @@
 - `chest_ready`
 - `mission_refresh`
 - `rare_drop`
+- `kingdom_war`
 - `streak_risk`
 - `event_countdown`
 - `season_deadline`
@@ -139,8 +140,6 @@
 - `behavior_events.event_type = chat_alert_sent`
 9. Opt-out kaynagi:
 - `user_ui_prefs.prefs_json`
-10. Bilerek disarida birakilan alert:
-- `kingdom_war` authoritative war-state kaynagi tamamlanmadan acilmaz.
 
 ## V5.3 staging + canary checklist
 1. Staging preflight:

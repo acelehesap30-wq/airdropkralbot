@@ -10,6 +10,7 @@ const { buildPgPoolConfig } = require("../packages/shared/src/v5/dbConnection");
 const { resolveChatAlertArtifactPaths } = require("../packages/shared/src/runtimeArtifactPaths");
 const configService = require("../apps/bot/src/services/configService");
 const seasonStore = require("../apps/bot/src/stores/seasonStore");
+const globalStore = require("../apps/bot/src/stores/globalStore");
 const { createChatAlertDispatchService } = require("../apps/admin-api/src/services/chatAlertDispatchService");
 
 const { Pool } = pg;
@@ -89,6 +90,7 @@ async function main() {
     webappHmacSecret: String(process.env.WEBAPP_HMAC_SECRET || "").trim(),
     configService,
     seasonStore,
+    globalStore,
     resolveWebappVersion: async () => ({
       version:
         sanitizeVersion(process.env.WEBAPP_VERSION_OVERRIDE) ||
@@ -116,6 +118,7 @@ async function main() {
       chestReadyLimit: toNumber(args.chest_limit ?? args.chestLimit, 25),
       missionRefreshLimit: toNumber(args.mission_limit ?? args.missionLimit, 25),
       rareDropLimit: toNumber(args.rare_limit ?? args.rareLimit, 15),
+      kingdomWarLimit: toNumber(args.war_limit ?? args.warLimit, 25),
       streakRiskLimit: toNumber(args.streak_limit ?? args.streakLimit, 25),
       eventCountdownLimit: toNumber(args.event_limit ?? args.eventLimit, 25),
       seasonDeadlineLimit: toNumber(args.season_limit ?? args.seasonLimit, 25),
