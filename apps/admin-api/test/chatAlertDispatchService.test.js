@@ -30,6 +30,13 @@ test("chat alert message formatter localizes comeback offer", () => {
   assert.match(en, /World Resume Ready/);
 });
 
+test("chat alert message formatter localizes mission and season alerts", () => {
+  const mission = formatChatAlertMessage("mission_refresh", { active_offer_count: 3 }, { lang: "en" });
+  const season = formatChatAlertMessage("season_deadline", { season_id: 6, days_left: 3 }, { lang: "tr" });
+  assert.match(mission, /Mission Board Refreshed/);
+  assert.match(season, /Sezon Penceresi Kapaniyor/);
+});
+
 test("alert prefs helper respects nested notification toggles", () => {
   assert.equal(isAlertEnabledForPrefs({}, "marketing_alert_toggle"), true);
   assert.equal(isAlertEnabledForPrefs({ notifications: { marketing_alert_toggle: false } }, "marketing_alert_toggle"), false);
@@ -68,8 +75,11 @@ test("chat alert dispatch service sends canonical chest ready alert and records 
         completed_at: "2026-03-07T10:00:00.000Z"
       }
     ],
+    loadMissionRefreshCandidates: async () => [],
+    loadRareDropCandidates: async () => [],
     loadStreakRiskCandidates: async () => [],
     loadEventCountdownCandidates: async () => [],
+    loadSeasonDeadlineCandidates: async () => [],
     loadComebackOfferCandidates: async () => []
   });
 
@@ -106,6 +116,8 @@ test("chat alert dispatch service supports dry run without telegram send", async
       throw new Error("record_should_not_run");
     },
     loadChestReadyCandidates: async () => [],
+    loadMissionRefreshCandidates: async () => [],
+    loadRareDropCandidates: async () => [],
     loadStreakRiskCandidates: async () => [
       {
         user_id: 99,
@@ -117,6 +129,7 @@ test("chat alert dispatch service supports dry run without telegram send", async
       }
     ],
     loadEventCountdownCandidates: async () => [],
+    loadSeasonDeadlineCandidates: async () => [],
     loadComebackOfferCandidates: async () => []
   });
 
@@ -134,4 +147,54 @@ test("alert state key uses season window for event countdown", () => {
   const key = buildAlertStateKey("event_countdown", {}, { seasonId: 4, daysLeft: 3 });
   assert.equal(key, "season_4_days_3");
   assert.equal(CHAT_ALERT_EVENT_TYPE, "chat_alert_sent");
+});
+
+test("chat alert dispatch service sends season deadline alert with canonical season hall button", async () => {
+  const sentPayloads = [];
+  const service = createChatAlertDispatchService({
+    pool: createPoolStub(),
+    fetchImpl: async (_url, options) => {
+      sentPayloads.push(JSON.parse(String(options.body || "{}")));
+      return { ok: true };
+    },
+    botToken: "bot_token",
+    botUsername: "airdropkral_2026_bot",
+    webappPublicUrl: "https://example.com/app",
+    webappHmacSecret: "secret",
+    logger: () => {},
+    configService: {
+      getEconomyConfig: async () => ({ loops: { macro: { season_length_days: 56 } } })
+    },
+    seasonStore: {
+      getSeasonInfo: () => ({ seasonId: 9, daysLeft: 3 })
+    },
+    recordAlertEvent: async () => {},
+    loadChestReadyCandidates: async () => [],
+    loadMissionRefreshCandidates: async () => [],
+    loadRareDropCandidates: async () => [],
+    loadStreakRiskCandidates: async () => [],
+    loadEventCountdownCandidates: async () => [],
+    loadSeasonDeadlineCandidates: async () => [
+      {
+        user_id: 61,
+        telegram_id: 661,
+        locale: "en",
+        prefs_json: {},
+        season_points: 420
+      }
+    ],
+    loadComebackOfferCandidates: async () => []
+  });
+
+  const result = await service.runDispatchCycle({
+    seasonDeadlineLimit: 2,
+    seasonDeadlineTargetDays: [7, 3, 1]
+  });
+
+  assert.equal(result.alerts.season_deadline.sent, 1);
+  assert.equal(sentPayloads.length, 1);
+  assert.match(sentPayloads[0].text, /\*Season Window Closing\*/);
+  const firstButton = sentPayloads[0].reply_markup.inline_keyboard[0][0];
+  assert.ok(firstButton.web_app.url.includes("route_key=season"));
+  assert.ok(firstButton.web_app.url.includes("launch_event_key=launch.alert.season_deadline_season_hall.open"));
 });

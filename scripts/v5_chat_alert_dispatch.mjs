@@ -113,12 +113,20 @@ async function main() {
     const result = await service.runDispatchCycle({
       dryRun: parseBool(args.dry_run ?? args.dryRun, false),
       chestReadyLimit: toNumber(args.chest_limit ?? args.chestLimit, 25),
+      missionRefreshLimit: toNumber(args.mission_limit ?? args.missionLimit, 25),
+      rareDropLimit: toNumber(args.rare_limit ?? args.rareLimit, 15),
       streakRiskLimit: toNumber(args.streak_limit ?? args.streakLimit, 25),
       eventCountdownLimit: toNumber(args.event_limit ?? args.eventLimit, 25),
+      seasonDeadlineLimit: toNumber(args.season_limit ?? args.seasonLimit, 25),
       comebackOfferLimit: toNumber(args.comeback_limit ?? args.comebackLimit, 25),
       streakRiskWindowMinutes: toNumber(args.streak_window_min ?? args.streakWindowMin, 90),
       comebackInactiveHours: toNumber(args.comeback_hours ?? args.comebackHours, 72),
       eventCountdownTargetDays: String(args.event_days ?? args.eventDays ?? "3,1")
+        .split(",")
+        .map((value) => Number(String(value || "").trim()))
+        .filter((value) => Number.isFinite(value) && value > 0)
+      ,
+      seasonDeadlineTargetDays: String(args.season_days ?? args.seasonDays ?? "7,3,1")
         .split(",")
         .map((value) => Number(String(value || "").trim()))
         .filter((value) => Number.isFinite(value) && value > 0)

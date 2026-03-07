@@ -99,15 +99,76 @@ function formatComebackOfferAlert(payload = {}, options = {}) {
   );
 }
 
+function formatMissionRefreshAlert(payload = {}, options = {}) {
+  const lang = normalizeTrustMessageLanguage(options.lang);
+  const activeOffers = Math.max(1, Number(payload.activeOffers || payload.active_offer_count || 1));
+  if (lang === "en") {
+    return (
+      `*Mission Board Refreshed*\n` +
+      `Live contracts: *${activeOffers}*\n\n` +
+      `Fresh mission slots are waiting. Open Mission Quarter for the safest next run.`
+    );
+  }
+  return (
+    `*Gorev Panosu Yenilendi*\n` +
+    `Canli kontrat: *${activeOffers}*\n\n` +
+    `Yeni gorev slotlari hazir. En guvenli sonraki kosu icin Gorev Mahallesi'ni ac.`
+  );
+}
+
+function formatRareDropAlert(payload = {}, options = {}) {
+  const lang = normalizeTrustMessageLanguage(options.lang);
+  const lootTier = escapeMarkdown(String(payload.lootTier || payload.loot_tier || "rare").toUpperCase());
+  if (lang === "en") {
+    return (
+      `*Rare Drop Logged*\n` +
+      `Tier: *${lootTier}*\n\n` +
+      `A high-value reveal landed on your lane. Open Rewards Vault for the live result and payout lane.`
+    );
+  }
+  return (
+    `*Nadir Drop Kaydedildi*\n` +
+    `Tier: *${lootTier}*\n\n` +
+    `Yuksek degerli bir reveal geldi. Canli sonucu ve payout hattini gormek icin Odul Kasasi'ni ac.`
+  );
+}
+
+function formatSeasonDeadlineAlert(payload = {}, options = {}) {
+  const lang = normalizeTrustMessageLanguage(options.lang);
+  const seasonId = Math.max(1, Number(payload.seasonId || payload.season_id || 1));
+  const daysLeft = Math.max(0, Number(payload.daysLeft || payload.days_left || 0));
+  const daysLabel = formatRelativeDays(daysLeft, lang);
+  if (lang === "en") {
+    return (
+      `*Season Window Closing*\n` +
+      `Season: *S${seasonId}*\n` +
+      `Remaining: *${escapeMarkdown(daysLabel)}*\n\n` +
+      `Open Season Hall now to lock rank, ladder pressure and kingdom standing.`
+    );
+  }
+  return (
+    `*Sezon Penceresi Kapaniyor*\n` +
+    `Sezon: *S${seasonId}*\n` +
+    `Kalan: *${escapeMarkdown(daysLabel)}*\n\n` +
+    `Rank, ladder baskisi ve kingdom durumunu kilitlemek icin simdi Sezon Salonu'nu ac.`
+  );
+}
+
 function formatChatAlertMessage(alertKey, payload = {}, options = {}) {
   const normalizedKey = normalizeChatAlertKey(alertKey);
   switch (normalizedKey) {
     case "chest_ready":
       return formatChestReadyAlert(payload, options);
+    case "mission_refresh":
+      return formatMissionRefreshAlert(payload, options);
+    case "rare_drop":
+      return formatRareDropAlert(payload, options);
     case "streak_risk":
       return formatStreakRiskAlert(payload, options);
     case "event_countdown":
       return formatEventCountdownAlert(payload, options);
+    case "season_deadline":
+      return formatSeasonDeadlineAlert(payload, options);
     case "comeback_offer":
       return formatComebackOfferAlert(payload, options);
     default: {
@@ -122,7 +183,10 @@ function formatChatAlertMessage(alertKey, payload = {}, options = {}) {
 module.exports = {
   formatChatAlertMessage,
   formatChestReadyAlert,
+  formatMissionRefreshAlert,
+  formatRareDropAlert,
   formatStreakRiskAlert,
   formatEventCountdownAlert,
+  formatSeasonDeadlineAlert,
   formatComebackOfferAlert
 };
