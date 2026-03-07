@@ -4,6 +4,7 @@ import { DynamicPolicyCard } from "./cards/DynamicPolicyCard";
 import { RuntimeBotCard } from "./cards/RuntimeBotCard";
 import { RuntimeFlagsCard } from "./cards/RuntimeFlagsCard";
 import { RuntimeMetaCard } from "./cards/RuntimeMetaCard";
+import { SHELL_ACTION_KEY } from "../../../core/navigation/shellActions.js";
 
 type QueueActionState = {
   action_key: string;
@@ -18,7 +19,7 @@ type AdminPanelProps = {
   lang: Lang;
   isAdmin: boolean;
   advanced: boolean;
-  onRouteTarget: (input: { routeKey?: string; panelKey?: string; focusKey?: string; sourcePanelKey?: string }) => void;
+  onShellAction: (actionKey: string, sourcePanelKey?: string) => void;
   adminRuntime: {
     summary: Record<string, unknown> | null;
     queue: Array<Record<string, unknown>>;
@@ -95,12 +96,7 @@ export function AdminPanel(props: AdminPanelProps) {
               <button
                 className="akrBtn akrBtnGhost"
                 onClick={() =>
-                  props.onRouteTarget({
-                    routeKey: "admin",
-                    panelKey: "panel_admin_queue",
-                    focusKey: "queue_action",
-                    sourcePanelKey: "panel_admin"
-                  })
+                  props.onShellAction(SHELL_ACTION_KEY.ADMIN_QUEUE_PANEL, "panel_admin")
                 }
               >
                 {t(props.lang, "admin_nav_queue")}
@@ -110,12 +106,7 @@ export function AdminPanel(props: AdminPanelProps) {
               <button
                 className="akrBtn akrBtnGhost"
                 onClick={() =>
-                  props.onRouteTarget({
-                    routeKey: "admin",
-                    panelKey: "panel_admin_policy",
-                    focusKey: "dynamic_policy",
-                    sourcePanelKey: "panel_admin"
-                  })
+                  props.onShellAction(SHELL_ACTION_KEY.ADMIN_POLICY_PANEL, "panel_admin")
                 }
               >
                 {t(props.lang, "admin_nav_policy")}
@@ -125,12 +116,7 @@ export function AdminPanel(props: AdminPanelProps) {
               <button
                 className="akrBtn akrBtnGhost"
                 onClick={() =>
-                  props.onRouteTarget({
-                    routeKey: "admin",
-                    panelKey: "panel_admin_runtime",
-                    focusKey: "runtime_flags",
-                    sourcePanelKey: "panel_admin"
-                  })
+                  props.onShellAction(SHELL_ACTION_KEY.ADMIN_RUNTIME_FLAGS, "panel_admin")
                 }
               >
                 {t(props.lang, "admin_nav_flags")}
@@ -140,12 +126,7 @@ export function AdminPanel(props: AdminPanelProps) {
               <button
                 className="akrBtn akrBtnGhost"
                 onClick={() =>
-                  props.onRouteTarget({
-                    routeKey: "admin",
-                    panelKey: "panel_admin_runtime",
-                    focusKey: "runtime_bot",
-                    sourcePanelKey: "panel_admin"
-                  })
+                  props.onShellAction(SHELL_ACTION_KEY.ADMIN_RUNTIME_BOT, "panel_admin")
                 }
               >
                 {t(props.lang, "admin_nav_bot")}
@@ -155,12 +136,7 @@ export function AdminPanel(props: AdminPanelProps) {
               <button
                 className="akrBtn akrBtnGhost"
                 onClick={() =>
-                  props.onRouteTarget({
-                    routeKey: "admin",
-                    panelKey: "panel_admin_runtime",
-                    focusKey: "runtime_meta",
-                    sourcePanelKey: "panel_admin"
-                  })
+                  props.onShellAction(SHELL_ACTION_KEY.ADMIN_RUNTIME_META, "panel_admin")
                 }
               >
                 {t(props.lang, "admin_nav_runtime")}

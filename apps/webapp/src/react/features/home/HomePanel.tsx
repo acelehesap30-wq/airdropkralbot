@@ -1,5 +1,6 @@
 import { buildHomeFeedViewModel } from "../../../core/player/homeFeedViewModel.js";
 import { resolvePlayerCommandTarget } from "../../../core/player/playerCommandTarget.js";
+import { SHELL_ACTION_KEY } from "../../../core/navigation/shellActions.js";
 import { t, type Lang } from "../../i18n";
 import type { BootstrapV2Data } from "../../types";
 
@@ -9,7 +10,7 @@ type HomePanelProps = {
   homeFeed: Record<string, unknown> | null;
   data: BootstrapV2Data | null;
   onRefresh: () => void;
-  onOpenShellPanel: (panelKey: "profile" | "status" | "settings" | "support" | "discover", focusKey?: string) => void;
+  onShellAction: (actionKey: string, sourcePanelKey?: string) => void;
   onRouteTarget: (input: {
     routeKey?: string;
     panelKey?: string;
@@ -37,10 +38,10 @@ export function HomePanel(props: HomePanelProps) {
         <button className="akrBtn akrBtnGhost" onClick={props.onRefresh}>
           {t(props.lang, "home_feed_refresh")}
         </button>
-        <button className="akrBtn akrBtnGhost" onClick={() => props.onOpenShellPanel("profile", "identity")}>
+        <button className="akrBtn akrBtnGhost" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PROFILE_PANEL, "panel_home")}>
           {t(props.lang, "shell_panel_open_profile")}
         </button>
-        <button className="akrBtn akrBtnGhost" onClick={() => props.onOpenShellPanel("status", "system_status")}>
+        <button className="akrBtn akrBtnGhost" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_STATUS_PANEL, "panel_home")}>
           {t(props.lang, "shell_panel_open_status")}
         </button>
       </div>
@@ -68,15 +69,7 @@ export function HomePanel(props: HomePanelProps) {
           <div className="akrActionRow">
             <button
               className="akrBtn akrBtnGhost"
-              onClick={() =>
-                props.onRouteTarget({
-                  routeKey: "missions",
-                  panelKey: "quests",
-                  focusKey: "board",
-                  tab: "tasks",
-                  sourcePanelKey: "panel_home"
-                })
-              }
+              onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_TASKS_BOARD, "panel_home")}
             >
               {t(props.lang, "shell_panel_go_tasks")}
             </button>
@@ -115,29 +108,13 @@ export function HomePanel(props: HomePanelProps) {
           <div className="akrActionRow">
             <button
               className="akrBtn akrBtnGhost"
-              onClick={() =>
-                props.onRouteTarget({
-                  routeKey: "vault",
-                  panelKey: "wallet",
-                  focusKey: "connect",
-                  tab: "vault",
-                  sourcePanelKey: "panel_home"
-                })
-              }
+              onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_WALLET_CONNECT, "panel_home")}
             >
               {t(props.lang, "shell_panel_go_wallet")}
             </button>
             <button
               className="akrBtn akrBtnGhost"
-              onClick={() =>
-                props.onRouteTarget({
-                  routeKey: "vault",
-                  panelKey: "payout",
-                  focusKey: "request",
-                  tab: "vault",
-                  sourcePanelKey: "panel_home"
-                })
-              }
+              onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PAYOUT_REQUEST, "panel_home")}
             >
               {t(props.lang, "shell_panel_go_payout")}
             </button>
@@ -148,7 +125,7 @@ export function HomePanel(props: HomePanelProps) {
       <section className="akrMiniPanel" data-akr-panel-key="discover" data-akr-focus-key="command_center">
         <h4>{t(props.lang, "home_commands_title")}</h4>
         <div className="akrActionRow">
-          <button className="akrBtn akrBtnGhost" onClick={() => props.onOpenShellPanel("discover", "command_center")}>
+          <button className="akrBtn akrBtnGhost" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_DISCOVER_CENTER, "panel_home")}>
             {t(props.lang, "shell_panel_open_discover")}
           </button>
         </div>
@@ -185,7 +162,7 @@ export function HomePanel(props: HomePanelProps) {
         <section className="akrMiniPanel" data-akr-panel-key="language" data-akr-focus-key="locale_override">
           <h4>{t(props.lang, "home_settings_title")}</h4>
           <div className="akrActionRow">
-            <button className="akrBtn akrBtnGhost" onClick={() => props.onOpenShellPanel("settings", "locale_override")}>
+            <button className="akrBtn akrBtnGhost" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_SETTINGS_LOCALE, "panel_home")}>
               {t(props.lang, "shell_panel_open_settings")}
             </button>
           </div>
@@ -199,7 +176,7 @@ export function HomePanel(props: HomePanelProps) {
         <section className="akrMiniPanel" data-akr-panel-key="support" data-akr-focus-key="faq_cards">
           <h4>{t(props.lang, "home_support_title")}</h4>
           <div className="akrActionRow">
-            <button className="akrBtn akrBtnGhost" onClick={() => props.onOpenShellPanel("support", "faq_cards")}>
+            <button className="akrBtn akrBtnGhost" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_SUPPORT_FAQ, "panel_home")}>
               {t(props.lang, "shell_panel_open_support")}
             </button>
           </div>
@@ -208,7 +185,7 @@ export function HomePanel(props: HomePanelProps) {
               <strong>/status</strong>
               <span>
                 {t(props.lang, "home_support_status")}
-                <button className="akrBtn akrBtnGhost" onClick={() => props.onOpenShellPanel("status", "system_status")}>
+                <button className="akrBtn akrBtnGhost" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_STATUS_PANEL, "panel_home")}>
                   {t(props.lang, "command_handoff_open")}
                 </button>
               </span>
@@ -219,15 +196,7 @@ export function HomePanel(props: HomePanelProps) {
                 {t(props.lang, "home_support_vault")}
                 <button
                   className="akrBtn akrBtnGhost"
-                  onClick={() =>
-                    props.onRouteTarget({
-                      routeKey: "vault",
-                      panelKey: "payout",
-                      focusKey: "request",
-                      tab: "vault",
-                      sourcePanelKey: "panel_home"
-                    })
-                  }
+                  onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PAYOUT_REQUEST, "panel_home")}
                 >
                   {t(props.lang, "command_handoff_open")}
                 </button>
@@ -237,7 +206,7 @@ export function HomePanel(props: HomePanelProps) {
               <strong>/settings</strong>
               <span>
                 {t(props.lang, "home_support_settings")}
-                <button className="akrBtn akrBtnGhost" onClick={() => props.onOpenShellPanel("settings", "locale_override")}>
+                <button className="akrBtn akrBtnGhost" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_SETTINGS_LOCALE, "panel_home")}>
                   {t(props.lang, "command_handoff_open")}
                 </button>
               </span>

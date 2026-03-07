@@ -7,6 +7,7 @@ const currencyGlossary = require(path.join(process.cwd(), "packages", "shared", 
 const navigationContract = require(path.join(process.cwd(), "packages", "shared", "src", "navigationContract.js"));
 const telemetryContract = require(path.join(process.cwd(), "packages", "shared", "src", "telemetryContract.js"));
 const launchEventContract = require(path.join(process.cwd(), "packages", "shared", "src", "launchEventContract.js"));
+const shellActionCatalog = require(path.join(process.cwd(), "packages", "shared", "src", "shellActionCatalog.js"));
 
 test("resolveLocalePreference honors canonical precedence", () => {
   const override = localeContract.resolveLocalePreference({
@@ -106,4 +107,26 @@ test("launch event contract keeps command, surface and callback launch reasons c
   assert.equal(launchEventContract.resolveCallbackLaunchEventKey("OPEN_WALLET"), "launch.callback.open_wallet.open");
   assert.equal(launchEventContract.resolveWebAppActionLaunchEventKey("open_wallet"), "launch.webapp_action.open_wallet.open");
   assert.equal(launchEventContract.resolveInternalLaunchEventKey("player_route_wallet"), "launch.internal.player_route_wallet.open");
+});
+
+test("shell action catalog resolves canonical player and admin targets", () => {
+  assert.deepEqual(shellActionCatalog.resolveShellActionTarget(shellActionCatalog.SHELL_ACTION_KEY.PLAYER_WALLET_CONNECT), {
+    action_key: "player.route.wallet_connect",
+    workspace: "player",
+    route_key: "vault",
+    panel_key: "wallet",
+    focus_key: "connect",
+    tab: "vault"
+  });
+
+  assert.deepEqual(shellActionCatalog.resolveShellActionTarget(shellActionCatalog.SHELL_ACTION_KEY.ADMIN_RUNTIME_FLAGS), {
+    action_key: "admin.route.runtime_flags",
+    workspace: "admin",
+    route_key: "admin",
+    panel_key: "panel_admin_runtime",
+    focus_key: "runtime_flags",
+    tab: "home"
+  });
+
+  assert.equal(shellActionCatalog.resolveShellActionKeyForBotHandler("wallet"), shellActionCatalog.SHELL_ACTION_KEY.PLAYER_WALLET_CONNECT);
 });

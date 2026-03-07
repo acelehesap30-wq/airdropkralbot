@@ -1,5 +1,6 @@
 import { t, type Lang } from "../../i18n";
 import { buildPvpLiveViewModel } from "../../../core/player/pvpLiveViewModel.js";
+import { SHELL_ACTION_KEY } from "../../../core/navigation/shellActions.js";
 
 type PvpPanelProps = {
   lang: Lang;
@@ -19,13 +20,7 @@ type PvpPanelProps = {
   onRefreshLive: () => void;
   onStrike: () => void;
   onResolve: () => void;
-  onRouteTarget: (input: {
-    routeKey?: string;
-    panelKey?: string;
-    focusKey?: string;
-    tab?: "home" | "pvp" | "tasks" | "vault" | string;
-    sourcePanelKey?: string;
-  }) => void;
+  onShellAction: (actionKey: string, sourcePanelKey?: string) => void;
 };
 
 export function PvpPanel(props: PvpPanelProps) {
@@ -62,43 +57,19 @@ export function PvpPanel(props: PvpPanelProps) {
         </button>
         <button
           className="akrBtn akrBtnGhost"
-          onClick={() =>
-            props.onRouteTarget({
-              routeKey: "pvp",
-              panelKey: "panel_pvp",
-              focusKey: "daily_duel",
-              tab: "pvp",
-              sourcePanelKey: "panel_pvp"
-            })
-          }
+          onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PVP_DAILY_DUEL, "panel_pvp")}
         >
           {t(props.lang, "pvp_focus_daily_duel")}
         </button>
         <button
           className="akrBtn akrBtnGhost"
-          onClick={() =>
-            props.onRouteTarget({
-              routeKey: "season",
-              panelKey: "rank",
-              focusKey: "weekly_ladder",
-              tab: "pvp",
-              sourcePanelKey: "panel_pvp"
-            })
-          }
+          onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PVP_WEEKLY_LADDER, "panel_pvp")}
         >
           {t(props.lang, "pvp_focus_weekly_ladder")}
         </button>
         <button
           className="akrBtn akrBtnGhost"
-          onClick={() =>
-            props.onRouteTarget({
-              routeKey: "season",
-              panelKey: "leaderboard",
-              focusKey: "leaderboard",
-              tab: "pvp",
-              sourcePanelKey: "panel_pvp"
-            })
-          }
+          onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PVP_LEADERBOARD, "panel_pvp")}
         >
           {t(props.lang, "pvp_focus_leaderboard")}
         </button>

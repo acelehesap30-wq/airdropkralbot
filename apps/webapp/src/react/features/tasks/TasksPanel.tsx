@@ -1,4 +1,5 @@
 import { buildTasksViewModel } from "../../../core/player/tasksViewModel.js";
+import { SHELL_ACTION_KEY } from "../../../core/navigation/shellActions.js";
 import { t, type Lang } from "../../i18n";
 
 type TasksPanelProps = {
@@ -14,13 +15,7 @@ type TasksPanelProps = {
   onReveal: () => void;
   onAccept: (offerId: number) => void;
   onClaim: (missionKey: string) => void;
-  onRouteTarget: (input: {
-    routeKey?: string;
-    panelKey?: string;
-    focusKey?: string;
-    tab?: "home" | "pvp" | "tasks" | "vault" | string;
-    sourcePanelKey?: string;
-  }) => void;
+  onShellAction: (actionKey: string, sourcePanelKey?: string) => void;
 };
 
 export function TasksPanel(props: TasksPanelProps) {
@@ -47,43 +42,19 @@ export function TasksPanel(props: TasksPanelProps) {
         </button>
         <button
           className="akrBtn akrBtnGhost"
-          onClick={() =>
-            props.onRouteTarget({
-              routeKey: "missions",
-              panelKey: "quests",
-              focusKey: "board",
-              tab: "tasks",
-              sourcePanelKey: "panel_tasks"
-            })
-          }
+          onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_TASKS_BOARD, "panel_tasks")}
         >
           {t(props.lang, "tasks_focus_board")}
         </button>
         <button
           className="akrBtn akrBtnGhost"
-          onClick={() =>
-            props.onRouteTarget({
-              routeKey: "missions",
-              panelKey: "claim",
-              focusKey: "missions",
-              tab: "tasks",
-              sourcePanelKey: "panel_tasks"
-            })
-          }
+          onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_TASKS_CLAIMS, "panel_tasks")}
         >
           {t(props.lang, "tasks_focus_claims")}
         </button>
         <button
           className="akrBtn akrBtnGhost"
-          onClick={() =>
-            props.onRouteTarget({
-              routeKey: "vault",
-              panelKey: "rewards",
-              focusKey: "premium_pass",
-              tab: "vault",
-              sourcePanelKey: "panel_tasks"
-            })
-          }
+          onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_REWARDS_PANEL, "panel_tasks")}
         >
           {t(props.lang, "tasks_focus_rewards")}
         </button>

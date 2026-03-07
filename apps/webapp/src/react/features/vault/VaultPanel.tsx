@@ -1,4 +1,5 @@
 import { buildVaultViewModel } from "../../../core/player/vaultViewModel.js";
+import { SHELL_ACTION_KEY } from "../../../core/navigation/shellActions.js";
 import { t, type Lang } from "../../i18n";
 
 type VaultPanelProps = {
@@ -30,7 +31,7 @@ type VaultPanelProps = {
   payoutRequestLoading: boolean;
   passPurchaseLoading: boolean;
   cosmeticPurchaseLoading: boolean;
-  onOpenShellPanel: (panelKey: "rewards", focusKey?: string) => void;
+  onShellAction: (actionKey: string, sourcePanelKey?: string) => void;
   onQuoteUsdChange: (value: string) => void;
   onQuoteChainChange: (value: string) => void;
   onSubmitRequestIdChange: (value: string) => void;
@@ -56,7 +57,7 @@ export function VaultPanel(props: VaultPanelProps) {
         <button className="akrBtn akrBtnGhost" onClick={props.onRefresh}>
           {t(props.lang, "vault_refresh")}
         </button>
-        <button className="akrBtn akrBtnGhost" onClick={() => props.onOpenShellPanel("rewards", "premium_pass")}>
+        <button className="akrBtn akrBtnGhost" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_REWARDS_PANEL, "panel_vault")}>
           {t(props.lang, "shell_panel_open_rewards")}
         </button>
         <button className="akrBtn akrBtnGhost" onClick={props.onQuote}>

@@ -1,5 +1,6 @@
 import type { Lang } from "../../i18n";
 import type { BootstrapV2Payload, TabKey } from "../../types";
+import { resolveShellActionTarget } from "../../../core/navigation/shellActions.js";
 import { HomePanel } from "../home/HomePanel";
 import { PvpPanel } from "../pvp/PvpPanel";
 import { PlayerShellPanel } from "./PlayerShellPanel";
@@ -84,12 +85,25 @@ type PlayerWorkspaceProps = {
 };
 
 export function PlayerWorkspace(props: PlayerWorkspaceProps) {
-  const { activePanelKey, activeFocusKey, openPanel, closePanel, routeToTarget } = usePlayerNavigationController({
+  const { activePanelKey, activeFocusKey, closePanel, routeToTarget } = usePlayerNavigationController({
     tab: props.tab,
     reducedMotion: Boolean(props.data?.ui_prefs?.reduced_motion),
     onTabChange: props.onTabChange,
     trackUiEvent: props.trackUiEvent
   });
+  const runShellAction = (actionKey: string, sourcePanelKey = "") => {
+    const target = resolveShellActionTarget(actionKey);
+    if (!target || target.workspace !== "player") {
+      return;
+    }
+    routeToTarget({
+      routeKey: target.route_key,
+      panelKey: target.panel_key,
+      focusKey: target.focus_key,
+      tab: target.tab,
+      sourcePanelKey
+    });
+  };
 
   return (
     <>
@@ -104,7 +118,7 @@ export function PlayerWorkspace(props: PlayerWorkspaceProps) {
             homeFeed={props.homeFeed}
             vaultData={props.vaultData}
             onClose={closePanel}
-            onOpenPanel={openPanel}
+            onShellAction={runShellAction}
             onTabChange={props.onTabChange}
             onRouteTarget={routeToTarget}
             onToggleReducedMotion={props.onToggleReducedMotion}
@@ -119,7 +133,7 @@ export function PlayerWorkspace(props: PlayerWorkspaceProps) {
             homeFeed={props.homeFeed}
             data={props.data}
             onRefresh={props.onRefreshHome}
-            onOpenShellPanel={openPanel}
+            onShellAction={runShellAction}
             onRouteTarget={routeToTarget}
           />
         )}
@@ -142,7 +156,7 @@ export function PlayerWorkspace(props: PlayerWorkspaceProps) {
             onRefreshLive={props.onPvpRefreshLive}
             onStrike={props.onPvpStrike}
             onResolve={props.onPvpResolve}
-            onRouteTarget={routeToTarget}
+            onShellAction={runShellAction}
           />
         )}
         {props.tab === "tasks" && (
@@ -159,7 +173,7 @@ export function PlayerWorkspace(props: PlayerWorkspaceProps) {
             onReveal={props.onTaskReveal}
             onAccept={props.onTaskAccept}
             onClaim={props.onMissionClaim}
-            onRouteTarget={routeToTarget}
+            onShellAction={runShellAction}
           />
         )}
         {props.tab === "vault" && (
@@ -192,7 +206,7 @@ export function PlayerWorkspace(props: PlayerWorkspaceProps) {
             payoutRequestLoading={props.payoutRequestLoading}
             passPurchaseLoading={props.passPurchaseLoading}
             cosmeticPurchaseLoading={props.cosmeticPurchaseLoading}
-            onOpenShellPanel={(panelKey, focusKey) => openPanel(panelKey as "rewards", focusKey)}
+            onShellAction={runShellAction}
             onQuoteUsdChange={props.onQuoteUsdChange}
             onQuoteChainChange={props.onQuoteChainChange}
             onSubmitRequestIdChange={props.onSubmitRequestIdChange}

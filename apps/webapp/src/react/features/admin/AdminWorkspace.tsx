@@ -1,4 +1,5 @@
 import type { Lang } from "../../i18n";
+import { resolveShellActionTarget } from "../../../core/navigation/shellActions.js";
 import { AdminPanel } from "./AdminPanel";
 import { useAdminNavigationController } from "./useAdminNavigationController";
 
@@ -77,13 +78,25 @@ export function AdminWorkspace(props: AdminWorkspaceProps) {
     reducedMotion: props.reducedMotion,
     trackUiEvent: props.trackUiEvent
   });
+  const runShellAction = (actionKey: string, sourcePanelKey = "") => {
+    const target = resolveShellActionTarget(actionKey);
+    if (!target || target.workspace !== "admin") {
+      return;
+    }
+    routeToTarget({
+      routeKey: target.route_key,
+      panelKey: target.panel_key,
+      focusKey: target.focus_key,
+      sourcePanelKey
+    });
+  };
 
   return (
     <AdminPanel
       lang={props.lang}
       isAdmin={props.isAdmin}
       advanced={props.advanced}
-      onRouteTarget={routeToTarget}
+      onShellAction={runShellAction}
       adminRuntime={props.adminRuntime}
       adminPanels={props.adminPanels}
       queueAction={props.queueAction}

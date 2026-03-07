@@ -4,6 +4,7 @@ const {
   resolveCallbackLaunchEventKey,
   resolveWebAppActionLaunchEventKey
 } = require("../../../../packages/shared/src/launchEventContract");
+const { resolveShellActionKeyForBotHandler } = require("../../../../packages/shared/src/shellActionCatalog");
 
 const SIMPLE_BOT_ACTION_CATALOG = Object.freeze([
   Object.freeze({ handlerKey: "tasks", callbackAction: "OPEN_TASKS", webAppAction: "open_tasks" }),
@@ -39,6 +40,7 @@ const ENRICHED_SIMPLE_BOT_ACTION_CATALOG = Object.freeze(
   SIMPLE_BOT_ACTION_CATALOG.map((entry) =>
     Object.freeze({
       ...entry,
+      shellActionKey: resolveShellActionKeyForBotHandler(entry.handlerKey),
       callbackLaunchEventKey: resolveCallbackLaunchEventKey(entry.callbackAction),
       webAppLaunchEventKey: entry.webAppAction ? resolveWebAppActionLaunchEventKey(entry.webAppAction) : ""
     })
