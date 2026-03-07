@@ -50,6 +50,34 @@ test("navigation contract resolves canonical route grammar and startapp payloads
     panel_key: "payout",
     focus_key: "request"
   });
+
+  assert.deepEqual(
+    navigationContract.resolveLaunchTarget({
+      panelKey: "support",
+      focusKey: "faq_cards"
+    }),
+    {
+      route_key: "settings",
+      panel_key: "support",
+      focus_key: "faq_cards",
+      workspace: "player",
+      tab: "home"
+    }
+  );
+
+  assert.deepEqual(
+    navigationContract.resolveLaunchTarget({
+      panelKey: "panel_admin_queue",
+      focusKey: "queue_action"
+    }),
+    {
+      route_key: "admin",
+      panel_key: "panel_admin_queue",
+      focus_key: "queue_action",
+      workspace: "admin",
+      tab: "home"
+    }
+  );
 });
 
 test("telemetry contract builds canonical analytics keys and UI event records", () => {

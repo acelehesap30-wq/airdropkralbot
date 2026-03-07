@@ -63,6 +63,36 @@ const CANONICAL_PANEL_KEY = Object.freeze({
 
 const ROUTE_KEYS = new Set(Object.values(CANONICAL_ROUTE_KEY));
 const TAB_KEYS = new Set(Object.values(CANONICAL_TAB_KEY));
+const ADMIN_PANEL_KEYS = new Set([
+  CANONICAL_PANEL_KEY.PANEL_ADMIN,
+  CANONICAL_PANEL_KEY.PANEL_ADMIN_QUEUE,
+  CANONICAL_PANEL_KEY.PANEL_ADMIN_POLICY,
+  CANONICAL_PANEL_KEY.PANEL_ADMIN_RUNTIME
+]);
+const PVP_PANEL_KEYS = new Set([
+  CANONICAL_PANEL_KEY.RANK,
+  CANONICAL_PANEL_KEY.STREAK,
+  CANONICAL_PANEL_KEY.KINGDOM,
+  CANONICAL_PANEL_KEY.LEADERBOARD
+]);
+const TASK_PANEL_KEYS = new Set([
+  CANONICAL_PANEL_KEY.CLAIM,
+  CANONICAL_PANEL_KEY.INVENTORY,
+  CANONICAL_PANEL_KEY.QUESTS,
+  CANONICAL_PANEL_KEY.CHESTS
+]);
+const VAULT_PANEL_KEYS = new Set([
+  CANONICAL_PANEL_KEY.REWARDS,
+  CANONICAL_PANEL_KEY.WALLET,
+  CANONICAL_PANEL_KEY.PAYOUT,
+  CANONICAL_PANEL_KEY.HISTORY
+]);
+const SETTINGS_PANEL_KEYS = new Set([
+  CANONICAL_PANEL_KEY.LANGUAGE,
+  CANONICAL_PANEL_KEY.HELP,
+  CANONICAL_PANEL_KEY.SUPPORT,
+  CANONICAL_PANEL_KEY.FAQ
+]);
 
 function normalizeNavigationKey(value, fallback = "", maxLen = 80) {
   const normalized = String(value || "")
@@ -119,6 +149,70 @@ function resolveRouteKey(input = {}) {
   return CANONICAL_ROUTE_KEY.HUB;
 }
 
+function resolveWorkspaceKey(input = {}) {
+  const explicit = normalizeNavigationKey(input.workspace, "", 24);
+  if (explicit === CANONICAL_WORKSPACE_KEY.ADMIN || explicit === CANONICAL_WORKSPACE_KEY.PLAYER) {
+    return explicit;
+  }
+
+  const routeKey = resolveRouteKey(input);
+  if (routeKey === CANONICAL_ROUTE_KEY.ADMIN) {
+    return CANONICAL_WORKSPACE_KEY.ADMIN;
+  }
+
+  const panelKey = resolvePanelKey(input.panelKey || input.panel_key || "", "");
+  if (ADMIN_PANEL_KEYS.has(panelKey)) {
+    return CANONICAL_WORKSPACE_KEY.ADMIN;
+  }
+
+  return CANONICAL_WORKSPACE_KEY.PLAYER;
+}
+
+function inferRouteKeyFromPanelKey(panelKey) {
+  if (!panelKey) {
+    return "";
+  }
+  if (ADMIN_PANEL_KEYS.has(panelKey)) {
+    return CANONICAL_ROUTE_KEY.ADMIN;
+  }
+  if (PVP_PANEL_KEYS.has(panelKey)) {
+    return CANONICAL_ROUTE_KEY.SEASON;
+  }
+  if (TASK_PANEL_KEYS.has(panelKey)) {
+    return CANONICAL_ROUTE_KEY.MISSIONS;
+  }
+  if (VAULT_PANEL_KEYS.has(panelKey)) {
+    return CANONICAL_ROUTE_KEY.VAULT;
+  }
+  if (SETTINGS_PANEL_KEYS.has(panelKey)) {
+    return CANONICAL_ROUTE_KEY.SETTINGS;
+  }
+  if (panelKey === CANONICAL_PANEL_KEY.NEWS) {
+    return CANONICAL_ROUTE_KEY.EVENTS;
+  }
+  return "";
+}
+
+function resolveTabForRouteKey(routeKey, workspace) {
+  if (workspace === CANONICAL_WORKSPACE_KEY.ADMIN || routeKey === CANONICAL_ROUTE_KEY.ADMIN) {
+    return CANONICAL_TAB_KEY.HOME;
+  }
+  if (
+    routeKey === CANONICAL_ROUTE_KEY.PVP ||
+    routeKey === CANONICAL_ROUTE_KEY.SEASON ||
+    routeKey === CANONICAL_ROUTE_KEY.EVENTS
+  ) {
+    return CANONICAL_TAB_KEY.PVP;
+  }
+  if (routeKey === CANONICAL_ROUTE_KEY.MISSIONS || routeKey === CANONICAL_ROUTE_KEY.FORGE) {
+    return CANONICAL_TAB_KEY.TASKS;
+  }
+  if (routeKey === CANONICAL_ROUTE_KEY.VAULT || routeKey === CANONICAL_ROUTE_KEY.EXCHANGE) {
+    return CANONICAL_TAB_KEY.VAULT;
+  }
+  return CANONICAL_TAB_KEY.HOME;
+}
+
 function resolvePanelKey(value, fallback = CANONICAL_PANEL_KEY.DEFAULT) {
   return normalizeNavigationKey(value, fallback, 64);
 }
@@ -172,6 +266,29 @@ function decodeStartAppPayload(rawValue) {
   return buildStartAppPayload(state);
 }
 
+function resolveLaunchTarget(input = {}) {
+  const panelKey = resolvePanelKey(input.panelKey || input.panel_key || "", "");
+  const focusKey = resolveFocusKey(input.focusKey || input.focus_key || "", "");
+  const inferredRouteKey = inferRouteKeyFromPanelKey(panelKey);
+  const routeKey = resolveRouteKey({
+    ...input,
+    routeKey: input.routeKey || input.route_key || inferredRouteKey
+  });
+  const workspace = resolveWorkspaceKey({
+    ...input,
+    routeKey
+  });
+  const tab = normalizeTabKey(input.tab, resolveTabForRouteKey(routeKey, workspace));
+
+  return {
+    route_key: routeKey,
+    panel_key: panelKey,
+    focus_key: focusKey,
+    workspace,
+    tab
+  };
+}
+
 module.exports = {
   CANONICAL_WORKSPACE_KEY,
   CANONICAL_TAB_KEY,
@@ -181,8 +298,10 @@ module.exports = {
   isSafeNavigationKey,
   normalizeTabKey,
   resolveRouteKey,
+  resolveWorkspaceKey,
   resolvePanelKey,
   resolveFocusKey,
+  resolveLaunchTarget,
   buildStartAppPayload,
   encodeStartAppPayload,
   decodeStartAppPayload

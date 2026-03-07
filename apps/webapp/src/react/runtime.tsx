@@ -7,41 +7,17 @@ import { ReactWebAppV1 } from "./App";
 import { appStore } from "./redux/store";
 import * as navigationContract from "../../../../packages/shared/src/navigationContract.js";
 
-const { CANONICAL_ROUTE_KEY, decodeStartAppPayload, resolveRouteKey } = navigationContract;
-
-function mapRouteToTab(routeKey: string): "home" | "pvp" | "tasks" | "vault" {
-  switch (routeKey) {
-    case CANONICAL_ROUTE_KEY.PVP:
-    case CANONICAL_ROUTE_KEY.SEASON:
-      return "pvp";
-    case CANONICAL_ROUTE_KEY.MISSIONS:
-    case CANONICAL_ROUTE_KEY.FORGE:
-      return "tasks";
-    case CANONICAL_ROUTE_KEY.VAULT:
-    case CANONICAL_ROUTE_KEY.EXCHANGE:
-      return "vault";
-    default:
-      return "home";
-  }
-}
+const { decodeStartAppPayload, resolveLaunchTarget } = navigationContract;
 
 function resolveLaunchContext(search: string) {
   const qs = new URLSearchParams(search);
   const startapp = String(qs.get("startapp") || "").trim();
   const decoded = startapp ? decodeStartAppPayload(startapp) : null;
-  const routeKey = resolveRouteKey({
-    routeKey: String(qs.get("route_key") || decoded?.route_key || "").trim()
+  return resolveLaunchTarget({
+    routeKey: String(qs.get("route_key") || decoded?.route_key || "").trim(),
+    panelKey: String(qs.get("panel_key") || decoded?.panel_key || "").trim(),
+    focusKey: String(qs.get("focus_key") || decoded?.focus_key || "").trim()
   });
-  const panelKey = String(qs.get("panel_key") || decoded?.panel_key || "").trim();
-  const focusKey = String(qs.get("focus_key") || decoded?.focus_key || "").trim();
-  const workspace = routeKey === CANONICAL_ROUTE_KEY.ADMIN ? "admin" : "player";
-  return {
-    route_key: routeKey,
-    panel_key: panelKey,
-    focus_key: focusKey,
-    workspace,
-    tab: mapRouteToTab(routeKey)
-  };
 }
 
 function ensureRootNode(): HTMLElement {
