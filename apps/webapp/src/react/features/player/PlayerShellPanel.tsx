@@ -14,6 +14,7 @@ type PlayerShellPanelProps = {
   onClose: () => void;
   onOpenPanel: (panelKey: PlayerShellPanelKey, focusKey?: string) => void;
   onTabChange: (tab: "home" | "pvp" | "tasks" | "vault") => void;
+  onRouteTarget: (input: { routeKey?: string; panelKey?: string; focusKey?: string; tab?: "home" | "pvp" | "tasks" | "vault" }) => void;
   onToggleReducedMotion: (next: boolean) => void;
   onToggleLargeText: (next: boolean) => void;
   onToggleLanguage: (next: Lang) => void;
@@ -149,8 +150,11 @@ export function PlayerShellPanel(props: PlayerShellPanelProps) {
               <button className="akrBtn akrBtnGhost" onClick={() => props.onOpenPanel("status", "system_status")}>
                 {t(props.lang, "shell_panel_open_status")}
               </button>
-              <button className="akrBtn akrBtnGhost" onClick={() => props.onTabChange("vault")}>
-                {t(props.lang, "shell_panel_go_vault")}
+              <button
+                className="akrBtn akrBtnGhost"
+                onClick={() => props.onRouteTarget({ routeKey: "vault", panelKey: "wallet", focusKey: "connect", tab: "vault" })}
+              >
+                {t(props.lang, "shell_panel_go_wallet")}
               </button>
             </div>
           </section>
@@ -190,8 +194,11 @@ export function PlayerShellPanel(props: PlayerShellPanelProps) {
               <button className="akrBtn akrBtnGhost" onClick={() => props.onOpenPanel("rewards", "premium_pass")}>
                 {t(props.lang, "shell_panel_open_rewards")}
               </button>
-              <button className="akrBtn akrBtnGhost" onClick={() => props.onTabChange("vault")}>
-                {t(props.lang, "shell_panel_go_vault")}
+              <button
+                className="akrBtn akrBtnGhost"
+                onClick={() => props.onRouteTarget({ routeKey: "vault", panelKey: "payout", focusKey: "request", tab: "vault" })}
+              >
+                {t(props.lang, "shell_panel_go_payout")}
               </button>
             </div>
           </section>
@@ -211,8 +218,17 @@ export function PlayerShellPanel(props: PlayerShellPanelProps) {
               <span className="akrChip">{homeView.summary.wallet_kyc_status || t(props.lang, "status_unknown")}</span>
             </div>
             <div className="akrActionRow">
-              <button className="akrBtn akrBtnAccent" onClick={() => props.onTabChange("vault")}>
-                {t(props.lang, "shell_panel_go_vault")}
+              <button
+                className="akrBtn akrBtnAccent"
+                onClick={() => props.onRouteTarget({ routeKey: "vault", panelKey: "payout", focusKey: "request", tab: "vault" })}
+              >
+                {t(props.lang, "shell_panel_go_payout")}
+              </button>
+              <button
+                className="akrBtn akrBtnGhost"
+                onClick={() => props.onRouteTarget({ routeKey: "vault", panelKey: "wallet", focusKey: "connect", tab: "vault" })}
+              >
+                {t(props.lang, "shell_panel_go_wallet")}
               </button>
               <button className="akrBtn akrBtnGhost" onClick={() => props.onOpenPanel("settings", "accessibility")}>
                 {t(props.lang, "shell_panel_open_settings")}
@@ -293,8 +309,11 @@ export function PlayerShellPanel(props: PlayerShellPanelProps) {
               <button className="akrBtn akrBtnAccent" onClick={() => props.onOpenPanel("support", "faq_cards")}>
                 {t(props.lang, "shell_panel_open_support")}
               </button>
-              <button className="akrBtn akrBtnGhost" onClick={() => props.onTabChange("vault")}>
-                {t(props.lang, "shell_panel_go_vault")}
+              <button
+                className="akrBtn akrBtnGhost"
+                onClick={() => props.onRouteTarget({ routeKey: "vault", panelKey: "payout", focusKey: "request", tab: "vault" })}
+              >
+                {t(props.lang, "shell_panel_go_payout")}
               </button>
             </div>
           </section>

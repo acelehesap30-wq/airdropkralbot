@@ -6,6 +6,7 @@ type LaunchFocusOptions = {
   workspace: WorkspaceKey;
   tab: TabKey;
   reducedMotion: boolean;
+  requestKey?: string | number;
 };
 
 function sanitizeKey(value: unknown): string {
@@ -70,7 +71,7 @@ export function useLaunchFocusController(options: LaunchFocusOptions) {
       return;
     }
 
-    const token = `${launchSummary.workspace}:${launchSummary.tab}:${launchSummary.panelKey}:${launchSummary.focusKey}`;
+    const token = `${String(options.requestKey || "")}:${launchSummary.workspace}:${launchSummary.tab}:${launchSummary.panelKey}:${launchSummary.focusKey}`;
     if (!launchSummary.panelKey && !launchSummary.focusKey) {
       return;
     }
@@ -108,7 +109,7 @@ export function useLaunchFocusController(options: LaunchFocusOptions) {
       window.clearTimeout(timeoutId);
       target.classList.remove("isLaunchFocus");
     };
-  }, [launchSummary, options.workspace, options.tab, options.reducedMotion]);
+  }, [launchSummary, options.workspace, options.tab, options.reducedMotion, options.requestKey]);
 
   return {
     launchSummary
