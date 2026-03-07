@@ -136,6 +136,11 @@ function formatCampaignMessage(campaign, lang = "tr") {
   return lines.join("\n\n").trim();
 }
 
+function hasLocalizedCopy(copyValue) {
+  const copy = copyValue && typeof copyValue === "object" && !Array.isArray(copyValue) ? copyValue : {};
+  return ["tr", "en"].some((localeKey) => String(copy[localeKey] || "").trim().length > 0);
+}
+
 async function queryInactiveReturningCandidates(client, campaign) {
   const targeting = campaign.targeting || {};
   const limit = Math.max(1, toPositiveInt(targeting.max_recipients, 50));
@@ -474,7 +479,7 @@ function createLiveOpsChatCampaignService(deps = {}) {
     };
   }
 
-  async function loadLatestDispatchSummary(client, campaignKey) {
+async function loadLatestDispatchSummary(client, campaignKey) {
     const summaryRes = await client.query(
       `SELECT
          COUNT(*)::int AS sent_total,
@@ -488,30 +493,141 @@ function createLiveOpsChatCampaignService(deps = {}) {
       [LIVE_OPS_CAMPAIGN_EVENT_TYPE, String(campaignKey || "")]
     );
     const row = summaryRes.rows[0] || {};
-    return {
-      event_type: LIVE_OPS_CAMPAIGN_EVENT_TYPE,
-      sent_total: Number(row.sent_total || 0),
+  return {
+    event_type: LIVE_OPS_CAMPAIGN_EVENT_TYPE,
+    sent_total: Number(row.sent_total || 0),
       sent_72h: Number(row.sent_72h || 0),
       last_sent_at: row.last_sent_at || null,
       last_segment_key: String(row.last_segment_key || ""),
-      last_dispatch_ref: String(row.last_dispatch_ref || "")
-    };
+    last_dispatch_ref: String(row.last_dispatch_ref || "")
+  };
+}
+
+function buildApprovalSummary(campaign, meta = {}) {
+  const warnings = [];
+  const enabled = campaign?.enabled === true;
+  const status = String(campaign?.status || "draft");
+  const surfaces = Array.isArray(campaign?.surfaces) ? campaign.surfaces : [];
+  const surfaceCount = surfaces.length;
+  const titleReady = hasLocalizedCopy(campaign?.copy?.title);
+  const bodyReady = hasLocalizedCopy(campaign?.copy?.body);
+
+  if (!enabled) {
+    warnings.push("campaign_disabled");
   }
+  if (status !== "ready") {
+    warnings.push("campaign_not_ready");
+  }
+  if (!surfaceCount) {
+    warnings.push("surface_missing");
+  }
+  if (!titleReady) {
+    warnings.push("title_missing");
+  }
+  if (!bodyReady) {
+    warnings.push("body_missing");
+  }
+
+  return {
+    live_dispatch_ready: warnings.length === 0,
+    enabled,
+    status,
+    segment_key: String(campaign?.targeting?.segment_key || LIVE_OPS_SEGMENT_KEY.INACTIVE_RETURNING),
+    max_recipients: Number(campaign?.targeting?.max_recipients || 0),
+    dedupe_hours: Number(campaign?.targeting?.dedupe_hours || 0),
+    surface_count: surfaceCount,
+    last_saved_at: meta.updated_at || null,
+    last_dispatch_at: meta.last_dispatch_at || null,
+    warnings
+  };
+}
+
+async function loadVersionHistory(client) {
+  const result = await client.query(
+    `SELECT version, created_at, created_by, config_json
+     FROM config_versions
+     WHERE config_key = $1
+     ORDER BY version DESC, created_at DESC
+     LIMIT 8;`,
+    [LIVE_OPS_CAMPAIGN_CONFIG_KEY]
+  );
+  return result.rows.map((row) => {
+    const campaign = buildDefaultLiveOpsCampaignConfig(row.config_json || {});
+    return {
+      version: Number(row.version || 0),
+      updated_at: row.created_at || null,
+      updated_by: Number(row.created_by || 0),
+      campaign_key: String(campaign.campaign_key || ""),
+      enabled: campaign.enabled === true,
+      status: String(campaign.status || "draft"),
+      segment_key: String(campaign.targeting?.segment_key || LIVE_OPS_SEGMENT_KEY.INACTIVE_RETURNING),
+      max_recipients: Number(campaign.targeting?.max_recipients || 0),
+      dedupe_hours: Number(campaign.targeting?.dedupe_hours || 0)
+    };
+  });
+}
+
+async function loadDispatchHistory(client, campaignKey) {
+  const result = await client.query(
+    `SELECT admin_id, action, payload_json, created_at
+     FROM admin_audit
+     WHERE target = $1
+       AND action IN ('live_ops_campaign_dry_run', 'live_ops_campaign_dispatch')
+       AND COALESCE(payload_json->>'campaign_key', '') = $2
+     ORDER BY created_at DESC
+     LIMIT 8;`,
+    [`config:${LIVE_OPS_CAMPAIGN_CONFIG_KEY}`, String(campaignKey || "")]
+  );
+  return result.rows.map((row) => {
+    const payload = row.payload_json && typeof row.payload_json === "object" && !Array.isArray(row.payload_json) ? row.payload_json : {};
+    const action = String(row.action || "live_ops_campaign_dry_run");
+    return {
+      action,
+      created_at: row.created_at || null,
+      admin_id: Number(row.admin_id || 0),
+      campaign_key: String(payload.campaign_key || campaignKey || ""),
+      campaign_version: Number(payload.campaign_version || 0),
+      dispatch_ref: String(payload.dispatch_ref || ""),
+      segment_key: String(payload.segment_key || ""),
+      reason: String(payload.reason || ""),
+      dry_run: action === "live_ops_campaign_dry_run",
+      attempted: Number(payload.attempted || 0),
+      sent: Number(payload.sent || 0),
+      recorded: Number(payload.recorded || 0),
+      skipped_disabled: Number(payload.skipped_disabled || 0)
+    };
+  });
+}
+
+async function buildCampaignSnapshot(client, current) {
+  const snapshotState = current || (await loadLatestConfig(client));
+  const latestDispatch = await loadLatestDispatchSummary(client, snapshotState.campaign.campaign_key);
+  const approvalSummary = buildApprovalSummary(snapshotState.campaign, {
+    updated_at: snapshotState.created_at || null,
+    last_dispatch_at: latestDispatch.last_sent_at || null
+  });
+  const [versionHistory, dispatchHistory] = await Promise.all([
+    loadVersionHistory(client),
+    loadDispatchHistory(client, snapshotState.campaign.campaign_key)
+  ]);
+  return {
+    api_version: "v2",
+    config_key: LIVE_OPS_CAMPAIGN_CONFIG_KEY,
+    version: snapshotState.version,
+    updated_at: snapshotState.created_at,
+    updated_by: snapshotState.created_by,
+    campaign: snapshotState.campaign,
+    approval_summary: approvalSummary,
+    version_history: versionHistory,
+    dispatch_history: dispatchHistory,
+    latest_dispatch: latestDispatch
+  };
+}
 
   async function getCampaignSnapshot() {
     const client = await pool.connect();
     try {
-      const current = await loadLatestConfig(client);
-      const latestDispatch = await loadLatestDispatchSummary(client, current.campaign.campaign_key);
-      return {
-        api_version: "v2",
-        config_key: LIVE_OPS_CAMPAIGN_CONFIG_KEY,
-        version: current.version,
-        updated_at: current.created_at,
-        updated_by: current.created_by,
-        campaign: current.campaign,
-        latest_dispatch: latestDispatch
-      };
+      return await buildCampaignSnapshot(client);
     } finally {
       client.release();
     }
@@ -536,6 +652,12 @@ function createLiveOpsChatCampaignService(deps = {}) {
          VALUES ($1, 'live_ops_campaign_save', $2, $3::jsonb);`,
         [adminId, `config:${LIVE_OPS_CAMPAIGN_CONFIG_KEY}`, JSON.stringify({ reason, version: nextVersion, campaign_key: campaign.campaign_key })]
       );
+      const snapshot = await buildCampaignSnapshot(client, {
+        version: nextVersion,
+        created_at: new Date().toISOString(),
+        created_by: adminId,
+        campaign
+      });
       await client.query("COMMIT");
       logger("info", {
         event: "live_ops_campaign_saved",
@@ -544,16 +666,7 @@ function createLiveOpsChatCampaignService(deps = {}) {
         campaign_key: campaign.campaign_key,
         reason
       });
-      const latestDispatch = await loadLatestDispatchSummary(client, campaign.campaign_key);
-      return {
-        api_version: "v2",
-        config_key: LIVE_OPS_CAMPAIGN_CONFIG_KEY,
-        version: nextVersion,
-        updated_at: new Date().toISOString(),
-        updated_by: adminId,
-        campaign,
-        latest_dispatch: latestDispatch
-      };
+      return snapshot;
     } catch (err) {
       await client.query("ROLLBACK").catch(() => null);
       throw err;
@@ -654,25 +767,27 @@ function createLiveOpsChatCampaignService(deps = {}) {
         }
       }
 
-      if (!dryRun) {
-        await client.query(
-          `INSERT INTO admin_audit (admin_id, action, target, payload_json)
-           VALUES ($1, 'live_ops_campaign_dispatch', $2, $3::jsonb);`,
-          [
-            adminId,
-            `config:${LIVE_OPS_CAMPAIGN_CONFIG_KEY}`,
-            JSON.stringify({
-              reason,
-              campaign_key: campaign.campaign_key,
-              campaign_version: version,
-              dispatch_ref: dispatchRef,
-              sent,
-              attempted,
-              segment_key: campaign.targeting.segment_key
-            })
-          ]
-        );
-      }
+      const auditAction = dryRun ? "live_ops_campaign_dry_run" : "live_ops_campaign_dispatch";
+      await client.query(
+        `INSERT INTO admin_audit (admin_id, action, target, payload_json)
+         VALUES ($1, $2, $3, $4::jsonb);`,
+        [
+          adminId,
+          auditAction,
+          `config:${LIVE_OPS_CAMPAIGN_CONFIG_KEY}`,
+          JSON.stringify({
+            reason,
+            campaign_key: campaign.campaign_key,
+            campaign_version: version,
+            dispatch_ref: dispatchRef,
+            sent,
+            attempted,
+            recorded,
+            skipped_disabled: skippedDisabled,
+            segment_key: campaign.targeting.segment_key
+          })
+        ]
+      );
 
       logger("info", {
         event: "live_ops_campaign_dispatched",

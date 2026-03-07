@@ -53,6 +53,32 @@ test("v2 admin live ops campaign routes read, save and dispatch canonical payloa
             },
             surfaces: [{ slot_key: "wallet_lane", surface_key: "wallet_panel" }]
           },
+          approval_summary: {
+            live_dispatch_ready: false,
+            enabled: false,
+            status: "draft",
+            segment_key: "wallet_unlinked",
+            max_recipients: 40,
+            dedupe_hours: 72,
+            surface_count: 1,
+            last_saved_at: "2026-03-08T10:00:00.000Z",
+            last_dispatch_at: null,
+            warnings: ["campaign_disabled", "campaign_not_ready"]
+          },
+          version_history: [
+            {
+              version: 3,
+              updated_at: "2026-03-08T10:00:00.000Z",
+              updated_by: 7001,
+              campaign_key: "wallet_reconnect",
+              enabled: false,
+              status: "draft",
+              segment_key: "wallet_unlinked",
+              max_recipients: 40,
+              dedupe_hours: 72
+            }
+          ],
+          dispatch_history: [],
           latest_dispatch: {
             event_type: "live_ops_campaign_sent",
             sent_total: 0,
@@ -72,6 +98,32 @@ test("v2 admin live ops campaign routes read, save and dispatch canonical payloa
           updated_at: "2026-03-08T10:10:00.000Z",
           updated_by: 7001,
           campaign: input.campaign,
+          approval_summary: {
+            live_dispatch_ready: true,
+            enabled: true,
+            status: "ready",
+            segment_key: "wallet_unlinked",
+            max_recipients: 40,
+            dedupe_hours: 72,
+            surface_count: 1,
+            last_saved_at: "2026-03-08T10:10:00.000Z",
+            last_dispatch_at: null,
+            warnings: []
+          },
+          version_history: [
+            {
+              version: 4,
+              updated_at: "2026-03-08T10:10:00.000Z",
+              updated_by: 7001,
+              campaign_key: "wallet_reconnect",
+              enabled: true,
+              status: "ready",
+              segment_key: "wallet_unlinked",
+              max_recipients: 40,
+              dedupe_hours: 72
+            }
+          ],
+          dispatch_history: [],
           latest_dispatch: {
             event_type: "live_ops_campaign_sent",
             sent_total: 0,
@@ -111,6 +163,7 @@ test("v2 admin live ops campaign routes read, save and dispatch canonical payloa
   });
   assert.equal(getRes.statusCode, 200);
   assert.equal(getRes.json().data.campaign.campaign_key, "wallet_reconnect");
+  assert.equal(getRes.json().data.approval_summary.live_dispatch_ready, false);
 
   const saveRes = await app.inject({
     method: "POST",
@@ -145,6 +198,7 @@ test("v2 admin live ops campaign routes read, save and dispatch canonical payloa
   });
   assert.equal(saveRes.statusCode, 200);
   assert.equal(saveRes.json().data.version, 4);
+  assert.equal(saveRes.json().data.version_history[0].version, 4);
 
   const dispatchRes = await app.inject({
     method: "POST",

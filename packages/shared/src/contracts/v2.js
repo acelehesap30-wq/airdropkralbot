@@ -567,6 +567,47 @@ const LiveOpsCampaignConfigSchema = z.object({
   surfaces: z.array(LiveOpsCampaignSurfaceSchema).min(1).max(3).default([])
 });
 
+const LiveOpsCampaignApprovalSummarySchema = z.object({
+  live_dispatch_ready: z.boolean().default(false),
+  enabled: z.boolean().default(false),
+  status: z.enum(Object.values(LIVE_OPS_CAMPAIGN_STATUS)).default(LIVE_OPS_CAMPAIGN_STATUS.DRAFT),
+  segment_key: z.enum(Object.values(LIVE_OPS_SEGMENT_KEY)).default(LIVE_OPS_SEGMENT_KEY.INACTIVE_RETURNING),
+  max_recipients: z.number().int().min(1).max(500).default(50),
+  dedupe_hours: z.number().int().min(1).max(720).default(72),
+  surface_count: z.number().int().nonnegative().default(0),
+  last_saved_at: z.string().nullable().default(null),
+  last_dispatch_at: z.string().nullable().default(null),
+  warnings: z.array(z.string()).default([])
+});
+
+const LiveOpsCampaignVersionHistoryRowSchema = z.object({
+  version: z.number().int().nonnegative().default(0),
+  updated_at: z.string().nullable().default(null),
+  updated_by: z.number().int().nonnegative().default(0),
+  campaign_key: z.string().default(""),
+  enabled: z.boolean().default(false),
+  status: z.enum(Object.values(LIVE_OPS_CAMPAIGN_STATUS)).default(LIVE_OPS_CAMPAIGN_STATUS.DRAFT),
+  segment_key: z.enum(Object.values(LIVE_OPS_SEGMENT_KEY)).default(LIVE_OPS_SEGMENT_KEY.INACTIVE_RETURNING),
+  max_recipients: z.number().int().min(1).max(500).default(50),
+  dedupe_hours: z.number().int().min(1).max(720).default(72)
+});
+
+const LiveOpsCampaignDispatchHistoryRowSchema = z.object({
+  action: z.enum(["live_ops_campaign_dry_run", "live_ops_campaign_dispatch"]).default("live_ops_campaign_dry_run"),
+  created_at: z.string().nullable().default(null),
+  admin_id: z.number().int().nonnegative().default(0),
+  campaign_key: z.string().default(""),
+  campaign_version: z.number().int().nonnegative().default(0),
+  dispatch_ref: z.string().default(""),
+  segment_key: z.string().default(""),
+  reason: z.string().default(""),
+  dry_run: z.boolean().default(true),
+  attempted: z.number().int().nonnegative().default(0),
+  sent: z.number().int().nonnegative().default(0),
+  recorded: z.number().int().nonnegative().default(0),
+  skipped_disabled: z.number().int().nonnegative().default(0)
+});
+
 const LiveOpsCampaignSnapshotSchema = z.object({
   api_version: z.literal("v2"),
   config_key: z.string().default("live_ops_chat_campaign_v1"),
@@ -574,6 +615,9 @@ const LiveOpsCampaignSnapshotSchema = z.object({
   updated_at: z.string().nullable().default(null),
   updated_by: z.number().int().nonnegative().default(0),
   campaign: LiveOpsCampaignConfigSchema,
+  approval_summary: LiveOpsCampaignApprovalSummarySchema.default({}),
+  version_history: z.array(LiveOpsCampaignVersionHistoryRowSchema).default([]),
+  dispatch_history: z.array(LiveOpsCampaignDispatchHistoryRowSchema).default([]),
   latest_dispatch: z
     .object({
       event_type: z.string().default("live_ops_campaign_sent"),
@@ -634,12 +678,15 @@ module.exports = {
   PlayerActionResponseV2Schema,
   DynamicAutoPolicySchema,
   DynamicAutoPolicySegmentSchema,
+  LiveOpsCampaignApprovalSummarySchema,
   LiveOpsCampaignConfigSchema,
   LiveOpsCampaignDispatchRequestSchema,
   LiveOpsCampaignDispatchResponseSchema,
+  LiveOpsCampaignDispatchHistoryRowSchema,
   LiveOpsCampaignSnapshotSchema,
   LiveOpsCampaignSurfaceSchema,
   LiveOpsCampaignTargetingSchema,
+  LiveOpsCampaignVersionHistoryRowSchema,
   LiveOpsCampaignUpsertRequestSchema,
   HomeFeedV2Schema,
   AdminMonetizationFeeEventResponseV2Schema,

@@ -18,7 +18,36 @@ type LiveOpsCampaignCardProps = {
   onSurfaceAction: (sectionKey: string, slotKey: string, fallbackActionKey: string, sourcePanelKey?: string) => void;
 };
 
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+}
+
+function asArray(value: unknown): Array<Record<string, unknown>> {
+  return Array.isArray(value) ? value.filter((row): row is Record<string, unknown> => Boolean(row) && typeof row === "object") : [];
+}
+
+function asText(value: unknown, fallback = "-") {
+  const text = String(value ?? "").trim();
+  return text || fallback;
+}
+
+function asCount(value: unknown) {
+  const num = Number(value || 0);
+  return Number.isFinite(num) ? String(num) : "0";
+}
+
+function formatWarningCode(value: string) {
+  return asText(value, "-").replace(/_/g, " ");
+}
+
 export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
+  const snapshot = asRecord(props.liveOpsCampaignData);
+  const approvalSummary = asRecord(snapshot.approval_summary);
+  const versionHistory = asArray(snapshot.version_history);
+  const dispatchHistory = asArray(snapshot.dispatch_history);
+  const warnings = Array.isArray(approvalSummary.warnings) ? approvalSummary.warnings.map((row) => String(row || "").trim()).filter(Boolean) : [];
+  const liveReady = approvalSummary.live_dispatch_ready === true;
+
   return (
     <section className="akrCard akrCardWide" data-akr-panel-key="panel_admin_live_ops" data-akr-focus-key="campaign_editor">
       <h3>{t(props.lang, "admin_live_ops_title")}</h3>
@@ -63,8 +92,86 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
       />
       {props.liveOpsCampaignError ? <p className="akrErrorLine">{props.liveOpsCampaignError}</p> : null}
       {props.liveOpsCampaignDispatchError ? <p className="akrErrorLine">{props.liveOpsCampaignDispatchError}</p> : null}
+      <div className="akrSplit">
+        <section className="akrMiniPanel" data-akr-focus-key="approval_gate">
+          <h4>{t(props.lang, "admin_live_ops_gate_title")}</h4>
+          <p className="akrValue">{liveReady ? t(props.lang, "admin_live_ops_gate_ready") : t(props.lang, "admin_live_ops_gate_blocked")}</p>
+          <ul className="akrList">
+            <li>
+              <span>{t(props.lang, "admin_live_ops_status_label")}</span>
+              <strong>{asText(approvalSummary.status)}</strong>
+            </li>
+            <li>
+              <span>{t(props.lang, "admin_live_ops_segment_label")}</span>
+              <strong>{asText(approvalSummary.segment_key)}</strong>
+            </li>
+            <li>
+              <span>{t(props.lang, "admin_live_ops_recipients_label")}</span>
+              <strong>{asCount(approvalSummary.max_recipients)}</strong>
+            </li>
+            <li>
+              <span>{t(props.lang, "admin_live_ops_last_saved_label")}</span>
+              <strong>{asText(approvalSummary.last_saved_at)}</strong>
+            </li>
+            <li>
+              <span>{t(props.lang, "admin_live_ops_last_dispatch_label")}</span>
+              <strong>{asText(approvalSummary.last_dispatch_at)}</strong>
+            </li>
+          </ul>
+          {warnings.length ? (
+            <>
+              <h4>{t(props.lang, "admin_live_ops_warnings_title")}</h4>
+              <ul className="akrList">
+                {warnings.map((warning) => (
+                  <li key={warning}>
+                    <span>{formatWarningCode(warning)}</span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+        </section>
+        <section className="akrMiniPanel" data-akr-focus-key="dispatch_history">
+          <h4>{t(props.lang, "admin_live_ops_dispatch_history_title")}</h4>
+          {dispatchHistory.length ? (
+            <ul className="akrList">
+              {dispatchHistory.map((row, index) => (
+                <li key={`${asText(row.dispatch_ref, "dispatch")}_${index}`}>
+                  <span>
+                    {asText(row.action)} | {asText(row.segment_key)} | {t(props.lang, row.dry_run === true ? "admin_live_ops_mode_dry_run" : "admin_live_ops_mode_live")}
+                  </span>
+                  <strong>
+                    {asCount(row.sent)}/{asCount(row.attempted)} @ {asText(row.created_at)}
+                  </strong>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="akrMuted">{t(props.lang, "admin_live_ops_no_history")}</p>
+          )}
+        </section>
+      </div>
+      <section className="akrMiniPanel" data-akr-focus-key="version_history">
+        <h4>{t(props.lang, "admin_live_ops_versions_title")}</h4>
+        {versionHistory.length ? (
+          <ul className="akrList">
+            {versionHistory.map((row, index) => (
+              <li key={`${asText(row.version, "0")}_${index}`}>
+                <span>
+                  v{asCount(row.version)} | {asText(row.status)} | {asText(row.segment_key)}
+                </span>
+                <strong>
+                  {asText(row.updated_at)} | #{asCount(row.updated_by)}
+                </strong>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="akrMuted">{t(props.lang, "admin_live_ops_no_history")}</p>
+        )}
+      </section>
       <h3>{t(props.lang, "admin_live_ops_latest_title")}</h3>
-      <pre className="akrJsonBlock">{JSON.stringify(props.liveOpsCampaignData || {}, null, 2)}</pre>
+      <pre className="akrJsonBlock">{JSON.stringify(snapshot, null, 2)}</pre>
       <h3>{t(props.lang, "admin_live_ops_dispatch_dump_title")}</h3>
       <pre className="akrJsonBlock">{JSON.stringify(props.liveOpsCampaignDispatchData || {}, null, 2)}</pre>
     </section>

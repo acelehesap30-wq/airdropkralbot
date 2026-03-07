@@ -97,3 +97,122 @@ test("live ops chat campaign service dispatches canonical wallet reconnect campa
   assert.equal(recordedQueries.some((entry) => entry.sql.includes("INSERT INTO behavior_events")), true);
   assert.equal(recordedQueries.some((entry) => entry.sql.includes("INSERT INTO admin_audit")), true);
 });
+
+test("live ops chat campaign service snapshot includes approval summary and histories", async () => {
+  const service = createLiveOpsChatCampaignService({
+    pool: {
+      async connect() {
+        return {
+          async query(sql) {
+            const text = String(sql || "");
+            if (text.includes("FROM config_versions") && text.includes("LIMIT 1")) {
+              return {
+                rows: [
+                  {
+                    version: 5,
+                    created_at: "2026-03-08T12:00:00.000Z",
+                    created_by: 7001,
+                    config_json: {
+                      api_version: "v2",
+                      campaign_key: "wallet_reconnect",
+                      enabled: true,
+                      status: "ready",
+                      targeting: {
+                        segment_key: "wallet_unlinked",
+                        inactive_hours: 72,
+                        max_age_days: 30,
+                        active_within_days: 14,
+                        locale_filter: "",
+                        max_recipients: 40,
+                        dedupe_hours: 72
+                      },
+                      copy: {
+                        title: { en: "Wallet ready", tr: "Wallet hazir" },
+                        body: { en: "Link wallet", tr: "Wallet bagla" },
+                        note: { en: "Open route", tr: "Rotayi ac" }
+                      },
+                      surfaces: [{ slot_key: "wallet_lane", surface_key: "wallet_panel" }]
+                    }
+                  }
+                ]
+              };
+            }
+            if (text.includes("FROM behavior_events")) {
+              return {
+                rows: [
+                  {
+                    sent_total: 8,
+                    sent_72h: 3,
+                    last_sent_at: "2026-03-08T12:10:00.000Z",
+                    last_segment_key: "wallet_unlinked",
+                    last_dispatch_ref: "wallet_reconnect_k9"
+                  }
+                ]
+              };
+            }
+            if (text.includes("FROM config_versions") && text.includes("LIMIT 8")) {
+              return {
+                rows: [
+                  {
+                    version: 5,
+                    created_at: "2026-03-08T12:00:00.000Z",
+                    created_by: 7001,
+                    config_json: {
+                      campaign_key: "wallet_reconnect",
+                      enabled: true,
+                      status: "ready",
+                      targeting: {
+                        segment_key: "wallet_unlinked",
+                        max_recipients: 40,
+                        dedupe_hours: 72
+                      },
+                      surfaces: [{ slot_key: "wallet_lane", surface_key: "wallet_panel" }]
+                    }
+                  }
+                ]
+              };
+            }
+            if (text.includes("FROM admin_audit")) {
+              return {
+                rows: [
+                  {
+                    admin_id: 7001,
+                    action: "live_ops_campaign_dispatch",
+                    created_at: "2026-03-08T12:10:00.000Z",
+                    payload_json: {
+                      campaign_key: "wallet_reconnect",
+                      campaign_version: 5,
+                      dispatch_ref: "wallet_reconnect_k9",
+                      segment_key: "wallet_unlinked",
+                      reason: "manual_live_push",
+                      attempted: 3,
+                      sent: 3,
+                      recorded: 3,
+                      skipped_disabled: 0
+                    }
+                  }
+                ]
+              };
+            }
+            return { rows: [] };
+          },
+          release() {}
+        };
+      }
+    },
+    fetchImpl: async () => ({ ok: true }),
+    botToken: "bot_token",
+    botUsername: "airdropkral_2026_bot",
+    webappPublicUrl: "https://example.com/app",
+    webappHmacSecret: "secret",
+    resolveWebappVersion: async () => ({ version: "abc123" }),
+    logger: () => {}
+  });
+
+  const snapshot = await service.getCampaignSnapshot();
+  assert.equal(snapshot.approval_summary.live_dispatch_ready, true);
+  assert.equal(snapshot.approval_summary.last_dispatch_at, "2026-03-08T12:10:00.000Z");
+  assert.equal(snapshot.version_history.length, 1);
+  assert.equal(snapshot.dispatch_history.length, 1);
+  assert.equal(snapshot.dispatch_history[0].dispatch_ref, "wallet_reconnect_k9");
+});
