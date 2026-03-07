@@ -41,6 +41,7 @@ const {
   encodeStartAppPayload
 } = require("../../../packages/shared/src/navigationContract");
 const { resolvePlayerCommandNavigation } = require("../../../packages/shared/src/playerCommandNavigation");
+const { resolveAdminCommandNavigation } = require("../../../packages/shared/src/adminCommandNavigation");
 const { resolveLocalePreference } = require("../../../packages/shared/src/localeContract");
 const { getCommandRegistry, toTelegramCommands, buildAliasLookup } = require("./commands/registry");
 const { buildIntentIndex, resolveIntent, normalizeMode } = require("./commands/intentRouter");
@@ -432,24 +433,10 @@ async function resolveMiniAppRouteUrl(pool, appConfig, telegramId, navigation = 
 
 async function resolveAdminWorkspaceUrls(pool, appConfig, telegramId) {
   const [adminUrl, queueUrl, policyUrl, runtimeUrl] = await Promise.all([
-    resolveMiniAppRouteUrl(pool, appConfig, telegramId, {
-      routeKey: CANONICAL_ROUTE_KEY.ADMIN
-    }),
-    resolveMiniAppRouteUrl(pool, appConfig, telegramId, {
-      routeKey: CANONICAL_ROUTE_KEY.ADMIN,
-      panelKey: CANONICAL_PANEL_KEY.PANEL_ADMIN_QUEUE,
-      focusKey: "queue_action"
-    }),
-    resolveMiniAppRouteUrl(pool, appConfig, telegramId, {
-      routeKey: CANONICAL_ROUTE_KEY.ADMIN,
-      panelKey: CANONICAL_PANEL_KEY.PANEL_ADMIN_POLICY,
-      focusKey: "dynamic_policy"
-    }),
-    resolveMiniAppRouteUrl(pool, appConfig, telegramId, {
-      routeKey: CANONICAL_ROUTE_KEY.ADMIN,
-      panelKey: CANONICAL_PANEL_KEY.PANEL_ADMIN_RUNTIME,
-      focusKey: "runtime_meta"
-    })
+    resolveMiniAppAdminCommandUrl(pool, appConfig, telegramId, "admin"),
+    resolveMiniAppAdminCommandUrl(pool, appConfig, telegramId, "admin_queue"),
+    resolveMiniAppAdminCommandUrl(pool, appConfig, telegramId, "admin_gate"),
+    resolveMiniAppAdminCommandUrl(pool, appConfig, telegramId, "admin_metrics")
   ]);
   return {
     adminUrl: adminUrl || "",
@@ -461,6 +448,18 @@ async function resolveAdminWorkspaceUrls(pool, appConfig, telegramId) {
 
 async function resolveMiniAppCommandUrl(pool, appConfig, telegramId, commandKey, overrides = {}) {
   const navigation = resolvePlayerCommandNavigation(commandKey);
+  if (!navigation) {
+    return null;
+  }
+  return resolveMiniAppRouteUrl(pool, appConfig, telegramId, {
+    routeKey: overrides.routeKey || navigation.route_key,
+    panelKey: overrides.panelKey || navigation.panel_key || "",
+    focusKey: overrides.focusKey || navigation.focus_key || ""
+  });
+}
+
+async function resolveMiniAppAdminCommandUrl(pool, appConfig, telegramId, commandKey, overrides = {}) {
+  const navigation = resolveAdminCommandNavigation(commandKey);
   if (!navigation) {
     return null;
   }
