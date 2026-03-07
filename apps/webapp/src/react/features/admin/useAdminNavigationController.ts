@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback } from "react";
 import { resolveAdminRouteHandoff } from "../../../core/admin/adminRouteHandoff.js";
 import { UI_EVENT_KEY, UI_FUNNEL_KEY, UI_SURFACE_KEY } from "../../../core/telemetry/uiEventTaxonomy";
 import { useLaunchFocusController } from "../shell/useLaunchFocusController";
+import { useAppDispatch, useAppSelector } from "../../redux/hooks";
+import { navigationActions, selectNavigationLaunchContext, selectNavigationRequestKey } from "../../redux/slices/shellSlices";
 import type { LaunchContext } from "../../types";
 
 type AdminRouteTargetInput = {
@@ -12,35 +14,14 @@ type AdminRouteTargetInput = {
 };
 
 type AdminNavigationControllerOptions = {
-  launchContext: LaunchContext | null;
   reducedMotion: boolean;
   trackUiEvent: (payload: Record<string, unknown>) => void;
 };
 
-function buildLaunchToken(value: LaunchContext | null) {
-  if (!value) {
-    return "";
-  }
-  return [
-    String(value.route_key || ""),
-    String(value.panel_key || ""),
-    String(value.focus_key || ""),
-    String(value.workspace || ""),
-    String(value.tab || "")
-  ].join(":");
-}
-
 export function useAdminNavigationController(options: AdminNavigationControllerOptions) {
-  const externalLaunchToken = useMemo(() => buildLaunchToken(options.launchContext), [options.launchContext]);
-  const [activeRouteContext, setActiveRouteContext] = useState<LaunchContext | null>(options.launchContext);
-  const [requestKey, setRequestKey] = useState(0);
-
-  useEffect(() => {
-    setActiveRouteContext(options.launchContext);
-    if (externalLaunchToken) {
-      setRequestKey((value) => value + 1);
-    }
-  }, [externalLaunchToken, options.launchContext]);
+  const dispatch = useAppDispatch();
+  const activeRouteContext = useAppSelector(selectNavigationLaunchContext);
+  const requestKey = useAppSelector(selectNavigationRequestKey);
 
   useLaunchFocusController({
     launchContext: activeRouteContext,
@@ -59,8 +40,7 @@ export function useAdminNavigationController(options: AdminNavigationControllerO
         focusKey: input.focusKey
       }) as LaunchContext;
 
-      setActiveRouteContext(target);
-      setRequestKey((value) => value + 1);
+      dispatch(navigationActions.routeLaunchContext(target));
       options.trackUiEvent({
         event_key: UI_EVENT_KEY.PANEL_OPEN,
         tab_key: "home",
@@ -77,7 +57,7 @@ export function useAdminNavigationController(options: AdminNavigationControllerO
         }
       });
     },
-    [options.trackUiEvent]
+    [dispatch, options.trackUiEvent]
   );
 
   return {

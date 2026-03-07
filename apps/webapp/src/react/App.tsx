@@ -8,7 +8,6 @@ import {
 import { useReactShellStore } from "./store";
 import type {
   BootstrapV2Payload,
-  LaunchContext,
   TabKey,
   WebAppApiResponse,
   WebAppAuth
@@ -119,6 +118,8 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
     onboardingVisible,
     adminRuntime,
     pvpRuntime,
+    navigationContext,
+    navigationRequestKey,
     setBootstrap,
     patchData,
     setAuth,
@@ -423,12 +424,12 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
   const reducedMotion = Boolean(data?.ui_prefs?.reduced_motion);
   const largeText = Boolean(data?.ui_prefs?.large_text);
   const rootClassName = `akrReactRoot${reducedMotion ? " isReducedMotion" : ""}${largeText ? " isLargeText" : ""}`;
-  const launchContext: LaunchContext | null = data?.launch_context ?? null;
   const { launchSummary } = useLaunchFocusController({
-    launchContext,
+    launchContext: navigationContext,
     workspace,
     tab,
     reducedMotion,
+    requestKey: navigationRequestKey,
     enableFocus: false
   });
   const {
@@ -600,7 +601,6 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
           payoutRequestLoading={payoutRequestLoading}
           passPurchaseLoading={passPurchaseLoading}
           cosmeticPurchaseLoading={cosmeticPurchaseLoading}
-          launchContext={launchContext}
           trackUiEvent={trackUiEvent}
           onTabChange={onTabChange}
           onToggleReducedMotion={onToggleReducedMotion}
@@ -645,7 +645,6 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
           lang={lang}
           isAdmin={isAdmin}
           advanced={advanced}
-          launchContext={launchContext}
           reducedMotion={reducedMotion}
           trackUiEvent={trackUiEvent}
           adminRuntime={adminRuntime}

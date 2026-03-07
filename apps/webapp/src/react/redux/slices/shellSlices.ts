@@ -1,6 +1,7 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { normalizeLang, type Lang } from "../../i18n";
-import type { BootstrapV2Data, ExperimentAssignment, TabKey, WebAppAuth, WorkspaceKey } from "../../types";
+import type { BootstrapV2Data, ExperimentAssignment, LaunchContext, TabKey, WebAppAuth, WorkspaceKey } from "../../types";
+import { buildLaunchContextToken, normalizeLaunchContext } from "../../../core/navigation/launchContextState.js";
 
 const TAB_KEYS: TabKey[] = ["home", "pvp", "tasks", "vault"];
 
@@ -91,6 +92,13 @@ type SceneState = {
   hudDensity: "compact" | "normal";
   reducedMotion: boolean;
   largeText: boolean;
+};
+
+type NavigationState = {
+  launchContext: LaunchContext | null;
+  bootstrapContext: LaunchContext | null;
+  requestKey: number;
+  source: "bootstrap" | "internal" | "";
 };
 
 export function deriveUiFromBootstrap(
@@ -348,6 +356,54 @@ const sceneSlice = createSlice({
   }
 });
 
+const navigationSlice = createSlice({
+  name: "navigation",
+  initialState: {
+    launchContext: null,
+    bootstrapContext: null,
+    requestKey: 0,
+    source: ""
+  } as NavigationState,
+  reducers: {
+    hydrateLaunchContext(state, action: PayloadAction<LaunchContext | null | undefined>) {
+      const next = normalizeLaunchContext(action.payload || null);
+      if (!next) {
+        return;
+      }
+      const nextToken = buildLaunchContextToken(next);
+      const activeToken = buildLaunchContextToken(state.launchContext);
+      const bootstrapToken = buildLaunchContextToken(state.bootstrapContext);
+      state.bootstrapContext = next;
+      if (bootstrapToken === nextToken) {
+        return;
+      }
+      if (state.source === "internal" && activeToken && activeToken !== nextToken) {
+        return;
+      }
+      if (activeToken === nextToken) {
+        state.source = "bootstrap";
+        return;
+      }
+      state.launchContext = next;
+      state.requestKey += 1;
+      state.source = "bootstrap";
+    },
+    routeLaunchContext(state, action: PayloadAction<LaunchContext | null | undefined>) {
+      const next = normalizeLaunchContext(action.payload || null);
+      if (!next) {
+        return;
+      }
+      state.launchContext = next;
+      state.requestKey += 1;
+      state.source = "internal";
+    },
+    clearLaunchContext(state) {
+      state.launchContext = null;
+      state.source = "";
+    }
+  }
+});
+
 export const sessionActions = sessionSlice.actions;
 export const uiActions = uiSlice.actions;
 export const playerActions = playerSlice.actions;
@@ -358,6 +414,7 @@ export const monetizationActions = monetizationSlice.actions;
 export const adminActions = adminSlice.actions;
 export const telemetryActions = telemetrySlice.actions;
 export const sceneActions = sceneSlice.actions;
+export const navigationActions = navigationSlice.actions;
 
 export const sessionReducer = sessionSlice.reducer;
 export const uiReducer = uiSlice.reducer;
@@ -369,6 +426,7 @@ export const monetizationReducer = monetizationSlice.reducer;
 export const adminReducer = adminSlice.reducer;
 export const telemetryReducer = telemetrySlice.reducer;
 export const sceneReducer = sceneSlice.reducer;
+export const navigationReducer = navigationSlice.reducer;
 
 export const selectAuth = (state: any): WebAppAuth => state.session.auth;
 export const selectUi = (state: any): UiState => state.ui;
@@ -378,4 +436,6 @@ export const selectPvpRuntime = (state: any): PvpRuntimeData => state.pvp;
 export const selectAdminRuntime = (state: any): AdminRuntimeData => state.admin.runtime;
 export const selectAdminPanels = (state: any): Record<string, unknown> | null => state.admin.panels;
 export const selectVaultData = (state: any): Record<string, unknown> | null => state.vault.data;
-
+export const selectNavigation = (state: any): NavigationState => state.navigation;
+export const selectNavigationLaunchContext = (state: any): LaunchContext | null => state.navigation.launchContext;
+export const selectNavigationRequestKey = (state: any): number => state.navigation.requestKey;

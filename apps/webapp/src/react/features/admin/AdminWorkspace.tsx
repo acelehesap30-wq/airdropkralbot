@@ -1,5 +1,4 @@
 import type { Lang } from "../../i18n";
-import type { LaunchContext } from "../../types";
 import { AdminPanel } from "./AdminPanel";
 import { useAdminNavigationController } from "./useAdminNavigationController";
 
@@ -16,7 +15,6 @@ type AdminWorkspaceProps = {
   lang: Lang;
   isAdmin: boolean;
   advanced: boolean;
-  launchContext: LaunchContext | null;
   reducedMotion: boolean;
   trackUiEvent: (payload: Record<string, unknown>) => void;
   adminRuntime: {
@@ -76,7 +74,6 @@ type AdminWorkspaceProps = {
 
 export function AdminWorkspace(props: AdminWorkspaceProps) {
   const { routeToTarget } = useAdminNavigationController({
-    launchContext: props.launchContext,
     reducedMotion: props.reducedMotion,
     trackUiEvent: props.trackUiEvent
   });

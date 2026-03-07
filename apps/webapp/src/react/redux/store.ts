@@ -4,6 +4,7 @@ import { webappApi } from "./api/webappApi";
 import {
   adminReducer,
   monetizationReducer,
+  navigationReducer,
   playerReducer,
   pvpReducer,
   sceneReducer,
@@ -26,6 +27,7 @@ export const appStore = configureStore({
     admin: adminReducer,
     telemetry: telemetryReducer,
     scene: sceneReducer,
+    navigation: navigationReducer,
     [webappApi.reducerPath]: webappApi.reducer
   },
   middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(webappApi.middleware)
@@ -35,4 +37,3 @@ setupListeners(appStore.dispatch);
 
 export type RootState = ReturnType<typeof appStore.getState>;
 export type AppDispatch = typeof appStore.dispatch;
-

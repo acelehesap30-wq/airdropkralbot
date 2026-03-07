@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback } from "react";
 import { resolvePlayerRouteHandoff } from "../../../core/player/playerRouteHandoff.js";
 import { UI_EVENT_KEY, UI_FUNNEL_KEY, UI_SURFACE_KEY } from "../../../core/telemetry/uiEventTaxonomy";
 import { useLaunchFocusController } from "../shell/useLaunchFocusController";
 import { usePlayerShellPanelController } from "./usePlayerShellPanelController";
+import { useAppDispatch, useAppSelector } from "../../redux/hooks";
+import { navigationActions, selectNavigationLaunchContext, selectNavigationRequestKey } from "../../redux/slices/shellSlices";
 import type { LaunchContext, TabKey } from "../../types";
 
 type RouteTargetInput = {
@@ -14,7 +16,6 @@ type RouteTargetInput = {
 };
 
 type PlayerNavigationControllerOptions = {
-  launchContext: LaunchContext | null;
   tab: TabKey;
   reducedMotion: boolean;
   onTabChange: (next: TabKey) => void;
@@ -34,30 +35,10 @@ function resolveFunnelKey(tab: TabKey) {
   return UI_FUNNEL_KEY.PLAYER_LOOP;
 }
 
-function buildLaunchToken(value: LaunchContext | null) {
-  if (!value) {
-    return "";
-  }
-  return [
-    String(value.route_key || ""),
-    String(value.panel_key || ""),
-    String(value.focus_key || ""),
-    String(value.workspace || ""),
-    String(value.tab || "")
-  ].join(":");
-}
-
 export function usePlayerNavigationController(options: PlayerNavigationControllerOptions) {
-  const externalLaunchToken = useMemo(() => buildLaunchToken(options.launchContext), [options.launchContext]);
-  const [activeRouteContext, setActiveRouteContext] = useState<LaunchContext | null>(options.launchContext);
-  const [requestKey, setRequestKey] = useState(0);
-
-  useEffect(() => {
-    setActiveRouteContext(options.launchContext);
-    if (externalLaunchToken) {
-      setRequestKey((value) => value + 1);
-    }
-  }, [externalLaunchToken, options.launchContext]);
+  const dispatch = useAppDispatch();
+  const activeRouteContext = useAppSelector(selectNavigationLaunchContext);
+  const requestKey = useAppSelector(selectNavigationRequestKey);
 
   useLaunchFocusController({
     launchContext: activeRouteContext,
@@ -84,8 +65,7 @@ export function usePlayerNavigationController(options: PlayerNavigationControlle
       }) as LaunchContext;
       const targetTab = (target.tab || "home") as TabKey;
 
-      setActiveRouteContext(target);
-      setRequestKey((value) => value + 1);
+      dispatch(navigationActions.routeLaunchContext(target));
       options.trackUiEvent({
         event_key: UI_EVENT_KEY.PANEL_OPEN,
         tab_key: targetTab,
@@ -107,7 +87,7 @@ export function usePlayerNavigationController(options: PlayerNavigationControlle
         options.onTabChange(targetTab);
       }
     },
-    [options.onTabChange, options.tab, options.trackUiEvent]
+    [dispatch, options.onTabChange, options.tab, options.trackUiEvent]
   );
 
   return {

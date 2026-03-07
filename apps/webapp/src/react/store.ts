@@ -1,15 +1,18 @@
-import type { BootstrapV2Data, ExperimentAssignment, TabKey, WebAppAuth, WorkspaceKey } from "./types";
+import type { BootstrapV2Data, ExperimentAssignment, LaunchContext, TabKey, WebAppAuth, WorkspaceKey } from "./types";
 import { type Lang } from "./i18n";
 import { useAppDispatch, useAppSelector } from "./redux/hooks";
 import {
   adminActions,
   deriveUiFromBootstrap,
+  navigationActions,
   playerActions,
   pvpActions,
   sceneActions,
   selectAdminRuntime,
   selectAuth,
   selectExperiment,
+  selectNavigationLaunchContext,
+  selectNavigationRequestKey,
   selectPlayerData,
   selectPvpRuntime,
   selectUi,
@@ -41,6 +44,8 @@ type ReactShellState = {
   error: string;
   adminRuntime: AdminRuntimeData;
   pvpRuntime: PvpRuntimeData;
+  navigationContext: LaunchContext | null;
+  navigationRequestKey: number;
   setBootstrap: (data: BootstrapV2Data) => void;
   patchData: (patch: Partial<BootstrapV2Data>) => void;
   setAuth: (auth: WebAppAuth) => void;
@@ -63,6 +68,8 @@ export function useReactShellStore(): ReactShellState {
   const ui = useAppSelector(selectUi);
   const adminRuntime = useAppSelector(selectAdminRuntime);
   const pvpRuntime = useAppSelector(selectPvpRuntime);
+  const navigationContext = useAppSelector(selectNavigationLaunchContext);
+  const navigationRequestKey = useAppSelector(selectNavigationRequestKey);
 
   return {
     auth,
@@ -77,8 +84,11 @@ export function useReactShellStore(): ReactShellState {
     error: ui.error,
     adminRuntime,
     pvpRuntime,
+    navigationContext,
+    navigationRequestKey,
     setBootstrap: (nextData) => {
       dispatch(playerActions.setBootstrap(nextData));
+      dispatch(navigationActions.hydrateLaunchContext(nextData?.launch_context || null));
       dispatch(
         uiActions.applyBootstrapUi(
           deriveUiFromBootstrap(nextData, {
@@ -99,6 +109,9 @@ export function useReactShellStore(): ReactShellState {
     },
     patchData: (patch) => {
       dispatch(playerActions.patchData(patch));
+      if (Object.prototype.hasOwnProperty.call(patch || {}, "launch_context")) {
+        dispatch(navigationActions.hydrateLaunchContext((patch || {}).launch_context || null));
+      }
     },
     setAuth: (nextAuth) => {
       dispatch(sessionActions.setAuth(nextAuth));
@@ -137,4 +150,3 @@ export function useReactShellStore(): ReactShellState {
     }
   };
 }
-

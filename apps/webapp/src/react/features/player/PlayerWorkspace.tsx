@@ -1,5 +1,5 @@
 import type { Lang } from "../../i18n";
-import type { BootstrapV2Payload, LaunchContext, TabKey } from "../../types";
+import type { BootstrapV2Payload, TabKey } from "../../types";
 import { HomePanel } from "../home/HomePanel";
 import { PvpPanel } from "../pvp/PvpPanel";
 import { PlayerShellPanel } from "./PlayerShellPanel";
@@ -45,7 +45,6 @@ type PlayerWorkspaceProps = {
   payoutRequestLoading: boolean;
   passPurchaseLoading: boolean;
   cosmeticPurchaseLoading: boolean;
-  launchContext: LaunchContext | null;
   trackUiEvent: (payload: Record<string, unknown>) => void;
   onTabChange: (next: TabKey) => void;
   onToggleReducedMotion: (next: boolean) => void;
@@ -86,7 +85,6 @@ type PlayerWorkspaceProps = {
 
 export function PlayerWorkspace(props: PlayerWorkspaceProps) {
   const { activePanelKey, activeFocusKey, openPanel, closePanel, routeToTarget } = usePlayerNavigationController({
-    launchContext: props.launchContext,
     tab: props.tab,
     reducedMotion: Boolean(props.data?.ui_prefs?.reduced_motion),
     onTabChange: props.onTabChange,
