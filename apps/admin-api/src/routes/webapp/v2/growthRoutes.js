@@ -1,5 +1,10 @@
 "use strict";
 
+const {
+  resolvePlayerCommandActionKey,
+  resolvePlayerCommandNavigation
+} = require("../../../../../../packages/shared/src/playerCommandNavigation");
+
 function requireProxy(deps) {
   const proxyWebAppApiV1 = deps.proxyWebAppApiV1;
   if (typeof proxyWebAppApiV1 !== "function") {
@@ -21,6 +26,24 @@ function normalizeApiEnvelope(payload) {
   row.data = asObject(row.data);
   row.data.api_version = "v2";
   return row;
+}
+
+function toCommandHintPayload(rowItem, language) {
+  const key = String(rowItem.key || "").trim().toLowerCase();
+  const target = resolvePlayerCommandNavigation(key);
+  const actionKey = String(resolvePlayerCommandActionKey(key) || "").trim().toLowerCase();
+  return {
+    key,
+    description:
+      language === "en"
+        ? String(rowItem.description_en || rowItem.description || "")
+        : String(rowItem.description_tr || rowItem.description || ""),
+    ...(actionKey ? { action_key: actionKey, shell_action_key: actionKey } : {}),
+    ...(target?.route_key ? { route_key: String(target.route_key) } : {}),
+    ...(target?.panel_key ? { panel_key: String(target.panel_key) } : {}),
+    ...(target?.focus_key ? { focus_key: String(target.focus_key) } : {}),
+    ...(target?.tab ? { tab: String(target.tab) } : {})
+  };
 }
 
 function toHomeFeedPayload(payload) {
@@ -66,13 +89,7 @@ function toHomeFeedPayload(payload) {
       active_pass_count: asArray(monetization.active_passes).length,
       spend_summary: asObject(monetization.spend_summary)
     },
-    command_hint: commandCatalog.slice(0, 5).map((rowItem) => ({
-      key: String(rowItem.key || ""),
-      description:
-        language === "en"
-          ? String(rowItem.description_en || rowItem.description || "")
-          : String(rowItem.description_tr || rowItem.description || "")
-    }))
+    command_hint: commandCatalog.slice(0, 5).map((rowItem) => toCommandHintPayload(asObject(rowItem), language))
   };
   return row;
 }
@@ -205,4 +222,3 @@ function registerWebappV2GrowthRoutes(fastify, deps = {}) {
 module.exports = {
   registerWebappV2GrowthRoutes
 };
-

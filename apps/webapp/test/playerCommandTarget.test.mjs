@@ -13,8 +13,16 @@ async function loadModule() {
 test("resolvePlayerCommandTarget maps core command keys into canonical targets", async () => {
   const mod = await loadModule();
 
+  assert.deepEqual(mod.resolvePlayerCommandTarget("/play"), {
+    route_key: "hub",
+    panel_key: "",
+    focus_key: "",
+    workspace: "player",
+    tab: "home"
+  });
+
   assert.deepEqual(mod.resolvePlayerCommandTarget("/wallet"), {
-    route_key: "exchange",
+    route_key: "vault",
     panel_key: "wallet",
     focus_key: "connect",
     workspace: "player",

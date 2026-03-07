@@ -1,6 +1,47 @@
 "use strict";
 
 const { resolveLaunchTarget } = require("./navigationContract");
+const { resolveShellActionTarget, SHELL_ACTION_KEY } = require("./shellActionCatalog");
+
+const PLAYER_COMMAND_SHELL_ACTION_KEY = Object.freeze({
+  menu: SHELL_ACTION_KEY.PLAYER_WORLD_HUB,
+  hub: SHELL_ACTION_KEY.PLAYER_WORLD_HUB,
+  play: SHELL_ACTION_KEY.PLAYER_WORLD_HUB,
+  profile: SHELL_ACTION_KEY.PLAYER_PROFILE_PANEL,
+  nexus: SHELL_ACTION_KEY.PLAYER_PROFILE_PANEL,
+  tasks: SHELL_ACTION_KEY.PLAYER_TASKS_BOARD,
+  missions: SHELL_ACTION_KEY.PLAYER_TASKS_BOARD,
+  daily: SHELL_ACTION_KEY.PLAYER_TASKS_BOARD,
+  finish: SHELL_ACTION_KEY.PLAYER_TASKS_BOARD,
+  reveal: SHELL_ACTION_KEY.PLAYER_TASKS_CLAIMS,
+  claim: SHELL_ACTION_KEY.PLAYER_TASKS_CLAIMS,
+  pvp: SHELL_ACTION_KEY.PLAYER_PVP_DAILY_DUEL,
+  arena_rank: SHELL_ACTION_KEY.PLAYER_PVP_LEADERBOARD,
+  leaderboard: SHELL_ACTION_KEY.PLAYER_PVP_LEADERBOARD,
+  season: SHELL_ACTION_KEY.PLAYER_SEASON_HALL,
+  war: SHELL_ACTION_KEY.PLAYER_EVENTS_HALL,
+  events: SHELL_ACTION_KEY.PLAYER_EVENTS_HALL,
+  wallet: SHELL_ACTION_KEY.PLAYER_WALLET_CONNECT,
+  token: SHELL_ACTION_KEY.PLAYER_WALLET_CONNECT,
+  mint: SHELL_ACTION_KEY.PLAYER_WALLET_CONNECT,
+  buytoken: SHELL_ACTION_KEY.PLAYER_WALLET_CONNECT,
+  tx: SHELL_ACTION_KEY.PLAYER_WALLET_CONNECT,
+  vault: SHELL_ACTION_KEY.PLAYER_PAYOUT_REQUEST,
+  payout: SHELL_ACTION_KEY.PLAYER_PAYOUT_REQUEST,
+  rewards: SHELL_ACTION_KEY.PLAYER_REWARDS_PANEL,
+  shop: SHELL_ACTION_KEY.PLAYER_REWARDS_PANEL,
+  discover: SHELL_ACTION_KEY.PLAYER_DISCOVER_CENTER,
+  status: SHELL_ACTION_KEY.PLAYER_STATUS_PANEL,
+  settings: SHELL_ACTION_KEY.PLAYER_SETTINGS_PANEL,
+  lang: SHELL_ACTION_KEY.PLAYER_SETTINGS_LOCALE,
+  language: SHELL_ACTION_KEY.PLAYER_SETTINGS_LOCALE,
+  ui_mode: SHELL_ACTION_KEY.PLAYER_SETTINGS_ACCESSIBILITY,
+  perf: SHELL_ACTION_KEY.PLAYER_SETTINGS_ACCESSIBILITY,
+  help: SHELL_ACTION_KEY.PLAYER_SUPPORT_FAQ,
+  story: SHELL_ACTION_KEY.PLAYER_SUPPORT_FAQ,
+  support: SHELL_ACTION_KEY.PLAYER_SUPPORT_PANEL,
+  faq: SHELL_ACTION_KEY.PLAYER_SUPPORT_FAQ
+});
 
 function normalizePlayerCommandKey(value) {
   return String(value || "")
@@ -25,34 +66,37 @@ function buildPlayerCommandTarget(routeKey, panelKey, focusKey) {
   };
 }
 
+function toNavigationFromAction(actionKey) {
+  const target = resolveShellActionTarget(actionKey);
+  if (!target || target.workspace !== "player") {
+    return null;
+  }
+  return {
+    route_key: String(target.route_key || "hub"),
+    panel_key: String(target.panel_key || ""),
+    focus_key: String(target.focus_key || ""),
+    workspace: "player",
+    tab: String(target.tab || "home")
+  };
+}
+
+function resolvePlayerCommandActionKey(commandKey) {
+  const key = normalizePlayerCommandKey(commandKey);
+  if (!key) {
+    return "";
+  }
+  return PLAYER_COMMAND_SHELL_ACTION_KEY[key] || "";
+}
+
 function resolvePlayerCommandNavigation(commandKey) {
   const key = normalizePlayerCommandKey(commandKey);
   if (!key) {
     return null;
   }
 
-  if (key === "menu" || key === "play" || key === "profile" || key === "nexus") {
-    return buildPlayerCommandTarget("hub", "profile", "identity");
-  }
-
-  if (key === "tasks" || key === "missions" || key === "daily" || key === "finish") {
-    return buildPlayerCommandTarget("missions", "quests", "board");
-  }
-
-  if (key === "reveal" || key === "claim") {
-    return buildPlayerCommandTarget("missions", "claim", "missions");
-  }
-
-  if (key === "pvp") {
-    return buildPlayerCommandTarget("pvp", "panel_pvp", "daily_duel");
-  }
-
-  if (key === "arena_rank" || key === "leaderboard") {
-    return buildPlayerCommandTarget("season", "leaderboard", "leaderboard");
-  }
-
-  if (key === "season") {
-    return buildPlayerCommandTarget("season", "rank", "weekly_ladder");
+  const actionNavigation = toNavigationFromAction(resolvePlayerCommandActionKey(key));
+  if (actionNavigation) {
+    return actionNavigation;
   }
 
   if (key === "kingdom") {
@@ -63,43 +107,13 @@ function resolvePlayerCommandNavigation(commandKey) {
     return buildPlayerCommandTarget("season", "streak", "weekly_ladder");
   }
 
-  if (key === "war" || key === "events") {
-    return buildPlayerCommandTarget("events", "discover", "command_center");
-  }
-
-  if (key === "wallet" || key === "token" || key === "mint" || key === "buytoken" || key === "tx") {
-    return buildPlayerCommandTarget("exchange", "wallet", "connect");
-  }
-
-  if (key === "vault" || key === "payout") {
-    return buildPlayerCommandTarget("vault", "payout", "request");
-  }
-
-  if (key === "rewards" || key === "shop") {
-    return buildPlayerCommandTarget("vault", "rewards", "premium_pass");
-  }
-
-  if (key === "discover") {
-    return buildPlayerCommandTarget("hub", "discover", "command_center");
-  }
-
-  if (key === "status") {
-    return buildPlayerCommandTarget("hub", "status", "system_status");
-  }
-
-  if (key === "settings" || key === "lang" || key === "language" || key === "ui_mode" || key === "perf") {
-    return buildPlayerCommandTarget("settings", "language", "locale_override");
-  }
-
-  if (key === "help" || key === "story" || key === "support" || key === "faq") {
-    return buildPlayerCommandTarget("settings", "support", "faq_cards");
-  }
-
   return null;
 }
 
 module.exports = {
+  PLAYER_COMMAND_SHELL_ACTION_KEY,
   normalizePlayerCommandKey,
   buildPlayerCommandTarget,
+  resolvePlayerCommandActionKey,
   resolvePlayerCommandNavigation
 };

@@ -1,3 +1,7 @@
+import * as playerCommandNavigation from "../../../../../packages/shared/src/playerCommandNavigation.js";
+
+const { resolvePlayerCommandActionKey, resolvePlayerCommandNavigation } = playerCommandNavigation;
+
 function asRecord(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return {};
@@ -38,13 +42,34 @@ export function buildHomeFeedViewModel(input = {}) {
     ? asArray(homeFeed.command_hint)
     : asArray(bootstrap.command_catalog).slice(0, 6).map((row) => ({
         key: String(asRecord(row).key || ""),
-        description: String(asRecord(row).description || asRecord(row).description_tr || asRecord(row).description_en || "")
+        description: String(asRecord(row).description || asRecord(row).description_tr || asRecord(row).description_en || ""),
+        action_key: String(resolvePlayerCommandActionKey(asRecord(row).key || "") || ""),
+        shell_action_key: String(resolvePlayerCommandActionKey(asRecord(row).key || "") || ""),
+        ...(() => {
+          const target = resolvePlayerCommandNavigation(asRecord(row).key || "");
+          return target
+            ? {
+                route_key: String(target.route_key || ""),
+                panel_key: String(target.panel_key || ""),
+                focus_key: String(target.focus_key || ""),
+                tab: String(target.tab || "")
+              }
+            : {};
+        })()
       }));
   const commandHints = commandHintSource.slice(0, 6).map((row) => {
     const item = asRecord(row);
+    const fallbackTarget = resolvePlayerCommandNavigation(item.key || "");
+    const fallbackActionKey = resolvePlayerCommandActionKey(item.key || "");
     return {
       key: toText(item.key || "cmd"),
-      description: toText(item.description || item.title || "")
+      description: toText(item.description || item.title || ""),
+      action_key: toText(item.action_key || item.shell_action_key || fallbackActionKey || ""),
+      shell_action_key: toText(item.shell_action_key || item.action_key || fallbackActionKey || ""),
+      route_key: toText(item.route_key || fallbackTarget?.route_key || ""),
+      panel_key: toText(item.panel_key || fallbackTarget?.panel_key || ""),
+      focus_key: toText(item.focus_key || fallbackTarget?.focus_key || ""),
+      tab: toText(item.tab || fallbackTarget?.tab || "")
     };
   });
   const missionPreview = asArray(mission.list_preview || mission.list).slice(0, 6).map((row) => {
@@ -94,4 +119,3 @@ export function buildHomeFeedViewModel(input = {}) {
     has_data: Boolean(Object.keys(homeFeed).length || Object.keys(bootstrap).length)
   };
 }
-

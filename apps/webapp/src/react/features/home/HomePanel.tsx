@@ -1,5 +1,5 @@
 import { buildHomeFeedViewModel } from "../../../core/player/homeFeedViewModel.js";
-import { resolvePlayerCommandTarget } from "../../../core/player/playerCommandTarget.js";
+import { resolvePlayerCommandHintNavigation } from "../../../core/player/commandHintNavigation.js";
 import { SHELL_ACTION_KEY } from "../../../core/navigation/shellActions.js";
 import { t, type Lang } from "../../i18n";
 import type { BootstrapV2Data } from "../../types";
@@ -25,6 +25,23 @@ export function HomePanel(props: HomePanelProps) {
     homeFeed: props.homeFeed,
     bootstrap: props.data
   });
+  const runCommandHint = (row: Record<string, unknown>) => {
+    const target = resolvePlayerCommandHintNavigation(row);
+    if (!target) {
+      return;
+    }
+    if (target.kind === "action") {
+      props.onShellAction(target.action_key, "panel_home");
+      return;
+    }
+    props.onRouteTarget({
+      routeKey: target.route_key,
+      panelKey: target.panel_key,
+      focusKey: target.focus_key,
+      tab: target.tab,
+      sourcePanelKey: "panel_home"
+    });
+  };
   const summary = view.summary;
   const prefs = (props.data?.ui_prefs as {
     reduced_motion?: boolean;
@@ -136,15 +153,10 @@ export function HomePanel(props: HomePanelProps) {
                 <strong>/{row.key}</strong>
                 <span>
                   {row.description || "-"}
-                  {resolvePlayerCommandTarget(row.key) ? (
+                  {resolvePlayerCommandHintNavigation(row) ? (
                     <button
                       className="akrBtn akrBtnGhost"
-                      onClick={() =>
-                        props.onRouteTarget({
-                          ...resolvePlayerCommandTarget(row.key)!,
-                          sourcePanelKey: "panel_home"
-                        })
-                      }
+                      onClick={() => runCommandHint(row as Record<string, unknown>)}
                     >
                       {t(props.lang, "command_handoff_open")}
                     </button>

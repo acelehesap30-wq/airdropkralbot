@@ -1,5 +1,5 @@
 import { buildHomeFeedViewModel } from "../../../core/player/homeFeedViewModel.js";
-import { resolvePlayerCommandTarget } from "../../../core/player/playerCommandTarget.js";
+import { resolvePlayerCommandHintNavigation } from "../../../core/player/commandHintNavigation.js";
 import { buildVaultViewModel } from "../../../core/player/vaultViewModel.js";
 import { SHELL_ACTION_KEY } from "../../../core/navigation/shellActions.js";
 import { normalizeLang, t, type Lang } from "../../i18n";
@@ -47,6 +47,23 @@ export function PlayerShellPanel(props: PlayerShellPanelProps) {
   const prefsJson = prefs?.prefs_json && typeof prefs.prefs_json === "object" ? prefs.prefs_json : {};
   const nextLang = normalizeLang(props.lang) === "tr" ? "en" : "tr";
   const rootPanelKey = resolveRootPanelKey(props.panelKey);
+  const runCommandHint = (row: Record<string, unknown>) => {
+    const target = resolvePlayerCommandHintNavigation(row);
+    if (!target) {
+      return;
+    }
+    if (target.kind === "action") {
+      props.onShellAction(target.action_key, rootPanelKey);
+      return;
+    }
+    props.onRouteTarget({
+      routeKey: target.route_key,
+      panelKey: target.panel_key,
+      focusKey: target.focus_key,
+      tab: target.tab,
+      sourcePanelKey: rootPanelKey
+    });
+  };
   const supportStatus = [
     props.data?.analytics?.session_ref
       ? `${props.lang === "tr" ? "Oturum" : "Session"} ${String(props.data.analytics.session_ref).slice(0, 10)}`
@@ -300,15 +317,10 @@ export function PlayerShellPanel(props: PlayerShellPanelProps) {
                     <strong>/{row.key}</strong>
                     <span>
                       {row.description || "-"}
-                      {resolvePlayerCommandTarget(row.key) ? (
+                      {resolvePlayerCommandHintNavigation(row) ? (
                         <button
                           className="akrBtn akrBtnGhost"
-                          onClick={() =>
-                            props.onRouteTarget({
-                              ...resolvePlayerCommandTarget(row.key)!,
-                              sourcePanelKey: "discover"
-                            })
-                          }
+                          onClick={() => runCommandHint(row as Record<string, unknown>)}
                         >
                           {t(props.lang, "command_handoff_open")}
                         </button>
