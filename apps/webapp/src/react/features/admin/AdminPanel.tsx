@@ -5,6 +5,7 @@ import { RuntimeBotCard } from "./cards/RuntimeBotCard";
 import { RuntimeFlagsCard } from "./cards/RuntimeFlagsCard";
 import { RuntimeMetaCard } from "./cards/RuntimeMetaCard";
 import { SHELL_ACTION_KEY } from "../../../core/navigation/shellActions.js";
+import { buildAdminSurfaceActionsView } from "../../../core/admin/adminSurfaceActions.js";
 
 type QueueActionState = {
   action_key: string;
@@ -85,6 +86,25 @@ function DisabledPanel(props: { lang: Lang; title: string }) {
 }
 
 export function AdminPanel(props: AdminPanelProps) {
+  const surfaceActions = buildAdminSurfaceActionsView({
+    adminSummary: props.adminRuntime.summary,
+    adminPanels: props.adminPanels
+  });
+  const resolveSurfaceActionKey = (sectionKey: string, slotKey: string, fallbackActionKey: string) => {
+    const rows = Array.isArray((surfaceActions as Record<string, Array<Record<string, unknown>>> | undefined)?.[sectionKey])
+      ? ((surfaceActions as Record<string, Array<Record<string, unknown>>>)[sectionKey] || [])
+      : [];
+    const match = rows.find((row) => String(row.slot_key || "").trim().toLowerCase() === String(slotKey || "").trim().toLowerCase());
+    return String(match?.action_key || fallbackActionKey || "");
+  };
+  const runSurfaceAction = (sectionKey: string, slotKey: string, fallbackActionKey: string) => {
+    const actionKey = resolveSurfaceActionKey(sectionKey, slotKey, fallbackActionKey);
+    if (!actionKey) {
+      return;
+    }
+    props.onShellAction(actionKey, "panel_admin");
+  };
+
   return (
     <main className="akrPanelGrid">
       <section className="akrCard akrCardWide" data-akr-panel-key="panel_admin" data-akr-focus-key="admin_summary">
@@ -95,9 +115,7 @@ export function AdminPanel(props: AdminPanelProps) {
             {props.panelVisibility.queue ? (
               <button
                 className="akrBtn akrBtnGhost"
-                onClick={() =>
-                  props.onShellAction(SHELL_ACTION_KEY.ADMIN_QUEUE_PANEL, "panel_admin")
-                }
+                onClick={() => runSurfaceAction("admin_header", "queue", SHELL_ACTION_KEY.ADMIN_QUEUE_PANEL)}
               >
                 {t(props.lang, "admin_nav_queue")}
               </button>
@@ -105,9 +123,7 @@ export function AdminPanel(props: AdminPanelProps) {
             {props.panelVisibility.dynamicPolicy ? (
               <button
                 className="akrBtn akrBtnGhost"
-                onClick={() =>
-                  props.onShellAction(SHELL_ACTION_KEY.ADMIN_POLICY_PANEL, "panel_admin")
-                }
+                onClick={() => runSurfaceAction("admin_header", "policy", SHELL_ACTION_KEY.ADMIN_POLICY_PANEL)}
               >
                 {t(props.lang, "admin_nav_policy")}
               </button>
@@ -115,9 +131,7 @@ export function AdminPanel(props: AdminPanelProps) {
             {props.panelVisibility.runtimeFlags ? (
               <button
                 className="akrBtn akrBtnGhost"
-                onClick={() =>
-                  props.onShellAction(SHELL_ACTION_KEY.ADMIN_RUNTIME_FLAGS, "panel_admin")
-                }
+                onClick={() => runSurfaceAction("admin_header", "flags", SHELL_ACTION_KEY.ADMIN_RUNTIME_FLAGS)}
               >
                 {t(props.lang, "admin_nav_flags")}
               </button>
@@ -125,9 +139,7 @@ export function AdminPanel(props: AdminPanelProps) {
             {props.panelVisibility.runtimeBot ? (
               <button
                 className="akrBtn akrBtnGhost"
-                onClick={() =>
-                  props.onShellAction(SHELL_ACTION_KEY.ADMIN_RUNTIME_BOT, "panel_admin")
-                }
+                onClick={() => runSurfaceAction("admin_header", "bot", SHELL_ACTION_KEY.ADMIN_RUNTIME_BOT)}
               >
                 {t(props.lang, "admin_nav_bot")}
               </button>
@@ -135,9 +147,7 @@ export function AdminPanel(props: AdminPanelProps) {
             {props.panelVisibility.runtimeMeta ? (
               <button
                 className="akrBtn akrBtnGhost"
-                onClick={() =>
-                  props.onShellAction(SHELL_ACTION_KEY.ADMIN_RUNTIME_META, "panel_admin")
-                }
+                onClick={() => runSurfaceAction("admin_header", "runtime", SHELL_ACTION_KEY.ADMIN_RUNTIME_META)}
               >
                 {t(props.lang, "admin_nav_runtime")}
               </button>

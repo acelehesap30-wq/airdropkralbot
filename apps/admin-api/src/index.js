@@ -36,6 +36,7 @@ const {
   isGameplayCurrency,
   normalizeCurrencyKey
 } = require("../../../packages/shared/src/currencyGlossary");
+const { buildAdminSurfaceActions } = require("../../../packages/shared/src/adminSurfaceActionCatalog");
 const { computePvpProgressionState } = require("../../../packages/shared/src/v5/progressionEngine");
 const { evaluateAdminPolicy, buildAdminActionSignature: buildAdminPolicySignature } = require("../../../packages/shared/src/v5/adminPolicyEngine");
 const walletAuthEngine = require("../../../packages/shared/src/v5/walletAuthEngine");
@@ -5782,6 +5783,10 @@ fastify.get("/webapp/api/v2/admin/bootstrap", async (request, reply) => {
       payload.data.api_version = "v2";
       payload.data.bootstrap_scope = "admin";
       payload.data.admin_included = true;
+      payload.data.surface_actions =
+        payload.data.surface_actions && typeof payload.data.surface_actions === "object"
+          ? payload.data.surface_actions
+          : buildAdminSurfaceActions();
       return payload;
     }
   });

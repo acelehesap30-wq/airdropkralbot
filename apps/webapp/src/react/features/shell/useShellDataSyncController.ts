@@ -116,7 +116,25 @@ export function useShellDataSyncController(options: ShellDataSyncControllerOptio
       ? ((options.adminQueueQueryData.data as { items?: Array<Record<string, unknown>> } | undefined)?.items || [])
       : [];
     options.setAdminRuntime(summary, Array.isArray(queueItems) ? queueItems : []);
-  }, [options.adminQueryEnabled, options.adminBootstrapQueryData, options.adminQueueQueryData, options.setAdminRuntime]);
+    if (
+      options.adminBootstrapQueryData?.success &&
+      summary &&
+      typeof summary === "object" &&
+      (summary as Record<string, unknown>).surface_actions &&
+      typeof (summary as Record<string, unknown>).surface_actions === "object"
+    ) {
+      options.setAdminPanels((prev: any) => ({
+        ...(prev || {}),
+        surface_actions: (summary as Record<string, unknown>).surface_actions
+      }));
+    }
+  }, [
+    options.adminQueryEnabled,
+    options.adminBootstrapQueryData,
+    options.adminQueueQueryData,
+    options.setAdminRuntime,
+    options.setAdminPanels
+  ]);
 
   useEffect(() => {
     if (!options.adminQueryEnabled) return;
