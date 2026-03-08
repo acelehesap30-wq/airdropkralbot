@@ -63,7 +63,85 @@ function normalizeSceneDailyRows(rows, limit = 7) {
       low_end_count: Math.max(0, Math.floor(toNum(row?.low_end_count, 0)))
     }))
     .filter((row) => row.day)
+    .map((row) => {
+      const readyRate = toRate(row.ready_count, row.total_count);
+      const failureRate = toRate(row.failed_count, row.total_count);
+      const lowEndShare = toRate(row.low_end_count, row.total_count);
+      return {
+        ...row,
+        ready_rate: readyRate,
+        failure_rate: failureRate,
+        low_end_share: lowEndShare,
+        health_band: resolveSceneRuntimeHealthBand(readyRate, row.total_count, row.failed_count)
+      };
+    })
     .slice(0, Math.max(1, Math.floor(toNum(limit, 7))));
+}
+
+function resolveSceneTrendDirection(latestReadyRate, earliestReadyRate, sampleCount) {
+  if (Math.max(0, Math.floor(toNum(sampleCount, 0))) < 2) {
+    return "no_data";
+  }
+  const delta = clamp(toNum(latestReadyRate, 0) - toNum(earliestReadyRate, 0), -1, 1);
+  if (delta >= 0.03) return "improving";
+  if (delta <= -0.03) return "degrading";
+  return "stable";
+}
+
+function buildSceneBandBreakdown(rows) {
+  const counters = new Map();
+  (Array.isArray(rows) ? rows : []).forEach((row) => {
+    const key = String(row?.health_band || "no_data");
+    counters.set(key, (counters.get(key) || 0) + 1);
+  });
+  return Array.from(counters.entries())
+    .map(([bucket_key, item_count]) => ({
+      bucket_key,
+      item_count: Math.max(0, Math.floor(toNum(item_count, 0)))
+    }))
+    .sort((left, right) => right.item_count - left.item_count || String(left.bucket_key).localeCompare(String(right.bucket_key)));
+}
+
+function resolveSceneAlarmState(rows) {
+  const source = Array.isArray(rows) ? rows : [];
+  if (!source.length) {
+    return "no_data";
+  }
+  const latest = source[0] || {};
+  const redDays = source.filter((row) => row?.health_band === "red").length;
+  const yellowDays = source.filter((row) => row?.health_band === "yellow").length;
+  if (latest.health_band === "red" || redDays >= 2 || toNum(latest.failure_rate, 0) >= 0.12) {
+    return "alert";
+  }
+  if (latest.health_band === "yellow" || yellowDays >= 3 || toNum(latest.low_end_share, 0) >= 0.45) {
+    return "watch";
+  }
+  return "clear";
+}
+
+function buildSceneAlarmReasons(rows) {
+  const source = Array.isArray(rows) ? rows : [];
+  if (!source.length) {
+    return [];
+  }
+  const latest = source[0] || {};
+  const reasons = [];
+  if (toNum(latest.failure_rate, 0) >= 0.12) {
+    reasons.push("latest_failure_spike");
+  }
+  if (toNum(latest.ready_rate, 0) <= 0.9) {
+    reasons.push("latest_ready_drop");
+  }
+  if (toNum(latest.low_end_share, 0) >= 0.45) {
+    reasons.push("latest_low_end_pressure");
+  }
+  if (source.filter((row) => row?.health_band === "red").length >= 2) {
+    reasons.push("repeated_red_days");
+  }
+  if (!reasons.length && latest.health_band === "yellow") {
+    reasons.push("latest_watch_band");
+  }
+  return reasons.slice(0, 4);
 }
 
 function resolveSceneRuntimeHealthBand(readyRate, totalCount, failedCount) {
@@ -131,6 +209,76 @@ function enrichWebappRevenueMetrics(rawMetrics = {}) {
   metrics.scene_runtime_device_breakdown_24h = normalizeBreakdownRows(metrics.scene_runtime_device_breakdown_24h);
   metrics.scene_runtime_profile_breakdown_24h = normalizeBreakdownRows(metrics.scene_runtime_profile_breakdown_24h);
   metrics.scene_runtime_daily_breakdown_7d = normalizeSceneDailyRows(metrics.scene_runtime_daily_breakdown_7d);
+  const sceneDailyRows = metrics.scene_runtime_daily_breakdown_7d;
+  const latestSceneDay = sceneDailyRows[0] || null;
+  const earliestSceneDay = sceneDailyRows[sceneDailyRows.length - 1] || null;
+  const sceneReadyRate7dAvg = sceneDailyRows.length
+    ? Number(
+        (
+          sceneDailyRows.reduce((sum, row) => sum + toNum(row.ready_rate, 0), 0) /
+          Math.max(1, sceneDailyRows.length)
+        ).toFixed(4)
+      )
+    : 0;
+  const sceneFailureRate7dAvg = sceneDailyRows.length
+    ? Number(
+        (
+          sceneDailyRows.reduce((sum, row) => sum + toNum(row.failure_rate, 0), 0) /
+          Math.max(1, sceneDailyRows.length)
+        ).toFixed(4)
+      )
+    : 0;
+  const sceneLowEndShare7dAvg = sceneDailyRows.length
+    ? Number(
+        (
+          sceneDailyRows.reduce((sum, row) => sum + toNum(row.low_end_share, 0), 0) /
+          Math.max(1, sceneDailyRows.length)
+        ).toFixed(4)
+      )
+    : 0;
+  const sceneTrendDirection = resolveSceneTrendDirection(
+    latestSceneDay?.ready_rate,
+    earliestSceneDay?.ready_rate,
+    sceneDailyRows.length
+  );
+  const sceneTrendDelta = Number(
+    clamp(toNum(latestSceneDay?.ready_rate, 0) - toNum(earliestSceneDay?.ready_rate, 0), -1, 1).toFixed(4)
+  );
+  const sceneAlarmState = resolveSceneAlarmState(sceneDailyRows);
+  const sceneAlarmReasons = buildSceneAlarmReasons(sceneDailyRows);
+  const sceneBandBreakdown = buildSceneBandBreakdown(sceneDailyRows);
+  const worstSceneDay =
+    sceneDailyRows.length > 0
+      ? [...sceneDailyRows]
+          .sort((left, right) => {
+            const failureGap = toNum(right.failure_rate, 0) - toNum(left.failure_rate, 0);
+            if (Math.abs(failureGap) > 0.0001) return failureGap;
+            const readyGap = toNum(left.ready_rate, 0) - toNum(right.ready_rate, 0);
+            if (Math.abs(readyGap) > 0.0001) return readyGap;
+            return String(right.day || "").localeCompare(String(left.day || ""));
+          })[0]
+      : null;
+  metrics.scene_runtime_ready_rate_7d_avg = sceneReadyRate7dAvg;
+  metrics.scene_runtime_failure_rate_7d_avg = sceneFailureRate7dAvg;
+  metrics.scene_runtime_low_end_share_7d_avg = sceneLowEndShare7dAvg;
+  metrics.scene_runtime_trend_direction_7d = sceneTrendDirection;
+  metrics.scene_runtime_trend_delta_ready_rate_7d = sceneTrendDelta;
+  metrics.scene_runtime_alarm_state_7d = sceneAlarmState;
+  metrics.scene_runtime_alarm_reasons_7d = sceneAlarmReasons;
+  metrics.scene_runtime_band_breakdown_7d = sceneBandBreakdown;
+  metrics.scene_runtime_worst_day_7d = worstSceneDay
+    ? {
+        day: String(worstSceneDay.day || ""),
+        total_count: Math.max(0, Math.floor(toNum(worstSceneDay.total_count, 0))),
+        ready_count: Math.max(0, Math.floor(toNum(worstSceneDay.ready_count, 0))),
+        failed_count: Math.max(0, Math.floor(toNum(worstSceneDay.failed_count, 0))),
+        low_end_count: Math.max(0, Math.floor(toNum(worstSceneDay.low_end_count, 0))),
+        ready_rate: toNum(worstSceneDay.ready_rate, 0),
+        failure_rate: toNum(worstSceneDay.failure_rate, 0),
+        low_end_share: toNum(worstSceneDay.low_end_share, 0),
+        health_band: String(worstSceneDay.health_band || "no_data")
+      }
+    : null;
   return metrics;
 }
 
@@ -139,7 +287,11 @@ module.exports = {
   resolveQualityBand,
   resolveConversionBand,
   resolveSceneRuntimeHealthBand,
+  resolveSceneTrendDirection,
+  resolveSceneAlarmState,
   normalizeBreakdownRows,
   normalizeSceneDailyRows,
+  buildSceneBandBreakdown,
+  buildSceneAlarmReasons,
   enrichWebappRevenueMetrics
 };

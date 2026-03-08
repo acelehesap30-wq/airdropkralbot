@@ -50,6 +50,29 @@ function formatStamp(value: unknown): string {
   return raw || "-";
 }
 
+function AlarmReasonList(props: { title: string; rows: string[] }) {
+  if (!props.rows.length) {
+    return (
+      <div>
+        <strong>{props.title}</strong>
+        <p className="akrMutedLine">-</p>
+      </div>
+    );
+  }
+  return (
+    <div>
+      <strong>{props.title}</strong>
+      <div className="akrChipRow">
+        {props.rows.map((row) => (
+          <span className="akrChip" key={`${props.title}_${row}`}>
+            {row}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function BreakdownList(props: { title: string; rows: Array<Record<string, unknown>> }) {
   if (!props.rows.length) {
     return (
@@ -116,6 +139,17 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
   const sceneRuntimeLowEndShare = readNum(props.metricsData, "scene_runtime_low_end_share_24h");
   const sceneRuntimeAvgBundles = readNum(props.metricsData, "scene_runtime_avg_loaded_bundles_24h");
   const sceneRuntimeHealthBand = String(props.metricsData?.scene_runtime_health_band_24h || "no_data");
+  const sceneRuntimeReadyRate7dAvg = readNum(props.metricsData, "scene_runtime_ready_rate_7d_avg");
+  const sceneRuntimeFailureRate7dAvg = readNum(props.metricsData, "scene_runtime_failure_rate_7d_avg");
+  const sceneRuntimeLowEndShare7dAvg = readNum(props.metricsData, "scene_runtime_low_end_share_7d_avg");
+  const sceneRuntimeTrendDirection = readText(props.metricsData, "scene_runtime_trend_direction_7d") || "no_data";
+  const sceneRuntimeTrendDelta = readNum(props.metricsData, "scene_runtime_trend_delta_ready_rate_7d");
+  const sceneRuntimeAlarmState = readText(props.metricsData, "scene_runtime_alarm_state_7d") || "no_data";
+  const sceneRuntimeAlarmReasons = Array.isArray(props.metricsData?.scene_runtime_alarm_reasons_7d)
+    ? (props.metricsData?.scene_runtime_alarm_reasons_7d as unknown[]).map((row) => String(row || "")).filter(Boolean)
+    : [];
+  const sceneRuntimeBandBreakdown = asRows(props.metricsData?.scene_runtime_band_breakdown_7d);
+  const sceneRuntimeWorstDay = asRecord(props.metricsData?.scene_runtime_worst_day_7d);
   const sceneRuntimeDailyBreakdown = asRows(props.metricsData?.scene_runtime_daily_breakdown_7d);
   const sceneRuntimeQualityBreakdown = asRows(props.metricsData?.scene_runtime_quality_breakdown_24h);
   const sceneRuntimePerfBreakdown = asRows(props.metricsData?.scene_runtime_perf_breakdown_24h);
@@ -211,12 +245,36 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
           <span className="akrChip">
             {t(props.lang, "admin_runtime_scene_health")}: {sceneRuntimeHealthBand}
           </span>
+          <span className="akrChip">
+            {t(props.lang, "admin_runtime_scene_trend")}: {sceneRuntimeTrendDirection} ({toPct(sceneRuntimeTrendDelta)})
+          </span>
+          <span className="akrChip">
+            {t(props.lang, "admin_runtime_scene_alarm")}: {sceneRuntimeAlarmState}
+          </span>
+          <span className="akrChip">
+            {t(props.lang, "admin_runtime_scene_ready_avg")}: {toPct(sceneRuntimeReadyRate7dAvg)}
+          </span>
+          <span className="akrChip">
+            {t(props.lang, "admin_runtime_scene_failure_avg")}: {toPct(sceneRuntimeFailureRate7dAvg)}
+          </span>
+          <span className="akrChip">
+            {t(props.lang, "admin_runtime_scene_low_end_avg")}: {toPct(sceneRuntimeLowEndShare7dAvg)}
+          </span>
+        </div>
+        <div className="akrStack">
+          <p className="akrMutedLine">
+            {t(props.lang, "admin_runtime_scene_worst_day")}: {formatStamp(sceneRuntimeWorstDay?.day)} | ready{" "}
+            {toPct(Number(sceneRuntimeWorstDay?.ready_rate || 0))} | fail {toPct(Number(sceneRuntimeWorstDay?.failure_rate || 0))} |{" "}
+            {String(sceneRuntimeWorstDay?.health_band || "no_data")}
+          </p>
         </div>
         <SceneDailyTrendList title={t(props.lang, "admin_runtime_scene_daily_title")} rows={sceneRuntimeDailyBreakdown} />
+        <BreakdownList title={t(props.lang, "admin_runtime_scene_band_title")} rows={sceneRuntimeBandBreakdown} />
         <BreakdownList title={t(props.lang, "admin_runtime_scene_quality_title")} rows={sceneRuntimeQualityBreakdown} />
         <BreakdownList title={t(props.lang, "admin_runtime_scene_perf_title")} rows={sceneRuntimePerfBreakdown} />
         <BreakdownList title={t(props.lang, "admin_runtime_scene_device_title")} rows={sceneRuntimeDeviceBreakdown} />
         <BreakdownList title={t(props.lang, "admin_runtime_scene_profile_title")} rows={sceneRuntimeProfileBreakdown} />
+        <AlarmReasonList title={t(props.lang, "admin_runtime_scene_alarm_reasons")} rows={sceneRuntimeAlarmReasons} />
       </section>
       <section className="akrMiniPanel" data-akr-focus-key="live_ops_kpi">
         <h3>{t(props.lang, "admin_runtime_live_ops_kpi_title")}</h3>

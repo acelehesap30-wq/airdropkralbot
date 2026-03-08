@@ -40,6 +40,19 @@ test("resolveSceneRuntimeHealthBand reflects runtime success quality", () => {
   assert.equal(service.resolveSceneRuntimeHealthBand(0.7, 40, 12), "red");
 });
 
+test("resolveSceneTrendDirection and alarm state detect degrading runtime windows", () => {
+  assert.equal(service.resolveSceneTrendDirection(0.98, 0.9, 3), "improving");
+  assert.equal(service.resolveSceneTrendDirection(0.88, 0.96, 3), "degrading");
+  assert.equal(service.resolveSceneAlarmState([{ health_band: "red", failure_rate: 0.14 }]), "alert");
+  assert.deepEqual(
+    service.buildSceneAlarmReasons([
+      { health_band: "red", failure_rate: 0.14, ready_rate: 0.88, low_end_share: 0.5 },
+      { health_band: "red", failure_rate: 0.11, ready_rate: 0.89, low_end_share: 0.33 }
+    ]),
+    ["latest_failure_spike", "latest_ready_drop", "latest_low_end_pressure", "repeated_red_days"]
+  );
+});
+
 test("normalizeSceneDailyRows keeps only stable daily runtime keys", () => {
   const rows = service.normalizeSceneDailyRows([
     { day: "2026-03-08", total_count: 12, ready_count: 10, failed_count: 2, low_end_count: 4 },
@@ -47,13 +60,13 @@ test("normalizeSceneDailyRows keeps only stable daily runtime keys", () => {
   ]);
 
   assert.equal(rows.length, 2);
-  assert.deepEqual(rows[0], {
-    day: "2026-03-08",
-    total_count: 12,
-    ready_count: 10,
-    failed_count: 2,
-    low_end_count: 4
-  });
+  assert.equal(rows[0].day, "2026-03-08");
+  assert.equal(rows[0].total_count, 12);
+  assert.equal(rows[0].ready_count, 10);
+  assert.equal(rows[0].failed_count, 2);
+  assert.equal(rows[0].low_end_count, 4);
+  assert.equal(rows[0].ready_rate, 0.8333);
+  assert.equal(rows[0].health_band, "red");
 });
 
 test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
@@ -97,6 +110,14 @@ test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
   assert.equal(enriched.scene_runtime_health_band_24h, "yellow");
   assert.equal(enriched.scene_runtime_daily_breakdown_7d[0].day, "2026-03-08");
   assert.equal(enriched.scene_runtime_daily_breakdown_7d[0].total_count, 12);
+  assert.equal(enriched.scene_runtime_daily_breakdown_7d[0].ready_rate, 0.8333);
+  assert.equal(enriched.scene_runtime_ready_rate_7d_avg, 0.8611);
+  assert.equal(enriched.scene_runtime_failure_rate_7d_avg, 0.1389);
+  assert.equal(enriched.scene_runtime_trend_direction_7d, "degrading");
+  assert.equal(enriched.scene_runtime_alarm_state_7d, "alert");
+  assert.equal(enriched.scene_runtime_band_breakdown_7d[0].bucket_key, "red");
+  assert.equal(enriched.scene_runtime_worst_day_7d.day, "2026-03-08");
+  assert.deepEqual(enriched.scene_runtime_alarm_reasons_7d, ["latest_failure_spike", "latest_ready_drop", "repeated_red_days"]);
   assert.equal(enriched.scene_runtime_quality_breakdown_24h[0].bucket_key, "high");
   assert.equal(enriched.scene_runtime_perf_breakdown_24h[0].bucket_key, "mid");
   assert.equal(enriched.scene_runtime_device_breakdown_24h[0].bucket_key, "mobile");
