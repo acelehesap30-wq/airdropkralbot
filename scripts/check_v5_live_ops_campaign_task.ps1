@@ -102,6 +102,7 @@ $latestSummary = $null
 if ($latestPayload -ne $null) {
   $scheduler = Get-PropValue -Source $latestPayload -Name "scheduler_summary"
   $schedulerSkip = Get-PropValue -Source $latestPayload -Name "scheduler_skip_summary"
+  $pressureFocus = Get-PropValue -Source $latestPayload -Name "pressure_focus_summary"
   $opsAlarm = Get-PropValue -Source $latestPayload -Name "ops_alarm"
   $recommendation = Get-PropValue -Source $scheduler -Name "recipient_cap_recommendation"
   $data = Get-PropValue -Source $latestPayload -Name "data"
@@ -119,6 +120,18 @@ if ($latestPayload -ne $null) {
     effective_cap_delta = [int](Get-PropValue -Source $recommendation -Name "effective_cap_delta" -Fallback 0)
     recommendation_pressure_band = [string](Get-PropValue -Source $recommendation -Name "pressure_band" -Fallback "clear")
     recommendation_reason = [string](Get-PropValue -Source $recommendation -Name "reason" -Fallback "")
+    pressure_focus = [pscustomobject]@{
+      pressure_band = [string](Get-PropValue -Source $pressureFocus -Name "pressure_band" -Fallback "clear")
+      top_warning_dimension = [string](Get-PropValue -Source ((Get-PropValue -Source $pressureFocus -Name "warning_rows" -Fallback @()) | Select-Object -First 1) -Name "dimension" -Fallback "")
+      top_warning_bucket = [string](Get-PropValue -Source ((Get-PropValue -Source $pressureFocus -Name "warning_rows" -Fallback @()) | Select-Object -First 1) -Name "bucket_key" -Fallback "")
+      top_warning_matches_target = [bool](Get-PropValue -Source ((Get-PropValue -Source $pressureFocus -Name "warning_rows" -Fallback @()) | Select-Object -First 1) -Name "matches_target" -Fallback $false)
+      locale_bucket = [string](Get-PropValue -Source ((Get-PropValue -Source $pressureFocus -Name "locale_cap_split" -Fallback @()) | Select-Object -First 1) -Name "bucket_key" -Fallback "")
+      locale_cap = [int](Get-PropValue -Source ((Get-PropValue -Source $pressureFocus -Name "locale_cap_split" -Fallback @()) | Select-Object -First 1) -Name "suggested_recipient_cap" -Fallback 0)
+      variant_bucket = [string](Get-PropValue -Source ((Get-PropValue -Source $pressureFocus -Name "variant_cap_split" -Fallback @()) | Select-Object -First 1) -Name "bucket_key" -Fallback "")
+      variant_cap = [int](Get-PropValue -Source ((Get-PropValue -Source $pressureFocus -Name "variant_cap_split" -Fallback @()) | Select-Object -First 1) -Name "suggested_recipient_cap" -Fallback 0)
+      cohort_bucket = [string](Get-PropValue -Source ((Get-PropValue -Source $pressureFocus -Name "cohort_cap_split" -Fallback @()) | Select-Object -First 1) -Name "bucket_key" -Fallback "")
+      cohort_cap = [int](Get-PropValue -Source ((Get-PropValue -Source $pressureFocus -Name "cohort_cap_split" -Fallback @()) | Select-Object -First 1) -Name "suggested_recipient_cap" -Fallback 0)
+    }
     scheduler_skip_24h = [int](Get-PropValue -Source $schedulerSkip -Name "skipped_24h" -Fallback 0)
     scheduler_skip_7d = [int](Get-PropValue -Source $schedulerSkip -Name "skipped_7d" -Fallback 0)
     scheduler_skip_alarm_state = [string](Get-PropValue -Source $schedulerSkip -Name "alarm_state" -Fallback (Get-PropValue -Source $opsAlarm -Name "state" -Fallback "clear"))

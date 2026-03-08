@@ -99,6 +99,18 @@ function evaluateOpsAlert(dispatchArtifact, previousAlertArtifact, options = {})
     dispatchArtifact?.scheduler_summary && typeof dispatchArtifact.scheduler_summary === "object"
       ? dispatchArtifact.scheduler_summary.recipient_cap_recommendation || {}
       : {};
+  const pressureFocusSummary =
+    dispatchArtifact?.pressure_focus_summary && typeof dispatchArtifact.pressure_focus_summary === "object"
+      ? dispatchArtifact.pressure_focus_summary
+      : {};
+  const warningRows = Array.isArray(pressureFocusSummary.warning_rows) ? pressureFocusSummary.warning_rows : [];
+  const localeCapSplit = Array.isArray(pressureFocusSummary.locale_cap_split) ? pressureFocusSummary.locale_cap_split : [];
+  const variantCapSplit = Array.isArray(pressureFocusSummary.variant_cap_split) ? pressureFocusSummary.variant_cap_split : [];
+  const cohortCapSplit = Array.isArray(pressureFocusSummary.cohort_cap_split) ? pressureFocusSummary.cohort_cap_split : [];
+  const topWarning = warningRows[0] && typeof warningRows[0] === "object" ? warningRows[0] : {};
+  const topLocaleSplit = localeCapSplit[0] && typeof localeCapSplit[0] === "object" ? localeCapSplit[0] : {};
+  const topVariantSplit = variantCapSplit[0] && typeof variantCapSplit[0] === "object" ? variantCapSplit[0] : {};
+  const topCohortSplit = cohortCapSplit[0] && typeof cohortCapSplit[0] === "object" ? cohortCapSplit[0] : {};
   const previous = previousAlertArtifact && typeof previousAlertArtifact === "object" ? previousAlertArtifact : {};
   const previousEvaluation = previous.evaluation && typeof previous.evaluation === "object" ? previous.evaluation : {};
   const previousFingerprint = String(previousEvaluation.fingerprint || "").trim();
@@ -146,6 +158,16 @@ function evaluateOpsAlert(dispatchArtifact, previousAlertArtifact, options = {})
     recommended_recipient_cap: recommendedCap,
     effective_cap_delta: effectiveCapDelta,
     recommendation_reason: String(recipientCapRecommendation.reason || "").trim(),
+    pressure_focus_band: String(pressureFocusSummary.pressure_band || "clear").trim().toLowerCase(),
+    pressure_focus_warning_dimension: String(topWarning.dimension || "").trim(),
+    pressure_focus_warning_bucket: String(topWarning.bucket_key || "").trim(),
+    pressure_focus_warning_matches_target: topWarning.matches_target === true,
+    pressure_focus_locale_bucket: String(topLocaleSplit.bucket_key || "").trim(),
+    pressure_focus_locale_cap: Math.max(0, Number(topLocaleSplit.suggested_recipient_cap || 0)),
+    pressure_focus_variant_bucket: String(topVariantSplit.bucket_key || "").trim(),
+    pressure_focus_variant_cap: Math.max(0, Number(topVariantSplit.suggested_recipient_cap || 0)),
+    pressure_focus_cohort_bucket: String(topCohortSplit.bucket_key || "").trim(),
+    pressure_focus_cohort_cap: Math.max(0, Number(topCohortSplit.suggested_recipient_cap || 0)),
     notify_on_watch: notifyOnWatch,
     cooldown_minutes: cooldownMinutes,
     previous_fingerprint: previousFingerprint,
@@ -180,6 +202,11 @@ function formatOpsAlertMessage(dispatchArtifact = {}, evaluation = {}) {
     `pressure_focus=${String(recommendation.segment_key || "-")}/${String(recommendation.locale_bucket || "-")}/${String(
       recommendation.surface_bucket || "-"
     )}`,
+    `focus_warning=${String(evaluation.pressure_focus_warning_dimension || "-")}/${String(evaluation.pressure_focus_warning_bucket || "-")}/${String(
+      evaluation.pressure_focus_warning_matches_target === true ? "match" : "nomatch"
+    )}`,
+    `focus_locale_cap=${String(evaluation.pressure_focus_locale_bucket || "-")}:${Math.max(0, Number(evaluation.pressure_focus_locale_cap || 0))}`,
+    `focus_variant_cap=${String(evaluation.pressure_focus_variant_bucket || "-")}:${Math.max(0, Number(evaluation.pressure_focus_variant_cap || 0))}`,
     `campaign=${String(dispatchArtifact.campaign_key || "-")}`,
     `dispatch_reason=${String(dispatchArtifact.reason || "-")}`
   ];
@@ -368,6 +395,16 @@ async function runLiveOpsOpsAlert(args = {}, deps = {}) {
       recommended_recipient_cap: Math.max(0, Number(evaluation.recommended_recipient_cap || 0)),
       effective_cap_delta: Math.max(0, Number(evaluation.effective_cap_delta || 0)),
       recommendation_reason: String(evaluation.recommendation_reason || "").trim(),
+      pressure_focus_band: String(evaluation.pressure_focus_band || "clear").trim() || "clear",
+      pressure_focus_warning_dimension: String(evaluation.pressure_focus_warning_dimension || "").trim(),
+      pressure_focus_warning_bucket: String(evaluation.pressure_focus_warning_bucket || "").trim(),
+      pressure_focus_warning_matches_target: evaluation.pressure_focus_warning_matches_target === true,
+      pressure_focus_locale_bucket: String(evaluation.pressure_focus_locale_bucket || "").trim(),
+      pressure_focus_locale_cap: Math.max(0, Number(evaluation.pressure_focus_locale_cap || 0)),
+      pressure_focus_variant_bucket: String(evaluation.pressure_focus_variant_bucket || "").trim(),
+      pressure_focus_variant_cap: Math.max(0, Number(evaluation.pressure_focus_variant_cap || 0)),
+      pressure_focus_cohort_bucket: String(evaluation.pressure_focus_cohort_bucket || "").trim(),
+      pressure_focus_cohort_cap: Math.max(0, Number(evaluation.pressure_focus_cohort_cap || 0)),
       telegram_sent: telegram.sent === true,
       telegram_reason: String(telegram.reason || "").trim(),
       telegram_sent_at: telegram.sent_at || null

@@ -64,6 +64,38 @@ test("evaluateOpsAlert escalates watch state when recipient cap pressure is aler
           effective_cap_delta: 32,
           reason: "ops_alert_segment_pressure"
         }
+      },
+      pressure_focus_summary: {
+        pressure_band: "alert",
+        warning_rows: [
+          {
+            dimension: "segment",
+            bucket_key: "wallet_unlinked",
+            item_count: 4,
+            matches_target: true
+          }
+        ],
+        locale_cap_split: [
+          {
+            bucket_key: "tr",
+            item_count: 3,
+            suggested_recipient_cap: 6
+          }
+        ],
+        variant_cap_split: [
+          {
+            bucket_key: "treatment",
+            item_count: 3,
+            suggested_recipient_cap: 5
+          }
+        ],
+        cohort_cap_split: [
+          {
+            bucket_key: "17",
+            item_count: 2,
+            suggested_recipient_cap: 4
+          }
+        ]
       }
     },
     null,
@@ -78,6 +110,16 @@ test("evaluateOpsAlert escalates watch state when recipient cap pressure is aler
   assert.equal(result.recommended_recipient_cap, 8);
   assert.equal(result.effective_cap_delta, 32);
   assert.equal(result.recommendation_pressure_band, "alert");
+  assert.equal(result.pressure_focus_band, "alert");
+  assert.equal(result.pressure_focus_warning_dimension, "segment");
+  assert.equal(result.pressure_focus_warning_bucket, "wallet_unlinked");
+  assert.equal(result.pressure_focus_warning_matches_target, true);
+  assert.equal(result.pressure_focus_locale_bucket, "tr");
+  assert.equal(result.pressure_focus_locale_cap, 6);
+  assert.equal(result.pressure_focus_variant_bucket, "treatment");
+  assert.equal(result.pressure_focus_variant_cap, 5);
+  assert.equal(result.pressure_focus_cohort_bucket, "17");
+  assert.equal(result.pressure_focus_cohort_cap, 4);
 });
 
 test("runLiveOpsOpsAlert writes latest artifact and skips telegram on clear state", async () => {
@@ -184,6 +226,38 @@ test("runLiveOpsOpsAlert records audit when alert fingerprint changes", async ()
           variant_bucket: "treatment",
           cohort_bucket: "17"
         }
+      },
+      pressure_focus_summary: {
+        pressure_band: "alert",
+        warning_rows: [
+          {
+            dimension: "segment",
+            bucket_key: "wallet_unlinked",
+            item_count: 3,
+            matches_target: true
+          }
+        ],
+        locale_cap_split: [
+          {
+            bucket_key: "tr",
+            item_count: 3,
+            suggested_recipient_cap: 0
+          }
+        ],
+        variant_cap_split: [
+          {
+            bucket_key: "treatment",
+            item_count: 2,
+            suggested_recipient_cap: 0
+          }
+        ],
+        cohort_cap_split: [
+          {
+            bucket_key: "17",
+            item_count: 2,
+            suggested_recipient_cap: 0
+          }
+        ]
       }
     }, null, 2)}\n`,
     "utf8"
@@ -222,4 +296,14 @@ test("runLiveOpsOpsAlert records audit when alert fingerprint changes", async ()
   assert.equal(auditPayloads[0].recommended_recipient_cap, 0);
   assert.equal(auditPayloads[0].effective_cap_delta, 40);
   assert.equal(auditPayloads[0].recommendation_reason, "scene_runtime_alert_blocked");
+  assert.equal(auditPayloads[0].pressure_focus_band, "alert");
+  assert.equal(auditPayloads[0].pressure_focus_warning_dimension, "segment");
+  assert.equal(auditPayloads[0].pressure_focus_warning_bucket, "wallet_unlinked");
+  assert.equal(auditPayloads[0].pressure_focus_warning_matches_target, true);
+  assert.equal(auditPayloads[0].pressure_focus_locale_bucket, "tr");
+  assert.equal(auditPayloads[0].pressure_focus_locale_cap, 0);
+  assert.equal(auditPayloads[0].pressure_focus_variant_bucket, "treatment");
+  assert.equal(auditPayloads[0].pressure_focus_variant_cap, 0);
+  assert.equal(auditPayloads[0].pressure_focus_cohort_bucket, "17");
+  assert.equal(auditPayloads[0].pressure_focus_cohort_cap, 0);
 });
