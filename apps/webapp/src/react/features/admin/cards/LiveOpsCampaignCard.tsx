@@ -1,5 +1,6 @@
 import { t, type Lang } from "../../../i18n";
 import { SHELL_ACTION_KEY } from "../../../../core/navigation/shellActions.js";
+import { buildLiveOpsCampaignPreflight } from "../../../../core/admin/liveOpsCampaignPreflight.js";
 
 type LiveOpsCampaignCardProps = {
   lang: Lang;
@@ -96,6 +97,7 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
     ? sceneRuntimeSummary.alarm_reasons_7d.map((row) => String(row || "").trim()).filter(Boolean)
     : [];
   const sceneWorstDay = asRecord(sceneRuntimeSummary.worst_day_7d);
+  const preflight = buildLiveOpsCampaignPreflight(props.liveOpsCampaignDraft || "{}", sceneRuntimeSummary);
   const liveReady = approvalSummary.live_dispatch_ready === true;
   const approvalState = asText(approvalSummary.approval_state);
   const scheduleState = asText(approvalSummary.schedule_state);
@@ -154,6 +156,35 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
       {props.liveOpsCampaignError ? <p className="akrErrorLine">{props.liveOpsCampaignError}</p> : null}
       {props.liveOpsCampaignApprovalError ? <p className="akrErrorLine">{props.liveOpsCampaignApprovalError}</p> : null}
       {props.liveOpsCampaignDispatchError ? <p className="akrErrorLine">{props.liveOpsCampaignDispatchError}</p> : null}
+      <section className="akrMiniPanel" data-akr-focus-key="scheduler_preflight">
+        <h4>{t(props.lang, "admin_live_ops_preflight_title")}</h4>
+        {preflight.ok ? (
+          <>
+            <div className="akrChipRow">
+              <span className="akrChip">
+                {t(props.lang, "admin_live_ops_segment_label")}: {asText(preflight.segment_key)}
+              </span>
+              <span className="akrChip">
+                {t(props.lang, "admin_live_ops_recipients_label")}: {asCount(preflight.max_recipients)}
+              </span>
+              <span className="akrChip">
+                {t(props.lang, "admin_live_ops_scheduler_scene_state_label")}: {asText(preflight.gate?.scene_gate_state)}
+              </span>
+              <span className="akrChip">
+                {t(props.lang, "admin_live_ops_scheduler_scene_effect_label")}: {asText(preflight.gate?.scene_gate_effect)}
+              </span>
+              <span className="akrChip">
+                {t(props.lang, "admin_live_ops_scheduler_scene_cap_label")}: {asCount(preflight.gate?.scene_gate_recipient_cap)}
+              </span>
+            </div>
+            <p className="akrMutedLine">
+              {t(props.lang, "admin_live_ops_preflight_note")} {asText(preflight.gate?.scene_gate_reason, "-")}
+            </p>
+          </>
+        ) : (
+          <p className="akrErrorLine">{preflight.error}</p>
+        )}
+      </section>
       <div className="akrSplit">
         <section className="akrMiniPanel" data-akr-focus-key="approval_gate">
           <h4>{t(props.lang, "admin_live_ops_gate_title")}</h4>

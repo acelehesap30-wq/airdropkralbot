@@ -60,8 +60,57 @@ function Get-FileInfoSafe {
   }
 }
 
+function Read-JsonSafe {
+  param([string]$Path)
+  if (-not (Test-Path $Path)) {
+    return $null
+  }
+  try {
+    return Get-Content $Path -Raw | ConvertFrom-Json
+  } catch {
+    return $null
+  }
+}
+
+function Get-PropValue {
+  param(
+    [object]$Source,
+    [string]$Name,
+    $Fallback = $null
+  )
+  if ($null -eq $Source) {
+    return $Fallback
+  }
+  $prop = $Source.PSObject.Properties[$Name]
+  if ($null -eq $prop) {
+    return $Fallback
+  }
+  if ($null -eq $prop.Value) {
+    return $Fallback
+  }
+  return $prop.Value
+}
+
 $task = Get-TaskStatus -Name $TaskName
 $jsonInfo = Get-FileInfoSafe -Path $latestJson
+$latestPayload = Read-JsonSafe -Path $latestJson
+
+$latestSummary = $null
+if ($latestPayload -ne $null) {
+  $scheduler = Get-PropValue -Source $latestPayload -Name "scheduler_summary"
+  $data = Get-PropValue -Source $latestPayload -Name "data"
+  $latestSummary = [pscustomobject]@{
+    ok = [bool](Get-PropValue -Source $latestPayload -Name "ok" -Fallback $false)
+    skipped = [bool](Get-PropValue -Source $latestPayload -Name "skipped" -Fallback $false)
+    reason = [string](Get-PropValue -Source $latestPayload -Name "reason" -Fallback "")
+    dispatch_ref = [string](Get-PropValue -Source $data -Name "dispatch_ref" -Fallback "")
+    dispatch_source = [string](Get-PropValue -Source $data -Name "dispatch_source" -Fallback "")
+    scene_gate_state = [string](Get-PropValue -Source $scheduler -Name "scene_gate_state" -Fallback (Get-PropValue -Source $data -Name "scene_gate_state" -Fallback ""))
+    scene_gate_effect = [string](Get-PropValue -Source $scheduler -Name "scene_gate_effect" -Fallback (Get-PropValue -Source $data -Name "scene_gate_effect" -Fallback ""))
+    scene_gate_reason = [string](Get-PropValue -Source $scheduler -Name "scene_gate_reason" -Fallback (Get-PropValue -Source $data -Name "scene_gate_reason" -Fallback ""))
+    scene_gate_recipient_cap = [int](Get-PropValue -Source $scheduler -Name "scene_gate_recipient_cap" -Fallback (Get-PropValue -Source $data -Name "scene_gate_recipient_cap" -Fallback 0))
+  }
+}
 
 $ok = $true
 if (-not $task.exists) { $ok = $false }
@@ -71,6 +120,7 @@ $payload = [pscustomobject]@{
   success = $ok
   task = $task
   latest_json = $jsonInfo
+  latest_summary = $latestSummary
   stale_minutes_threshold = $StaleMinutes
 }
 
