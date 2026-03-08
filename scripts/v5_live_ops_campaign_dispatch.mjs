@@ -8,7 +8,11 @@ import pg from "pg";
 const require = createRequire(import.meta.url);
 const { buildPgPoolConfig } = require("../packages/shared/src/v5/dbConnection");
 const { resolveLiveOpsDispatchArtifactPaths } = require("../packages/shared/src/runtimeArtifactPaths");
-const { resolveLiveOpsPressureFocus } = require("../packages/shared/src/liveOpsSceneGate.cjs");
+const {
+  resolveLiveOpsPressureEscalation,
+  resolveLiveOpsPressureFocus,
+  resolveLiveOpsTargetingGuidance
+} = require("../packages/shared/src/liveOpsSceneGate.cjs");
 const { createLiveOpsChatCampaignService } = require("../apps/admin-api/src/services/liveOpsChatCampaignService");
 
 const { Pool } = pg;
@@ -177,12 +181,26 @@ async function main() {
         campaignConfig,
         schedulerSummary.recipient_cap_recommendation || {}
       );
+      const pressureEscalationSummary = resolveLiveOpsPressureEscalation(
+        pressureFocusSummary,
+        schedulerSummary.recipient_cap_recommendation || {}
+      );
+      const targetingGuidanceSummary =
+        schedulerSummary && typeof schedulerSummary.targeting_guidance === "object"
+          ? schedulerSummary.targeting_guidance
+          : resolveLiveOpsTargetingGuidance(
+              pressureFocusSummary,
+              schedulerSummary.recipient_cap_recommendation || {},
+              pressureEscalationSummary
+            );
       const payload = {
         generated_at: new Date().toISOString(),
         ...result,
         scheduler_summary: schedulerSummary,
         scheduler_skip_summary: schedulerSkipSummary,
         pressure_focus_summary: pressureFocusSummary,
+        pressure_escalation_summary: pressureEscalationSummary,
+        targeting_guidance_summary: targetingGuidanceSummary,
         scene_runtime_summary: sceneRuntimeSummary,
         ops_alarm: {
           state: String(schedulerSkipSummary.alarm_state || "clear"),

@@ -312,6 +312,27 @@ const LiveOpsCampaignRecipientCapRecommendationSchema = z.object({
   surface_match: z.boolean().default(false)
 });
 
+const LiveOpsCampaignTargetingGuidanceModeSchema = z.object({
+  mode_key: z.enum(["protective", "balanced", "aggressive"]).default("balanced"),
+  suggested_recipient_cap: z.number().int().nonnegative().default(0),
+  effective_cap_delta: z.number().int().nonnegative().default(0),
+  delta_vs_recommended: z.number().int().nonnegative().default(0),
+  reason_code: z.string().default("")
+});
+
+const LiveOpsCampaignTargetingGuidanceSchema = z.object({
+  default_mode: z.enum(["protective", "balanced", "aggressive"]).default("balanced"),
+  guidance_state: z.enum(["clear", "watch", "alert"]).default("clear"),
+  guidance_reason: z.string().default(""),
+  focus_dimension: z.string().default(""),
+  focus_bucket: z.string().default(""),
+  focus_matches_target: z.boolean().default(false),
+  focus_share_of_recommended_cap: z.number().min(0).default(0),
+  focus_suggested_recipient_cap: z.number().int().nonnegative().default(0),
+  effective_cap_delta_ratio: z.number().min(0).default(0),
+  mode_rows: z.array(LiveOpsCampaignTargetingGuidanceModeSchema).default([])
+});
+
 const KpiLiveOpsCampaignSummarySchema = z.object({
   available: z.boolean().default(false),
   error_code: z.string().default(""),
@@ -342,6 +363,7 @@ const KpiLiveOpsCampaignSummarySchema = z.object({
   variant_breakdown: z.array(KpiLiveOpsCampaignBreakdownSchema).default([]),
   cohort_breakdown: z.array(KpiLiveOpsCampaignBreakdownSchema).default([]),
   recipient_cap_recommendation: LiveOpsCampaignRecipientCapRecommendationSchema.default({}),
+  targeting_guidance: LiveOpsCampaignTargetingGuidanceSchema.default({}),
   scheduler_skip: LiveOpsCampaignSchedulerSkipSummarySchema.default({}),
   ops_alert: LiveOpsCampaignOpsAlertSummarySchema.default({}),
   ops_alert_trend: LiveOpsCampaignOpsAlertTrendSummarySchema.default({}),
@@ -848,6 +870,7 @@ const LiveOpsCampaignSchedulerSummarySchema = z.object({
   scene_gate_reason: z.string().default(""),
   scene_gate_recipient_cap: z.number().int().nonnegative().default(0),
   recipient_cap_recommendation: LiveOpsCampaignRecipientCapRecommendationSchema.default({}),
+  targeting_guidance: LiveOpsCampaignTargetingGuidanceSchema.default({}),
   window_key: z.string().default(""),
   already_dispatched_for_window: z.boolean().default(false),
   latest_auto_dispatch_at: z.string().nullable().default(null),
@@ -873,6 +896,10 @@ const LiveOpsCampaignTaskSummarySchema = z.object({
   effective_cap_delta: z.number().int().nonnegative().default(0),
   recommendation_pressure_band: z.enum(["clear", "watch", "alert"]).default("clear"),
   recommendation_reason: z.string().default(""),
+  targeting_guidance_default_mode: z.enum(["protective", "balanced", "aggressive"]).default("balanced"),
+  targeting_guidance_state: z.enum(["clear", "watch", "alert"]).default("clear"),
+  targeting_guidance_cap: z.number().int().nonnegative().default(0),
+  targeting_guidance_reason: z.string().default(""),
   window_key: z.string().default(""),
   scheduler_skip_24h: z.number().int().nonnegative().default(0),
   scheduler_skip_7d: z.number().int().nonnegative().default(0),
@@ -1005,6 +1032,8 @@ module.exports = {
   LiveOpsCampaignOpsAlertSummarySchema,
   LiveOpsCampaignOpsAlertTrendSummarySchema,
   LiveOpsCampaignRecipientCapRecommendationSchema,
+  LiveOpsCampaignTargetingGuidanceModeSchema,
+  LiveOpsCampaignTargetingGuidanceSchema,
   LiveOpsCampaignSchedulerSummarySchema,
   LiveOpsCampaignOperatorTimelineRowSchema,
   LiveOpsCampaignScheduleSchema,

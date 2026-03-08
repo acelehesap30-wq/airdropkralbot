@@ -191,6 +191,7 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
   const opsAlert = asRecord(liveOpsKpi?.ops_alert);
   const opsAlertTrend = asRecord(liveOpsKpi?.ops_alert_trend);
   const recipientCapRecommendation = asRecord(liveOpsKpi?.recipient_cap_recommendation);
+  const targetingGuidance = asRecord(liveOpsKpi?.targeting_guidance);
   const schedulerSkipDaily = asRows(schedulerSkip?.daily_breakdown);
   const schedulerSkipReasons = asRows(schedulerSkip?.reason_breakdown);
   const opsAlertLocaleBreakdown = asRows(opsAlertTrend?.locale_breakdown);
@@ -377,6 +378,12 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
             {t(props.lang, "admin_runtime_live_ops_recommend_cap_label")}: {Math.floor(readNum(recipientCapRecommendation, "recommended_recipient_cap"))}
           </span>
           <span className="akrChip">
+            {t(props.lang, "admin_runtime_live_ops_guidance_mode_label")}: {readText(targetingGuidance, "default_mode") || "-"}
+          </span>
+          <span className="akrChip">
+            {t(props.lang, "admin_runtime_live_ops_guidance_state_label")}: {readText(targetingGuidance, "guidance_state") || "-"}
+          </span>
+          <span className="akrChip">
             {t(props.lang, "admin_runtime_live_ops_recommend_delta_label")}: {Math.floor(readNum(recipientCapRecommendation, "effective_cap_delta"))}
           </span>
           <span className="akrChip">
@@ -431,6 +438,16 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
             {t(props.lang, "admin_runtime_live_ops_recommend_reason_label")}: {readText(recipientCapRecommendation, "reason") || "-"} |{" "}
             {t(props.lang, "admin_runtime_live_ops_recommend_focus_label")}: {readText(recipientCapRecommendation, "segment_key") || "-"} /{" "}
             {readText(recipientCapRecommendation, "locale_bucket") || "-"} / {readText(recipientCapRecommendation, "surface_bucket") || "-"}
+          </p>
+          <p className="akrMutedLine">
+            {t(props.lang, "admin_runtime_live_ops_guidance_mode_label")}: {readText(targetingGuidance, "default_mode") || "-"} |{" "}
+            {t(props.lang, "admin_runtime_live_ops_guidance_state_label")}: {readText(targetingGuidance, "guidance_state") || "-"} |{" "}
+            {t(props.lang, "admin_runtime_live_ops_guidance_reason_label")}: {readText(targetingGuidance, "guidance_reason") || "-"}
+          </p>
+          <p className="akrMutedLine">
+            {t(props.lang, "admin_runtime_live_ops_guidance_focus_label")}: {readText(targetingGuidance, "focus_dimension") || "-"} /{" "}
+            {readText(targetingGuidance, "focus_bucket") || "-"} | {t(props.lang, "admin_runtime_live_ops_guidance_focus_share_label")}:{" "}
+            {toPct(readNum(targetingGuidance, "focus_share_of_recommended_cap"))}
           </p>
           <p className="akrMutedLine">
             {t(props.lang, "admin_runtime_live_ops_ops_alert_delta_24h_label")}: {Math.floor(readNum(opsAlertTrend, "effective_cap_delta_24h"))} |{" "}

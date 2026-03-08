@@ -103,6 +103,7 @@ if ($latestPayload -ne $null) {
   $scheduler = Get-PropValue -Source $latestPayload -Name "scheduler_summary"
   $schedulerSkip = Get-PropValue -Source $latestPayload -Name "scheduler_skip_summary"
   $pressureFocus = Get-PropValue -Source $latestPayload -Name "pressure_focus_summary"
+  $targetingGuidance = Get-PropValue -Source $latestPayload -Name "targeting_guidance_summary"
   $opsAlertTrend = Get-PropValue -Source $latestPayload -Name "ops_alert_trend"
   $opsAlarm = Get-PropValue -Source $latestPayload -Name "ops_alarm"
   $recommendation = Get-PropValue -Source $scheduler -Name "recipient_cap_recommendation"
@@ -121,6 +122,10 @@ if ($latestPayload -ne $null) {
     effective_cap_delta = [int](Get-PropValue -Source $recommendation -Name "effective_cap_delta" -Fallback 0)
     recommendation_pressure_band = [string](Get-PropValue -Source $recommendation -Name "pressure_band" -Fallback "clear")
     recommendation_reason = [string](Get-PropValue -Source $recommendation -Name "reason" -Fallback "")
+    targeting_guidance_default_mode = [string](Get-PropValue -Source $targetingGuidance -Name "default_mode" -Fallback "balanced")
+    targeting_guidance_state = [string](Get-PropValue -Source $targetingGuidance -Name "guidance_state" -Fallback "clear")
+    targeting_guidance_reason = [string](Get-PropValue -Source $targetingGuidance -Name "guidance_reason" -Fallback "")
+    targeting_guidance_cap = [int](Get-PropValue -Source ((Get-PropValue -Source $targetingGuidance -Name "mode_rows" -Fallback @()) | Where-Object { [string](Get-PropValue -Source $_ -Name "mode_key" -Fallback "") -eq [string](Get-PropValue -Source $targetingGuidance -Name "default_mode" -Fallback "balanced") } | Select-Object -First 1) -Name "suggested_recipient_cap" -Fallback 0)
     pressure_focus = [pscustomobject]@{
       pressure_band = [string](Get-PropValue -Source $pressureFocus -Name "pressure_band" -Fallback "clear")
       top_warning_dimension = [string](Get-PropValue -Source ((Get-PropValue -Source $pressureFocus -Name "warning_rows" -Fallback @()) | Select-Object -First 1) -Name "dimension" -Fallback "")

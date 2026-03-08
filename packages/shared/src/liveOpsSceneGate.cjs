@@ -422,7 +422,8 @@ function resolveLiveOpsTargetingGuidance(pressureFocusSummary, recommendation, p
     Number(safeRecommendation.scene_gate_recipient_cap || safeRecommendation.recommended_recipient_cap || configuredRecipients)
   );
   const maxCap = Math.max(sceneGateCap, configuredRecipients, Number(safeRecommendation.recommended_recipient_cap || 0));
-  const recommendedCap = clampRecipientCap(safeRecommendation.recommended_recipient_cap, maxCap);
+  const forceZeroCap = sceneGateCap <= 0 && Number(safeRecommendation.recommended_recipient_cap || 0) <= 0;
+  const recommendedCap = forceZeroCap ? 0 : clampRecipientCap(safeRecommendation.recommended_recipient_cap, maxCap);
   const pressureBand = String(safeRecommendation.pressure_band || safeFocus.pressure_band || "clear").trim().toLowerCase();
   const escalationBand = String(safeEscalation.escalation_band || pressureBand || "clear").trim().toLowerCase();
   const warningIndex = buildWarningMatchIndex(safeFocus.warning_rows);
@@ -444,10 +445,12 @@ function resolveLiveOpsTargetingGuidance(pressureFocusSummary, recommendation, p
     maxCap
   );
   const effectiveCapDeltaRatio = Math.max(0, Number(safeEscalation.effective_cap_delta_ratio || 0));
-  const balancedCap = clampRecipientCap(recommendedCap || sceneGateCap || configuredRecipients, maxCap);
+  const balancedCap = forceZeroCap ? 0 : clampRecipientCap(recommendedCap || sceneGateCap || configuredRecipients, maxCap);
   let protectiveCap = focusSuggestedCap;
 
-  if (!protectiveCap) {
+  if (forceZeroCap) {
+    protectiveCap = 0;
+  } else if (!protectiveCap) {
     if (escalationBand === "alert" || pressureBand === "alert") {
       protectiveCap = clampRecipientCap(Math.ceil(balancedCap * 0.75), maxCap);
     } else if (pressureBand === "watch") {
@@ -456,17 +459,19 @@ function resolveLiveOpsTargetingGuidance(pressureFocusSummary, recommendation, p
       protectiveCap = balancedCap;
     }
   }
-  protectiveCap = clampRecipientCap(Math.min(protectiveCap, balancedCap || protectiveCap), maxCap);
+  protectiveCap = forceZeroCap ? 0 : clampRecipientCap(Math.min(protectiveCap, balancedCap || protectiveCap), maxCap);
 
   let aggressiveCap = 0;
-  if (escalationBand === "alert" || pressureBand === "alert") {
+  if (forceZeroCap) {
+    aggressiveCap = 0;
+  } else if (escalationBand === "alert" || pressureBand === "alert") {
     aggressiveCap = balancedCap;
   } else if (pressureBand === "watch") {
     aggressiveCap = clampRecipientCap(Math.ceil((balancedCap + sceneGateCap) / 2), maxCap);
   } else {
     aggressiveCap = clampRecipientCap(sceneGateCap || configuredRecipients, maxCap);
   }
-  aggressiveCap = Math.max(aggressiveCap, balancedCap);
+  aggressiveCap = forceZeroCap ? 0 : Math.max(aggressiveCap, balancedCap);
 
   return {
     default_mode:

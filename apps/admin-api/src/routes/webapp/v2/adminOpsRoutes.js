@@ -106,6 +106,10 @@ function buildLiveOpsCampaignKpiSummary(snapshot) {
     scheduler.recipient_cap_recommendation && typeof scheduler.recipient_cap_recommendation === "object"
       ? scheduler.recipient_cap_recommendation
       : {};
+  const targetingGuidance =
+    scheduler.targeting_guidance && typeof scheduler.targeting_guidance === "object"
+      ? scheduler.targeting_guidance
+      : {};
   const latestDispatch = safeSnapshot.latest_dispatch && typeof safeSnapshot.latest_dispatch === "object" ? safeSnapshot.latest_dispatch : {};
   return {
     available: true,
@@ -151,6 +155,26 @@ function buildLiveOpsCampaignKpiSummary(snapshot) {
       cohort_bucket: String(recipientCapRecommendation.cohort_bucket || ""),
       segment_match: recipientCapRecommendation.segment_match === true,
       surface_match: recipientCapRecommendation.surface_match === true
+    },
+    targeting_guidance: {
+      default_mode: String(targetingGuidance.default_mode || "balanced"),
+      guidance_state: String(targetingGuidance.guidance_state || "clear"),
+      guidance_reason: String(targetingGuidance.guidance_reason || ""),
+      focus_dimension: String(targetingGuidance.focus_dimension || ""),
+      focus_bucket: String(targetingGuidance.focus_bucket || ""),
+      focus_matches_target: targetingGuidance.focus_matches_target === true,
+      focus_share_of_recommended_cap: Math.max(0, Number(targetingGuidance.focus_share_of_recommended_cap || 0)),
+      focus_suggested_recipient_cap: Math.max(0, Number(targetingGuidance.focus_suggested_recipient_cap || 0)),
+      effective_cap_delta_ratio: Math.max(0, Number(targetingGuidance.effective_cap_delta_ratio || 0)),
+      mode_rows: Array.isArray(targetingGuidance.mode_rows)
+        ? targetingGuidance.mode_rows.map((row) => ({
+            mode_key: String(row?.mode_key || "balanced"),
+            suggested_recipient_cap: Math.max(0, Number(row?.suggested_recipient_cap || 0)),
+            effective_cap_delta: Math.max(0, Number(row?.effective_cap_delta || 0)),
+            delta_vs_recommended: Math.max(0, Number(row?.delta_vs_recommended || 0)),
+            reason_code: String(row?.reason_code || "")
+          }))
+        : []
     },
     scheduler_skip: {
       skipped_24h: Math.max(0, Number(schedulerSkip.skipped_24h || 0)),
@@ -261,6 +285,18 @@ async function getLiveOpsCampaignKpiSummary(service, logger) {
         cohort_bucket: "",
         segment_match: false,
         surface_match: false
+      },
+      targeting_guidance: {
+        default_mode: "balanced",
+        guidance_state: "clear",
+        guidance_reason: "",
+        focus_dimension: "",
+        focus_bucket: "",
+        focus_matches_target: false,
+        focus_share_of_recommended_cap: 0,
+        focus_suggested_recipient_cap: 0,
+        effective_cap_delta_ratio: 0,
+        mode_rows: []
       },
       scheduler_skip: {
         skipped_24h: 0,

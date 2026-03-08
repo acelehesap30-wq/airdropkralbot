@@ -509,6 +509,10 @@ test("live ops chat campaign service snapshot includes approval summary schedule
       effective_cap_delta: 40,
       recommendation_pressure_band: "alert",
       recommendation_reason: "scene_runtime_alert_blocked",
+      targeting_guidance_default_mode: "protective",
+      targeting_guidance_state: "alert",
+      targeting_guidance_cap: 10,
+      targeting_guidance_reason: "watch_state_locale_pressure",
       window_key: "wallet_reconnect:2020-01-01T00:00:00.000Z:2035-01-01T00:00:00.000Z",
       scheduler_skip_24h: 2,
       scheduler_skip_7d: 4,
@@ -554,6 +558,8 @@ test("live ops chat campaign service snapshot includes approval summary schedule
   assert.equal(snapshot.scheduler_summary.recipient_cap_recommendation.effective_cap_delta, 40);
   assert.equal(snapshot.scheduler_summary.recipient_cap_recommendation.reason, "scene_runtime_alert_blocked");
   assert.equal(snapshot.scheduler_summary.recipient_cap_recommendation.experiment_key, "webapp_react_v1");
+  assert.equal(snapshot.scheduler_summary.targeting_guidance.default_mode, "protective");
+  assert.equal(snapshot.scheduler_summary.targeting_guidance.guidance_state, "alert");
   assert.equal(snapshot.delivery_summary.sent_24h, 2);
   assert.equal(snapshot.delivery_summary.experiment_assignment_available, true);
   assert.equal(snapshot.delivery_summary.experiment_key, "webapp_react_v1");
@@ -580,6 +586,8 @@ test("live ops chat campaign service snapshot includes approval summary schedule
   assert.equal(snapshot.task_summary.scene_gate_reason, "scene_runtime_watch_capped");
   assert.equal(snapshot.task_summary.recommended_recipient_cap, 0);
   assert.equal(snapshot.task_summary.effective_cap_delta, 40);
+  assert.equal(snapshot.task_summary.targeting_guidance_default_mode, "protective");
+  assert.equal(snapshot.task_summary.targeting_guidance_cap, 10);
   assert.equal(snapshot.task_summary.scheduler_skip_alarm_state, "alert");
   assert.equal(snapshot.task_summary.scheduler_skip_24h, 2);
   assert.equal(snapshot.ops_alert_summary.artifact_found, true);
@@ -1038,5 +1046,8 @@ test("live ops chat campaign service scheduler dispatch caps recipients on watch
   assert.equal(result.data.scene_gate_state, "watch");
   assert.equal(result.data.scene_gate_effect, "capped");
   assert.equal(result.data.scene_gate_recipient_cap, 20);
+  assert.equal(result.data.recommendation_mode, "aggressive");
+  assert.equal(result.data.recommendation_mode_cap, 20);
+  assert.equal(result.data.recommendation_guidance_state, "clear");
   assert.equal(sendCount, 20);
 });

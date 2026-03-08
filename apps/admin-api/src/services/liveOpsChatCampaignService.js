@@ -16,7 +16,10 @@ const {
   buildDefaultLiveOpsCampaignConfig
 } = require("../../../../packages/shared/src/liveOpsCampaignContract");
 const {
+  resolveLiveOpsPressureEscalation,
+  resolveLiveOpsPressureFocus,
   resolveLiveOpsRecipientCapRecommendation,
+  resolveLiveOpsTargetingGuidance,
   resolveLiveOpsSceneGate
 } = require("../../../../packages/shared/src/liveOpsSceneGate.cjs");
 const {
@@ -833,6 +836,9 @@ function buildCampaignAuditPayload(campaign, meta = {}) {
     scene_gate_effect: String(meta.sceneGateEffect || "open"),
     scene_gate_reason: String(meta.sceneGateReason || ""),
     scene_gate_recipient_cap: Number(meta.sceneGateRecipientCap || 0),
+    targeting_guidance_default_mode: String(meta.targetingGuidanceDefaultMode || "balanced"),
+    targeting_guidance_cap: Number(meta.targetingGuidanceCap || 0),
+    targeting_guidance_reason: String(meta.targetingGuidanceReason || ""),
     dry_run: meta.dryRun === true,
     attempted: Number(meta.attempted || 0),
     sent: Number(meta.sent || 0),
@@ -1411,12 +1417,22 @@ function buildEmptyLiveOpsTaskSummary() {
     effective_cap_delta: 0,
     recommendation_pressure_band: "clear",
     recommendation_reason: "",
+    targeting_guidance_default_mode: "balanced",
+    targeting_guidance_state: "clear",
+    targeting_guidance_cap: 0,
+    targeting_guidance_reason: "",
     window_key: "",
     scheduler_skip_24h: 0,
     scheduler_skip_7d: 0,
     scheduler_skip_alarm_state: "clear",
     scheduler_skip_alarm_reason: ""
   };
+}
+
+function findGuidanceModeRow(targetingGuidance, modeKey) {
+  const rows = Array.isArray(targetingGuidance?.mode_rows) ? targetingGuidance.mode_rows : [];
+  const safeMode = String(modeKey || "").trim().toLowerCase();
+  return rows.find((row) => String(row?.mode_key || "").trim().toLowerCase() === safeMode) || null;
 }
 
 function buildEmptyLiveOpsOpsAlertSummary() {
@@ -1491,7 +1507,15 @@ function readLatestTaskArtifactSummaryFromDisk(now, repoRootDir) {
     const schedulerSkip = payload && typeof payload.scheduler_skip_summary === "object" ? payload.scheduler_skip_summary : {};
     const recommendation =
       scheduler && typeof scheduler.recipient_cap_recommendation === "object" ? scheduler.recipient_cap_recommendation : {};
+    const targetingGuidance =
+      payload && typeof payload.targeting_guidance_summary === "object"
+        ? payload.targeting_guidance_summary
+        : scheduler && typeof scheduler.targeting_guidance === "object"
+          ? scheduler.targeting_guidance
+          : {};
     const data = payload && typeof payload.data === "object" ? payload.data : {};
+    const selectedMode = String(targetingGuidance?.default_mode || data?.recommendation_mode || "balanced").trim() || "balanced";
+    const selectedModeRow = findGuidanceModeRow(targetingGuidance, selectedMode);
     return {
       artifact_found: true,
       artifact_path: artifactPaths.latestJsonPath,
@@ -1510,6 +1534,18 @@ function readLatestTaskArtifactSummaryFromDisk(now, repoRootDir) {
       effective_cap_delta: Math.max(0, Number(recommendation?.effective_cap_delta || 0) || 0),
       recommendation_pressure_band: String(recommendation?.pressure_band || "clear").trim() || "clear",
       recommendation_reason: String(recommendation?.reason || "").trim(),
+      targeting_guidance_default_mode: selectedMode,
+      targeting_guidance_state: String(targetingGuidance?.guidance_state || "clear").trim() || "clear",
+      targeting_guidance_cap: Math.max(
+        0,
+        Number(
+          selectedModeRow?.suggested_recipient_cap ||
+          data?.recommendation_mode_cap ||
+          targetingGuidance?.focus_suggested_recipient_cap ||
+          0
+        ) || 0
+      ),
+      targeting_guidance_reason: String(targetingGuidance?.guidance_reason || data?.recommendation_guidance_state || "").trim(),
       window_key: String(scheduler?.window_key || data?.window_key || "").trim(),
       scheduler_skip_24h: Math.max(0, Number(schedulerSkip?.skipped_24h || 0) || 0),
       scheduler_skip_7d: Math.max(0, Number(schedulerSkip?.skipped_7d || 0) || 0),
@@ -1583,6 +1619,20 @@ function buildSchedulerSummary(
     schedulerSkipSummary,
     opsAlertTrendSummary
   );
+  const pressureFocus = resolveLiveOpsPressureFocus(
+    opsAlertTrendSummary,
+    campaign,
+    recipientCapRecommendation
+  );
+  const pressureEscalation = resolveLiveOpsPressureEscalation(
+    pressureFocus,
+    recipientCapRecommendation
+  );
+  const targetingGuidance = resolveLiveOpsTargetingGuidance(
+    pressureFocus,
+    recipientCapRecommendation,
+    pressureEscalation
+  );
   return {
     ready_for_auto_dispatch: approvalSummary?.live_dispatch_ready === true && sceneGate.ready_for_auto_dispatch === true,
     schedule_state: String(approvalSummary?.schedule_state || "missing"),
@@ -1592,6 +1642,7 @@ function buildSchedulerSummary(
     scene_gate_reason: sceneGate.scene_gate_reason,
     scene_gate_recipient_cap: sceneGate.scene_gate_recipient_cap,
     recipient_cap_recommendation: recipientCapRecommendation,
+    targeting_guidance: targetingGuidance,
     window_key: buildScheduleWindowKey(campaign),
     already_dispatched_for_window: Boolean(windowDispatch),
     latest_auto_dispatch_at: latestSchedulerDispatch?.created_at || null,
@@ -1985,14 +2036,63 @@ async function buildCampaignSnapshot(client, current) {
       const reason = String(input.reason || "live_ops_campaign_dispatch").trim().slice(0, 240);
       const dispatchSource = String(input.dispatchSource || "manual").trim().toLowerCase() === "scheduler" ? "scheduler" : "manual";
       const windowKey = String(input.windowKey || buildScheduleWindowKey(campaign) || "");
-      const sceneRuntimeSummary = dispatchSource === "scheduler" ? await loadSceneRuntimeSummary(client) : buildEmptySceneRuntimeSummary();
+      const [sceneRuntimeSummary, schedulerSkipSummary, opsAlertTrendSummary] =
+        dispatchSource === "scheduler"
+          ? await Promise.all([
+              loadSceneRuntimeSummary(client),
+              loadSchedulerSkipSummary(client, campaign.campaign_key),
+              loadOpsAlertTrendSummary(client, campaign.campaign_key).catch((err) => {
+                if (err?.code === "42P01" || err?.code === "42703") {
+                  return buildEmptyLiveOpsOpsAlertTrendSummary();
+                }
+                throw err;
+              })
+            ])
+          : [buildEmptySceneRuntimeSummary(), buildSchedulerSkipAlarmSummary(), buildEmptyLiveOpsOpsAlertTrendSummary()];
       const sceneGate = resolveLiveOpsSceneGate(sceneRuntimeSummary, campaign);
+      const recipientCapRecommendation = resolveLiveOpsRecipientCapRecommendation(
+        sceneRuntimeSummary,
+        campaign,
+        schedulerSkipSummary,
+        opsAlertTrendSummary
+      );
+      const pressureFocus = resolveLiveOpsPressureFocus(
+        opsAlertTrendSummary,
+        campaign,
+        recipientCapRecommendation
+      );
+      const pressureEscalation = resolveLiveOpsPressureEscalation(
+        pressureFocus,
+        recipientCapRecommendation
+      );
+      const targetingGuidance = resolveLiveOpsTargetingGuidance(
+        pressureFocus,
+        recipientCapRecommendation,
+        pressureEscalation
+      );
+      const guidanceMode = String(targetingGuidance.default_mode || "balanced").trim() || "balanced";
+      const guidanceModeRow = findGuidanceModeRow(targetingGuidance, guidanceMode);
+      const guidanceModeCap = Math.max(
+        0,
+        Number(
+          guidanceModeRow?.suggested_recipient_cap ||
+          recipientCapRecommendation.recommended_recipient_cap ||
+          0
+        ) || 0
+      );
       const maxRecipientsBase = Math.max(
         1,
         Math.min(500, Number(input.maxRecipients || campaign.targeting.max_recipients || 50))
       );
       const maxRecipients = dispatchSource === "scheduler" && !dryRun
-        ? Math.max(1, Math.min(maxRecipientsBase, Number(sceneGate.scene_gate_recipient_cap || maxRecipientsBase)))
+        ? Math.max(
+            1,
+            Math.min(
+              maxRecipientsBase,
+              Number(sceneGate.scene_gate_recipient_cap || maxRecipientsBase),
+              guidanceModeCap || Number(recipientCapRecommendation.recommended_recipient_cap || maxRecipientsBase) || maxRecipientsBase
+            )
+          )
         : maxRecipientsBase;
 
       if (!dryRun) {
@@ -2101,6 +2201,9 @@ async function buildCampaignSnapshot(client, current) {
               sceneGateEffect: sceneGate.scene_gate_effect,
               sceneGateReason: sceneGate.scene_gate_reason,
               sceneGateRecipientCap: dispatchSource === "scheduler" ? maxRecipients : maxRecipientsBase,
+              targetingGuidanceDefaultMode: guidanceMode,
+              targetingGuidanceCap: dispatchSource === "scheduler" ? maxRecipients : guidanceModeCap,
+              targetingGuidanceReason: String(targetingGuidance.guidance_reason || ""),
               dryRun,
               sent,
               attempted,
@@ -2143,6 +2246,9 @@ async function buildCampaignSnapshot(client, current) {
           scene_gate_effect: sceneGate.scene_gate_effect,
           scene_gate_reason: sceneGate.scene_gate_reason,
           scene_gate_recipient_cap: dispatchSource === "scheduler" ? maxRecipients : maxRecipientsBase,
+          recommendation_mode: guidanceMode,
+          recommendation_mode_cap: dispatchSource === "scheduler" ? maxRecipients : guidanceModeCap,
+          recommendation_guidance_state: String(targetingGuidance.guidance_state || "clear"),
           sample_users: sampleUsers.slice(0, 5),
           generated_at: now.toISOString()
         }

@@ -139,6 +139,22 @@ function buildLiveOpsSnapshot() {
         segment_match: true,
         surface_match: true
       },
+      targeting_guidance: {
+        default_mode: "protective",
+        guidance_state: "alert",
+        guidance_reason: "watch_state_locale_pressure",
+        focus_dimension: "locale",
+        focus_bucket: "tr",
+        focus_matches_target: true,
+        focus_share_of_recommended_cap: 0.875,
+        focus_suggested_recipient_cap: 10,
+        effective_cap_delta_ratio: 0.7,
+        mode_rows: [
+          { mode_key: "protective", suggested_recipient_cap: 10, effective_cap_delta: 30, delta_vs_recommended: 2, reason_code: "focus_locale_protective" },
+          { mode_key: "balanced", suggested_recipient_cap: 12, effective_cap_delta: 28, delta_vs_recommended: 0, reason_code: "recommended_cap" },
+          { mode_key: "aggressive", suggested_recipient_cap: 16, effective_cap_delta: 24, delta_vs_recommended: 4, reason_code: "scene_gate_headroom_watch" }
+        ]
+      },
       window_key: "wallet_reconnect:2026-03-08T00:00:00.000Z:2026-03-08T23:59:59.000Z",
       already_dispatched_for_window: true,
       latest_auto_dispatch_at: "2026-03-08T02:05:00.000Z",
@@ -375,6 +391,8 @@ test("v2 admin ops kpi latest includes live ops campaign breakdowns", async () =
   assert.equal(body.data.live_ops_campaign.recipient_cap_recommendation.recommended_recipient_cap, 12);
   assert.equal(body.data.live_ops_campaign.recipient_cap_recommendation.effective_cap_delta, 28);
   assert.equal(body.data.live_ops_campaign.recipient_cap_recommendation.reason, "ops_alert_segment_pressure");
+  assert.equal(body.data.live_ops_campaign.targeting_guidance.default_mode, "protective");
+  assert.equal(body.data.live_ops_campaign.targeting_guidance.mode_rows[0].suggested_recipient_cap, 10);
   assert.equal(body.data.live_ops_campaign.scene_gate_effect, "capped");
   assert.equal(body.data.live_ops_campaign.scene_runtime.health_band_24h, "yellow");
   assert.equal(body.data.live_ops_campaign.scene_runtime.alarm_state_7d, "watch");
@@ -458,6 +476,7 @@ test("v2 admin ops kpi run includes live ops campaign summary", async () => {
   assert.equal(body.data.live_ops_campaign.scheduler_skip.latest_skip_reason, "scene_runtime_watch_capped");
   assert.equal(body.data.live_ops_campaign.scheduler_skip.alarm_reason, "scene_runtime_watch_capped_repeated");
   assert.equal(body.data.live_ops_campaign.ops_alert.notification_reason, "scene_runtime_watch_capped_repeated");
+  assert.equal(body.data.live_ops_campaign.targeting_guidance.guidance_state, "alert");
   assert.equal(body.data.live_ops_campaign.ops_alert_trend.telegram_sent_7d, 1);
   assert.equal(body.data.live_ops_campaign.ops_alert_trend.variant_breakdown[0].bucket_key, "treatment");
   assert.equal(body.data.live_ops_campaign.scene_runtime.trend_direction_7d, "stable");

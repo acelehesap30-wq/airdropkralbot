@@ -216,6 +216,7 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
   const approvalSummary = asRecord(snapshot.approval_summary);
   const schedulerSummary = asRecord(snapshot.scheduler_summary);
   const schedulerRecommendation = asRecord(schedulerSummary.recipient_cap_recommendation);
+  const schedulerTargetingGuidance = asRecord(schedulerSummary.targeting_guidance);
   const schedulerSkipSummary = asRecord(snapshot.scheduler_skip_summary);
   const versionHistory = asArray(snapshot.version_history);
   const dispatchHistory = asArray(snapshot.dispatch_history);
@@ -528,6 +529,18 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
             <strong>{asText(schedulerRecommendation.reason)}</strong>
           </li>
           <li>
+            <span>{t(props.lang, "admin_live_ops_guidance_default_label")}</span>
+            <strong>{formatGuidanceModeLabel(props.lang, asText(schedulerTargetingGuidance.default_mode, "balanced"))}</strong>
+          </li>
+          <li>
+            <span>{t(props.lang, "admin_live_ops_guidance_state_label")}</span>
+            <strong>{asText(schedulerTargetingGuidance.guidance_state)}</strong>
+          </li>
+          <li>
+            <span>{t(props.lang, "admin_live_ops_guidance_reason_label")}</span>
+            <strong>{asText(schedulerTargetingGuidance.guidance_reason)}</strong>
+          </li>
+          <li>
             <span>{t(props.lang, "admin_live_ops_scheduler_already_sent_label")}</span>
             <strong>{schedulerSummary.already_dispatched_for_window === true ? t(props.lang, "admin_live_ops_bool_yes") : t(props.lang, "admin_live_ops_bool_no")}</strong>
           </li>
@@ -540,6 +553,11 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
             <strong>{asText(schedulerSummary.latest_auto_dispatch_reason)}</strong>
           </li>
         </ul>
+        <p className="akrMutedLine">
+          {t(props.lang, "admin_live_ops_recommend_focus_label")}: {asText(schedulerTargetingGuidance.focus_dimension, "-")} /{" "}
+          {asText(schedulerTargetingGuidance.focus_bucket, "-")} | {t(props.lang, "admin_live_ops_escalation_share_label")}:{" "}
+          {toPct(schedulerTargetingGuidance.focus_share_of_recommended_cap)}
+        </p>
       </section>
       <section className="akrMiniPanel" data-akr-focus-key="scheduler_skip_summary">
         <h4>{t(props.lang, "admin_live_ops_skip_title")}</h4>
