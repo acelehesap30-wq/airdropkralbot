@@ -1040,6 +1040,103 @@ function buildSchedulerSkipAlarmSummary(summary = {}) {
   };
 }
 
+function normalizeOpsAlertDailyRows(rows) {
+  return (Array.isArray(rows) ? rows : [])
+    .map((row) => ({
+      day: String(row?.day || "").trim(),
+      alert_count: Math.max(0, Number(row?.alert_count || 0)),
+      telegram_sent_count: Math.max(0, Number(row?.telegram_sent_count || 0))
+    }))
+    .filter((row) => row.day)
+    .slice(0, 7);
+}
+
+async function loadOpsAlertTrendSummary(client, campaignKey) {
+  const target = `config:${LIVE_OPS_CAMPAIGN_CONFIG_KEY}`;
+  const key = String(campaignKey || "");
+  const [totalsResult, latestResult, reasonResult, dailyResult] = await Promise.all([
+    client.query(
+      `SELECT
+         COUNT(*) FILTER (WHERE created_at >= now() - interval '24 hours')::bigint AS raised_24h,
+         COUNT(*) FILTER (WHERE created_at >= now() - interval '7 days')::bigint AS raised_7d,
+         COUNT(*) FILTER (
+           WHERE created_at >= now() - interval '24 hours'
+             AND COALESCE(lower(payload_json->>'telegram_sent'), 'false') IN ('true', '1', 'yes', 'on')
+         )::bigint AS telegram_sent_24h,
+         COUNT(*) FILTER (
+           WHERE created_at >= now() - interval '7 days'
+             AND COALESCE(lower(payload_json->>'telegram_sent'), 'false') IN ('true', '1', 'yes', 'on')
+         )::bigint AS telegram_sent_7d
+       FROM admin_audit
+       WHERE target = $1
+         AND action = 'live_ops_campaign_ops_alert'
+         AND COALESCE(payload_json->>'campaign_key', '') = $2;`,
+      [target, key]
+    ),
+    client.query(
+      `SELECT created_at, payload_json
+       FROM admin_audit
+       WHERE target = $1
+         AND action = 'live_ops_campaign_ops_alert'
+         AND COALESCE(payload_json->>'campaign_key', '') = $2
+       ORDER BY created_at DESC
+       LIMIT 1;`,
+      [target, key]
+    ),
+    client.query(
+      `SELECT
+         COALESCE(payload_json->>'notification_reason', 'unknown') AS bucket_key,
+         COUNT(*)::bigint AS item_count
+       FROM admin_audit
+       WHERE target = $1
+         AND action = 'live_ops_campaign_ops_alert'
+         AND COALESCE(payload_json->>'campaign_key', '') = $2
+         AND created_at >= now() - interval '7 days'
+       GROUP BY 1
+       ORDER BY item_count DESC, bucket_key ASC
+       LIMIT 8;`,
+      [target, key]
+    ),
+    client.query(
+      `SELECT
+         to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS day,
+         COUNT(*)::bigint AS alert_count,
+         COUNT(*) FILTER (
+           WHERE COALESCE(lower(payload_json->>'telegram_sent'), 'false') IN ('true', '1', 'yes', 'on')
+         )::bigint AS telegram_sent_count
+       FROM admin_audit
+       WHERE target = $1
+         AND action = 'live_ops_campaign_ops_alert'
+         AND COALESCE(payload_json->>'campaign_key', '') = $2
+         AND created_at >= now() - interval '7 days'
+       GROUP BY 1
+       ORDER BY day DESC
+       LIMIT 7;`,
+      [target, key]
+    )
+  ]);
+
+  const totals = totalsResult.rows[0] || {};
+  const latest = latestResult.rows[0] || {};
+  const latestPayload = latest.payload_json && typeof latest.payload_json === "object" && !Array.isArray(latest.payload_json)
+    ? latest.payload_json
+    : {};
+  return {
+    raised_24h: Math.max(0, Number(totals.raised_24h || 0)),
+    raised_7d: Math.max(0, Number(totals.raised_7d || 0)),
+    telegram_sent_24h: Math.max(0, Number(totals.telegram_sent_24h || 0)),
+    telegram_sent_7d: Math.max(0, Number(totals.telegram_sent_7d || 0)),
+    latest_alert_at: latest.created_at || null,
+    latest_alarm_state: String(latestPayload.alarm_state || "clear"),
+    latest_notification_reason: String(latestPayload.notification_reason || ""),
+    latest_telegram_sent_at: latestPayload.telegram_sent === true
+      ? String(latestPayload.telegram_sent_at || "").trim() || null
+      : null,
+    daily_breakdown: normalizeOpsAlertDailyRows(dailyResult.rows),
+    reason_breakdown: normalizeBreakdownRows(reasonResult.rows)
+  };
+}
+
 async function loadOperatorTimeline(client, campaignKey) {
   const result = await client.query(
     `SELECT admin_id, action, payload_json, created_at
@@ -1051,6 +1148,7 @@ async function loadOperatorTimeline(client, campaignKey) {
          'live_ops_campaign_approve',
          'live_ops_campaign_revoke',
          'live_ops_campaign_scheduler_skip',
+         'live_ops_campaign_ops_alert',
          'live_ops_campaign_dry_run',
          'live_ops_campaign_dispatch'
        )
@@ -1199,6 +1297,21 @@ function buildEmptyLiveOpsOpsAlertSummary() {
     telegram_sent: false,
     telegram_reason: "",
     telegram_sent_at: null
+  };
+}
+
+function buildEmptyLiveOpsOpsAlertTrendSummary() {
+  return {
+    raised_24h: 0,
+    raised_7d: 0,
+    telegram_sent_24h: 0,
+    telegram_sent_7d: 0,
+    latest_alert_at: null,
+    latest_alarm_state: "clear",
+    latest_notification_reason: "",
+    latest_telegram_sent_at: null,
+    daily_breakdown: [],
+    reason_breakdown: []
   };
 }
 
@@ -1488,7 +1601,7 @@ async function buildCampaignSnapshot(client, current) {
     last_dispatch_at: latestDispatch.last_sent_at || null
   });
   const currentWindowKey = buildScheduleWindowKey(snapshotState.campaign);
-  const [versionHistory, dispatchHistory, operatorTimeline, deliverySummary, schedulerSkipSummary, latestSchedulerDispatch, schedulerWindowDispatch, sceneRuntimeSummary, taskSummary, opsAlertSummary] = await Promise.all([
+  const [versionHistory, dispatchHistory, operatorTimeline, deliverySummary, schedulerSkipSummary, latestSchedulerDispatch, schedulerWindowDispatch, sceneRuntimeSummary, taskSummary, opsAlertSummary, opsAlertTrendSummary] = await Promise.all([
     loadVersionHistory(client),
     loadDispatchHistory(client, snapshotState.campaign.campaign_key),
     loadOperatorTimeline(client, snapshotState.campaign.campaign_key),
@@ -1498,7 +1611,13 @@ async function buildCampaignSnapshot(client, current) {
     loadSchedulerWindowDispatch(client, snapshotState.campaign.campaign_key, currentWindowKey),
     loadSceneRuntimeSummary(client),
     readLatestTaskArtifactSummary(),
-    readLatestOpsAlertArtifactSummary()
+    readLatestOpsAlertArtifactSummary(),
+    loadOpsAlertTrendSummary(client, snapshotState.campaign.campaign_key).catch((err) => {
+      if (err?.code === "42P01" || err?.code === "42703") {
+        return buildEmptyLiveOpsOpsAlertTrendSummary();
+      }
+      throw err;
+    })
   ]);
   return {
     api_version: "v2",
@@ -1523,6 +1642,7 @@ async function buildCampaignSnapshot(client, current) {
     scene_runtime_summary: sceneRuntimeSummary,
     task_summary: taskSummary,
     ops_alert_summary: opsAlertSummary,
+    ops_alert_trend_summary: opsAlertTrendSummary,
     latest_dispatch: latestDispatch
   };
 }

@@ -68,6 +68,7 @@ function formatTimelineActionLabel(lang: Lang, value: string) {
     approve: "admin_live_ops_action_approve",
     revoke: "admin_live_ops_action_revoke",
     scheduler_skip: "admin_live_ops_action_scheduler_skip",
+    ops_alert: "admin_live_ops_action_ops_alert",
     dry_run: "admin_live_ops_action_dry_run",
     dispatch: "admin_live_ops_action_dispatch"
   };
@@ -112,6 +113,27 @@ function SkipDailyTrendList(props: { title: string; rows: Array<Record<string, u
   );
 }
 
+function OpsAlertDailyTrendList(props: { title: string; rows: Array<Record<string, unknown>> }) {
+  if (!props.rows.length) {
+    return <p className="akrMuted">{props.title}: -</p>;
+  }
+  return (
+    <section className="akrMiniPanel">
+      <h4>{props.title}</h4>
+      <ul className="akrList">
+        {props.rows.map((row, index) => (
+          <li key={`${asText(row.day, "day")}_${index}`}>
+            <span>{asText(row.day)}</span>
+            <strong>
+              {asCount(row.alert_count)} / {asCount(row.telegram_sent_count)}
+            </strong>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
   const snapshot = asRecord(props.liveOpsCampaignData);
   const approvalSummary = asRecord(snapshot.approval_summary);
@@ -124,6 +146,7 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
   const sceneRuntimeSummary = asRecord(snapshot.scene_runtime_summary);
   const taskSummary = asRecord(snapshot.task_summary);
   const opsAlertSummary = asRecord(snapshot.ops_alert_summary);
+  const opsAlertTrendSummary = asRecord(snapshot.ops_alert_trend_summary);
   const warnings = Array.isArray(approvalSummary.warnings) ? approvalSummary.warnings.map((row) => String(row || "").trim()).filter(Boolean) : [];
   const localeBreakdown = asArray(deliverySummary.locale_breakdown);
   const segmentBreakdown = asArray(deliverySummary.segment_breakdown);
@@ -137,6 +160,8 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
   const sceneBandBreakdown = asArray(sceneRuntimeSummary.band_breakdown_7d);
   const sceneQualityBreakdown = asArray(sceneRuntimeSummary.quality_breakdown_24h);
   const scenePerfBreakdown = asArray(sceneRuntimeSummary.perf_breakdown_24h);
+  const opsAlertTrendDailyBreakdown = asArray(opsAlertTrendSummary.daily_breakdown);
+  const opsAlertTrendReasonBreakdown = asArray(opsAlertTrendSummary.reason_breakdown);
   const sceneAlarmReasons = Array.isArray(sceneRuntimeSummary.alarm_reasons_7d)
     ? sceneRuntimeSummary.alarm_reasons_7d.map((row) => String(row || "").trim()).filter(Boolean)
     : [];
@@ -463,6 +488,29 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
             <strong>{asText(opsAlertSummary.telegram_sent_at)}</strong>
           </li>
         </ul>
+        <div className="akrChipRow">
+          <span className="akrChip">
+            {t(props.lang, "admin_live_ops_ops_alert_raised_24h_label")}: {asCount(opsAlertTrendSummary.raised_24h)}
+          </span>
+          <span className="akrChip">
+            {t(props.lang, "admin_live_ops_ops_alert_raised_7d_label")}: {asCount(opsAlertTrendSummary.raised_7d)}
+          </span>
+          <span className="akrChip">
+            {t(props.lang, "admin_live_ops_ops_alert_sent_24h_label")}: {asCount(opsAlertTrendSummary.telegram_sent_24h)}
+          </span>
+          <span className="akrChip">
+            {t(props.lang, "admin_live_ops_ops_alert_sent_7d_label")}: {asCount(opsAlertTrendSummary.telegram_sent_7d)}
+          </span>
+        </div>
+        <p className="akrMutedLine">
+          {t(props.lang, "admin_live_ops_ops_alert_latest_label")}: {asText(opsAlertTrendSummary.latest_alert_at)} |{" "}
+          {t(props.lang, "admin_live_ops_ops_alert_state_label")}: {asText(opsAlertTrendSummary.latest_alarm_state)} |{" "}
+          {t(props.lang, "admin_live_ops_ops_alert_reason_label")}: {asText(opsAlertTrendSummary.latest_notification_reason)}
+        </p>
+        <div className="akrSplit">
+          <OpsAlertDailyTrendList title={t(props.lang, "admin_live_ops_ops_alert_daily_title")} rows={opsAlertTrendDailyBreakdown} />
+          <BreakdownList title={t(props.lang, "admin_live_ops_ops_alert_reason_title")} rows={opsAlertTrendReasonBreakdown} />
+        </div>
       </section>
       <section className="akrMiniPanel" data-akr-focus-key="scene_runtime_summary">
         <h4>{t(props.lang, "admin_runtime_scene_title")}</h4>

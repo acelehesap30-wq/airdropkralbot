@@ -296,6 +296,49 @@ test("live ops chat campaign service snapshot includes approval summary schedule
                 ]
               };
             }
+            if (text.includes("action = 'live_ops_campaign_ops_alert'") && text.includes("telegram_sent_24h")) {
+              return {
+                rows: [
+                  {
+                    raised_24h: 1,
+                    raised_7d: 3,
+                    telegram_sent_24h: 1,
+                    telegram_sent_7d: 2
+                  }
+                ]
+              };
+            }
+            if (text.includes("action = 'live_ops_campaign_ops_alert'") && text.includes("notification_reason")) {
+              return {
+                rows: [
+                  { bucket_key: "alert_state", item_count: 2 },
+                  { bucket_key: "watch_state", item_count: 1 }
+                ]
+              };
+            }
+            if (text.includes("action = 'live_ops_campaign_ops_alert'") && text.includes("telegram_sent_count")) {
+              return {
+                rows: [
+                  { day: "2026-03-08", alert_count: 1, telegram_sent_count: 1 },
+                  { day: "2026-03-07", alert_count: 2, telegram_sent_count: 1 }
+                ]
+              };
+            }
+            if (text.includes("action = 'live_ops_campaign_ops_alert'") && text.includes("ORDER BY created_at DESC") && text.includes("LIMIT 1")) {
+              return {
+                rows: [
+                  {
+                    created_at: "2026-03-08T12:27:00.000Z",
+                    payload_json: {
+                      alarm_state: "alert",
+                      notification_reason: "alert_state",
+                      telegram_sent: true,
+                      telegram_sent_at: "2026-03-08T12:26:30.000Z"
+                    }
+                  }
+                ]
+              };
+            }
             if (text.includes("lower(a.variant_key)")) {
               return { rows: [{ bucket_key: "treatment", item_count: 2 }, { bucket_key: "control", item_count: 1 }] };
             }
@@ -482,6 +525,10 @@ test("live ops chat campaign service snapshot includes approval summary schedule
   assert.equal(snapshot.ops_alert_summary.alarm_state, "alert");
   assert.equal(snapshot.ops_alert_summary.telegram_sent, true);
   assert.equal(snapshot.ops_alert_summary.notification_reason, "scene_runtime_alert_blocked_repeated");
+  assert.equal(snapshot.ops_alert_trend_summary.raised_24h, 1);
+  assert.equal(snapshot.ops_alert_trend_summary.raised_7d, 3);
+  assert.equal(snapshot.ops_alert_trend_summary.reason_breakdown[0].bucket_key, "alert_state");
+  assert.equal(snapshot.ops_alert_trend_summary.daily_breakdown[0].alert_count, 1);
 });
 
 test("live ops chat campaign service updateCampaignApproval promotes pending campaign to approved and writes audit", async () => {

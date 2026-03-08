@@ -179,6 +179,21 @@ function buildLiveOpsSnapshot() {
       telegram_reason: "watch_band_no_notify",
       telegram_sent_at: null
     },
+    ops_alert_trend_summary: {
+      raised_24h: 2,
+      raised_7d: 4,
+      telegram_sent_24h: 0,
+      telegram_sent_7d: 1,
+      latest_alert_at: "2026-03-08T04:05:00.000Z",
+      latest_alarm_state: "watch",
+      latest_notification_reason: "scene_runtime_watch_capped_repeated",
+      latest_telegram_sent_at: "2026-03-07T03:05:00.000Z",
+      daily_breakdown: [
+        { day: "2026-03-08", alert_count: 2, telegram_sent_count: 0 },
+        { day: "2026-03-07", alert_count: 2, telegram_sent_count: 1 }
+      ],
+      reason_breakdown: [{ bucket_key: "scene_runtime_watch_capped_repeated", item_count: 4 }]
+    },
     scene_runtime_summary: {
       ready_24h: 18,
       failed_24h: 2,
@@ -323,6 +338,8 @@ test("v2 admin ops kpi latest includes live ops campaign breakdowns", async () =
   assert.equal(body.data.live_ops_campaign.scheduler_skip.scene_watch_capped_7d, 4);
   assert.equal(body.data.live_ops_campaign.ops_alert.alarm_state, "watch");
   assert.equal(body.data.live_ops_campaign.ops_alert.telegram_sent, false);
+  assert.equal(body.data.live_ops_campaign.ops_alert_trend.raised_7d, 4);
+  assert.equal(body.data.live_ops_campaign.ops_alert_trend.reason_breakdown[0].bucket_key, "scene_runtime_watch_capped_repeated");
   assert.equal(body.data.live_ops_campaign.scene_gate_effect, "capped");
   assert.equal(body.data.live_ops_campaign.scene_runtime.health_band_24h, "yellow");
   assert.equal(body.data.live_ops_campaign.scene_runtime.alarm_state_7d, "watch");
@@ -406,6 +423,7 @@ test("v2 admin ops kpi run includes live ops campaign summary", async () => {
   assert.equal(body.data.live_ops_campaign.scheduler_skip.latest_skip_reason, "scene_runtime_watch_capped");
   assert.equal(body.data.live_ops_campaign.scheduler_skip.alarm_reason, "scene_runtime_watch_capped_repeated");
   assert.equal(body.data.live_ops_campaign.ops_alert.notification_reason, "scene_runtime_watch_capped_repeated");
+  assert.equal(body.data.live_ops_campaign.ops_alert_trend.telegram_sent_7d, 1);
   assert.equal(body.data.live_ops_campaign.scene_runtime.trend_direction_7d, "stable");
   await app.close();
 });

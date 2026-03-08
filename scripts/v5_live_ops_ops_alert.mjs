@@ -3,12 +3,16 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import dotenv from "dotenv";
+import pg from "pg";
 
 const require = createRequire(import.meta.url);
+const { buildPgPoolConfig } = require("../packages/shared/src/v5/dbConnection");
 const {
   resolveLiveOpsDispatchArtifactPaths,
   resolveLiveOpsOpsAlertArtifactPaths
 } = require("../packages/shared/src/runtimeArtifactPaths");
+const { LIVE_OPS_CAMPAIGN_CONFIG_KEY } = require("../packages/shared/src/liveOpsCampaignContract");
+const { Pool } = pg;
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "..");
@@ -182,6 +186,47 @@ async function postTelegramAlert(fetchImpl, botToken, chatId, text) {
   };
 }
 
+function shouldRecordOpsAlertAudit(evaluation = {}, previousAlertArtifact = {}, telegram = {}) {
+  const currentState = String(evaluation.alarm_state || "clear").trim();
+  if (!currentState || currentState === "clear") {
+    return false;
+  }
+  const previousFingerprint = String(previousAlertArtifact?.evaluation?.fingerprint || "").trim();
+  const currentFingerprint = String(evaluation.fingerprint || "").trim();
+  if (telegram.sent === true) {
+    return true;
+  }
+  return !previousFingerprint || previousFingerprint !== currentFingerprint;
+}
+
+async function insertOpsAlertAudit(pool, payload) {
+  if (!pool || typeof pool.connect !== "function") {
+    return {
+      attempted: false,
+      recorded: false,
+      reason: "pool_missing",
+      created_at: null
+    };
+  }
+  const client = await pool.connect();
+  try {
+    const createdAt = new Date().toISOString();
+    await client.query(
+      `INSERT INTO admin_audit (admin_id, action, target, payload_json)
+       VALUES ($1, 'live_ops_campaign_ops_alert', $2, $3::jsonb);`,
+      [Number(payload.admin_id || 0), `config:${LIVE_OPS_CAMPAIGN_CONFIG_KEY}`, JSON.stringify(payload)]
+    );
+    return {
+      attempted: true,
+      recorded: true,
+      reason: "",
+      created_at: createdAt
+    };
+  } finally {
+    client.release();
+  }
+}
+
 async function runLiveOpsOpsAlert(args = {}, deps = {}) {
   const fetchImpl = deps.fetchImpl || global.fetch?.bind(globalThis);
   const now = typeof deps.nowFactory === "function" ? deps.nowFactory() : new Date();
@@ -197,6 +242,10 @@ async function runLiveOpsOpsAlert(args = {}, deps = {}) {
     toNumber(args.cooldown_minutes ?? args.cooldownMinutes ?? process.env.V5_LIVE_OPS_NOTIFY_COOLDOWN_MIN, 180)
   );
   const applyExitCode = parseBool(args.apply_exit_code ?? args.applyExitCode, true);
+  const recordOpsAlertAudit =
+    typeof deps.recordOpsAlertAudit === "function"
+      ? deps.recordOpsAlertAudit
+      : async (payload) => insertOpsAlertAudit(deps.pool, payload);
 
   if (!dispatchArtifact) {
     const output = {
@@ -252,13 +301,58 @@ async function runLiveOpsOpsAlert(args = {}, deps = {}) {
     }
   }
 
+  let audit = {
+    attempted: false,
+    recorded: false,
+    reason: "state_clear",
+    created_at: null
+  };
+  if (shouldRecordOpsAlertAudit(evaluation, previousAlertArtifact, telegram)) {
+    const auditPayload = {
+      admin_id: Math.max(
+        0,
+        toNumber(args.admin_id ?? args.adminId ?? process.env.LIVE_OPS_ALERT_ADMIN_ID ?? process.env.LIVE_OPS_SCHEDULER_ADMIN_ID, 0)
+      ),
+      campaign_key: String(dispatchArtifact.campaign_key || "").trim(),
+      campaign_version: Math.max(0, Number(dispatchArtifact.version || 0)),
+      dispatch_ref: String(dispatchArtifact.dispatch_ref || "").trim(),
+      dispatch_reason: String(dispatchArtifact.reason || "").trim(),
+      reason: String(evaluation.notification_reason || "").trim(),
+      alarm_state: String(evaluation.alarm_state || "clear").trim(),
+      alarm_reason: String(evaluation.alarm_reason || "").trim(),
+      skipped_24h: Math.max(0, Number(evaluation.skipped_24h || 0)),
+      skipped_7d: Math.max(0, Number(evaluation.skipped_7d || 0)),
+      latest_skip_reason: String(evaluation.latest_skip_reason || "").trim(),
+      latest_skip_at: evaluation.latest_skip_at || null,
+      should_notify: evaluation.should_notify === true,
+      fingerprint: String(evaluation.fingerprint || "").trim(),
+      scene_gate_state: String(dispatchArtifact?.scheduler_summary?.scene_gate_state || "no_data").trim() || "no_data",
+      scene_gate_effect: String(dispatchArtifact?.scheduler_summary?.scene_gate_effect || "open").trim() || "open",
+      scene_gate_reason: String(dispatchArtifact?.scheduler_summary?.scene_gate_reason || "").trim(),
+      telegram_sent: telegram.sent === true,
+      telegram_reason: String(telegram.reason || "").trim(),
+      telegram_sent_at: telegram.sent_at || null
+    };
+    try {
+      audit = await recordOpsAlertAudit(auditPayload);
+    } catch (err) {
+      audit = {
+        attempted: true,
+        recorded: false,
+        reason: String(err?.message || "ops_alert_audit_failed"),
+        created_at: null
+      };
+    }
+  }
+
   const output = {
     ok: !evaluation.should_notify || telegram.sent === true || telegram.reason === "cooldown_active",
     generated_at: now.toISOString(),
     reason: evaluation.notification_reason,
     dispatch_artifact_path: dispatchArtifactPaths.latestJsonPath,
     evaluation,
-    telegram
+    telegram,
+    audit
   };
 
   if (!fs.existsSync(alertArtifactPaths.outDir)) {
@@ -280,10 +374,27 @@ async function runLiveOpsOpsAlert(args = {}, deps = {}) {
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
-  runLiveOpsOpsAlert(parseArgs(process.argv.slice(2))).catch((err) => {
-    console.error("[err] v5_live_ops_ops_alert failed:", err?.message || err);
-    process.exitCode = 1;
-  });
+  const databaseUrl = String(process.env.DATABASE_URL || "").trim();
+  let pool = null;
+  if (databaseUrl) {
+    pool = new Pool(
+      buildPgPoolConfig({
+        databaseUrl,
+        sslEnabled: process.env.DATABASE_SSL === "1",
+        rejectUnauthorized: false
+      })
+    );
+  }
+  runLiveOpsOpsAlert(parseArgs(process.argv.slice(2)), { pool })
+    .catch((err) => {
+      console.error("[err] v5_live_ops_ops_alert failed:", err?.message || err);
+      process.exitCode = 1;
+    })
+    .finally(async () => {
+      if (pool) {
+        await pool.end();
+      }
+    });
 }
 
-export { parseArgs, parseBool, toNumber, evaluateOpsAlert, formatOpsAlertMessage, runLiveOpsOpsAlert };
+export { parseArgs, parseBool, toNumber, evaluateOpsAlert, formatOpsAlertMessage, shouldRecordOpsAlertAudit, runLiveOpsOpsAlert };

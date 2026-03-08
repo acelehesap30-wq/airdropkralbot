@@ -68,6 +68,20 @@ function normalizeSkipDailyRows(rows) {
     .slice(0, 7);
 }
 
+function normalizeOpsAlertDailyRows(rows) {
+  if (!Array.isArray(rows)) {
+    return [];
+  }
+  return rows
+    .map((row) => ({
+      day: String(row?.day || ""),
+      alert_count: Math.max(0, Number(row?.alert_count || 0)),
+      telegram_sent_count: Math.max(0, Number(row?.telegram_sent_count || 0))
+    }))
+    .filter((row) => row.day)
+    .slice(0, 7);
+}
+
 function buildLiveOpsCampaignKpiSummary(snapshot) {
   const safeSnapshot = snapshot && typeof snapshot === "object" ? snapshot : {};
   const campaign = safeSnapshot.campaign && typeof safeSnapshot.campaign === "object" ? safeSnapshot.campaign : {};
@@ -79,6 +93,9 @@ function buildLiveOpsCampaignKpiSummary(snapshot) {
     : {};
   const opsAlert = safeSnapshot.ops_alert_summary && typeof safeSnapshot.ops_alert_summary === "object"
     ? safeSnapshot.ops_alert_summary
+    : {};
+  const opsAlertTrend = safeSnapshot.ops_alert_trend_summary && typeof safeSnapshot.ops_alert_trend_summary === "object"
+    ? safeSnapshot.ops_alert_trend_summary
     : {};
   const sceneRuntime = safeSnapshot.scene_runtime_summary && typeof safeSnapshot.scene_runtime_summary === "object"
     ? safeSnapshot.scene_runtime_summary
@@ -137,6 +154,18 @@ function buildLiveOpsCampaignKpiSummary(snapshot) {
       telegram_sent: opsAlert.telegram_sent === true,
       telegram_reason: String(opsAlert.telegram_reason || ""),
       telegram_sent_at: opsAlert.telegram_sent_at || null
+    },
+    ops_alert_trend: {
+      raised_24h: Math.max(0, Number(opsAlertTrend.raised_24h || 0)),
+      raised_7d: Math.max(0, Number(opsAlertTrend.raised_7d || 0)),
+      telegram_sent_24h: Math.max(0, Number(opsAlertTrend.telegram_sent_24h || 0)),
+      telegram_sent_7d: Math.max(0, Number(opsAlertTrend.telegram_sent_7d || 0)),
+      latest_alert_at: opsAlertTrend.latest_alert_at || null,
+      latest_alarm_state: String(opsAlertTrend.latest_alarm_state || "clear"),
+      latest_notification_reason: String(opsAlertTrend.latest_notification_reason || ""),
+      latest_telegram_sent_at: opsAlertTrend.latest_telegram_sent_at || null,
+      daily_breakdown: normalizeOpsAlertDailyRows(opsAlertTrend.daily_breakdown),
+      reason_breakdown: normalizeBreakdownRows(opsAlertTrend.reason_breakdown)
     },
     scene_runtime: sceneRuntime
   };
@@ -203,6 +232,18 @@ async function getLiveOpsCampaignKpiSummary(service, logger) {
         telegram_sent: false,
         telegram_reason: "",
         telegram_sent_at: null
+      },
+      ops_alert_trend: {
+        raised_24h: 0,
+        raised_7d: 0,
+        telegram_sent_24h: 0,
+        telegram_sent_7d: 0,
+        latest_alert_at: null,
+        latest_alarm_state: "clear",
+        latest_notification_reason: "",
+        latest_telegram_sent_at: null,
+        daily_breakdown: [],
+        reason_breakdown: []
       },
       scene_runtime: {}
     };

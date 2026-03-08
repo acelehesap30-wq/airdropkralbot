@@ -185,6 +185,12 @@ const LiveOpsCampaignDailyTrendPointSchema = z.object({
   unique_users: z.number().int().nonnegative().default(0)
 });
 
+const LiveOpsCampaignOpsAlertDailyTrendPointSchema = z.object({
+  day: z.string().default(""),
+  alert_count: z.number().int().nonnegative().default(0),
+  telegram_sent_count: z.number().int().nonnegative().default(0)
+});
+
 const LiveOpsCampaignSkipDailyTrendPointSchema = z.object({
   day: z.string().default(""),
   skip_count: z.number().int().nonnegative().default(0)
@@ -258,6 +264,19 @@ const LiveOpsCampaignOpsAlertSummarySchema = z.object({
   telegram_sent_at: z.string().nullable().default(null)
 });
 
+const LiveOpsCampaignOpsAlertTrendSummarySchema = z.object({
+  raised_24h: z.number().int().nonnegative().default(0),
+  raised_7d: z.number().int().nonnegative().default(0),
+  telegram_sent_24h: z.number().int().nonnegative().default(0),
+  telegram_sent_7d: z.number().int().nonnegative().default(0),
+  latest_alert_at: z.string().nullable().default(null),
+  latest_alarm_state: z.enum(["clear", "watch", "alert"]).default("clear"),
+  latest_notification_reason: z.string().default(""),
+  latest_telegram_sent_at: z.string().nullable().default(null),
+  daily_breakdown: z.array(LiveOpsCampaignOpsAlertDailyTrendPointSchema).default([]),
+  reason_breakdown: z.array(KpiLiveOpsCampaignBreakdownSchema).default([])
+});
+
 const KpiLiveOpsCampaignSummarySchema = z.object({
   available: z.boolean().default(false),
   error_code: z.string().default(""),
@@ -289,6 +308,7 @@ const KpiLiveOpsCampaignSummarySchema = z.object({
   cohort_breakdown: z.array(KpiLiveOpsCampaignBreakdownSchema).default([]),
   scheduler_skip: LiveOpsCampaignSchedulerSkipSummarySchema.default({}),
   ops_alert: LiveOpsCampaignOpsAlertSummarySchema.default({}),
+  ops_alert_trend: LiveOpsCampaignOpsAlertTrendSummarySchema.default({}),
   scene_runtime: SceneRuntimeCompactSummarySchema.default({})
 });
 
@@ -763,6 +783,7 @@ const LiveOpsCampaignOperatorTimelineRowSchema = z.object({
       "live_ops_campaign_approve",
       "live_ops_campaign_revoke",
       "live_ops_campaign_scheduler_skip",
+      "live_ops_campaign_ops_alert",
       "live_ops_campaign_dry_run",
       "live_ops_campaign_dispatch"
     ])
@@ -854,6 +875,7 @@ const LiveOpsCampaignSnapshotSchema = z.object({
   scene_runtime_summary: SceneRuntimeCompactSummarySchema.default({}),
   task_summary: LiveOpsCampaignTaskSummarySchema.default({}),
   ops_alert_summary: LiveOpsCampaignOpsAlertSummarySchema.default({}),
+  ops_alert_trend_summary: LiveOpsCampaignOpsAlertTrendSummarySchema.default({}),
   latest_dispatch: z
     .object({
       event_type: z.string().default("live_ops_campaign_sent"),
@@ -938,6 +960,9 @@ module.exports = {
   LiveOpsCampaignDispatchRequestSchema,
   LiveOpsCampaignDispatchResponseSchema,
   LiveOpsCampaignDispatchHistoryRowSchema,
+  LiveOpsCampaignOpsAlertDailyTrendPointSchema,
+  LiveOpsCampaignOpsAlertSummarySchema,
+  LiveOpsCampaignOpsAlertTrendSummarySchema,
   LiveOpsCampaignSchedulerSummarySchema,
   LiveOpsCampaignOperatorTimelineRowSchema,
   LiveOpsCampaignScheduleSchema,
