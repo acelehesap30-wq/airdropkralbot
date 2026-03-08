@@ -74,10 +74,49 @@ function formatTimelineActionLabel(lang: Lang, value: string) {
   return dictionary[actionKey] ? t(lang, dictionary[actionKey]) : formatWarningCode(actionKey || "unknown");
 }
 
+function BreakdownList(props: { title: string; rows: Array<Record<string, unknown>> }) {
+  if (!props.rows.length) {
+    return <p className="akrMuted">{props.title}: -</p>;
+  }
+  return (
+    <section className="akrMiniPanel">
+      <h4>{props.title}</h4>
+      <ul className="akrList">
+        {props.rows.map((row, index) => (
+          <li key={`${asText(row.bucket_key, "unknown")}_${index}`}>
+            <span>{formatBucketCode(asText(row.bucket_key, "unknown"))}</span>
+            <strong>{asCount(row.item_count)}</strong>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function SkipDailyTrendList(props: { title: string; rows: Array<Record<string, unknown>> }) {
+  if (!props.rows.length) {
+    return <p className="akrMuted">{props.title}: -</p>;
+  }
+  return (
+    <section className="akrMiniPanel">
+      <h4>{props.title}</h4>
+      <ul className="akrList">
+        {props.rows.map((row, index) => (
+          <li key={`${asText(row.day, "day")}_${index}`}>
+            <span>{asText(row.day)}</span>
+            <strong>{asCount(row.skip_count)}</strong>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
   const snapshot = asRecord(props.liveOpsCampaignData);
   const approvalSummary = asRecord(snapshot.approval_summary);
   const schedulerSummary = asRecord(snapshot.scheduler_summary);
+  const schedulerSkipSummary = asRecord(snapshot.scheduler_skip_summary);
   const versionHistory = asArray(snapshot.version_history);
   const dispatchHistory = asArray(snapshot.dispatch_history);
   const operatorTimeline = asArray(snapshot.operator_timeline);
@@ -91,6 +130,8 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
   const variantBreakdown = asArray(deliverySummary.variant_breakdown);
   const cohortBreakdown = asArray(deliverySummary.cohort_breakdown);
   const dailyBreakdown = asArray(deliverySummary.daily_breakdown);
+  const schedulerSkipDailyBreakdown = asArray(schedulerSkipSummary.daily_breakdown);
+  const schedulerSkipReasonBreakdown = asArray(schedulerSkipSummary.reason_breakdown);
   const sceneDailyBreakdown = asArray(sceneRuntimeSummary.daily_breakdown_7d);
   const sceneBandBreakdown = asArray(sceneRuntimeSummary.band_breakdown_7d);
   const sceneQualityBreakdown = asArray(sceneRuntimeSummary.quality_breakdown_24h);
@@ -99,7 +140,7 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
     ? sceneRuntimeSummary.alarm_reasons_7d.map((row) => String(row || "").trim()).filter(Boolean)
     : [];
   const sceneWorstDay = asRecord(sceneRuntimeSummary.worst_day_7d);
-  const preflight = buildLiveOpsCampaignPreflight(props.liveOpsCampaignDraft || "{}", sceneRuntimeSummary);
+  const preflight = buildLiveOpsCampaignPreflight(props.liveOpsCampaignDraft || "{}", sceneRuntimeSummary, schedulerSkipSummary);
   const liveReady = approvalSummary.live_dispatch_ready === true;
   const approvalState = asText(approvalSummary.approval_state);
   const scheduleState = asText(approvalSummary.schedule_state);
@@ -178,9 +219,22 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
               <span className="akrChip">
                 {t(props.lang, "admin_live_ops_scheduler_scene_cap_label")}: {asCount(preflight.gate?.scene_gate_recipient_cap)}
               </span>
+              <span className="akrChip">
+                {t(props.lang, "admin_live_ops_skip_24h")}: {asCount(preflight.recent_skip_24h)}
+              </span>
+              <span className="akrChip">
+                {t(props.lang, "admin_live_ops_skip_7d")}: {asCount(preflight.recent_skip_7d)}
+              </span>
+              <span className="akrChip">
+                {t(props.lang, "admin_live_ops_skip_pressure_label")}: {asText(preflight.recent_skip_pressure)}
+              </span>
             </div>
             <p className="akrMutedLine">
               {t(props.lang, "admin_live_ops_preflight_note")} {asText(preflight.gate?.scene_gate_reason, "-")}
+            </p>
+            <p className="akrMutedLine">
+              {t(props.lang, "admin_live_ops_skip_reason_label")}: {asText(preflight.latest_skip_reason)} | {t(props.lang, "admin_live_ops_skip_at_label")}:{" "}
+              {asText(preflight.latest_skip_at)}
             </p>
           </>
         ) : (
@@ -302,6 +356,27 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
             <strong>{asText(schedulerSummary.latest_auto_dispatch_reason)}</strong>
           </li>
         </ul>
+      </section>
+      <section className="akrMiniPanel" data-akr-focus-key="scheduler_skip_summary">
+        <h4>{t(props.lang, "admin_live_ops_skip_title")}</h4>
+        <div className="akrChipRow">
+          <span className="akrChip">
+            {t(props.lang, "admin_live_ops_skip_24h")}: {asCount(schedulerSkipSummary.skipped_24h)}
+          </span>
+          <span className="akrChip">
+            {t(props.lang, "admin_live_ops_skip_7d")}: {asCount(schedulerSkipSummary.skipped_7d)}
+          </span>
+          <span className="akrChip">
+            {t(props.lang, "admin_live_ops_skip_reason_label")}: {asText(schedulerSkipSummary.latest_skip_reason)}
+          </span>
+          <span className="akrChip">
+            {t(props.lang, "admin_live_ops_skip_at_label")}: {asText(schedulerSkipSummary.latest_skip_at)}
+          </span>
+        </div>
+        <div className="akrSplit">
+          <SkipDailyTrendList title={t(props.lang, "admin_live_ops_skip_daily_title")} rows={schedulerSkipDailyBreakdown} />
+          <BreakdownList title={t(props.lang, "admin_live_ops_skip_reason_title")} rows={schedulerSkipReasonBreakdown} />
+        </div>
       </section>
       <section className="akrMiniPanel" data-akr-focus-key="task_summary">
         <h4>{t(props.lang, "admin_live_ops_task_title")}</h4>

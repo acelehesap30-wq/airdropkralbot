@@ -5,7 +5,27 @@ function asRecord(value) {
   return value && typeof value === "object" && !Array.isArray(value) ? value : {};
 }
 
-export function buildLiveOpsCampaignPreflight(draftText, sceneRuntimeSummary) {
+function asCount(value) {
+  const parsed = Number(value || 0);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 0;
+}
+
+function resolveRecentSkipPressure(skip24h, skip7d) {
+  if (skip24h > 0) {
+    return "active";
+  }
+  if (skip7d > 0) {
+    return "watch";
+  }
+  return "clear";
+}
+
+export function buildLiveOpsCampaignPreflight(draftText, sceneRuntimeSummary, schedulerSkipSummary) {
+  const schedulerSkip = asRecord(schedulerSkipSummary);
+  const skipped24h = asCount(schedulerSkip.skipped_24h);
+  const skipped7d = asCount(schedulerSkip.skipped_7d);
+  const latestSkipReason = String(schedulerSkip.latest_skip_reason || "").trim();
+  const latestSkipAt = String(schedulerSkip.latest_skip_at || "").trim();
   const parsed = parseLiveOpsCampaignDraft(draftText || "{}");
   if (!parsed.ok || !parsed.campaign) {
     return {
@@ -14,6 +34,11 @@ export function buildLiveOpsCampaignPreflight(draftText, sceneRuntimeSummary) {
       campaign_key: "",
       segment_key: "",
       max_recipients: 0,
+      recent_skip_24h: skipped24h,
+      recent_skip_7d: skipped7d,
+      recent_skip_pressure: resolveRecentSkipPressure(skipped24h, skipped7d),
+      latest_skip_reason: latestSkipReason,
+      latest_skip_at: latestSkipAt,
       gate: resolveLiveOpsSceneGate(asRecord(sceneRuntimeSummary), { targeting: { max_recipients: 50 } })
     };
   }
@@ -26,6 +51,11 @@ export function buildLiveOpsCampaignPreflight(draftText, sceneRuntimeSummary) {
     campaign_key: String(campaign.campaign_key || ""),
     segment_key: String(targeting.segment_key || ""),
     max_recipients: Math.max(0, Number(targeting.max_recipients || 0)),
+    recent_skip_24h: skipped24h,
+    recent_skip_7d: skipped7d,
+    recent_skip_pressure: resolveRecentSkipPressure(skipped24h, skipped7d),
+    latest_skip_reason: latestSkipReason,
+    latest_skip_at: latestSkipAt,
     gate: resolveLiveOpsSceneGate(asRecord(sceneRuntimeSummary), campaign)
   };
 }
