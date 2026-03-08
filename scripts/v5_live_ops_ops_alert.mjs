@@ -12,6 +12,7 @@ const {
   resolveLiveOpsOpsAlertArtifactPaths
 } = require("../packages/shared/src/runtimeArtifactPaths");
 const { LIVE_OPS_CAMPAIGN_CONFIG_KEY } = require("../packages/shared/src/liveOpsCampaignContract");
+const { resolveLiveOpsPressureEscalation } = require("../packages/shared/src/liveOpsSceneGate.cjs");
 const { Pool } = pg;
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
@@ -121,6 +122,7 @@ function evaluateOpsAlert(dispatchArtifact, previousAlertArtifact, options = {})
   const recommendationPressure = String(recipientCapRecommendation.pressure_band || "clear").trim().toLowerCase();
   const recommendedCap = Math.max(0, Number(recipientCapRecommendation.recommended_recipient_cap || 0));
   const effectiveCapDelta = Math.max(0, Number(recipientCapRecommendation.effective_cap_delta || 0));
+  const pressureEscalation = resolveLiveOpsPressureEscalation(pressureFocusSummary, recipientCapRecommendation);
   const fingerprint = buildAlertFingerprint(schedulerSkip);
   let shouldNotify = false;
   let notificationReason = "state_clear";
@@ -131,6 +133,9 @@ function evaluateOpsAlert(dispatchArtifact, previousAlertArtifact, options = {})
   } else if (schedulerSkip.state === "watch" && recommendationPressure === "alert") {
     shouldNotify = true;
     notificationReason = "watch_state_pressure";
+  } else if (schedulerSkip.state === "watch" && pressureEscalation.escalation_band === "alert") {
+    shouldNotify = true;
+    notificationReason = String(pressureEscalation.reason || "watch_state_focus_pressure").trim() || "watch_state_focus_pressure";
   } else if (schedulerSkip.state === "watch" && notifyOnWatch) {
     shouldNotify = true;
     notificationReason = "watch_state";
@@ -168,6 +173,13 @@ function evaluateOpsAlert(dispatchArtifact, previousAlertArtifact, options = {})
     pressure_focus_variant_cap: Math.max(0, Number(topVariantSplit.suggested_recipient_cap || 0)),
     pressure_focus_cohort_bucket: String(topCohortSplit.bucket_key || "").trim(),
     pressure_focus_cohort_cap: Math.max(0, Number(topCohortSplit.suggested_recipient_cap || 0)),
+    pressure_focus_escalation_band: String(pressureEscalation.escalation_band || "clear").trim().toLowerCase(),
+    pressure_focus_escalation_reason: String(pressureEscalation.reason || "").trim(),
+    pressure_focus_escalation_dimension: String(pressureEscalation.focus_dimension || "").trim(),
+    pressure_focus_escalation_bucket: String(pressureEscalation.focus_bucket || "").trim(),
+    pressure_focus_escalation_share: Math.max(0, Number(pressureEscalation.focus_share_of_recommended_cap || 0)),
+    pressure_focus_escalation_matches_target: pressureEscalation.focus_matches_target === true,
+    pressure_focus_effective_delta_ratio: Math.max(0, Number(pressureEscalation.effective_cap_delta_ratio || 0)),
     notify_on_watch: notifyOnWatch,
     cooldown_minutes: cooldownMinutes,
     previous_fingerprint: previousFingerprint,
@@ -207,6 +219,10 @@ function formatOpsAlertMessage(dispatchArtifact = {}, evaluation = {}) {
     )}`,
     `focus_locale_cap=${String(evaluation.pressure_focus_locale_bucket || "-")}:${Math.max(0, Number(evaluation.pressure_focus_locale_cap || 0))}`,
     `focus_variant_cap=${String(evaluation.pressure_focus_variant_bucket || "-")}:${Math.max(0, Number(evaluation.pressure_focus_variant_cap || 0))}`,
+    `focus_escalation=${String(evaluation.pressure_focus_escalation_band || "-")}/${String(
+      evaluation.pressure_focus_escalation_reason || "-"
+    )}/${String(evaluation.pressure_focus_escalation_dimension || "-")}/${String(evaluation.pressure_focus_escalation_bucket || "-")}`,
+    `focus_delta_ratio=${Math.round(Math.max(0, Number(evaluation.pressure_focus_effective_delta_ratio || 0)) * 100)}%`,
     `campaign=${String(dispatchArtifact.campaign_key || "-")}`,
     `dispatch_reason=${String(dispatchArtifact.reason || "-")}`
   ];
@@ -405,6 +421,13 @@ async function runLiveOpsOpsAlert(args = {}, deps = {}) {
       pressure_focus_variant_cap: Math.max(0, Number(evaluation.pressure_focus_variant_cap || 0)),
       pressure_focus_cohort_bucket: String(evaluation.pressure_focus_cohort_bucket || "").trim(),
       pressure_focus_cohort_cap: Math.max(0, Number(evaluation.pressure_focus_cohort_cap || 0)),
+      pressure_focus_escalation_band: String(evaluation.pressure_focus_escalation_band || "clear").trim() || "clear",
+      pressure_focus_escalation_reason: String(evaluation.pressure_focus_escalation_reason || "").trim(),
+      pressure_focus_escalation_dimension: String(evaluation.pressure_focus_escalation_dimension || "").trim(),
+      pressure_focus_escalation_bucket: String(evaluation.pressure_focus_escalation_bucket || "").trim(),
+      pressure_focus_escalation_share: Math.max(0, Number(evaluation.pressure_focus_escalation_share || 0)),
+      pressure_focus_escalation_matches_target: evaluation.pressure_focus_escalation_matches_target === true,
+      pressure_focus_effective_delta_ratio: Math.max(0, Number(evaluation.pressure_focus_effective_delta_ratio || 0)),
       telegram_sent: telegram.sent === true,
       telegram_reason: String(telegram.reason || "").trim(),
       telegram_sent_at: telegram.sent_at || null

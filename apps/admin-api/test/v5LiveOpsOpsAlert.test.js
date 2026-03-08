@@ -122,6 +122,83 @@ test("evaluateOpsAlert escalates watch state when recipient cap pressure is aler
   assert.equal(result.pressure_focus_cohort_cap, 4);
 });
 
+test("evaluateOpsAlert escalates watch state on concentrated locale pressure focus", async () => {
+  const mod = await loadModule();
+  const result = mod.evaluateOpsAlert(
+    {
+      scheduler_skip_summary: {
+        alarm_state: "watch",
+        alarm_reason: "scene_runtime_watch_capped_repeated",
+        skipped_24h: 1,
+        skipped_7d: 3,
+        latest_skip_reason: "scene_runtime_watch_capped",
+        latest_skip_at: "2026-03-08T15:00:00.000Z"
+      },
+      scheduler_summary: {
+        recipient_cap_recommendation: {
+          pressure_band: "watch",
+          configured_recipients: 40,
+          recommended_recipient_cap: 8,
+          effective_cap_delta: 32,
+          reason: "ops_alert_segment_pressure"
+        }
+      },
+      pressure_focus_summary: {
+        pressure_band: "watch",
+        warning_rows: [
+          {
+            dimension: "locale",
+            bucket_key: "tr",
+            item_count: 7,
+            matches_target: true
+          }
+        ],
+        locale_cap_split: [
+          {
+            bucket_key: "tr",
+            item_count: 7,
+            suggested_recipient_cap: 7
+          },
+          {
+            bucket_key: "en",
+            item_count: 1,
+            suggested_recipient_cap: 1
+          }
+        ],
+        variant_cap_split: [
+          {
+            bucket_key: "treatment",
+            item_count: 5,
+            suggested_recipient_cap: 5
+          }
+        ],
+        cohort_cap_split: [
+          {
+            bucket_key: "17",
+            item_count: 4,
+            suggested_recipient_cap: 4
+          }
+        ]
+      }
+    },
+    null,
+    {
+      now: new Date("2026-03-08T15:10:00.000Z"),
+      cooldownMinutes: 180
+    }
+  );
+
+  assert.equal(result.should_notify, true);
+  assert.equal(result.notification_reason, "watch_state_locale_pressure");
+  assert.equal(result.pressure_focus_escalation_band, "alert");
+  assert.equal(result.pressure_focus_escalation_reason, "watch_state_locale_pressure");
+  assert.equal(result.pressure_focus_escalation_dimension, "locale");
+  assert.equal(result.pressure_focus_escalation_bucket, "tr");
+  assert.equal(result.pressure_focus_escalation_share, 0.875);
+  assert.equal(result.pressure_focus_escalation_matches_target, true);
+  assert.equal(result.pressure_focus_effective_delta_ratio, 0.8);
+});
+
 test("runLiveOpsOpsAlert writes latest artifact and skips telegram on clear state", async () => {
   const mod = await loadModule();
   const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "akr-liveops-alert-"));
@@ -306,4 +383,7 @@ test("runLiveOpsOpsAlert records audit when alert fingerprint changes", async ()
   assert.equal(auditPayloads[0].pressure_focus_variant_cap, 0);
   assert.equal(auditPayloads[0].pressure_focus_cohort_bucket, "17");
   assert.equal(auditPayloads[0].pressure_focus_cohort_cap, 0);
+  assert.equal(auditPayloads[0].pressure_focus_escalation_band, "alert");
+  assert.equal(auditPayloads[0].pressure_focus_escalation_reason, "pressure_band_alert");
+  assert.equal(auditPayloads[0].pressure_focus_effective_delta_ratio, 1);
 });

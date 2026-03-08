@@ -524,6 +524,12 @@ test("live ops chat campaign service snapshot includes approval summary schedule
       should_notify: true,
       notification_reason: "scene_runtime_alert_blocked_repeated",
       fingerprint: "alert|scene_runtime_alert_blocked_repeated|2026-03-08T12:26:00.000Z",
+      pressure_focus_escalation_band: "alert",
+      pressure_focus_escalation_reason: "watch_state_locale_pressure",
+      pressure_focus_escalation_dimension: "locale",
+      pressure_focus_escalation_bucket: "tr",
+      pressure_focus_escalation_share: 0.875,
+      pressure_focus_effective_delta_ratio: 0.8,
       telegram_sent: true,
       telegram_reason: "",
       telegram_sent_at: "2026-03-08T12:26:30.000Z"
@@ -580,6 +586,10 @@ test("live ops chat campaign service snapshot includes approval summary schedule
   assert.equal(snapshot.ops_alert_summary.alarm_state, "alert");
   assert.equal(snapshot.ops_alert_summary.telegram_sent, true);
   assert.equal(snapshot.ops_alert_summary.notification_reason, "scene_runtime_alert_blocked_repeated");
+  assert.equal(snapshot.ops_alert_summary.pressure_focus_escalation_band, "alert");
+  assert.equal(snapshot.ops_alert_summary.pressure_focus_escalation_reason, "watch_state_locale_pressure");
+  assert.equal(snapshot.ops_alert_summary.pressure_focus_escalation_dimension, "locale");
+  assert.equal(snapshot.ops_alert_summary.pressure_focus_escalation_bucket, "tr");
   assert.equal(snapshot.ops_alert_trend_summary.raised_24h, 1);
   assert.equal(snapshot.ops_alert_trend_summary.raised_7d, 3);
   assert.equal(snapshot.ops_alert_trend_summary.experiment_key, "webapp_react_v1");

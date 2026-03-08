@@ -608,6 +608,13 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
             <strong>{asText(opsAlertSummary.notification_reason)}</strong>
           </li>
           <li>
+            <span>{t(props.lang, "admin_live_ops_ops_alert_focus_escalation_label")}</span>
+            <strong>
+              {asText(opsAlertSummary.pressure_focus_escalation_band)} / {asText(opsAlertSummary.pressure_focus_escalation_reason)} /{" "}
+              {asText(opsAlertSummary.pressure_focus_escalation_dimension)} / {asText(opsAlertSummary.pressure_focus_escalation_bucket)}
+            </strong>
+          </li>
+          <li>
             <span>{t(props.lang, "admin_live_ops_ops_alert_sent_at_label")}</span>
             <strong>{asText(opsAlertSummary.telegram_sent_at)}</strong>
           </li>
@@ -645,6 +652,12 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
           {t(props.lang, "admin_live_ops_ops_alert_latest_label")}: {asText(opsAlertTrendSummary.latest_alert_at)} |{" "}
           {t(props.lang, "admin_live_ops_ops_alert_state_label")}: {asText(opsAlertTrendSummary.latest_alarm_state)} |{" "}
           {t(props.lang, "admin_live_ops_ops_alert_reason_label")}: {asText(opsAlertTrendSummary.latest_notification_reason)}
+        </p>
+        <p className="akrMutedLine">
+          {t(props.lang, "admin_live_ops_ops_alert_focus_escalation_label")}: {asText(opsAlertSummary.pressure_focus_escalation_band)} /{" "}
+          {asText(opsAlertSummary.pressure_focus_escalation_reason)} | {t(props.lang, "admin_live_ops_ops_alert_focus_share_label")}:{" "}
+          {toPct(opsAlertSummary.pressure_focus_escalation_share)} | {t(props.lang, "admin_live_ops_ops_alert_focus_delta_ratio_label")}:{" "}
+          {toPct(opsAlertSummary.pressure_focus_effective_delta_ratio)}
         </p>
         <div className="akrSplit">
           <OpsAlertDailyTrendList title={t(props.lang, "admin_live_ops_ops_alert_daily_title")} rows={opsAlertTrendDailyBreakdown} />

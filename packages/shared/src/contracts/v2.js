@@ -261,6 +261,12 @@ const LiveOpsCampaignOpsAlertSummarySchema = z.object({
   should_notify: z.boolean().default(false),
   notification_reason: z.string().default(""),
   fingerprint: z.string().default(""),
+  pressure_focus_escalation_band: z.enum(["clear", "watch", "alert"]).default("clear"),
+  pressure_focus_escalation_reason: z.string().default(""),
+  pressure_focus_escalation_dimension: z.string().default(""),
+  pressure_focus_escalation_bucket: z.string().default(""),
+  pressure_focus_escalation_share: z.number().min(0).default(0),
+  pressure_focus_effective_delta_ratio: z.number().min(0).default(0),
   telegram_sent: z.boolean().default(false),
   telegram_reason: z.string().default(""),
   telegram_sent_at: z.string().nullable().default(null)

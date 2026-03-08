@@ -415,8 +415,17 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
             {t(props.lang, "admin_runtime_live_ops_ops_alert_sent_at_label")}: {formatStamp(opsAlert?.telegram_sent_at)}
           </p>
           <p className="akrMutedLine">
+            {t(props.lang, "admin_runtime_live_ops_ops_alert_focus_escalation_label")}: {readText(opsAlert, "pressure_focus_escalation_band") || "-"} /{" "}
+            {readText(opsAlert, "pressure_focus_escalation_reason") || "-"} / {readText(opsAlert, "pressure_focus_escalation_dimension") || "-"} /{" "}
+            {readText(opsAlert, "pressure_focus_escalation_bucket") || "-"}
+          </p>
+          <p className="akrMutedLine">
             {t(props.lang, "admin_runtime_live_ops_ops_alert_latest_label")}: {formatStamp(opsAlertTrend?.latest_alert_at)} |{" "}
             {t(props.lang, "admin_runtime_live_ops_ops_alert_reason_label")}: {readText(opsAlertTrend, "latest_notification_reason") || "-"}
+          </p>
+          <p className="akrMutedLine">
+            {t(props.lang, "admin_runtime_live_ops_ops_alert_focus_share_label")}: {toPct(readNum(opsAlert, "pressure_focus_escalation_share"))} |{" "}
+            {t(props.lang, "admin_runtime_live_ops_ops_alert_focus_delta_ratio_label")}: {toPct(readNum(opsAlert, "pressure_focus_effective_delta_ratio"))}
           </p>
           <p className="akrMutedLine">
             {t(props.lang, "admin_runtime_live_ops_recommend_reason_label")}: {readText(recipientCapRecommendation, "reason") || "-"} |{" "}

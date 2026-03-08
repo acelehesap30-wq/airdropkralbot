@@ -63,6 +63,48 @@ function allocateSuggestedCap(rows, recommendedCap) {
   return allocations;
 }
 
+function roundRatio(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return 0;
+  }
+  return Number(parsed.toFixed(4));
+}
+
+function buildWarningMatchIndex(warningRows) {
+  const index = new Map();
+  asRows(warningRows).forEach((row) => {
+    const dimension = String(row.dimension || "").trim();
+    const bucketKey = String(row.bucket_key || "").trim();
+    if (!dimension || !bucketKey) {
+      return;
+    }
+    index.set(`${dimension}:${bucketKey}`, row.matches_target === true);
+  });
+  return index;
+}
+
+function pickPressureSplitCandidate(dimension, rows, recommendedCap, warningIndex) {
+  const topRow = asRows(rows)[0] || null;
+  if (!topRow) {
+    return null;
+  }
+  const bucketKey = String(topRow.bucket_key || "").trim();
+  const suggestedCap = Math.max(0, Number(topRow.suggested_recipient_cap || 0));
+  const itemCount = Math.max(0, Number(topRow.item_count || 0));
+  if (!bucketKey || suggestedCap <= 0 || itemCount <= 0 || recommendedCap <= 0) {
+    return null;
+  }
+  return {
+    dimension,
+    bucket_key: bucketKey,
+    suggested_recipient_cap: suggestedCap,
+    item_count: itemCount,
+    share_of_recommended_cap: roundRatio(suggestedCap / recommendedCap),
+    matches_target: warningIndex.get(`${dimension}:${bucketKey}`) === true
+  };
+}
+
 export function resolveLiveOpsSceneGate(sceneRuntimeSummary, campaign) {
   const safeSummary = sceneRuntimeSummary && typeof sceneRuntimeSummary === "object" && !Array.isArray(sceneRuntimeSummary)
     ? sceneRuntimeSummary
@@ -265,8 +307,93 @@ export function resolveLiveOpsPressureFocus(opsAlertTrendSummary, campaign, reco
   };
 }
 
+export function resolveLiveOpsPressureEscalation(pressureFocusSummary, recommendation) {
+  const safeFocus = asRecord(pressureFocusSummary);
+  const safeRecommendation = asRecord(recommendation);
+  const pressureBand = String(safeRecommendation.pressure_band || safeFocus.pressure_band || "clear").trim().toLowerCase();
+  const configuredRecipients = Math.max(0, Number(safeRecommendation.configured_recipients || 0));
+  const recommendedCap = Math.max(0, Number(safeRecommendation.recommended_recipient_cap || 0));
+  const effectiveCapDelta = Math.max(0, Number(safeRecommendation.effective_cap_delta || 0));
+  const effectiveCapDeltaRatio = configuredRecipients > 0 ? roundRatio(effectiveCapDelta / configuredRecipients) : 0;
+  const warningIndex = buildWarningMatchIndex(safeFocus.warning_rows);
+  const localeCandidate = pickPressureSplitCandidate("locale", safeFocus.locale_cap_split, recommendedCap, warningIndex);
+  const variantCandidate = pickPressureSplitCandidate("variant", safeFocus.variant_cap_split, recommendedCap, warningIndex);
+  const cohortCandidate = pickPressureSplitCandidate("cohort", safeFocus.cohort_cap_split, recommendedCap, warningIndex);
+  let escalationBand = pressureBand === "alert" ? "alert" : pressureBand === "watch" ? "watch" : "clear";
+  let reason = pressureBand === "alert" ? "pressure_band_alert" : "";
+  let focusDimension = "";
+  let focusBucket = "";
+  let focusShare = 0;
+  let focusMatchesTarget = false;
+  let focusSuggestedCap = 0;
+
+  if (pressureBand === "watch" && recommendedCap > 0 && effectiveCapDelta > 0) {
+    const candidates = [localeCandidate, variantCandidate, cohortCandidate].filter(Boolean);
+    const localeAlertCandidate =
+      localeCandidate &&
+      localeCandidate.share_of_recommended_cap >= 0.85 &&
+      (effectiveCapDeltaRatio >= 0.5 || localeCandidate.matches_target === true)
+        ? localeCandidate
+        : null;
+    const variantAlertCandidate =
+      variantCandidate &&
+      variantCandidate.share_of_recommended_cap >= 0.85 &&
+      effectiveCapDeltaRatio >= 0.5
+        ? variantCandidate
+        : null;
+    const cohortAlertCandidate =
+      cohortCandidate &&
+      cohortCandidate.share_of_recommended_cap >= 0.9 &&
+      effectiveCapDeltaRatio >= 0.6
+        ? cohortCandidate
+        : null;
+    const escalationCandidate = localeAlertCandidate || variantAlertCandidate || cohortAlertCandidate || null;
+    if (escalationCandidate) {
+      escalationBand = "alert";
+      reason = `watch_state_${escalationCandidate.dimension}_pressure`;
+      focusDimension = escalationCandidate.dimension;
+      focusBucket = escalationCandidate.bucket_key;
+      focusShare = escalationCandidate.share_of_recommended_cap;
+      focusMatchesTarget = escalationCandidate.matches_target === true;
+      focusSuggestedCap = escalationCandidate.suggested_recipient_cap;
+    } else if (candidates.length) {
+      const topCandidate = candidates
+        .slice()
+        .sort((left, right) => {
+          if (right.share_of_recommended_cap !== left.share_of_recommended_cap) {
+            return right.share_of_recommended_cap - left.share_of_recommended_cap;
+          }
+          if (right.item_count !== left.item_count) {
+            return right.item_count - left.item_count;
+          }
+          return left.dimension.localeCompare(right.dimension);
+        })[0];
+      focusDimension = topCandidate.dimension;
+      focusBucket = topCandidate.bucket_key;
+      focusShare = topCandidate.share_of_recommended_cap;
+      focusMatchesTarget = topCandidate.matches_target === true;
+      focusSuggestedCap = topCandidate.suggested_recipient_cap;
+    }
+  }
+
+  return {
+    escalation_band: ["clear", "watch", "alert"].includes(escalationBand) ? escalationBand : "clear",
+    reason,
+    configured_recipients: configuredRecipients,
+    recommended_recipient_cap: recommendedCap,
+    effective_cap_delta: effectiveCapDelta,
+    effective_cap_delta_ratio: effectiveCapDeltaRatio,
+    focus_dimension: focusDimension,
+    focus_bucket: focusBucket,
+    focus_share_of_recommended_cap: focusShare,
+    focus_matches_target: focusMatchesTarget,
+    focus_suggested_recipient_cap: focusSuggestedCap
+  };
+}
+
 export default {
   resolveLiveOpsSceneGate,
   resolveLiveOpsRecipientCapRecommendation,
-  resolveLiveOpsPressureFocus
+  resolveLiveOpsPressureFocus,
+  resolveLiveOpsPressureEscalation
 };
