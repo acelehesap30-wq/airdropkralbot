@@ -1,0 +1,289 @@
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
+import dotenv from "dotenv";
+
+const require = createRequire(import.meta.url);
+const {
+  resolveLiveOpsDispatchArtifactPaths,
+  resolveLiveOpsOpsAlertArtifactPaths
+} = require("../packages/shared/src/runtimeArtifactPaths");
+
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(scriptDir, "..");
+const envPath = path.join(repoRoot, ".env");
+if (fs.existsSync(envPath)) {
+  dotenv.config({ path: envPath });
+}
+
+function parseArgs(argv) {
+  const out = {};
+  for (let i = 0; i < argv.length; i += 1) {
+    const token = String(argv[i] || "").trim();
+    if (!token.startsWith("--")) {
+      continue;
+    }
+    const key = token.slice(2);
+    const next = argv[i + 1];
+    if (!next || String(next).startsWith("--")) {
+      out[key] = "true";
+      continue;
+    }
+    out[key] = String(next);
+    i += 1;
+  }
+  return out;
+}
+
+function parseBool(value, fallback = false) {
+  if (value == null || value === "") {
+    return fallback;
+  }
+  const normalized = String(value).trim().toLowerCase();
+  if (["1", "true", "yes", "y", "on"].includes(normalized)) {
+    return true;
+  }
+  if (["0", "false", "no", "n", "off"].includes(normalized)) {
+    return false;
+  }
+  return fallback;
+}
+
+function toNumber(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function readJsonSafe(filePath) {
+  if (!filePath || !fs.existsSync(filePath)) {
+    return null;
+  }
+  try {
+    return JSON.parse(fs.readFileSync(filePath, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+function normalizeOpsAlarm(source = {}) {
+  const raw = source && typeof source === "object" && !Array.isArray(source) ? source : {};
+  const state = String(raw.state || raw.alarm_state || "clear").trim().toLowerCase();
+  return {
+    state: ["clear", "watch", "alert"].includes(state) ? state : "clear",
+    reason: String(raw.reason || raw.alarm_reason || "").trim(),
+    skipped_24h: Math.max(0, Number(raw.skipped_24h || 0)),
+    skipped_7d: Math.max(0, Number(raw.skipped_7d || 0)),
+    latest_skip_reason: String(raw.latest_skip_reason || "").trim(),
+    latest_skip_at: raw.latest_skip_at || null
+  };
+}
+
+function buildAlertFingerprint(alarm) {
+  const safeAlarm = normalizeOpsAlarm(alarm);
+  return [
+    safeAlarm.state,
+    safeAlarm.reason || "-",
+    safeAlarm.latest_skip_reason || "-",
+    safeAlarm.latest_skip_at || "-"
+  ].join("|");
+}
+
+function evaluateOpsAlert(dispatchArtifact, previousAlertArtifact, options = {}) {
+  const schedulerSkip = normalizeOpsAlarm(dispatchArtifact?.scheduler_skip_summary || dispatchArtifact?.ops_alarm || {});
+  const previous = previousAlertArtifact && typeof previousAlertArtifact === "object" ? previousAlertArtifact : {};
+  const previousEvaluation = previous.evaluation && typeof previous.evaluation === "object" ? previous.evaluation : {};
+  const previousFingerprint = String(previousEvaluation.fingerprint || "").trim();
+  const previousSentAt = String(previous.telegram?.sent_at || "").trim();
+  const notifyOnWatch = options.notifyOnWatch === true;
+  const cooldownMinutes = Math.max(15, Number(options.cooldownMinutes || 180));
+  const now = options.now instanceof Date ? options.now : new Date();
+  const fingerprint = buildAlertFingerprint(schedulerSkip);
+  let shouldNotify = false;
+  let notificationReason = "state_clear";
+
+  if (schedulerSkip.state === "alert") {
+    shouldNotify = true;
+    notificationReason = "alert_state";
+  } else if (schedulerSkip.state === "watch" && notifyOnWatch) {
+    shouldNotify = true;
+    notificationReason = "watch_state";
+  }
+
+  if (shouldNotify && previousFingerprint && previousFingerprint === fingerprint && previousSentAt) {
+    const lastSentAt = new Date(previousSentAt);
+    if (!Number.isNaN(lastSentAt.getTime())) {
+      const ageMinutes = (now.getTime() - lastSentAt.getTime()) / 60000;
+      if (Number.isFinite(ageMinutes) && ageMinutes < cooldownMinutes) {
+        shouldNotify = false;
+        notificationReason = "cooldown_active";
+      }
+    }
+  }
+
+  return {
+    alarm_state: schedulerSkip.state,
+    alarm_reason: schedulerSkip.reason,
+    skipped_24h: schedulerSkip.skipped_24h,
+    skipped_7d: schedulerSkip.skipped_7d,
+    latest_skip_reason: schedulerSkip.latest_skip_reason,
+    latest_skip_at: schedulerSkip.latest_skip_at,
+    notify_on_watch: notifyOnWatch,
+    cooldown_minutes: cooldownMinutes,
+    previous_fingerprint: previousFingerprint,
+    fingerprint,
+    should_notify: shouldNotify,
+    notification_reason: notificationReason
+  };
+}
+
+function formatOpsAlertMessage(dispatchArtifact = {}, evaluation = {}) {
+  const scheduler = dispatchArtifact?.scheduler_summary && typeof dispatchArtifact.scheduler_summary === "object"
+    ? dispatchArtifact.scheduler_summary
+    : {};
+  const lines = [
+    "LiveOps Scheduler Alarm",
+    `state=${String(evaluation.alarm_state || "clear")}`,
+    `reason=${String(evaluation.alarm_reason || "-")}`,
+    `skip_24h=${Math.max(0, Number(evaluation.skipped_24h || 0))}`,
+    `skip_7d=${Math.max(0, Number(evaluation.skipped_7d || 0))}`,
+    `latest_skip=${String(evaluation.latest_skip_reason || "-")}`,
+    `latest_skip_at=${String(evaluation.latest_skip_at || "-")}`,
+    `scene_gate=${String(scheduler.scene_gate_state || "no_data")}/${String(scheduler.scene_gate_effect || "open")}`,
+    `scene_reason=${String(scheduler.scene_gate_reason || "-")}`,
+    `campaign=${String(dispatchArtifact.campaign_key || "-")}`,
+    `dispatch_reason=${String(dispatchArtifact.reason || "-")}`
+  ];
+  return lines.join("\n");
+}
+
+async function postTelegramAlert(fetchImpl, botToken, chatId, text) {
+  const token = String(botToken || "").trim();
+  const targetChat = String(chatId || "").trim();
+  if (!token || !targetChat) {
+    return { attempted: false, sent: false, reason: "telegram_credentials_missing", sent_at: null };
+  }
+  const res = await fetchImpl(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      chat_id: targetChat,
+      text: String(text || ""),
+      disable_web_page_preview: true
+    })
+  });
+  const payload = await res.json().catch(() => ({}));
+  return {
+    attempted: true,
+    sent: Boolean(res.ok && payload?.ok),
+    status: Number(res.status || 0),
+    reason: res.ok ? "" : String(payload?.description || `status_${res.status}`),
+    sent_at: res.ok ? new Date().toISOString() : null
+  };
+}
+
+async function runLiveOpsOpsAlert(args = {}, deps = {}) {
+  const fetchImpl = deps.fetchImpl || global.fetch?.bind(globalThis);
+  const now = typeof deps.nowFactory === "function" ? deps.nowFactory() : new Date();
+  const runtimeRepoRoot = String(deps.repoRoot || repoRoot).trim();
+  const dispatchArtifactPaths = resolveLiveOpsDispatchArtifactPaths(runtimeRepoRoot);
+  const alertArtifactPaths = resolveLiveOpsOpsAlertArtifactPaths(runtimeRepoRoot);
+  const dispatchArtifact = readJsonSafe(dispatchArtifactPaths.latestJsonPath);
+  const previousAlertArtifact = readJsonSafe(alertArtifactPaths.latestJsonPath);
+  const notifyEnabled = parseBool(args.notify_telegram ?? args.notifyTelegram ?? process.env.V5_LIVE_OPS_NOTIFY_TELEGRAM, true);
+  const notifyOnWatch = parseBool(args.notify_on_watch ?? args.notifyOnWatch ?? process.env.V5_LIVE_OPS_NOTIFY_WATCH, false);
+  const cooldownMinutes = Math.max(
+    15,
+    toNumber(args.cooldown_minutes ?? args.cooldownMinutes ?? process.env.V5_LIVE_OPS_NOTIFY_COOLDOWN_MIN, 180)
+  );
+  const applyExitCode = parseBool(args.apply_exit_code ?? args.applyExitCode, true);
+
+  if (!dispatchArtifact) {
+    const output = {
+      ok: false,
+      generated_at: now.toISOString(),
+      reason: "dispatch_artifact_missing",
+      dispatch_artifact_path: dispatchArtifactPaths.latestJsonPath,
+      evaluation: {
+        alarm_state: "clear",
+        should_notify: false,
+        notification_reason: "dispatch_artifact_missing"
+      },
+      telegram: {
+        attempted: false,
+        sent: false,
+        reason: "dispatch_artifact_missing",
+        sent_at: null
+      }
+    };
+    if (applyExitCode) {
+      process.exitCode = 1;
+    }
+    return output;
+  }
+
+  const evaluation = evaluateOpsAlert(dispatchArtifact, previousAlertArtifact, {
+    now,
+    notifyOnWatch,
+    cooldownMinutes
+  });
+  let telegram = {
+    attempted: false,
+    sent: false,
+    reason: notifyEnabled ? "notification_not_required" : "notify_disabled",
+    sent_at: null
+  };
+
+  if (evaluation.should_notify && notifyEnabled) {
+    if (typeof fetchImpl !== "function") {
+      telegram = {
+        attempted: false,
+        sent: false,
+        reason: "fetch_missing",
+        sent_at: null
+      };
+    } else {
+      telegram = await postTelegramAlert(
+        fetchImpl,
+        deps.botToken ?? process.env.BOT_TOKEN ?? "",
+        deps.adminTelegramId ?? process.env.ADMIN_TELEGRAM_ID ?? "",
+        formatOpsAlertMessage(dispatchArtifact, evaluation)
+      );
+    }
+  }
+
+  const output = {
+    ok: !evaluation.should_notify || telegram.sent === true || telegram.reason === "cooldown_active",
+    generated_at: now.toISOString(),
+    reason: evaluation.notification_reason,
+    dispatch_artifact_path: dispatchArtifactPaths.latestJsonPath,
+    evaluation,
+    telegram
+  };
+
+  if (!fs.existsSync(alertArtifactPaths.outDir)) {
+    fs.mkdirSync(alertArtifactPaths.outDir, { recursive: true });
+  }
+  fs.writeFileSync(alertArtifactPaths.latestJsonPath, `${JSON.stringify(output, null, 2)}\n`, "utf8");
+
+  if (!output.ok && applyExitCode) {
+    process.exitCode = 1;
+  }
+
+  console.log(
+    `[liveops-ops-alert] alarm=${String(evaluation.alarm_state)} notify=${Boolean(evaluation.should_notify)} sent=${Boolean(
+      telegram.sent
+    )} reason=${String(output.reason || "")}`
+  );
+  console.log(`[liveops-ops-alert] report=${alertArtifactPaths.latestJsonPath}`);
+  return output;
+}
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  runLiveOpsOpsAlert(parseArgs(process.argv.slice(2))).catch((err) => {
+    console.error("[err] v5_live_ops_ops_alert failed:", err?.message || err);
+    process.exitCode = 1;
+  });
+}
+
+export { parseArgs, parseBool, toNumber, evaluateOpsAlert, formatOpsAlertMessage, runLiveOpsOpsAlert };

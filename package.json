@@ -42,6 +42,7 @@
     "alerts:v5:task:register": "powershell -ExecutionPolicy Bypass -File scripts/register_v5_chat_alert_tasks.ps1 -TaskName \"AirdropKralBot-V5-ChatAlerts-1H\" -EveryHours 1",
     "alerts:v5:task:remove": "powershell -ExecutionPolicy Bypass -File scripts/register_v5_chat_alert_tasks.ps1 -TaskName \"AirdropKralBot-V5-ChatAlerts-1H\" -UnregisterOnly",
     "liveops:v5:dispatch": "node scripts/v5_live_ops_campaign_dispatch.mjs",
+    "liveops:v5:alert": "node scripts/v5_live_ops_ops_alert.mjs",
     "liveops:v5:task:check": "powershell -ExecutionPolicy Bypass -File scripts/check_v5_live_ops_campaign_task.ps1",
     "liveops:v5:task:register": "powershell -ExecutionPolicy Bypass -File scripts/register_v5_live_ops_campaign_tasks.ps1 -TaskName \"AirdropKralBot-V5-LiveOps-15M\" -EveryMinutes 15",
     "liveops:v5:task:remove": "powershell -ExecutionPolicy Bypass -File scripts/register_v5_live_ops_campaign_tasks.ps1 -TaskName \"AirdropKralBot-V5-LiveOps-15M\" -UnregisterOnly",

@@ -23,6 +23,11 @@ $runnerBody = @"
 setlocal
 cd /d "$repoRoot"
 call npm run liveops:v5:dispatch
+set DISPATCH_EXIT=%ERRORLEVEL%
+call npm run liveops:v5:alert
+set ALERT_EXIT=%ERRORLEVEL%
+if not "%DISPATCH_EXIT%"=="0" exit /b %DISPATCH_EXIT%
+if not "%ALERT_EXIT%"=="0" exit /b %ALERT_EXIT%
 endlocal
 "@
 Set-Content -Path $taskRunnerPath -Value $runnerBody -Encoding ASCII

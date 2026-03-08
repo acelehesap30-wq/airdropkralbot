@@ -7,6 +7,7 @@ $ErrorActionPreference = "Stop"
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $latestJson = Join-Path $repoRoot ".runtime-artifacts\liveops\V5_LIVE_OPS_CAMPAIGN_DISPATCH_latest.json"
+$latestAlertJson = Join-Path $repoRoot ".runtime-artifacts\liveops\V5_LIVE_OPS_OPS_ALERT_latest.json"
 
 function Get-TaskStatus {
   param([string]$Name)
@@ -93,7 +94,9 @@ function Get-PropValue {
 
 $task = Get-TaskStatus -Name $TaskName
 $jsonInfo = Get-FileInfoSafe -Path $latestJson
+$alertJsonInfo = Get-FileInfoSafe -Path $latestAlertJson
 $latestPayload = Read-JsonSafe -Path $latestJson
+$latestAlertPayload = Read-JsonSafe -Path $latestAlertJson
 
 $latestSummary = $null
 if ($latestPayload -ne $null) {
@@ -123,6 +126,25 @@ if (-not $task.exists) { $ok = $false }
 if (-not $jsonInfo.exists -or [double]$jsonInfo.age_min -gt $StaleMinutes) { $ok = $false }
 if ($latestSummary -ne $null -and [string]$latestSummary.scheduler_skip_alarm_state -eq "alert") { $ok = $false }
 
+$latestAlertSummary = $null
+if ($latestAlertPayload -ne $null) {
+  $evaluation = Get-PropValue -Source $latestAlertPayload -Name "evaluation"
+  $telegram = Get-PropValue -Source $latestAlertPayload -Name "telegram"
+  $latestAlertSummary = [pscustomobject]@{
+    alarm_state = [string](Get-PropValue -Source $evaluation -Name "alarm_state" -Fallback "clear")
+    should_notify = [bool](Get-PropValue -Source $evaluation -Name "should_notify" -Fallback $false)
+    notification_reason = [string](Get-PropValue -Source $evaluation -Name "notification_reason" -Fallback "")
+    fingerprint = [string](Get-PropValue -Source $evaluation -Name "fingerprint" -Fallback "")
+    telegram_sent = [bool](Get-PropValue -Source $telegram -Name "sent" -Fallback $false)
+    telegram_reason = [string](Get-PropValue -Source $telegram -Name "reason" -Fallback "")
+    telegram_sent_at = (Get-PropValue -Source $telegram -Name "sent_at" -Fallback $null)
+  }
+}
+
+if ($latestAlertSummary -ne $null -and $latestAlertSummary.should_notify -and -not $latestAlertSummary.telegram_sent) {
+  $ok = $false
+}
+
 $opsAlarmSummary = $null
 if ($latestPayload -ne $null) {
   $schedulerSkip = Get-PropValue -Source $latestPayload -Name "scheduler_skip_summary"
@@ -141,8 +163,10 @@ $payload = [pscustomobject]@{
   success = $ok
   task = $task
   latest_json = $jsonInfo
+  latest_alert_json = $alertJsonInfo
   latest_summary = $latestSummary
   ops_alarm = $opsAlarmSummary
+  latest_alert = $latestAlertSummary
   stale_minutes_threshold = $StaleMinutes
 }
 

@@ -42,9 +42,19 @@ function resolveLiveOpsDispatchArtifactPaths(repoRootDir) {
   };
 }
 
+function resolveLiveOpsOpsAlertArtifactPaths(repoRootDir) {
+  const rootDir = resolveRuntimeArtifactsDir(repoRootDir);
+  const outDir = path.join(rootDir, "liveops");
+  return {
+    outDir,
+    latestJsonPath: path.join(outDir, "V5_LIVE_OPS_OPS_ALERT_latest.json")
+  };
+}
+
 module.exports = {
   resolveRuntimeArtifactsDir,
   resolveKpiBundleArtifactPaths,
   resolveChatAlertArtifactPaths,
-  resolveLiveOpsDispatchArtifactPaths
+  resolveLiveOpsDispatchArtifactPaths,
+  resolveLiveOpsOpsAlertArtifactPaths
 };

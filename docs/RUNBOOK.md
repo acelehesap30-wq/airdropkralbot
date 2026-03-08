@@ -144,17 +144,25 @@
 ## Live ops campaign scheduler
 1. Tek dispatch smoke:
 `npm run liveops:v5:dispatch -- --dry_run true`
-2. Normal scheduler dispatch:
+2. Operator alert smoke:
+`npm run liveops:v5:alert`
+3. Normal scheduler dispatch:
 `npm run liveops:v5:dispatch`
-3. Windows Task Scheduler kaydi (15 dakikada bir):
+4. Windows Task Scheduler kaydi (15 dakikada bir):
 `powershell -ExecutionPolicy Bypass -File scripts/register_v5_live_ops_campaign_tasks.ps1 -TaskName "AirdropKralBot-V5-LiveOps-15M" -EveryMinutes 15`
-4. Scheduler kaldirma:
+5. Scheduler kaldirma:
 `powershell -ExecutionPolicy Bypass -File scripts/register_v5_live_ops_campaign_tasks.ps1 -TaskName "AirdropKralBot-V5-LiveOps-15M" -UnregisterOnly`
-5. Scheduler health kontrolu:
+6. Scheduler health kontrolu:
 `npm run liveops:v5:task:check`
-6. Uretilen artifact:
+7. Uretilen artifact:
 - `.runtime-artifacts/liveops/V5_LIVE_OPS_CAMPAIGN_DISPATCH_latest.json`
-7. Duplicate window guard:
+- `.runtime-artifacts/liveops/V5_LIVE_OPS_OPS_ALERT_latest.json`
+8. Ayni scheduler task artik dispatch sonrasi operator alert scriptini de calistirir.
+9. Alert davranisi:
+- `alert` bandi -> Telegram operator uyarisi
+- `watch` bandi -> varsayilan olarak artifact/audit, istenirse env ile notify
+- ayni fingerprint icin cooldown dedupe uygulanir
+10. Duplicate window guard:
 - `admin_audit.action = live_ops_campaign_dispatch`
 - `payload_json.dispatch_source = scheduler`
 - `payload_json.window_key`
