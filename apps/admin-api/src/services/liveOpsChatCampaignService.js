@@ -467,6 +467,205 @@ function buildLiveOpsCandidateSelectionProfile(targetingGuidance, pressureFocus,
   };
 }
 
+function buildLiveOpsCandidatePrefilterSummary(summary = {}) {
+  return {
+    applied: summary.applied === true,
+    dimension: String(summary.dimension || "").trim().toLowerCase(),
+    bucket: String(summary.bucket || "").trim().toLowerCase(),
+    reason: String(summary.reason || "").trim(),
+    candidates_before: Math.max(0, Number(summary.candidates_before || 0) || 0),
+    candidates_after: Math.max(0, Number(summary.candidates_after || 0) || 0)
+  };
+}
+
+function buildLiveOpsCandidateSqlPrefilter(selectionProfile) {
+  const profile = selectionProfile && typeof selectionProfile === "object" && !Array.isArray(selectionProfile)
+    ? selectionProfile
+    : {};
+  const guidanceMode = String(profile.guidance_mode || "balanced").trim().toLowerCase();
+  const guidanceState = String(profile.guidance_state || "clear").trim().toLowerCase();
+  const focusDimension = String(profile.focus_dimension || "").trim().toLowerCase();
+  const focusBucket = normalizeLiveOpsCandidateBucket(profile.focus_bucket || "", "");
+  if (guidanceState === "clear" || guidanceMode !== "protective") {
+    return buildLiveOpsCandidatePrefilterSummary({
+      applied: false,
+      dimension: focusDimension,
+      bucket: focusBucket,
+      reason: "prefilter_not_needed"
+    });
+  }
+  if (!focusDimension || !focusBucket) {
+    return buildLiveOpsCandidatePrefilterSummary({
+      applied: false,
+      dimension: focusDimension,
+      bucket: focusBucket,
+      reason: "prefilter_focus_missing"
+    });
+  }
+  if (profile.focus_matches_target === true) {
+    return buildLiveOpsCandidatePrefilterSummary({
+      applied: false,
+      dimension: focusDimension,
+      bucket: focusBucket,
+      reason: "prefilter_focus_matches_target"
+    });
+  }
+  if (!["locale", "variant", "cohort"].includes(focusDimension)) {
+    return buildLiveOpsCandidatePrefilterSummary({
+      applied: false,
+      dimension: focusDimension,
+      bucket: focusBucket,
+      reason: "prefilter_dimension_unsupported"
+    });
+  }
+  return buildLiveOpsCandidatePrefilterSummary({
+    applied: false,
+    dimension: focusDimension,
+    bucket: focusBucket,
+    reason: "prefilter_ready"
+  });
+}
+
+async function applyLiveOpsCandidateSqlPrefilter(client, candidates, experimentKey, selectionProfile) {
+  const safeCandidates = Array.isArray(candidates) ? candidates : [];
+  const prefilter = buildLiveOpsCandidateSqlPrefilter(selectionProfile);
+  if (!safeCandidates.length) {
+    return {
+      candidates: safeCandidates,
+      prefilter_summary: buildLiveOpsCandidatePrefilterSummary({
+        ...prefilter,
+        reason: prefilter.reason || "prefilter_empty_input",
+        candidates_before: 0,
+        candidates_after: 0
+      })
+    };
+  }
+  if (prefilter.reason !== "prefilter_ready") {
+    return {
+      candidates: safeCandidates,
+      prefilter_summary: buildLiveOpsCandidatePrefilterSummary({
+        ...prefilter,
+        candidates_before: safeCandidates.length,
+        candidates_after: safeCandidates.length
+      })
+    };
+  }
+
+  const userIds = safeCandidates
+    .map((candidate) => Number(candidate?.user_id || 0))
+    .filter((value) => Number.isFinite(value) && value > 0);
+  if (!userIds.length) {
+    return {
+      candidates: safeCandidates,
+      prefilter_summary: buildLiveOpsCandidatePrefilterSummary({
+        ...prefilter,
+        reason: "prefilter_empty_user_ids",
+        candidates_before: safeCandidates.length,
+        candidates_after: safeCandidates.length
+      })
+    };
+  }
+
+  const safeExperimentKey = String(experimentKey || DEFAULT_EXPERIMENT_KEY).trim() || DEFAULT_EXPERIMENT_KEY;
+  const focusDimension = prefilter.dimension;
+  const focusBucket = prefilter.bucket;
+  const params = [userIds];
+  let sql = "";
+  if (focusDimension === "locale") {
+    params.push(focusBucket);
+    sql = `SELECT u.id AS user_id
+      FROM users u
+      WHERE u.id = ANY($1::bigint[])
+        AND NOT (lower(COALESCE(u.locale, '')) LIKE CONCAT($2, '%'));`;
+  } else if (focusDimension === "variant") {
+    params.push(safeExperimentKey, focusBucket);
+    sql = `SELECT u.id AS user_id
+      FROM users u
+      LEFT JOIN v5_webapp_experiment_assignments ea
+        ON ea.uid = u.id
+       AND ea.experiment_key = $2
+      WHERE u.id = ANY($1::bigint[])
+        AND COALESCE(lower(ea.variant_key), 'control') <> $3;`;
+  } else if (focusDimension === "cohort") {
+    params.push(safeExperimentKey, focusBucket);
+    sql = `SELECT u.id AS user_id
+      FROM users u
+      LEFT JOIN v5_webapp_experiment_assignments ea
+        ON ea.uid = u.id
+       AND ea.experiment_key = $2
+      WHERE u.id = ANY($1::bigint[])
+        AND COALESCE(lower(ea.cohort_bucket::text), 'unknown') <> $3;`;
+  }
+
+  if (!sql) {
+    return {
+      candidates: safeCandidates,
+      prefilter_summary: buildLiveOpsCandidatePrefilterSummary({
+        ...prefilter,
+        reason: "prefilter_sql_missing",
+        candidates_before: safeCandidates.length,
+        candidates_after: safeCandidates.length
+      })
+    };
+  }
+
+  try {
+    const result = await client.query(sql, params);
+    const allowedIds = new Set(
+      (Array.isArray(result.rows) ? result.rows : [])
+        .map((row) => Number(row.user_id || 0))
+        .filter((value) => Number.isFinite(value) && value > 0)
+    );
+    const filteredCandidates = safeCandidates.filter((candidate) => allowedIds.has(Number(candidate?.user_id || 0)));
+    if (!filteredCandidates.length) {
+      return {
+        candidates: safeCandidates,
+        prefilter_summary: buildLiveOpsCandidatePrefilterSummary({
+          ...prefilter,
+          reason: "prefilter_zero_result_fallback",
+          candidates_before: safeCandidates.length,
+          candidates_after: safeCandidates.length
+        })
+      };
+    }
+    if (filteredCandidates.length >= safeCandidates.length) {
+      return {
+        candidates: safeCandidates,
+        prefilter_summary: buildLiveOpsCandidatePrefilterSummary({
+          ...prefilter,
+          reason: "prefilter_no_reduction",
+          candidates_before: safeCandidates.length,
+          candidates_after: safeCandidates.length
+        })
+      };
+    }
+    return {
+      candidates: filteredCandidates,
+      prefilter_summary: buildLiveOpsCandidatePrefilterSummary({
+        applied: true,
+        dimension: focusDimension,
+        bucket: focusBucket,
+        reason: "prefilter_applied",
+        candidates_before: safeCandidates.length,
+        candidates_after: filteredCandidates.length
+      })
+    };
+  } catch (err) {
+    if ((focusDimension === "variant" || focusDimension === "cohort") && (err?.code === "42P01" || err?.code === "42703")) {
+      return {
+        candidates: safeCandidates,
+        prefilter_summary: buildLiveOpsCandidatePrefilterSummary({
+          ...prefilter,
+          reason: "prefilter_assignment_unavailable",
+          candidates_before: safeCandidates.length,
+          candidates_after: safeCandidates.length
+        })
+      };
+    }
+    throw err;
+  }
+}
+
 function scoreLiveOpsCandidateForSelection(candidate, selectionProfile) {
   const profile = selectionProfile && typeof selectionProfile === "object" && !Array.isArray(selectionProfile)
     ? selectionProfile
@@ -510,10 +709,12 @@ function scoreLiveOpsCandidateForSelection(candidate, selectionProfile) {
   return Number(penalty.toFixed(4));
 }
 
-async function prioritizeLiveOpsCandidates(client, candidates, experimentKey, targetingGuidance, pressureFocus, pressureEscalation) {
+async function prioritizeLiveOpsCandidates(client, candidates, experimentKey, selectionProfile) {
   const safeCandidates = Array.isArray(candidates) ? candidates : [];
   const assignmentMap = await loadCandidateExperimentAssignments(client, safeCandidates, experimentKey);
-  const selectionProfile = buildLiveOpsCandidateSelectionProfile(targetingGuidance, pressureFocus, pressureEscalation);
+  const safeSelectionProfile = selectionProfile && typeof selectionProfile === "object" && !Array.isArray(selectionProfile)
+    ? selectionProfile
+    : buildLiveOpsCandidateSelectionProfile({}, {}, {});
   const prioritized = safeCandidates
     .map((candidate, index) => {
       const assignment = assignmentMap.get(Number(candidate?.user_id || 0)) || {};
@@ -532,7 +733,7 @@ async function prioritizeLiveOpsCandidates(client, candidates, experimentKey, ta
       return {
         candidate: annotatedCandidate,
         index,
-        penalty: scoreLiveOpsCandidateForSelection(annotatedCandidate, selectionProfile)
+        penalty: scoreLiveOpsCandidateForSelection(annotatedCandidate, safeSelectionProfile)
       };
     })
     .sort((left, right) => {
@@ -543,16 +744,17 @@ async function prioritizeLiveOpsCandidates(client, candidates, experimentKey, ta
     });
   return {
     candidates: prioritized.map((entry) => entry.candidate),
-    selection_profile: selectionProfile
+    selection_profile: safeSelectionProfile
   };
 }
 
-function buildLiveOpsSelectionSummary(selectionProfile, prioritizedCandidates, selectedCandidates) {
+function buildLiveOpsSelectionSummary(selectionProfile, prioritizedCandidates, selectedCandidates, prefilterSummary) {
   const profile = selectionProfile && typeof selectionProfile === "object" && !Array.isArray(selectionProfile)
     ? selectionProfile
     : {};
   const prioritized = Array.isArray(prioritizedCandidates) ? prioritizedCandidates : [];
   const selected = Array.isArray(selectedCandidates) ? selectedCandidates : [];
+  const safePrefilterSummary = buildLiveOpsCandidatePrefilterSummary(prefilterSummary);
   const countMatches = (rows, dimension, bucketKey) => {
     if (!bucketKey) {
       return 0;
@@ -575,7 +777,8 @@ function buildLiveOpsSelectionSummary(selectionProfile, prioritizedCandidates, s
     prioritized_top_variant_matches: countMatches(prioritized, "variant", String(profile.top_variant_bucket || "")),
     selected_top_variant_matches: countMatches(selected, "variant", String(profile.top_variant_bucket || "")),
     prioritized_top_cohort_matches: countMatches(prioritized, "cohort", String(profile.top_cohort_bucket || "")),
-    selected_top_cohort_matches: countMatches(selected, "cohort", String(profile.top_cohort_bucket || ""))
+    selected_top_cohort_matches: countMatches(selected, "cohort", String(profile.top_cohort_bucket || "")),
+    prefilter_summary: safePrefilterSummary
   };
 }
 
@@ -1621,7 +1824,8 @@ function buildEmptyLiveOpsTaskSummary() {
       prioritized_top_variant_matches: 0,
       selected_top_variant_matches: 0,
       prioritized_top_cohort_matches: 0,
-      selected_top_cohort_matches: 0
+      selected_top_cohort_matches: 0,
+      prefilter_summary: buildLiveOpsCandidatePrefilterSummary()
     },
     window_key: "",
     scheduler_skip_24h: 0,
@@ -1770,7 +1974,8 @@ function readLatestTaskArtifactSummaryFromDisk(now, repoRootDir) {
         prioritized_top_variant_matches: Math.max(0, Number(selectionSummary.prioritized_top_variant_matches || 0) || 0),
         selected_top_variant_matches: Math.max(0, Number(selectionSummary.selected_top_variant_matches || 0) || 0),
         prioritized_top_cohort_matches: Math.max(0, Number(selectionSummary.prioritized_top_cohort_matches || 0) || 0),
-        selected_top_cohort_matches: Math.max(0, Number(selectionSummary.selected_top_cohort_matches || 0) || 0)
+        selected_top_cohort_matches: Math.max(0, Number(selectionSummary.selected_top_cohort_matches || 0) || 0),
+        prefilter_summary: buildLiveOpsCandidatePrefilterSummary(selectionSummary.prefilter_summary)
       },
       window_key: String(scheduler?.window_key || data?.window_key || "").trim(),
       scheduler_skip_24h: Math.max(0, Number(schedulerSkip?.skipped_24h || 0) || 0),
@@ -2344,18 +2549,38 @@ async function buildCampaignSnapshot(client, current) {
       const candidateLoader = loadCandidates || selectCandidateLoader(campaign);
       const candidateResult = await candidateLoader(client, campaign);
       const loadedCandidates = Array.isArray(candidateResult) ? candidateResult : [];
+      const selectionProfile = buildLiveOpsCandidateSelectionProfile(
+        targetingGuidance,
+        pressureFocus,
+        pressureEscalation
+      );
+      const prefilterResult =
+        dispatchSource === "scheduler"
+          ? await applyLiveOpsCandidateSqlPrefilter(
+              client,
+              loadedCandidates,
+              recipientCapRecommendation.experiment_key || DEFAULT_EXPERIMENT_KEY,
+              selectionProfile
+            )
+          : {
+              candidates: loadedCandidates,
+              prefilter_summary: buildLiveOpsCandidatePrefilterSummary({
+                applied: false,
+                reason: "prefilter_not_requested",
+                candidates_before: loadedCandidates.length,
+                candidates_after: loadedCandidates.length
+              })
+            };
       const prioritization =
         dispatchSource === "scheduler"
           ? await prioritizeLiveOpsCandidates(
               client,
-              loadedCandidates,
+              prefilterResult.candidates,
               recipientCapRecommendation.experiment_key || DEFAULT_EXPERIMENT_KEY,
-              targetingGuidance,
-              pressureFocus,
-              pressureEscalation
+              selectionProfile
             )
           : { candidates: loadedCandidates, selection_profile: buildLiveOpsCandidateSelectionProfile({}, {}, {}) };
-      const candidates = Array.isArray(prioritization.candidates) ? prioritization.candidates : loadedCandidates;
+      const candidates = Array.isArray(prioritization.candidates) ? prioritization.candidates : prefilterResult.candidates;
       const now = nowFactory();
       const dispatchRef = `${campaign.campaign_key}_${now.getTime().toString(36)}`;
       const sampleUsers = [];
@@ -2425,7 +2650,12 @@ async function buildCampaignSnapshot(client, current) {
       const auditAction = dryRun ? "live_ops_campaign_dry_run" : "live_ops_campaign_dispatch";
       const selectionSummary =
         dispatchSource === "scheduler"
-          ? buildLiveOpsSelectionSummary(prioritization.selection_profile, candidates, selectedCandidates)
+          ? buildLiveOpsSelectionSummary(
+              prioritization.selection_profile,
+              candidates,
+              selectedCandidates,
+              prefilterResult.prefilter_summary
+            )
           : null;
       await client.query(
         `INSERT INTO admin_audit (admin_id, action, target, payload_json)

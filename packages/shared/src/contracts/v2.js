@@ -349,7 +349,15 @@ const LiveOpsCampaignSelectionSummarySchema = z.object({
   prioritized_top_variant_matches: z.number().int().nonnegative().default(0),
   selected_top_variant_matches: z.number().int().nonnegative().default(0),
   prioritized_top_cohort_matches: z.number().int().nonnegative().default(0),
-  selected_top_cohort_matches: z.number().int().nonnegative().default(0)
+  selected_top_cohort_matches: z.number().int().nonnegative().default(0),
+  prefilter_summary: z.object({
+    applied: z.boolean().default(false),
+    dimension: z.string().default(""),
+    bucket: z.string().default(""),
+    reason: z.string().default(""),
+    candidates_before: z.number().int().nonnegative().default(0),
+    candidates_after: z.number().int().nonnegative().default(0)
+  }).default({})
 });
 
 const KpiLiveOpsCampaignSummarySchema = z.object({

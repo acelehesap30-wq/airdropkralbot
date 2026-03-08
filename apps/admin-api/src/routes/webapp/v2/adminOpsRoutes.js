@@ -199,7 +199,15 @@ function buildLiveOpsCampaignKpiSummary(snapshot) {
       prioritized_top_variant_matches: Math.max(0, Number(selectionSummary.prioritized_top_variant_matches || 0)),
       selected_top_variant_matches: Math.max(0, Number(selectionSummary.selected_top_variant_matches || 0)),
       prioritized_top_cohort_matches: Math.max(0, Number(selectionSummary.prioritized_top_cohort_matches || 0)),
-      selected_top_cohort_matches: Math.max(0, Number(selectionSummary.selected_top_cohort_matches || 0))
+      selected_top_cohort_matches: Math.max(0, Number(selectionSummary.selected_top_cohort_matches || 0)),
+      prefilter_summary: {
+        applied: selectionSummary.prefilter_summary?.applied === true,
+        dimension: String(selectionSummary.prefilter_summary?.dimension || ""),
+        bucket: String(selectionSummary.prefilter_summary?.bucket || ""),
+        reason: String(selectionSummary.prefilter_summary?.reason || ""),
+        candidates_before: Math.max(0, Number(selectionSummary.prefilter_summary?.candidates_before || 0)),
+        candidates_after: Math.max(0, Number(selectionSummary.prefilter_summary?.candidates_after || 0))
+      }
     },
     scheduler_skip: {
       skipped_24h: Math.max(0, Number(schedulerSkip.skipped_24h || 0)),
@@ -339,7 +347,15 @@ async function getLiveOpsCampaignKpiSummary(service, logger) {
         prioritized_top_variant_matches: 0,
         selected_top_variant_matches: 0,
         prioritized_top_cohort_matches: 0,
-        selected_top_cohort_matches: 0
+        selected_top_cohort_matches: 0,
+        prefilter_summary: {
+          applied: false,
+          dimension: "",
+          bucket: "",
+          reason: "",
+          candidates_before: 0,
+          candidates_after: 0
+        }
       },
       scheduler_skip: {
         skipped_24h: 0,

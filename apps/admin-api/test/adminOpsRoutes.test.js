@@ -319,7 +319,15 @@ function buildLiveOpsSnapshot() {
         prioritized_top_variant_matches: 6,
         selected_top_variant_matches: 1,
         prioritized_top_cohort_matches: 4,
-        selected_top_cohort_matches: 1
+        selected_top_cohort_matches: 1,
+        prefilter_summary: {
+          applied: true,
+          dimension: "locale",
+          bucket: "tr",
+          reason: "prefilter_applied",
+          candidates_before: 12,
+          candidates_after: 5
+        }
       },
       window_key: "wallet_reconnect:2026-03-08T00:00:00.000Z:2026-03-08T23:59:59.000Z",
       scheduler_skip_24h: 2,
@@ -442,6 +450,8 @@ test("v2 admin ops kpi latest includes live ops campaign breakdowns", async () =
   assert.equal(body.data.live_ops_campaign.selection_summary.guidance_mode, "protective");
   assert.equal(body.data.live_ops_campaign.selection_summary.selected_candidates, 4);
   assert.equal(body.data.live_ops_campaign.selection_summary.selected_top_locale_matches, 0);
+  assert.equal(body.data.live_ops_campaign.selection_summary.prefilter_summary.applied, true);
+  assert.equal(body.data.live_ops_campaign.selection_summary.prefilter_summary.candidates_after, 5);
   assert.equal(body.data.live_ops_campaign.scene_gate_effect, "capped");
   assert.equal(body.data.live_ops_campaign.scene_runtime.health_band_24h, "yellow");
   assert.equal(body.data.live_ops_campaign.scene_runtime.alarm_state_7d, "watch");
@@ -528,6 +538,7 @@ test("v2 admin ops kpi run includes live ops campaign summary", async () => {
   assert.equal(body.data.live_ops_campaign.targeting_guidance.guidance_state, "alert");
   assert.equal(body.data.live_ops_campaign.selection_summary.focus_dimension, "locale");
   assert.equal(body.data.live_ops_campaign.selection_summary.prioritized_top_variant_matches, 6);
+  assert.equal(body.data.live_ops_campaign.selection_summary.prefilter_summary.reason, "prefilter_applied");
   assert.equal(body.data.live_ops_campaign.ops_alert_trend.telegram_sent_7d, 1);
   assert.equal(body.data.live_ops_campaign.ops_alert_trend.variant_breakdown[0].bucket_key, "treatment");
   assert.equal(body.data.live_ops_campaign.scene_runtime.trend_direction_7d, "stable");

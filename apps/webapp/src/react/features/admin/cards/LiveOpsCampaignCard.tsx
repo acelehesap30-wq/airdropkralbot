@@ -225,6 +225,7 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
   const sceneRuntimeSummary = asRecord(snapshot.scene_runtime_summary);
   const taskSummary = asRecord(snapshot.task_summary);
   const taskSelectionSummary = asRecord(taskSummary.selection_summary);
+  const taskSelectionPrefilter = asRecord(taskSelectionSummary.prefilter_summary);
   const opsAlertSummary = asRecord(snapshot.ops_alert_summary);
   const opsAlertTrendSummary = asRecord(snapshot.ops_alert_trend_summary);
   const warnings = Array.isArray(approvalSummary.warnings) ? approvalSummary.warnings.map((row) => String(row || "").trim()).filter(Boolean) : [];
@@ -664,6 +665,10 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
           <span className="akrChip">
             {t(props.lang, "admin_live_ops_selection_selected_label")}: {asCount(taskSelectionSummary.selected_candidates)}
           </span>
+          <span className="akrChip">
+            {t(props.lang, "admin_live_ops_selection_prefilter_label")}:{" "}
+            {taskSelectionPrefilter.applied === true ? t(props.lang, "admin_live_ops_bool_yes") : t(props.lang, "admin_live_ops_bool_no")}
+          </span>
         </div>
         <div className="akrStack">
           <p className="akrMutedLine">
@@ -682,6 +687,12 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
           <p className="akrMutedLine">
             {t(props.lang, "admin_live_ops_selection_focus_match_label")}: {asCount(taskSelectionSummary.selected_focus_matches)} /{" "}
             {asCount(taskSelectionSummary.prioritized_focus_matches)}
+          </p>
+          <p className="akrMutedLine">
+            {t(props.lang, "admin_live_ops_selection_prefilter_focus_label")}: {asText(taskSelectionPrefilter.dimension, "-")} /{" "}
+            {asText(taskSelectionPrefilter.bucket, "-")} | {t(props.lang, "admin_live_ops_selection_prefilter_count_label")}:{" "}
+            {asCount(taskSelectionPrefilter.candidates_after)} / {asCount(taskSelectionPrefilter.candidates_before)} |{" "}
+            {t(props.lang, "admin_live_ops_selection_prefilter_reason_label")}: {asText(taskSelectionPrefilter.reason, "-")}
           </p>
         </div>
       </section>

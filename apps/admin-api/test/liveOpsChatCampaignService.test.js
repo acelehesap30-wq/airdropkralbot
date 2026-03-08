@@ -529,7 +529,15 @@ test("live ops chat campaign service snapshot includes approval summary schedule
         prioritized_top_variant_matches: 6,
         selected_top_variant_matches: 1,
         prioritized_top_cohort_matches: 5,
-        selected_top_cohort_matches: 1
+        selected_top_cohort_matches: 1,
+        prefilter_summary: {
+          applied: true,
+          dimension: "locale",
+          bucket: "tr",
+          reason: "prefilter_applied",
+          candidates_before: 12,
+          candidates_after: 5
+        }
       },
       window_key: "wallet_reconnect:2020-01-01T00:00:00.000Z:2035-01-01T00:00:00.000Z",
       scheduler_skip_24h: 2,
@@ -609,6 +617,8 @@ test("live ops chat campaign service snapshot includes approval summary schedule
   assert.equal(snapshot.task_summary.selection_summary.guidance_mode, "protective");
   assert.equal(snapshot.task_summary.selection_summary.selected_candidates, 4);
   assert.equal(snapshot.task_summary.selection_summary.selected_top_locale_matches, 0);
+  assert.equal(snapshot.task_summary.selection_summary.prefilter_summary.applied, true);
+  assert.equal(snapshot.task_summary.selection_summary.prefilter_summary.candidates_after, 5);
   assert.equal(snapshot.task_summary.scheduler_skip_alarm_state, "alert");
   assert.equal(snapshot.task_summary.scheduler_skip_24h, 2);
   assert.equal(snapshot.ops_alert_summary.artifact_found, true);
@@ -1164,6 +1174,11 @@ test("live ops chat campaign service scheduler prioritizes away from pressured l
         ]
       };
     }
+    if (text.includes("WHERE u.id = ANY($1::bigint[])") && text.includes("NOT (lower(COALESCE(u.locale, '')) LIKE CONCAT($2, '%'))")) {
+      return {
+        rows: [{ user_id: 3 }, { user_id: 4 }, { user_id: 5 }]
+      };
+    }
     if (text.includes("INSERT INTO behavior_events") || text.includes("INSERT INTO admin_audit")) {
       return { rows: [] };
     }
@@ -1215,7 +1230,10 @@ test("live ops chat campaign service scheduler prioritizes away from pressured l
   );
   assert.deepEqual(sentChatIds, [8103, 8104]);
   assert.equal(result.data.selection_summary.guidance_mode, "protective");
+  assert.equal(result.data.selection_summary.prefilter_summary.applied, true);
+  assert.equal(result.data.selection_summary.prefilter_summary.candidates_before, 5);
+  assert.equal(result.data.selection_summary.prefilter_summary.candidates_after, 3);
   assert.equal(result.data.selection_summary.selected_top_locale_matches, 0);
   assert.equal(result.data.selection_summary.selected_top_variant_matches, 0);
-  assert.equal(result.data.selection_summary.prioritized_top_locale_matches, 2);
+  assert.equal(result.data.selection_summary.prioritized_top_locale_matches, 0);
 });

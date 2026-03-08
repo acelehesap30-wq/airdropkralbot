@@ -193,6 +193,7 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
   const recipientCapRecommendation = asRecord(liveOpsKpi?.recipient_cap_recommendation);
   const targetingGuidance = asRecord(liveOpsKpi?.targeting_guidance);
   const selectionSummary = asRecord(liveOpsKpi?.selection_summary);
+  const selectionPrefilter = asRecord(selectionSummary?.prefilter_summary);
   const schedulerSkipDaily = asRows(schedulerSkip?.daily_breakdown);
   const schedulerSkipReasons = asRows(schedulerSkip?.reason_breakdown);
   const opsAlertLocaleBreakdown = asRows(opsAlertTrend?.locale_breakdown);
@@ -391,6 +392,10 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
             {t(props.lang, "admin_runtime_live_ops_selection_state_label")}: {readText(selectionSummary, "guidance_state") || "-"}
           </span>
           <span className="akrChip">
+            {t(props.lang, "admin_runtime_live_ops_selection_prefilter_label")}:{" "}
+            {selectionPrefilter?.applied ? t(props.lang, "admin_live_ops_bool_yes") : t(props.lang, "admin_live_ops_bool_no")}
+          </span>
+          <span className="akrChip">
             {t(props.lang, "admin_runtime_live_ops_recommend_delta_label")}: {Math.floor(readNum(recipientCapRecommendation, "effective_cap_delta"))}
           </span>
           <span className="akrChip">
@@ -471,6 +476,12 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
           <p className="akrMutedLine">
             {t(props.lang, "admin_runtime_live_ops_selection_focus_match_label")}: {Math.floor(readNum(selectionSummary, "selected_focus_matches"))} /{" "}
             {Math.floor(readNum(selectionSummary, "prioritized_focus_matches"))}
+          </p>
+          <p className="akrMutedLine">
+            {t(props.lang, "admin_runtime_live_ops_selection_prefilter_focus_label")}: {readText(selectionPrefilter, "dimension") || "-"} /{" "}
+            {readText(selectionPrefilter, "bucket") || "-"} | {t(props.lang, "admin_runtime_live_ops_selection_prefilter_count_label")}:{" "}
+            {Math.floor(readNum(selectionPrefilter, "candidates_after"))} / {Math.floor(readNum(selectionPrefilter, "candidates_before"))} |{" "}
+            {t(props.lang, "admin_runtime_live_ops_selection_prefilter_reason_label")}: {readText(selectionPrefilter, "reason") || "-"}
           </p>
           <p className="akrMutedLine">
             {t(props.lang, "admin_runtime_live_ops_ops_alert_delta_24h_label")}: {Math.floor(readNum(opsAlertTrend, "effective_cap_delta_24h"))} |{" "}
