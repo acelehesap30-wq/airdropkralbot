@@ -810,6 +810,10 @@ function buildCampaignAuditPayload(campaign, meta = {}) {
     dispatch_ref: String(meta.dispatchRef || ""),
     dispatch_source: String(meta.dispatchSource || "manual").trim().toLowerCase() === "scheduler" ? "scheduler" : "manual",
     window_key: String(meta.windowKey || buildScheduleWindowKey(safeCampaign) || ""),
+    scene_gate_state: String(meta.sceneGateState || "no_data"),
+    scene_gate_effect: String(meta.sceneGateEffect || "open"),
+    scene_gate_reason: String(meta.sceneGateReason || ""),
+    scene_gate_recipient_cap: Number(meta.sceneGateRecipientCap || 0),
     dry_run: meta.dryRun === true,
     attempted: Number(meta.attempted || 0),
     sent: Number(meta.sent || 0),
@@ -976,19 +980,6 @@ async function loadSchedulerWindowDispatch(client, campaignKey, windowKey) {
   };
 }
 
-function buildSchedulerSummary(campaign, approvalSummary, latestSchedulerDispatch, windowDispatch) {
-  return {
-    ready_for_auto_dispatch: approvalSummary?.live_dispatch_ready === true,
-    schedule_state: String(approvalSummary?.schedule_state || "missing"),
-    approval_state: String(approvalSummary?.approval_state || LIVE_OPS_APPROVAL_STATE.NOT_REQUESTED),
-    window_key: buildScheduleWindowKey(campaign),
-    already_dispatched_for_window: Boolean(windowDispatch),
-    latest_auto_dispatch_at: latestSchedulerDispatch?.created_at || null,
-    latest_auto_dispatch_ref: String(latestSchedulerDispatch?.dispatch_ref || ""),
-    latest_auto_dispatch_reason: String(latestSchedulerDispatch?.reason || "")
-  };
-}
-
 function buildEmptySceneRuntimeSummary() {
   return {
     ready_24h: 0,
@@ -1012,6 +1003,69 @@ function buildEmptySceneRuntimeSummary() {
     perf_breakdown_24h: [],
     daily_breakdown_7d: [],
     worst_day_7d: null
+  };
+}
+
+function resolveSceneRuntimeGate(sceneRuntimeSummary, campaign) {
+  const safeSummary = sceneRuntimeSummary && typeof sceneRuntimeSummary === "object" && !Array.isArray(sceneRuntimeSummary)
+    ? sceneRuntimeSummary
+    : {};
+  const configuredRecipients = Math.max(1, toPositiveInt(campaign?.targeting?.max_recipients, 50));
+  const alarmState = String(safeSummary.alarm_state_7d || "no_data");
+  const total24h = Math.max(0, Number(safeSummary.total_24h || 0));
+  if (alarmState === "alert") {
+    return {
+      scene_gate_state: "alert",
+      scene_gate_effect: "blocked",
+      scene_gate_reason: "scene_runtime_alert_blocked",
+      scene_gate_recipient_cap: 0,
+      ready_for_auto_dispatch: false
+    };
+  }
+  if (alarmState === "watch") {
+    const cappedRecipients = Math.min(configuredRecipients, 20);
+    const effect = cappedRecipients < configuredRecipients ? "capped" : "open";
+    return {
+      scene_gate_state: "watch",
+      scene_gate_effect: effect,
+      scene_gate_reason: effect === "capped" ? "scene_runtime_watch_capped" : "scene_runtime_watch_observed",
+      scene_gate_recipient_cap: cappedRecipients,
+      ready_for_auto_dispatch: true
+    };
+  }
+  if (!total24h) {
+    return {
+      scene_gate_state: "no_data",
+      scene_gate_effect: "open",
+      scene_gate_reason: "scene_runtime_no_data",
+      scene_gate_recipient_cap: configuredRecipients,
+      ready_for_auto_dispatch: true
+    };
+  }
+  return {
+    scene_gate_state: "clear",
+    scene_gate_effect: "open",
+    scene_gate_reason: "",
+    scene_gate_recipient_cap: configuredRecipients,
+    ready_for_auto_dispatch: true
+  };
+}
+
+function buildSchedulerSummary(campaign, approvalSummary, latestSchedulerDispatch, windowDispatch, sceneRuntimeSummary) {
+  const sceneGate = resolveSceneRuntimeGate(sceneRuntimeSummary, campaign);
+  return {
+    ready_for_auto_dispatch: approvalSummary?.live_dispatch_ready === true && sceneGate.ready_for_auto_dispatch === true,
+    schedule_state: String(approvalSummary?.schedule_state || "missing"),
+    approval_state: String(approvalSummary?.approval_state || LIVE_OPS_APPROVAL_STATE.NOT_REQUESTED),
+    scene_gate_state: sceneGate.scene_gate_state,
+    scene_gate_effect: sceneGate.scene_gate_effect,
+    scene_gate_reason: sceneGate.scene_gate_reason,
+    scene_gate_recipient_cap: sceneGate.scene_gate_recipient_cap,
+    window_key: buildScheduleWindowKey(campaign),
+    already_dispatched_for_window: Boolean(windowDispatch),
+    latest_auto_dispatch_at: latestSchedulerDispatch?.created_at || null,
+    latest_auto_dispatch_ref: String(latestSchedulerDispatch?.dispatch_ref || ""),
+    latest_auto_dispatch_reason: String(latestSchedulerDispatch?.reason || "")
   };
 }
 
@@ -1211,7 +1265,13 @@ async function buildCampaignSnapshot(client, current) {
     updated_by: snapshotState.created_by,
     campaign: snapshotState.campaign,
     approval_summary: approvalSummary,
-    scheduler_summary: buildSchedulerSummary(snapshotState.campaign, approvalSummary, latestSchedulerDispatch, schedulerWindowDispatch),
+    scheduler_summary: buildSchedulerSummary(
+      snapshotState.campaign,
+      approvalSummary,
+      latestSchedulerDispatch,
+      schedulerWindowDispatch,
+      sceneRuntimeSummary
+    ),
     version_history: versionHistory,
     dispatch_history: dispatchHistory,
     operator_timeline: operatorTimeline,
@@ -1379,10 +1439,15 @@ async function buildCampaignSnapshot(client, current) {
       const reason = String(input.reason || "live_ops_campaign_dispatch").trim().slice(0, 240);
       const dispatchSource = String(input.dispatchSource || "manual").trim().toLowerCase() === "scheduler" ? "scheduler" : "manual";
       const windowKey = String(input.windowKey || buildScheduleWindowKey(campaign) || "");
-      const maxRecipients = Math.max(
+      const sceneRuntimeSummary = dispatchSource === "scheduler" ? await loadSceneRuntimeSummary(client) : buildEmptySceneRuntimeSummary();
+      const sceneGate = resolveSceneRuntimeGate(sceneRuntimeSummary, campaign);
+      const maxRecipientsBase = Math.max(
         1,
         Math.min(500, Number(input.maxRecipients || campaign.targeting.max_recipients || 50))
       );
+      const maxRecipients = dispatchSource === "scheduler" && !dryRun
+        ? Math.max(1, Math.min(maxRecipientsBase, Number(sceneGate.scene_gate_recipient_cap || maxRecipientsBase)))
+        : maxRecipientsBase;
 
       if (!dryRun) {
         const approvalSummary = buildApprovalSummary(campaign, { now: nowFactory() });
@@ -1398,6 +1463,9 @@ async function buildCampaignSnapshot(client, current) {
                     ? "campaign_schedule_invalid"
                     : "campaign_not_ready";
           return { ok: false, reason: reasonCode, campaign, version };
+        }
+        if (dispatchSource === "scheduler" && sceneGate.ready_for_auto_dispatch !== true) {
+          return { ok: false, reason: sceneGate.scene_gate_reason || "scene_runtime_scheduler_blocked", campaign, version };
         }
       }
 
@@ -1483,6 +1551,10 @@ async function buildCampaignSnapshot(client, current) {
               dispatchRef,
               dispatchSource,
               windowKey,
+              sceneGateState: sceneGate.scene_gate_state,
+              sceneGateEffect: sceneGate.scene_gate_effect,
+              sceneGateReason: sceneGate.scene_gate_reason,
+              sceneGateRecipientCap: dispatchSource === "scheduler" ? maxRecipients : maxRecipientsBase,
               dryRun,
               sent,
               attempted,
@@ -1521,6 +1593,10 @@ async function buildCampaignSnapshot(client, current) {
           dispatch_ref: dispatchRef,
           dispatch_source: dispatchSource,
           window_key: windowKey,
+          scene_gate_state: sceneGate.scene_gate_state,
+          scene_gate_effect: sceneGate.scene_gate_effect,
+          scene_gate_reason: sceneGate.scene_gate_reason,
+          scene_gate_recipient_cap: dispatchSource === "scheduler" ? maxRecipients : maxRecipientsBase,
           sample_users: sampleUsers.slice(0, 5),
           generated_at: now.toISOString()
         }
@@ -1543,12 +1619,14 @@ async function buildCampaignSnapshot(client, current) {
       campaign = current.campaign;
       const now = nowFactory();
       const latestDispatch = await loadLatestDispatchSummary(client, campaign.campaign_key);
+      const sceneRuntimeSummary = await loadSceneRuntimeSummary(client);
       const approvalSummary = buildApprovalSummary(campaign, {
         now,
         updated_at: current.created_at || null,
         last_dispatch_at: latestDispatch.last_sent_at || null
       });
       windowKey = buildScheduleWindowKey(campaign);
+      const sceneGate = resolveSceneRuntimeGate(sceneRuntimeSummary, campaign);
       if (!approvalSummary.live_dispatch_ready) {
         return {
           ok: true,
@@ -1566,7 +1644,18 @@ async function buildCampaignSnapshot(client, current) {
           campaign_key: campaign.campaign_key,
           version: current.version,
           window_key: windowKey,
-          scheduler_summary: buildSchedulerSummary(campaign, approvalSummary, null, null)
+          scheduler_summary: buildSchedulerSummary(campaign, approvalSummary, null, null, sceneRuntimeSummary)
+        };
+      }
+      if (input.dryRun !== true && sceneGate.ready_for_auto_dispatch !== true) {
+        return {
+          ok: true,
+          skipped: true,
+          reason: sceneGate.scene_gate_reason || "scene_runtime_scheduler_blocked",
+          campaign_key: campaign.campaign_key,
+          version: current.version,
+          window_key: windowKey,
+          scheduler_summary: buildSchedulerSummary(campaign, approvalSummary, null, null, sceneRuntimeSummary)
         };
       }
 
@@ -1581,7 +1670,7 @@ async function buildCampaignSnapshot(client, current) {
           window_key: windowKey,
           latest_dispatch_ref: existing.dispatch_ref,
           latest_dispatch_at: existing.created_at || null,
-          scheduler_summary: buildSchedulerSummary(campaign, approvalSummary, existing, existing)
+          scheduler_summary: buildSchedulerSummary(campaign, approvalSummary, existing, existing, sceneRuntimeSummary)
         };
       }
     } finally {

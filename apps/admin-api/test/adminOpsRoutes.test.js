@@ -119,6 +119,10 @@ function buildLiveOpsSnapshot() {
       ready_for_auto_dispatch: true,
       schedule_state: "open",
       approval_state: "approved",
+      scene_gate_state: "watch",
+      scene_gate_effect: "capped",
+      scene_gate_reason: "scene_runtime_watch_capped",
+      scene_gate_recipient_cap: 20,
       window_key: "wallet_reconnect:2026-03-08T00:00:00.000Z:2026-03-08T23:59:59.000Z",
       already_dispatched_for_window: true,
       latest_auto_dispatch_at: "2026-03-08T02:05:00.000Z",
@@ -282,6 +286,7 @@ test("v2 admin ops kpi latest includes live ops campaign breakdowns", async () =
   assert.equal(body.data.live_ops_campaign.variant_breakdown[0].bucket_key, "treatment");
   assert.equal(body.data.live_ops_campaign.segment_breakdown[0].bucket_key, "wallet_unlinked");
   assert.equal(body.data.live_ops_campaign.daily_breakdown[0].day, "2026-03-08");
+  assert.equal(body.data.live_ops_campaign.scene_gate_effect, "capped");
   assert.equal(body.data.live_ops_campaign.scene_runtime.health_band_24h, "yellow");
   assert.equal(body.data.live_ops_campaign.scene_runtime.alarm_state_7d, "watch");
   await app.close();
@@ -357,6 +362,7 @@ test("v2 admin ops kpi run includes live ops campaign summary", async () => {
   const body = res.json();
   assert.equal(body.success, true);
   assert.equal(body.data.live_ops_campaign.ready_for_auto_dispatch, true);
+  assert.equal(body.data.live_ops_campaign.scene_gate_state, "watch");
   assert.equal(body.data.live_ops_campaign.latest_auto_dispatch_ref, "dispatch_auto_1");
   assert.equal(body.data.live_ops_campaign.locale_breakdown[0].bucket_key, "tr");
   assert.equal(body.data.live_ops_campaign.daily_breakdown[1].sent_count, 9);

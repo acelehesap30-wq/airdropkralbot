@@ -643,3 +643,175 @@ test("live ops chat campaign service runScheduledDispatch skips duplicate schedu
   assert.equal(result.window_key, "wallet_reconnect:2020-01-01T00:00:00.000Z:2035-01-01T00:00:00.000Z");
   assert.equal(fetchCalled, false);
 });
+
+test("live ops chat campaign service runScheduledDispatch blocks live send on scene alert gate", async () => {
+  let fetchCalled = false;
+  const service = createLiveOpsChatCampaignService({
+    pool: {
+      async connect() {
+        return {
+          async query(sql) {
+            const text = String(sql || "");
+            if (text.includes("FROM config_versions") && text.includes("LIMIT 1")) {
+              return {
+                rows: [
+                  {
+                    version: 9,
+                    created_at: "2026-03-08T12:00:00.000Z",
+                    created_by: 7001,
+                    config_json: buildCampaign()
+                  }
+                ]
+              };
+            }
+            if (text.includes("COUNT(*)::int AS sent_total")) {
+              return {
+                rows: [
+                  {
+                    sent_total: 0,
+                    sent_72h: 0,
+                    last_sent_at: null,
+                    last_segment_key: "",
+                    last_dispatch_ref: ""
+                  }
+                ]
+              };
+            }
+            if (text.includes("event_key IN ('runtime.scene.ready', 'runtime.scene.failed')")) {
+              return {
+                rows: [
+                  {
+                    ready_24h: 5,
+                    failed_24h: 3,
+                    low_end_24h: 3,
+                    avg_loaded_bundles_24h: 2.5,
+                    daily_breakdown_7d: [
+                      { day: "2026-03-08", total_count: 4, ready_count: 2, failed_count: 2, low_end_count: 2 },
+                      { day: "2026-03-07", total_count: 4, ready_count: 2, failed_count: 2, low_end_count: 2 }
+                    ],
+                    quality_breakdown_24h: [],
+                    perf_breakdown_24h: []
+                  }
+                ]
+              };
+            }
+            if (text.includes("COALESCE(payload_json->>'dispatch_source', 'manual') = 'scheduler'")) {
+              return { rows: [] };
+            }
+            return { rows: [] };
+          },
+          release() {}
+        };
+      }
+    },
+    fetchImpl: async () => {
+      fetchCalled = true;
+      return { ok: true };
+    },
+    botToken: "bot_token",
+    botUsername: "airdropkral_2026_bot",
+    webappPublicUrl: "https://example.com/app",
+    webappHmacSecret: "secret",
+    resolveWebappVersion: async () => ({ version: "abc123" }),
+    nowFactory: () => new Date("2026-03-08T12:30:00.000Z"),
+    logger: () => {}
+  });
+
+  const result = await service.runScheduledDispatch({
+    adminId: 7010
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.skipped, true);
+  assert.equal(result.reason, "scene_runtime_alert_blocked");
+  assert.equal(result.scheduler_summary.scene_gate_state, "alert");
+  assert.equal(result.scheduler_summary.scene_gate_effect, "blocked");
+  assert.equal(result.scheduler_summary.ready_for_auto_dispatch, false);
+  assert.equal(fetchCalled, false);
+});
+
+test("live ops chat campaign service scheduler dispatch caps recipients on watch gate", async () => {
+  let sendCount = 0;
+  const { pool } = createQueryRecorder((text) => {
+    if (text.includes("FROM config_versions") && text.includes("LIMIT 1")) {
+      return {
+        rows: [
+          {
+            version: 10,
+            created_at: "2026-03-08T12:00:00.000Z",
+            created_by: 7001,
+            config_json: buildCampaign({
+              targeting: {
+                max_recipients: 40
+              }
+            })
+          }
+        ]
+      };
+    }
+    if (text.includes("event_key IN ('runtime.scene.ready', 'runtime.scene.failed')")) {
+      return {
+        rows: [
+          {
+            ready_24h: 9,
+            failed_24h: 1,
+            low_end_24h: 4,
+            avg_loaded_bundles_24h: 3.1,
+            daily_breakdown_7d: [
+              { day: "2026-03-08", total_count: 10, ready_count: 9, failed_count: 1, low_end_count: 4 },
+              { day: "2026-03-07", total_count: 10, ready_count: 10, failed_count: 0, low_end_count: 2 }
+            ],
+            quality_breakdown_24h: [],
+            perf_breakdown_24h: []
+          }
+        ]
+      };
+    }
+    if (text.includes("INSERT INTO behavior_events") || text.includes("INSERT INTO admin_audit")) {
+      return { rows: [] };
+    }
+    return { rows: [] };
+  });
+
+  const service = createLiveOpsChatCampaignService({
+    pool,
+    fetchImpl: async () => {
+      sendCount += 1;
+      return { ok: true };
+    },
+    botToken: "bot_token",
+    botUsername: "airdropkral_2026_bot",
+    webappPublicUrl: "https://example.com/app",
+    webappHmacSecret: "secret",
+    resolveWebappVersion: async () => ({ version: "abc123" }),
+    nowFactory: () => new Date("2026-03-08T12:30:00.000Z"),
+    logger: () => {},
+    loadCandidates: async () =>
+      Array.from({ length: 30 }, (_, index) => ({
+        user_id: index + 1,
+        telegram_id: 8000 + index,
+        locale: "tr",
+        last_seen_at: "2026-03-08T10:00:00.000Z",
+        prefs_json: {}
+      }))
+  });
+
+  const result = await service.dispatchCampaign({
+    adminId: 7010,
+    dryRun: false,
+    reason: "scheduled_window_dispatch",
+    dispatchSource: "scheduler",
+    campaign: buildCampaign({
+      targeting: {
+        max_recipients: 40
+      }
+    })
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.data.sent, 20);
+  assert.equal(result.data.scene_gate_state, "watch");
+  assert.equal(result.data.scene_gate_effect, "capped");
+  assert.equal(result.data.scene_gate_recipient_cap, 20);
+  assert.equal(sendCount, 20);
+});

@@ -306,6 +306,9 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
             {t(props.lang, "admin_runtime_live_ops_experiment_label")}: {readText(liveOpsKpi, "experiment_key") || "-"}
           </span>
           <span className="akrChip">
+            {t(props.lang, "admin_live_ops_scheduler_scene_effect_label")}: {readText(liveOpsKpi, "scene_gate_effect") || "-"}
+          </span>
+          <span className="akrChip">
             {t(props.lang, "admin_runtime_scene_health")}: {readText(liveOpsSceneRuntime, "health_band_24h") || "-"}
           </span>
           <span className="akrChip">
@@ -325,9 +328,14 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
             {readText(liveOpsKpi, "latest_auto_dispatch_ref") || "-"}
           </p>
           <p className="akrMutedLine">
+            {t(props.lang, "admin_live_ops_scheduler_scene_state_label")}: {readText(liveOpsKpi, "scene_gate_state") || "-"} /{" "}
+            {t(props.lang, "admin_live_ops_scheduler_scene_cap_label")}: {Math.floor(readNum(liveOpsKpi, "scene_gate_recipient_cap"))}
+          </p>
+          <p className="akrMutedLine">
             {t(props.lang, "admin_runtime_scene_ready_avg")}: {toPct(readNum(liveOpsSceneRuntime, "ready_rate_7d_avg"))} |{" "}
             {t(props.lang, "admin_runtime_scene_failure_avg")}: {toPct(readNum(liveOpsSceneRuntime, "failure_rate_7d_avg"))}
           </p>
+          {readText(liveOpsKpi, "scene_gate_reason") ? <p className="akrMutedLine">{readText(liveOpsKpi, "scene_gate_reason")}</p> : null}
           {readText(liveOpsKpi, "error_code") ? <p className="akrErrorLine">{readText(liveOpsKpi, "error_code")}</p> : null}
         </div>
         <BreakdownList

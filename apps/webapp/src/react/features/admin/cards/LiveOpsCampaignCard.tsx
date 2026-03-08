@@ -245,6 +245,18 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
             <strong>{schedulerSummary.ready_for_auto_dispatch === true ? t(props.lang, "admin_live_ops_bool_yes") : t(props.lang, "admin_live_ops_bool_no")}</strong>
           </li>
           <li>
+            <span>{t(props.lang, "admin_live_ops_scheduler_scene_state_label")}</span>
+            <strong>{asText(schedulerSummary.scene_gate_state)}</strong>
+          </li>
+          <li>
+            <span>{t(props.lang, "admin_live_ops_scheduler_scene_effect_label")}</span>
+            <strong>{asText(schedulerSummary.scene_gate_effect)}</strong>
+          </li>
+          <li>
+            <span>{t(props.lang, "admin_live_ops_scheduler_scene_cap_label")}</span>
+            <strong>{asCount(schedulerSummary.scene_gate_recipient_cap)}</strong>
+          </li>
+          <li>
             <span>{t(props.lang, "admin_live_ops_scheduler_already_sent_label")}</span>
             <strong>{schedulerSummary.already_dispatched_for_window === true ? t(props.lang, "admin_live_ops_bool_yes") : t(props.lang, "admin_live_ops_bool_no")}</strong>
           </li>
