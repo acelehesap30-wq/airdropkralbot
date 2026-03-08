@@ -95,6 +95,10 @@ function buildAlertFingerprint(alarm) {
 
 function evaluateOpsAlert(dispatchArtifact, previousAlertArtifact, options = {}) {
   const schedulerSkip = normalizeOpsAlarm(dispatchArtifact?.scheduler_skip_summary || dispatchArtifact?.ops_alarm || {});
+  const recipientCapRecommendation =
+    dispatchArtifact?.scheduler_summary && typeof dispatchArtifact.scheduler_summary === "object"
+      ? dispatchArtifact.scheduler_summary.recipient_cap_recommendation || {}
+      : {};
   const previous = previousAlertArtifact && typeof previousAlertArtifact === "object" ? previousAlertArtifact : {};
   const previousEvaluation = previous.evaluation && typeof previous.evaluation === "object" ? previous.evaluation : {};
   const previousFingerprint = String(previousEvaluation.fingerprint || "").trim();
@@ -102,6 +106,8 @@ function evaluateOpsAlert(dispatchArtifact, previousAlertArtifact, options = {})
   const notifyOnWatch = options.notifyOnWatch === true;
   const cooldownMinutes = Math.max(15, Number(options.cooldownMinutes || 180));
   const now = options.now instanceof Date ? options.now : new Date();
+  const recommendationPressure = String(recipientCapRecommendation.pressure_band || "clear").trim().toLowerCase();
+  const recommendedCap = Math.max(0, Number(recipientCapRecommendation.recommended_recipient_cap || 0));
   const fingerprint = buildAlertFingerprint(schedulerSkip);
   let shouldNotify = false;
   let notificationReason = "state_clear";
@@ -109,6 +115,9 @@ function evaluateOpsAlert(dispatchArtifact, previousAlertArtifact, options = {})
   if (schedulerSkip.state === "alert") {
     shouldNotify = true;
     notificationReason = "alert_state";
+  } else if (schedulerSkip.state === "watch" && recommendationPressure === "alert") {
+    shouldNotify = true;
+    notificationReason = "watch_state_pressure";
   } else if (schedulerSkip.state === "watch" && notifyOnWatch) {
     shouldNotify = true;
     notificationReason = "watch_state";
@@ -132,6 +141,9 @@ function evaluateOpsAlert(dispatchArtifact, previousAlertArtifact, options = {})
     skipped_7d: schedulerSkip.skipped_7d,
     latest_skip_reason: schedulerSkip.latest_skip_reason,
     latest_skip_at: schedulerSkip.latest_skip_at,
+    recommendation_pressure_band: recommendationPressure,
+    recommended_recipient_cap: recommendedCap,
+    recommendation_reason: String(recipientCapRecommendation.reason || "").trim(),
     notify_on_watch: notifyOnWatch,
     cooldown_minutes: cooldownMinutes,
     previous_fingerprint: previousFingerprint,
@@ -145,6 +157,10 @@ function formatOpsAlertMessage(dispatchArtifact = {}, evaluation = {}) {
   const scheduler = dispatchArtifact?.scheduler_summary && typeof dispatchArtifact.scheduler_summary === "object"
     ? dispatchArtifact.scheduler_summary
     : {};
+  const recommendation =
+    scheduler.recipient_cap_recommendation && typeof scheduler.recipient_cap_recommendation === "object"
+      ? scheduler.recipient_cap_recommendation
+      : {};
   const lines = [
     "LiveOps Scheduler Alarm",
     `state=${String(evaluation.alarm_state || "clear")}`,
@@ -155,6 +171,12 @@ function formatOpsAlertMessage(dispatchArtifact = {}, evaluation = {}) {
     `latest_skip_at=${String(evaluation.latest_skip_at || "-")}`,
     `scene_gate=${String(scheduler.scene_gate_state || "no_data")}/${String(scheduler.scene_gate_effect || "open")}`,
     `scene_reason=${String(scheduler.scene_gate_reason || "-")}`,
+    `recommended_cap=${Math.max(0, Number(recommendation.recommended_recipient_cap || 0))}`,
+    `pressure_band=${String(recommendation.pressure_band || "clear")}`,
+    `pressure_reason=${String(recommendation.reason || "-")}`,
+    `pressure_focus=${String(recommendation.segment_key || "-")}/${String(recommendation.locale_bucket || "-")}/${String(
+      recommendation.surface_bucket || "-"
+    )}`,
     `campaign=${String(dispatchArtifact.campaign_key || "-")}`,
     `dispatch_reason=${String(dispatchArtifact.reason || "-")}`
   ];
@@ -339,6 +361,9 @@ async function runLiveOpsOpsAlert(args = {}, deps = {}) {
       surface_bucket: String(campaignContext.surface_bucket || "").trim(),
       variant_bucket: String(campaignContext.variant_bucket || "").trim(),
       cohort_bucket: String(campaignContext.cohort_bucket || "").trim(),
+      recommendation_pressure_band: String(evaluation.recommendation_pressure_band || "clear").trim() || "clear",
+      recommended_recipient_cap: Math.max(0, Number(evaluation.recommended_recipient_cap || 0)),
+      recommendation_reason: String(evaluation.recommendation_reason || "").trim(),
       telegram_sent: telegram.sent === true,
       telegram_reason: String(telegram.reason || "").trim(),
       telegram_sent_at: telegram.sent_at || null

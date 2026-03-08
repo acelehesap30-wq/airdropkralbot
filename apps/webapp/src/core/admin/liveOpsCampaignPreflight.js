@@ -1,5 +1,8 @@
 import { parseLiveOpsCampaignDraft } from "./adminDraftParsers.js";
-import { resolveLiveOpsSceneGate } from "../../../../../packages/shared/src/liveOpsSceneGate.mjs";
+import {
+  resolveLiveOpsRecipientCapRecommendation,
+  resolveLiveOpsSceneGate
+} from "../../../../../packages/shared/src/liveOpsSceneGate.mjs";
 
 function asRecord(value) {
   return value && typeof value === "object" && !Array.isArray(value) ? value : {};
@@ -20,7 +23,7 @@ function resolveRecentSkipPressure(skip24h, skip7d) {
   return "clear";
 }
 
-export function buildLiveOpsCampaignPreflight(draftText, sceneRuntimeSummary, schedulerSkipSummary) {
+export function buildLiveOpsCampaignPreflight(draftText, sceneRuntimeSummary, schedulerSkipSummary, opsAlertTrendSummary) {
   const schedulerSkip = asRecord(schedulerSkipSummary);
   const skipped24h = asCount(schedulerSkip.skipped_24h);
   const skipped7d = asCount(schedulerSkip.skipped_7d);
@@ -39,7 +42,13 @@ export function buildLiveOpsCampaignPreflight(draftText, sceneRuntimeSummary, sc
       recent_skip_pressure: resolveRecentSkipPressure(skipped24h, skipped7d),
       latest_skip_reason: latestSkipReason,
       latest_skip_at: latestSkipAt,
-      gate: resolveLiveOpsSceneGate(asRecord(sceneRuntimeSummary), { targeting: { max_recipients: 50 } })
+      gate: resolveLiveOpsSceneGate(asRecord(sceneRuntimeSummary), { targeting: { max_recipients: 50 } }),
+      recipient_cap_recommendation: resolveLiveOpsRecipientCapRecommendation(
+        asRecord(sceneRuntimeSummary),
+        { targeting: { max_recipients: 50 } },
+        schedulerSkip,
+        asRecord(opsAlertTrendSummary)
+      )
     };
   }
 
@@ -56,6 +65,12 @@ export function buildLiveOpsCampaignPreflight(draftText, sceneRuntimeSummary, sc
     recent_skip_pressure: resolveRecentSkipPressure(skipped24h, skipped7d),
     latest_skip_reason: latestSkipReason,
     latest_skip_at: latestSkipAt,
-    gate: resolveLiveOpsSceneGate(asRecord(sceneRuntimeSummary), campaign)
+    gate: resolveLiveOpsSceneGate(asRecord(sceneRuntimeSummary), campaign),
+    recipient_cap_recommendation: resolveLiveOpsRecipientCapRecommendation(
+      asRecord(sceneRuntimeSummary),
+      campaign,
+      schedulerSkip,
+      asRecord(opsAlertTrendSummary)
+    )
   };
 }

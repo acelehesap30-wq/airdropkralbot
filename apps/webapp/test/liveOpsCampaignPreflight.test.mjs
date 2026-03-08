@@ -20,6 +20,15 @@ test("buildLiveOpsCampaignPreflight exposes capped watch gate for draft campaign
       skipped_7d: 5,
       latest_skip_reason: "scene_runtime_watch_capped",
       latest_skip_at: "2026-03-08T11:22:00.000Z"
+    },
+    {
+      raised_24h: 1,
+      raised_7d: 3,
+      latest_alarm_state: "watch",
+      experiment_key: "webapp_react_v1",
+      segment_breakdown: [{ bucket_key: "wallet_unlinked", item_count: 3 }],
+      locale_breakdown: [{ bucket_key: "tr", item_count: 3 }],
+      surface_breakdown: [{ bucket_key: "wallet_panel", item_count: 2 }]
     }
   );
 
@@ -33,6 +42,9 @@ test("buildLiveOpsCampaignPreflight exposes capped watch gate for draft campaign
   assert.equal(result.latest_skip_reason, "scene_runtime_watch_capped");
   assert.equal(result.gate.scene_gate_effect, "capped");
   assert.equal(result.gate.scene_gate_recipient_cap, 20);
+  assert.equal(result.recipient_cap_recommendation.recommended_recipient_cap, 12);
+  assert.equal(result.recipient_cap_recommendation.reason, "ops_alert_segment_pressure");
+  assert.equal(result.recipient_cap_recommendation.experiment_key, "webapp_react_v1");
 });
 
 test("buildLiveOpsCampaignPreflight returns parse error for invalid draft", () => {
@@ -46,7 +58,8 @@ test("buildLiveOpsCampaignPreflight returns parse error for invalid draft", () =
       skipped_24h: 0,
       skipped_7d: 1,
       latest_skip_reason: "already_dispatched_for_window"
-    }
+    },
+    {}
   );
 
   assert.equal(result.ok, false);

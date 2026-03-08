@@ -123,6 +123,21 @@ function buildLiveOpsSnapshot() {
       scene_gate_effect: "capped",
       scene_gate_reason: "scene_runtime_watch_capped",
       scene_gate_recipient_cap: 20,
+      recipient_cap_recommendation: {
+        configured_recipients: 40,
+        scene_gate_recipient_cap: 20,
+        recommended_recipient_cap: 12,
+        pressure_band: "watch",
+        reason: "ops_alert_segment_pressure",
+        experiment_key: "webapp_react_v1",
+        locale_bucket: "tr",
+        segment_key: "wallet_unlinked",
+        surface_bucket: "wallet_panel",
+        variant_bucket: "treatment",
+        cohort_bucket: "17",
+        segment_match: true,
+        surface_match: true
+      },
       window_key: "wallet_reconnect:2026-03-08T00:00:00.000Z:2026-03-08T23:59:59.000Z",
       already_dispatched_for_window: true,
       latest_auto_dispatch_at: "2026-03-08T02:05:00.000Z",
@@ -348,6 +363,8 @@ test("v2 admin ops kpi latest includes live ops campaign breakdowns", async () =
   assert.equal(body.data.live_ops_campaign.ops_alert_trend.experiment_key, "webapp_react_v1");
   assert.equal(body.data.live_ops_campaign.ops_alert_trend.reason_breakdown[0].bucket_key, "scene_runtime_watch_capped_repeated");
   assert.equal(body.data.live_ops_campaign.ops_alert_trend.surface_breakdown[0].bucket_key, "wallet_panel");
+  assert.equal(body.data.live_ops_campaign.recipient_cap_recommendation.recommended_recipient_cap, 12);
+  assert.equal(body.data.live_ops_campaign.recipient_cap_recommendation.reason, "ops_alert_segment_pressure");
   assert.equal(body.data.live_ops_campaign.scene_gate_effect, "capped");
   assert.equal(body.data.live_ops_campaign.scene_runtime.health_band_24h, "yellow");
   assert.equal(body.data.live_ops_campaign.scene_runtime.alarm_state_7d, "watch");

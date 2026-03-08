@@ -171,7 +171,13 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
     ? sceneRuntimeSummary.alarm_reasons_7d.map((row) => String(row || "").trim()).filter(Boolean)
     : [];
   const sceneWorstDay = asRecord(sceneRuntimeSummary.worst_day_7d);
-  const preflight = buildLiveOpsCampaignPreflight(props.liveOpsCampaignDraft || "{}", sceneRuntimeSummary, schedulerSkipSummary);
+  const preflight = buildLiveOpsCampaignPreflight(
+    props.liveOpsCampaignDraft || "{}",
+    sceneRuntimeSummary,
+    schedulerSkipSummary,
+    opsAlertTrendSummary
+  );
+  const preflightRecommendation = asRecord(preflight.recipient_cap_recommendation);
   const liveReady = approvalSummary.live_dispatch_ready === true;
   const approvalState = asText(approvalSummary.approval_state);
   const scheduleState = asText(approvalSummary.schedule_state);
@@ -259,6 +265,15 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
               <span className="akrChip">
                 {t(props.lang, "admin_live_ops_skip_pressure_label")}: {asText(preflight.recent_skip_pressure)}
               </span>
+              <span className="akrChip">
+                {t(props.lang, "admin_live_ops_recommend_cap_label")}: {asCount(preflightRecommendation.recommended_recipient_cap)}
+              </span>
+              <span className="akrChip">
+                {t(props.lang, "admin_live_ops_recommend_pressure_label")}: {asText(preflightRecommendation.pressure_band)}
+              </span>
+              <span className="akrChip">
+                {t(props.lang, "admin_live_ops_recommend_experiment_label")}: {asText(preflightRecommendation.experiment_key)}
+              </span>
             </div>
             <p className="akrMutedLine">
               {t(props.lang, "admin_live_ops_preflight_note")} {asText(preflight.gate?.scene_gate_reason, "-")}
@@ -266,6 +281,11 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
             <p className="akrMutedLine">
               {t(props.lang, "admin_live_ops_skip_reason_label")}: {asText(preflight.latest_skip_reason)} | {t(props.lang, "admin_live_ops_skip_at_label")}:{" "}
               {asText(preflight.latest_skip_at)}
+            </p>
+            <p className="akrMutedLine">
+              {t(props.lang, "admin_live_ops_recommend_reason_label")}: {asText(preflightRecommendation.reason)} |{" "}
+              {t(props.lang, "admin_live_ops_recommend_focus_label")}: {asText(preflightRecommendation.segment_key, "-")} /{" "}
+              {asText(preflightRecommendation.locale_bucket, "-")} / {asText(preflightRecommendation.surface_bucket, "-")}
             </p>
           </>
         ) : (

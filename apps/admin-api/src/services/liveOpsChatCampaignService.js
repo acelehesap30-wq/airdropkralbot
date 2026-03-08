@@ -15,7 +15,10 @@ const {
   LIVE_OPS_APPROVAL_STATE,
   buildDefaultLiveOpsCampaignConfig
 } = require("../../../../packages/shared/src/liveOpsCampaignContract");
-const { resolveLiveOpsSceneGate } = require("../../../../packages/shared/src/liveOpsSceneGate.cjs");
+const {
+  resolveLiveOpsRecipientCapRecommendation,
+  resolveLiveOpsSceneGate
+} = require("../../../../packages/shared/src/liveOpsSceneGate.cjs");
 const {
   resolveLiveOpsDispatchArtifactPaths,
   resolveLiveOpsOpsAlertArtifactPaths
@@ -1486,8 +1489,22 @@ function readLatestOpsAlertArtifactSummaryFromDisk(now, repoRootDir) {
   }
 }
 
-function buildSchedulerSummary(campaign, approvalSummary, latestSchedulerDispatch, windowDispatch, sceneRuntimeSummary) {
+function buildSchedulerSummary(
+  campaign,
+  approvalSummary,
+  latestSchedulerDispatch,
+  windowDispatch,
+  sceneRuntimeSummary,
+  schedulerSkipSummary,
+  opsAlertTrendSummary
+) {
   const sceneGate = resolveLiveOpsSceneGate(sceneRuntimeSummary, campaign);
+  const recipientCapRecommendation = resolveLiveOpsRecipientCapRecommendation(
+    sceneRuntimeSummary,
+    campaign,
+    schedulerSkipSummary,
+    opsAlertTrendSummary
+  );
   return {
     ready_for_auto_dispatch: approvalSummary?.live_dispatch_ready === true && sceneGate.ready_for_auto_dispatch === true,
     schedule_state: String(approvalSummary?.schedule_state || "missing"),
@@ -1496,6 +1513,7 @@ function buildSchedulerSummary(campaign, approvalSummary, latestSchedulerDispatc
     scene_gate_effect: sceneGate.scene_gate_effect,
     scene_gate_reason: sceneGate.scene_gate_reason,
     scene_gate_recipient_cap: sceneGate.scene_gate_recipient_cap,
+    recipient_cap_recommendation: recipientCapRecommendation,
     window_key: buildScheduleWindowKey(campaign),
     already_dispatched_for_window: Boolean(windowDispatch),
     latest_auto_dispatch_at: latestSchedulerDispatch?.created_at || null,
@@ -1714,7 +1732,9 @@ async function buildCampaignSnapshot(client, current) {
       approvalSummary,
       latestSchedulerDispatch,
       schedulerWindowDispatch,
-      sceneRuntimeSummary
+      sceneRuntimeSummary,
+      schedulerSkipSummary,
+      opsAlertTrendSummary
     ),
     version_history: versionHistory,
     dispatch_history: dispatchHistory,
@@ -2067,7 +2087,16 @@ async function buildCampaignSnapshot(client, current) {
       campaign = current.campaign;
       const now = nowFactory();
       const latestDispatch = await loadLatestDispatchSummary(client, campaign.campaign_key);
-      const sceneRuntimeSummary = await loadSceneRuntimeSummary(client);
+      const [sceneRuntimeSummary, schedulerSkipSummary, opsAlertTrendSummary] = await Promise.all([
+        loadSceneRuntimeSummary(client),
+        loadSchedulerSkipSummary(client, campaign.campaign_key),
+        loadOpsAlertTrendSummary(client, campaign.campaign_key).catch((err) => {
+          if (err?.code === "42P01" || err?.code === "42703") {
+            return buildEmptyLiveOpsOpsAlertTrendSummary();
+          }
+          throw err;
+        })
+      ]);
       const approvalSummary = buildApprovalSummary(campaign, {
         now,
         updated_at: current.created_at || null,
@@ -2103,7 +2132,15 @@ async function buildCampaignSnapshot(client, current) {
           campaign_key: campaign.campaign_key,
           version: current.version,
           window_key: windowKey,
-          scheduler_summary: buildSchedulerSummary(campaign, approvalSummary, null, null, sceneRuntimeSummary)
+          scheduler_summary: buildSchedulerSummary(
+            campaign,
+            approvalSummary,
+            null,
+            null,
+            sceneRuntimeSummary,
+            schedulerSkipSummary,
+            opsAlertTrendSummary
+          )
         };
       }
       if (input.dryRun !== true && sceneGate.ready_for_auto_dispatch !== true) {
@@ -2123,7 +2160,15 @@ async function buildCampaignSnapshot(client, current) {
           campaign_key: campaign.campaign_key,
           version: current.version,
           window_key: windowKey,
-          scheduler_summary: buildSchedulerSummary(campaign, approvalSummary, null, null, sceneRuntimeSummary)
+          scheduler_summary: buildSchedulerSummary(
+            campaign,
+            approvalSummary,
+            null,
+            null,
+            sceneRuntimeSummary,
+            schedulerSkipSummary,
+            opsAlertTrendSummary
+          )
         };
       }
 
@@ -2147,7 +2192,15 @@ async function buildCampaignSnapshot(client, current) {
           window_key: windowKey,
           latest_dispatch_ref: existing.dispatch_ref,
           latest_dispatch_at: existing.created_at || null,
-          scheduler_summary: buildSchedulerSummary(campaign, approvalSummary, existing, existing, sceneRuntimeSummary)
+          scheduler_summary: buildSchedulerSummary(
+            campaign,
+            approvalSummary,
+            existing,
+            existing,
+            sceneRuntimeSummary,
+            schedulerSkipSummary,
+            opsAlertTrendSummary
+          )
         };
       }
     } finally {

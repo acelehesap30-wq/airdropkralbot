@@ -138,6 +138,12 @@ async function main() {
         snapshot && snapshot.scheduler_skip_summary && typeof snapshot.scheduler_skip_summary === "object"
           ? snapshot.scheduler_skip_summary
           : {};
+      const schedulerSummary =
+        snapshot && snapshot.scheduler_summary && typeof snapshot.scheduler_summary === "object"
+          ? snapshot.scheduler_summary
+          : result && result.scheduler_summary && typeof result.scheduler_summary === "object"
+            ? result.scheduler_summary
+            : {};
       const sceneRuntimeSummary =
         snapshot && snapshot.scene_runtime_summary && typeof snapshot.scene_runtime_summary === "object"
           ? {
@@ -164,6 +170,7 @@ async function main() {
       const payload = {
         generated_at: new Date().toISOString(),
         ...result,
+        scheduler_summary: schedulerSummary,
         scheduler_skip_summary: schedulerSkipSummary,
         scene_runtime_summary: sceneRuntimeSummary,
         ops_alarm: {

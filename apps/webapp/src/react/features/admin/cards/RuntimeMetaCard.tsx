@@ -190,6 +190,7 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
   const schedulerSkip = asRecord(liveOpsKpi?.scheduler_skip);
   const opsAlert = asRecord(liveOpsKpi?.ops_alert);
   const opsAlertTrend = asRecord(liveOpsKpi?.ops_alert_trend);
+  const recipientCapRecommendation = asRecord(liveOpsKpi?.recipient_cap_recommendation);
   const schedulerSkipDaily = asRows(schedulerSkip?.daily_breakdown);
   const schedulerSkipReasons = asRows(schedulerSkip?.reason_breakdown);
   const opsAlertLocaleBreakdown = asRows(opsAlertTrend?.locale_breakdown);
@@ -367,6 +368,12 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
             {t(props.lang, "admin_runtime_live_ops_ops_alert_raised_7d_label")}: {Math.floor(readNum(opsAlertTrend, "raised_7d"))}
           </span>
           <span className="akrChip">
+            {t(props.lang, "admin_runtime_live_ops_recommend_cap_label")}: {Math.floor(readNum(recipientCapRecommendation, "recommended_recipient_cap"))}
+          </span>
+          <span className="akrChip">
+            {t(props.lang, "admin_runtime_live_ops_recommend_pressure_label")}: {readText(recipientCapRecommendation, "pressure_band") || "-"}
+          </span>
+          <span className="akrChip">
             {t(props.lang, "admin_runtime_live_ops_ops_alert_experiment_label")}: {readText(opsAlertTrend, "experiment_key") || "-"}
           </span>
           <span className="akrChip">
@@ -398,6 +405,11 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
           <p className="akrMutedLine">
             {t(props.lang, "admin_runtime_live_ops_ops_alert_latest_label")}: {formatStamp(opsAlertTrend?.latest_alert_at)} |{" "}
             {t(props.lang, "admin_runtime_live_ops_ops_alert_reason_label")}: {readText(opsAlertTrend, "latest_notification_reason") || "-"}
+          </p>
+          <p className="akrMutedLine">
+            {t(props.lang, "admin_runtime_live_ops_recommend_reason_label")}: {readText(recipientCapRecommendation, "reason") || "-"} |{" "}
+            {t(props.lang, "admin_runtime_live_ops_recommend_focus_label")}: {readText(recipientCapRecommendation, "segment_key") || "-"} /{" "}
+            {readText(recipientCapRecommendation, "locale_bucket") || "-"} / {readText(recipientCapRecommendation, "surface_bucket") || "-"}
           </p>
           <p className="akrMutedLine">
             {t(props.lang, "admin_live_ops_scheduler_scene_state_label")}: {readText(liveOpsKpi, "scene_gate_state") || "-"} /{" "}

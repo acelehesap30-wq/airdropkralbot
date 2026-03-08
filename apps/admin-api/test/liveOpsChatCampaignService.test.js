@@ -536,6 +536,9 @@ test("live ops chat campaign service snapshot includes approval summary schedule
   assert.equal(snapshot.operator_timeline[0].action, "live_ops_campaign_dispatch");
   assert.equal(snapshot.scheduler_summary.window_key, "wallet_reconnect:2020-01-01T00:00:00.000Z:2035-01-01T00:00:00.000Z");
   assert.equal(snapshot.scheduler_summary.latest_auto_dispatch_ref, "wallet_reconnect_scheduler_ref");
+  assert.equal(snapshot.scheduler_summary.recipient_cap_recommendation.recommended_recipient_cap, 0);
+  assert.equal(snapshot.scheduler_summary.recipient_cap_recommendation.reason, "scene_runtime_alert_blocked");
+  assert.equal(snapshot.scheduler_summary.recipient_cap_recommendation.experiment_key, "webapp_react_v1");
   assert.equal(snapshot.delivery_summary.sent_24h, 2);
   assert.equal(snapshot.delivery_summary.experiment_assignment_available, true);
   assert.equal(snapshot.delivery_summary.experiment_key, "webapp_react_v1");

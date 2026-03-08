@@ -283,6 +283,22 @@ const LiveOpsCampaignOpsAlertTrendSummarySchema = z.object({
   cohort_breakdown: z.array(KpiLiveOpsCampaignBreakdownSchema).default([])
 });
 
+const LiveOpsCampaignRecipientCapRecommendationSchema = z.object({
+  configured_recipients: z.number().int().nonnegative().default(0),
+  scene_gate_recipient_cap: z.number().int().nonnegative().default(0),
+  recommended_recipient_cap: z.number().int().nonnegative().default(0),
+  pressure_band: z.enum(["clear", "watch", "alert"]).default("clear"),
+  reason: z.string().default(""),
+  experiment_key: z.string().default("webapp_react_v1"),
+  locale_bucket: z.string().default(""),
+  segment_key: z.string().default(""),
+  surface_bucket: z.string().default(""),
+  variant_bucket: z.string().default(""),
+  cohort_bucket: z.string().default(""),
+  segment_match: z.boolean().default(false),
+  surface_match: z.boolean().default(false)
+});
+
 const KpiLiveOpsCampaignSummarySchema = z.object({
   available: z.boolean().default(false),
   error_code: z.string().default(""),
@@ -312,6 +328,7 @@ const KpiLiveOpsCampaignSummarySchema = z.object({
   surface_breakdown: z.array(KpiLiveOpsCampaignBreakdownSchema).default([]),
   variant_breakdown: z.array(KpiLiveOpsCampaignBreakdownSchema).default([]),
   cohort_breakdown: z.array(KpiLiveOpsCampaignBreakdownSchema).default([]),
+  recipient_cap_recommendation: LiveOpsCampaignRecipientCapRecommendationSchema.default({}),
   scheduler_skip: LiveOpsCampaignSchedulerSkipSummarySchema.default({}),
   ops_alert: LiveOpsCampaignOpsAlertSummarySchema.default({}),
   ops_alert_trend: LiveOpsCampaignOpsAlertTrendSummarySchema.default({}),
@@ -817,6 +834,7 @@ const LiveOpsCampaignSchedulerSummarySchema = z.object({
   scene_gate_effect: z.enum(["open", "capped", "blocked"]).default("open"),
   scene_gate_reason: z.string().default(""),
   scene_gate_recipient_cap: z.number().int().nonnegative().default(0),
+  recipient_cap_recommendation: LiveOpsCampaignRecipientCapRecommendationSchema.default({}),
   window_key: z.string().default(""),
   already_dispatched_for_window: z.boolean().default(false),
   latest_auto_dispatch_at: z.string().nullable().default(null),
@@ -969,6 +987,7 @@ module.exports = {
   LiveOpsCampaignOpsAlertDailyTrendPointSchema,
   LiveOpsCampaignOpsAlertSummarySchema,
   LiveOpsCampaignOpsAlertTrendSummarySchema,
+  LiveOpsCampaignRecipientCapRecommendationSchema,
   LiveOpsCampaignSchedulerSummarySchema,
   LiveOpsCampaignOperatorTimelineRowSchema,
   LiveOpsCampaignScheduleSchema,

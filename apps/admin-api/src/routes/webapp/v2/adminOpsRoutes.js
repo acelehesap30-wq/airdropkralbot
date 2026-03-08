@@ -100,6 +100,10 @@ function buildLiveOpsCampaignKpiSummary(snapshot) {
   const sceneRuntime = safeSnapshot.scene_runtime_summary && typeof safeSnapshot.scene_runtime_summary === "object"
     ? safeSnapshot.scene_runtime_summary
     : {};
+  const recipientCapRecommendation =
+    scheduler.recipient_cap_recommendation && typeof scheduler.recipient_cap_recommendation === "object"
+      ? scheduler.recipient_cap_recommendation
+      : {};
   const latestDispatch = safeSnapshot.latest_dispatch && typeof safeSnapshot.latest_dispatch === "object" ? safeSnapshot.latest_dispatch : {};
   return {
     available: true,
@@ -130,6 +134,21 @@ function buildLiveOpsCampaignKpiSummary(snapshot) {
     surface_breakdown: normalizeBreakdownRows(delivery.surface_breakdown),
     variant_breakdown: normalizeBreakdownRows(delivery.variant_breakdown),
     cohort_breakdown: normalizeBreakdownRows(delivery.cohort_breakdown),
+    recipient_cap_recommendation: {
+      configured_recipients: Math.max(0, Number(recipientCapRecommendation.configured_recipients || 0)),
+      scene_gate_recipient_cap: Math.max(0, Number(recipientCapRecommendation.scene_gate_recipient_cap || 0)),
+      recommended_recipient_cap: Math.max(0, Number(recipientCapRecommendation.recommended_recipient_cap || 0)),
+      pressure_band: String(recipientCapRecommendation.pressure_band || "clear"),
+      reason: String(recipientCapRecommendation.reason || ""),
+      experiment_key: String(recipientCapRecommendation.experiment_key || "webapp_react_v1"),
+      locale_bucket: String(recipientCapRecommendation.locale_bucket || ""),
+      segment_key: String(recipientCapRecommendation.segment_key || ""),
+      surface_bucket: String(recipientCapRecommendation.surface_bucket || ""),
+      variant_bucket: String(recipientCapRecommendation.variant_bucket || ""),
+      cohort_bucket: String(recipientCapRecommendation.cohort_bucket || ""),
+      segment_match: recipientCapRecommendation.segment_match === true,
+      surface_match: recipientCapRecommendation.surface_match === true
+    },
     scheduler_skip: {
       skipped_24h: Math.max(0, Number(schedulerSkip.skipped_24h || 0)),
       skipped_7d: Math.max(0, Number(schedulerSkip.skipped_7d || 0)),
@@ -214,6 +233,21 @@ async function getLiveOpsCampaignKpiSummary(service, logger) {
       surface_breakdown: [],
       variant_breakdown: [],
       cohort_breakdown: [],
+      recipient_cap_recommendation: {
+        configured_recipients: 0,
+        scene_gate_recipient_cap: 0,
+        recommended_recipient_cap: 0,
+        pressure_band: "clear",
+        reason: "",
+        experiment_key: "webapp_react_v1",
+        locale_bucket: "",
+        segment_key: "",
+        surface_bucket: "",
+        variant_bucket: "",
+        cohort_bucket: "",
+        segment_match: false,
+        surface_match: false
+      },
       scheduler_skip: {
         skipped_24h: 0,
         skipped_7d: 0,

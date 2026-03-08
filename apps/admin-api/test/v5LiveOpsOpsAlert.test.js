@@ -45,6 +45,39 @@ test("evaluateOpsAlert notifies on alert state and dedupes repeated fingerprint"
   assert.equal(second.notification_reason, "cooldown_active");
 });
 
+test("evaluateOpsAlert escalates watch state when recipient cap pressure is alert", async () => {
+  const mod = await loadModule();
+  const result = mod.evaluateOpsAlert(
+    {
+      scheduler_skip_summary: {
+        alarm_state: "watch",
+        alarm_reason: "scene_runtime_watch_capped_repeated",
+        skipped_24h: 1,
+        skipped_7d: 3,
+        latest_skip_reason: "scene_runtime_watch_capped",
+        latest_skip_at: "2026-03-08T15:00:00.000Z"
+      },
+      scheduler_summary: {
+        recipient_cap_recommendation: {
+          pressure_band: "alert",
+          recommended_recipient_cap: 8,
+          reason: "ops_alert_segment_pressure"
+        }
+      }
+    },
+    null,
+    {
+      now: new Date("2026-03-08T15:10:00.000Z"),
+      cooldownMinutes: 180
+    }
+  );
+
+  assert.equal(result.should_notify, true);
+  assert.equal(result.notification_reason, "watch_state_pressure");
+  assert.equal(result.recommended_recipient_cap, 8);
+  assert.equal(result.recommendation_pressure_band, "alert");
+});
+
 test("runLiveOpsOpsAlert writes latest artifact and skips telegram on clear state", async () => {
   const mod = await loadModule();
   const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "akr-liveops-alert-"));
@@ -134,7 +167,20 @@ test("runLiveOpsOpsAlert records audit when alert fingerprint changes", async ()
       scheduler_summary: {
         scene_gate_state: "alert",
         scene_gate_effect: "blocked",
-        scene_gate_reason: "scene_runtime_alert_blocked"
+        scene_gate_reason: "scene_runtime_alert_blocked",
+        recipient_cap_recommendation: {
+          configured_recipients: 40,
+          scene_gate_recipient_cap: 0,
+          recommended_recipient_cap: 0,
+          pressure_band: "alert",
+          reason: "scene_runtime_alert_blocked",
+          experiment_key: "webapp_react_v1",
+          locale_bucket: "tr",
+          segment_key: "wallet_unlinked",
+          surface_bucket: "wallet_panel",
+          variant_bucket: "treatment",
+          cohort_bucket: "17"
+        }
       }
     }, null, 2)}\n`,
     "utf8"
@@ -169,4 +215,7 @@ test("runLiveOpsOpsAlert records audit when alert fingerprint changes", async ()
   assert.equal(auditPayloads[0].surface_bucket, "wallet_panel");
   assert.equal(auditPayloads[0].variant_bucket, "treatment");
   assert.equal(auditPayloads[0].cohort_bucket, "17");
+  assert.equal(auditPayloads[0].recommendation_pressure_band, "alert");
+  assert.equal(auditPayloads[0].recommended_recipient_cap, 0);
+  assert.equal(auditPayloads[0].recommendation_reason, "scene_runtime_alert_blocked");
 });
