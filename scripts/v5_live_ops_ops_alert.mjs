@@ -96,6 +96,14 @@ function buildAlertFingerprint(alarm) {
 
 function evaluateOpsAlert(dispatchArtifact, previousAlertArtifact, options = {}) {
   const schedulerSkip = normalizeOpsAlarm(dispatchArtifact?.scheduler_skip_summary || dispatchArtifact?.ops_alarm || {});
+  const targetingGuidance =
+    dispatchArtifact?.scheduler_summary && typeof dispatchArtifact.scheduler_summary === "object"
+      ? dispatchArtifact.scheduler_summary.targeting_guidance || {}
+      : {};
+  const selectionSummary =
+    dispatchArtifact?.selection_summary && typeof dispatchArtifact.selection_summary === "object"
+      ? dispatchArtifact.selection_summary
+      : {};
   const recipientCapRecommendation =
     dispatchArtifact?.scheduler_summary && typeof dispatchArtifact.scheduler_summary === "object"
       ? dispatchArtifact.scheduler_summary.recipient_cap_recommendation || {}
@@ -163,6 +171,9 @@ function evaluateOpsAlert(dispatchArtifact, previousAlertArtifact, options = {})
     recommended_recipient_cap: recommendedCap,
     effective_cap_delta: effectiveCapDelta,
     recommendation_reason: String(recipientCapRecommendation.reason || "").trim(),
+    targeting_guidance_mode: String(targetingGuidance.default_mode || selectionSummary.guidance_mode || "balanced").trim(),
+    targeting_guidance_state: String(targetingGuidance.guidance_state || selectionSummary.guidance_state || "clear").trim(),
+    targeting_guidance_reason: String(targetingGuidance.guidance_reason || selectionSummary.guidance_reason || "").trim(),
     pressure_focus_band: String(pressureFocusSummary.pressure_band || "clear").trim().toLowerCase(),
     pressure_focus_warning_dimension: String(topWarning.dimension || "").trim(),
     pressure_focus_warning_bucket: String(topWarning.bucket_key || "").trim(),
@@ -180,6 +191,10 @@ function evaluateOpsAlert(dispatchArtifact, previousAlertArtifact, options = {})
     pressure_focus_escalation_share: Math.max(0, Number(pressureEscalation.focus_share_of_recommended_cap || 0)),
     pressure_focus_escalation_matches_target: pressureEscalation.focus_matches_target === true,
     pressure_focus_effective_delta_ratio: Math.max(0, Number(pressureEscalation.effective_cap_delta_ratio || 0)),
+    selection_focus_dimension: String(selectionSummary.focus_dimension || "").trim(),
+    selection_focus_bucket: String(selectionSummary.focus_bucket || "").trim(),
+    selection_focus_selected_matches: Math.max(0, Number(selectionSummary.selected_focus_matches || 0)),
+    selection_prioritized_focus_matches: Math.max(0, Number(selectionSummary.prioritized_focus_matches || 0)),
     notify_on_watch: notifyOnWatch,
     cooldown_minutes: cooldownMinutes,
     previous_fingerprint: previousFingerprint,
@@ -211,6 +226,9 @@ function formatOpsAlertMessage(dispatchArtifact = {}, evaluation = {}) {
     `effective_cap_delta=${Math.max(0, Number(recommendation.effective_cap_delta || 0))}`,
     `pressure_band=${String(recommendation.pressure_band || "clear")}`,
     `pressure_reason=${String(recommendation.reason || "-")}`,
+    `guidance_mode=${String(evaluation.targeting_guidance_mode || "-")}`,
+    `guidance_state=${String(evaluation.targeting_guidance_state || "-")}`,
+    `guidance_reason=${String(evaluation.targeting_guidance_reason || "-")}`,
     `pressure_focus=${String(recommendation.segment_key || "-")}/${String(recommendation.locale_bucket || "-")}/${String(
       recommendation.surface_bucket || "-"
     )}`,
@@ -222,6 +240,10 @@ function formatOpsAlertMessage(dispatchArtifact = {}, evaluation = {}) {
     `focus_escalation=${String(evaluation.pressure_focus_escalation_band || "-")}/${String(
       evaluation.pressure_focus_escalation_reason || "-"
     )}/${String(evaluation.pressure_focus_escalation_dimension || "-")}/${String(evaluation.pressure_focus_escalation_bucket || "-")}`,
+    `selection_focus=${String(evaluation.selection_focus_dimension || "-")}/${String(evaluation.selection_focus_bucket || "-")}:${Math.max(
+      0,
+      Number(evaluation.selection_focus_selected_matches || 0)
+    )}/${Math.max(0, Number(evaluation.selection_prioritized_focus_matches || 0))}`,
     `focus_delta_ratio=${Math.round(Math.max(0, Number(evaluation.pressure_focus_effective_delta_ratio || 0)) * 100)}%`,
     `campaign=${String(dispatchArtifact.campaign_key || "-")}`,
     `dispatch_reason=${String(dispatchArtifact.reason || "-")}`
@@ -411,6 +433,9 @@ async function runLiveOpsOpsAlert(args = {}, deps = {}) {
       recommended_recipient_cap: Math.max(0, Number(evaluation.recommended_recipient_cap || 0)),
       effective_cap_delta: Math.max(0, Number(evaluation.effective_cap_delta || 0)),
       recommendation_reason: String(evaluation.recommendation_reason || "").trim(),
+      targeting_guidance_mode: String(evaluation.targeting_guidance_mode || "balanced").trim() || "balanced",
+      targeting_guidance_state: String(evaluation.targeting_guidance_state || "clear").trim() || "clear",
+      targeting_guidance_reason: String(evaluation.targeting_guidance_reason || "").trim(),
       pressure_focus_band: String(evaluation.pressure_focus_band || "clear").trim() || "clear",
       pressure_focus_warning_dimension: String(evaluation.pressure_focus_warning_dimension || "").trim(),
       pressure_focus_warning_bucket: String(evaluation.pressure_focus_warning_bucket || "").trim(),
@@ -428,6 +453,10 @@ async function runLiveOpsOpsAlert(args = {}, deps = {}) {
       pressure_focus_escalation_share: Math.max(0, Number(evaluation.pressure_focus_escalation_share || 0)),
       pressure_focus_escalation_matches_target: evaluation.pressure_focus_escalation_matches_target === true,
       pressure_focus_effective_delta_ratio: Math.max(0, Number(evaluation.pressure_focus_effective_delta_ratio || 0)),
+      selection_focus_dimension: String(evaluation.selection_focus_dimension || "").trim(),
+      selection_focus_bucket: String(evaluation.selection_focus_bucket || "").trim(),
+      selection_focus_selected_matches: Math.max(0, Number(evaluation.selection_focus_selected_matches || 0)),
+      selection_prioritized_focus_matches: Math.max(0, Number(evaluation.selection_prioritized_focus_matches || 0)),
       telegram_sent: telegram.sent === true,
       telegram_reason: String(telegram.reason || "").trim(),
       telegram_sent_at: telegram.sent_at || null

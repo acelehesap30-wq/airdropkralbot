@@ -196,6 +196,10 @@ async function main() {
       const payload = {
         generated_at: new Date().toISOString(),
         ...result,
+        selection_summary:
+          result && result.data && result.data.selection_summary && typeof result.data.selection_summary === "object"
+            ? result.data.selection_summary
+            : {},
         scheduler_summary: schedulerSummary,
         scheduler_skip_summary: schedulerSkipSummary,
         pressure_focus_summary: pressureFocusSummary,

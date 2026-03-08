@@ -399,6 +399,186 @@ function selectCandidateLoader(campaign) {
   return queryInactiveReturningCandidates;
 }
 
+function normalizeLiveOpsCandidateBucket(value, fallback = "unknown") {
+  const normalized = String(value || "").trim().toLowerCase();
+  return normalized || fallback;
+}
+
+async function loadCandidateExperimentAssignments(client, candidates, experimentKey) {
+  const userIds = (Array.isArray(candidates) ? candidates : [])
+    .map((candidate) => Number(candidate?.user_id || 0))
+    .filter((value) => Number.isFinite(value) && value > 0);
+  if (!userIds.length) {
+    return new Map();
+  }
+  try {
+    const result = await client.query(
+      `SELECT uid, variant_key, cohort_bucket
+       FROM v5_webapp_experiment_assignments
+       WHERE experiment_key = $1
+         AND uid = ANY($2::bigint[]);`,
+      [String(experimentKey || DEFAULT_EXPERIMENT_KEY), userIds]
+    );
+    return (Array.isArray(result.rows) ? result.rows : []).reduce((map, row) => {
+      const userId = Number(row.uid || 0);
+      if (!Number.isFinite(userId) || userId <= 0) {
+        return map;
+      }
+      map.set(userId, {
+        variant_bucket: normalizeLiveOpsCandidateBucket(row.variant_key || "control", "control"),
+        cohort_bucket: normalizeLiveOpsCandidateBucket(row.cohort_bucket || "unknown", "unknown")
+      });
+      return map;
+    }, new Map());
+  } catch (err) {
+    if (err?.code === "42P01" || err?.code === "42703") {
+      return new Map();
+    }
+    throw err;
+  }
+}
+
+function buildLiveOpsCandidateSelectionProfile(targetingGuidance, pressureFocus, pressureEscalation) {
+  const guidance = targetingGuidance && typeof targetingGuidance === "object" && !Array.isArray(targetingGuidance)
+    ? targetingGuidance
+    : {};
+  const focus = pressureFocus && typeof pressureFocus === "object" && !Array.isArray(pressureFocus)
+    ? pressureFocus
+    : {};
+  const escalation = pressureEscalation && typeof pressureEscalation === "object" && !Array.isArray(pressureEscalation)
+    ? pressureEscalation
+    : {};
+  const guidanceMode = String(guidance.default_mode || "balanced").trim().toLowerCase() || "balanced";
+  const modeScale = guidanceMode === "protective" ? 1 : guidanceMode === "balanced" ? 0.55 : 0.2;
+  const topLocale = Array.isArray(focus.locale_cap_split) ? focus.locale_cap_split[0] || null : null;
+  const topVariant = Array.isArray(focus.variant_cap_split) ? focus.variant_cap_split[0] || null : null;
+  const topCohort = Array.isArray(focus.cohort_cap_split) ? focus.cohort_cap_split[0] || null : null;
+  return {
+    guidance_mode: guidanceMode,
+    guidance_state: String(guidance.guidance_state || "clear").trim().toLowerCase() || "clear",
+    guidance_reason: String(guidance.guidance_reason || "").trim(),
+    focus_dimension: String(escalation.focus_dimension || guidance.focus_dimension || "").trim().toLowerCase(),
+    focus_bucket: normalizeLiveOpsCandidateBucket(escalation.focus_bucket || guidance.focus_bucket || "", ""),
+    focus_matches_target: escalation.focus_matches_target === true || guidance.focus_matches_target === true,
+    top_locale_bucket: normalizeLiveOpsCandidateBucket(topLocale?.bucket_key || "", ""),
+    top_variant_bucket: normalizeLiveOpsCandidateBucket(topVariant?.bucket_key || "", ""),
+    top_cohort_bucket: normalizeLiveOpsCandidateBucket(topCohort?.bucket_key || "", ""),
+    mode_scale: modeScale
+  };
+}
+
+function scoreLiveOpsCandidateForSelection(candidate, selectionProfile) {
+  const profile = selectionProfile && typeof selectionProfile === "object" && !Array.isArray(selectionProfile)
+    ? selectionProfile
+    : {};
+  const modeScale = Math.max(0, Number(profile.mode_scale || 0));
+  if (!modeScale || String(profile.guidance_state || "clear") === "clear") {
+    return 0;
+  }
+  const localeBucket = normalizeLiveOpsCandidateBucket(candidate?.locale_bucket || candidate?.locale || "", "unknown");
+  const variantBucket = normalizeLiveOpsCandidateBucket(candidate?.variant_bucket || "control", "control");
+  const cohortBucket = normalizeLiveOpsCandidateBucket(candidate?.cohort_bucket || "unknown", "unknown");
+  let penalty = 0;
+
+  if (profile.focus_dimension === "locale" && profile.focus_bucket && localeBucket === profile.focus_bucket) {
+    penalty += 100 * modeScale;
+  }
+  if (profile.focus_dimension === "variant" && profile.focus_bucket && variantBucket === profile.focus_bucket) {
+    penalty += 80 * modeScale;
+  }
+  if (profile.focus_dimension === "cohort" && profile.focus_bucket && cohortBucket === profile.focus_bucket) {
+    penalty += 70 * modeScale;
+  }
+  if (profile.focus_matches_target && profile.focus_bucket) {
+    if (
+      (profile.focus_dimension === "locale" && localeBucket === profile.focus_bucket) ||
+      (profile.focus_dimension === "variant" && variantBucket === profile.focus_bucket) ||
+      (profile.focus_dimension === "cohort" && cohortBucket === profile.focus_bucket)
+    ) {
+      penalty += 25 * modeScale;
+    }
+  }
+  if (profile.top_locale_bucket && localeBucket === profile.top_locale_bucket) {
+    penalty += 35 * modeScale;
+  }
+  if (profile.top_variant_bucket && variantBucket === profile.top_variant_bucket) {
+    penalty += 24 * modeScale;
+  }
+  if (profile.top_cohort_bucket && cohortBucket === profile.top_cohort_bucket) {
+    penalty += 18 * modeScale;
+  }
+  return Number(penalty.toFixed(4));
+}
+
+async function prioritizeLiveOpsCandidates(client, candidates, experimentKey, targetingGuidance, pressureFocus, pressureEscalation) {
+  const safeCandidates = Array.isArray(candidates) ? candidates : [];
+  const assignmentMap = await loadCandidateExperimentAssignments(client, safeCandidates, experimentKey);
+  const selectionProfile = buildLiveOpsCandidateSelectionProfile(targetingGuidance, pressureFocus, pressureEscalation);
+  const prioritized = safeCandidates
+    .map((candidate, index) => {
+      const assignment = assignmentMap.get(Number(candidate?.user_id || 0)) || {};
+      const localeBucket = normalizeLiveOpsCandidateBucket(
+        normalizeTrustMessageLanguage(candidate?.locale || "tr"),
+        "unknown"
+      );
+      const variantBucket = normalizeLiveOpsCandidateBucket(assignment.variant_bucket || "control", "control");
+      const cohortBucket = normalizeLiveOpsCandidateBucket(assignment.cohort_bucket || "unknown", "unknown");
+      const annotatedCandidate = {
+        ...candidate,
+        locale_bucket: localeBucket,
+        variant_bucket: variantBucket,
+        cohort_bucket: cohortBucket
+      };
+      return {
+        candidate: annotatedCandidate,
+        index,
+        penalty: scoreLiveOpsCandidateForSelection(annotatedCandidate, selectionProfile)
+      };
+    })
+    .sort((left, right) => {
+      if (left.penalty !== right.penalty) {
+        return left.penalty - right.penalty;
+      }
+      return left.index - right.index;
+    });
+  return {
+    candidates: prioritized.map((entry) => entry.candidate),
+    selection_profile: selectionProfile
+  };
+}
+
+function buildLiveOpsSelectionSummary(selectionProfile, prioritizedCandidates, selectedCandidates) {
+  const profile = selectionProfile && typeof selectionProfile === "object" && !Array.isArray(selectionProfile)
+    ? selectionProfile
+    : {};
+  const prioritized = Array.isArray(prioritizedCandidates) ? prioritizedCandidates : [];
+  const selected = Array.isArray(selectedCandidates) ? selectedCandidates : [];
+  const countMatches = (rows, dimension, bucketKey) => {
+    if (!bucketKey) {
+      return 0;
+    }
+    return rows.filter((row) => normalizeLiveOpsCandidateBucket(row?.[`${dimension}_bucket`] || "", "") === bucketKey).length;
+  };
+  return {
+    guidance_mode: String(profile.guidance_mode || "balanced").trim() || "balanced",
+    guidance_state: String(profile.guidance_state || "clear").trim() || "clear",
+    guidance_reason: String(profile.guidance_reason || "").trim(),
+    focus_dimension: String(profile.focus_dimension || "").trim(),
+    focus_bucket: String(profile.focus_bucket || "").trim(),
+    focus_matches_target: profile.focus_matches_target === true,
+    prioritized_candidates: prioritized.length,
+    selected_candidates: selected.length,
+    prioritized_focus_matches: countMatches(prioritized, String(profile.focus_dimension || ""), String(profile.focus_bucket || "")),
+    selected_focus_matches: countMatches(selected, String(profile.focus_dimension || ""), String(profile.focus_bucket || "")),
+    prioritized_top_locale_matches: countMatches(prioritized, "locale", String(profile.top_locale_bucket || "")),
+    selected_top_locale_matches: countMatches(selected, "locale", String(profile.top_locale_bucket || "")),
+    prioritized_top_variant_matches: countMatches(prioritized, "variant", String(profile.top_variant_bucket || "")),
+    selected_top_variant_matches: countMatches(selected, "variant", String(profile.top_variant_bucket || "")),
+    prioritized_top_cohort_matches: countMatches(prioritized, "cohort", String(profile.top_cohort_bucket || "")),
+    selected_top_cohort_matches: countMatches(selected, "cohort", String(profile.top_cohort_bucket || ""))
+  };
+}
+
 function createLiveOpsChatCampaignService(deps = {}) {
   const pool = deps.pool;
   const fetchImpl = deps.fetchImpl || global.fetch;
@@ -839,6 +1019,10 @@ function buildCampaignAuditPayload(campaign, meta = {}) {
     targeting_guidance_default_mode: String(meta.targetingGuidanceDefaultMode || "balanced"),
     targeting_guidance_cap: Number(meta.targetingGuidanceCap || 0),
     targeting_guidance_reason: String(meta.targetingGuidanceReason || ""),
+    targeting_selection_summary:
+      meta.targetingSelectionSummary && typeof meta.targetingSelectionSummary === "object" && !Array.isArray(meta.targetingSelectionSummary)
+        ? meta.targetingSelectionSummary
+        : null,
     dry_run: meta.dryRun === true,
     attempted: Number(meta.attempted || 0),
     sent: Number(meta.sent || 0),
@@ -2117,10 +2301,23 @@ async function buildCampaignSnapshot(client, current) {
 
       const candidateLoader = loadCandidates || selectCandidateLoader(campaign);
       const candidateResult = await candidateLoader(client, campaign);
-      const candidates = Array.isArray(candidateResult) ? candidateResult : [];
+      const loadedCandidates = Array.isArray(candidateResult) ? candidateResult : [];
+      const prioritization =
+        dispatchSource === "scheduler"
+          ? await prioritizeLiveOpsCandidates(
+              client,
+              loadedCandidates,
+              recipientCapRecommendation.experiment_key || DEFAULT_EXPERIMENT_KEY,
+              targetingGuidance,
+              pressureFocus,
+              pressureEscalation
+            )
+          : { candidates: loadedCandidates, selection_profile: buildLiveOpsCandidateSelectionProfile({}, {}, {}) };
+      const candidates = Array.isArray(prioritization.candidates) ? prioritization.candidates : loadedCandidates;
       const now = nowFactory();
       const dispatchRef = `${campaign.campaign_key}_${now.getTime().toString(36)}`;
       const sampleUsers = [];
+      const selectedCandidates = [];
       let attempted = 0;
       let sent = 0;
       let recorded = 0;
@@ -2151,11 +2348,13 @@ async function buildCampaignSnapshot(client, current) {
           last_seen_at: candidate.last_seen_at || null
         });
         if (dryRun) {
+          selectedCandidates.push(candidate);
           sent += 1;
           continue;
         }
         try {
           await postTelegramMessage(candidate.telegram_id, text, replyMarkup);
+          selectedCandidates.push(candidate);
           sent += 1;
           const primarySurfaceKey = String(surfaceEntries[0]?.surface_key || "");
           await recordDispatchEvent(client, candidate.user_id, {
@@ -2182,6 +2381,10 @@ async function buildCampaignSnapshot(client, current) {
       }
 
       const auditAction = dryRun ? "live_ops_campaign_dry_run" : "live_ops_campaign_dispatch";
+      const selectionSummary =
+        dispatchSource === "scheduler"
+          ? buildLiveOpsSelectionSummary(prioritization.selection_profile, candidates, selectedCandidates)
+          : null;
       await client.query(
         `INSERT INTO admin_audit (admin_id, action, target, payload_json)
          VALUES ($1, $2, $3, $4::jsonb);`,
@@ -2204,6 +2407,7 @@ async function buildCampaignSnapshot(client, current) {
               targetingGuidanceDefaultMode: guidanceMode,
               targetingGuidanceCap: dispatchSource === "scheduler" ? maxRecipients : guidanceModeCap,
               targetingGuidanceReason: String(targetingGuidance.guidance_reason || ""),
+              targetingSelectionSummary: selectionSummary,
               dryRun,
               sent,
               attempted,
@@ -2249,6 +2453,7 @@ async function buildCampaignSnapshot(client, current) {
           recommendation_mode: guidanceMode,
           recommendation_mode_cap: dispatchSource === "scheduler" ? maxRecipients : guidanceModeCap,
           recommendation_guidance_state: String(targetingGuidance.guidance_state || "clear"),
+          selection_summary: selectionSummary,
           sample_users: sampleUsers.slice(0, 5),
           generated_at: now.toISOString()
         }
