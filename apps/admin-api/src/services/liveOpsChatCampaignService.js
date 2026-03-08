@@ -1069,7 +1069,14 @@ async function loadOpsAlertTrendSummary(client, campaignKey) {
          COUNT(*) FILTER (
            WHERE created_at >= now() - interval '7 days'
              AND COALESCE(lower(payload_json->>'telegram_sent'), 'false') IN ('true', '1', 'yes', 'on')
-         )::bigint AS telegram_sent_7d
+        )::bigint AS telegram_sent_7d,
+        MAX(
+          CASE
+            WHEN NULLIF(payload_json->>'effective_cap_delta', '') IS NOT NULL
+              THEN (payload_json->>'effective_cap_delta')::int
+            ELSE 0
+          END
+        ) FILTER (WHERE created_at >= now() - interval '7 days')::bigint AS max_effective_cap_delta_7d
        FROM admin_audit
        WHERE target = $1
          AND action = 'live_ops_campaign_ops_alert'
@@ -1206,6 +1213,8 @@ async function loadOpsAlertTrendSummary(client, campaignKey) {
     latest_telegram_sent_at: latestPayload.telegram_sent === true
       ? String(latestPayload.telegram_sent_at || "").trim() || null
       : null,
+    latest_effective_cap_delta: Math.max(0, Number(latestPayload.effective_cap_delta || 0)),
+    max_effective_cap_delta_7d: Math.max(0, Number(totals.max_effective_cap_delta_7d || 0)),
     daily_breakdown: normalizeOpsAlertDailyRows(dailyResult.rows),
     reason_breakdown: normalizeBreakdownRows(reasonResult.rows),
     locale_breakdown: normalizeBreakdownRows(localeResult.rows),
@@ -1355,6 +1364,10 @@ function buildEmptyLiveOpsTaskSummary() {
     scene_gate_effect: "open",
     scene_gate_reason: "",
     scene_gate_recipient_cap: 0,
+    recommended_recipient_cap: 0,
+    effective_cap_delta: 0,
+    recommendation_pressure_band: "clear",
+    recommendation_reason: "",
     window_key: "",
     scheduler_skip_24h: 0,
     scheduler_skip_7d: 0,
@@ -1390,6 +1403,8 @@ function buildEmptyLiveOpsOpsAlertTrendSummary() {
     latest_alarm_state: "clear",
     latest_notification_reason: "",
     latest_telegram_sent_at: null,
+    latest_effective_cap_delta: 0,
+    max_effective_cap_delta_7d: 0,
     daily_breakdown: [],
     reason_breakdown: [],
     locale_breakdown: [],
@@ -1423,6 +1438,8 @@ function readLatestTaskArtifactSummaryFromDisk(now, repoRootDir) {
     const payload = JSON.parse(fs.readFileSync(artifactPaths.latestJsonPath, "utf8"));
     const scheduler = payload && typeof payload.scheduler_summary === "object" ? payload.scheduler_summary : {};
     const schedulerSkip = payload && typeof payload.scheduler_skip_summary === "object" ? payload.scheduler_skip_summary : {};
+    const recommendation =
+      scheduler && typeof scheduler.recipient_cap_recommendation === "object" ? scheduler.recipient_cap_recommendation : {};
     const data = payload && typeof payload.data === "object" ? payload.data : {};
     return {
       artifact_found: true,
@@ -1438,6 +1455,10 @@ function readLatestTaskArtifactSummaryFromDisk(now, repoRootDir) {
       scene_gate_effect: String(scheduler?.scene_gate_effect || data?.scene_gate_effect || "open").trim() || "open",
       scene_gate_reason: String(scheduler?.scene_gate_reason || data?.scene_gate_reason || "").trim(),
       scene_gate_recipient_cap: Math.max(0, Number(scheduler?.scene_gate_recipient_cap || data?.scene_gate_recipient_cap || 0) || 0),
+      recommended_recipient_cap: Math.max(0, Number(recommendation?.recommended_recipient_cap || 0) || 0),
+      effective_cap_delta: Math.max(0, Number(recommendation?.effective_cap_delta || 0) || 0),
+      recommendation_pressure_band: String(recommendation?.pressure_band || "clear").trim() || "clear",
+      recommendation_reason: String(recommendation?.reason || "").trim(),
       window_key: String(scheduler?.window_key || data?.window_key || "").trim(),
       scheduler_skip_24h: Math.max(0, Number(schedulerSkip?.skipped_24h || 0) || 0),
       scheduler_skip_7d: Math.max(0, Number(schedulerSkip?.skipped_7d || 0) || 0),

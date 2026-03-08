@@ -88,6 +88,7 @@ function buildSnapshot(version, approvalState) {
         configured_recipients: 40,
         scene_gate_recipient_cap: 0,
         recommended_recipient_cap: 0,
+        effective_cap_delta: 40,
         pressure_band: "alert",
         reason: "scene_runtime_alert_blocked",
         experiment_key: "webapp_react_v1",
@@ -173,6 +174,10 @@ function buildSnapshot(version, approvalState) {
       scene_gate_effect: "open",
       scene_gate_reason: "scene_runtime_no_data",
       scene_gate_recipient_cap: 40,
+      recommended_recipient_cap: 0,
+      effective_cap_delta: 40,
+      recommendation_pressure_band: "alert",
+      recommendation_reason: "scene_runtime_alert_blocked",
       window_key: "wallet_reconnect:2026-03-08T09:00:00.000Z:2026-03-08T18:00:00.000Z",
       scheduler_skip_24h: 1,
       scheduler_skip_7d: 3,
@@ -202,6 +207,8 @@ function buildSnapshot(version, approvalState) {
       latest_alarm_state: "alert",
       latest_notification_reason: "alert_state",
       latest_telegram_sent_at: "2026-03-08T10:13:20.000Z",
+      latest_effective_cap_delta: 40,
+      max_effective_cap_delta_7d: 40,
       daily_breakdown: [{ day: "2026-03-08", alert_count: 1, telegram_sent_count: 1 }],
       reason_breakdown: [{ bucket_key: "alert_state", item_count: 2 }],
       locale_breakdown: [{ bucket_key: "tr", item_count: 1 }],
@@ -287,8 +294,10 @@ test("v2 admin live ops campaign routes read, save approve and dispatch canonica
   assert.equal(getRes.json().data.ops_alert_summary.telegram_sent, true);
   assert.equal(getRes.json().data.ops_alert_trend_summary.raised_7d, 2);
   assert.equal(getRes.json().data.ops_alert_trend_summary.experiment_key, "webapp_react_v1");
+  assert.equal(getRes.json().data.ops_alert_trend_summary.latest_effective_cap_delta, 40);
   assert.equal(getRes.json().data.ops_alert_trend_summary.surface_breakdown[0].bucket_key, "wallet_panel");
   assert.equal(getRes.json().data.scheduler_summary.recipient_cap_recommendation.recommended_recipient_cap, 0);
+  assert.equal(getRes.json().data.scheduler_summary.recipient_cap_recommendation.effective_cap_delta, 40);
 
   const saveRes = await app.inject({
     method: "POST",

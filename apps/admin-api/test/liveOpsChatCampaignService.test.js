@@ -303,7 +303,8 @@ test("live ops chat campaign service snapshot includes approval summary schedule
                     raised_24h: 1,
                     raised_7d: 3,
                     telegram_sent_24h: 1,
-                    telegram_sent_7d: 2
+                    telegram_sent_7d: 2,
+                    max_effective_cap_delta_7d: 40
                   }
                 ]
               };
@@ -373,6 +374,7 @@ test("live ops chat campaign service snapshot includes approval summary schedule
                       alarm_state: "alert",
                       notification_reason: "alert_state",
                       experiment_key: "webapp_react_v1",
+                      effective_cap_delta: 40,
                       telegram_sent: true,
                       telegram_sent_at: "2026-03-08T12:26:30.000Z"
                     }
@@ -501,6 +503,10 @@ test("live ops chat campaign service snapshot includes approval summary schedule
       scene_gate_effect: "capped",
       scene_gate_reason: "scene_runtime_watch_capped",
       scene_gate_recipient_cap: 20,
+      recommended_recipient_cap: 0,
+      effective_cap_delta: 40,
+      recommendation_pressure_band: "alert",
+      recommendation_reason: "scene_runtime_alert_blocked",
       window_key: "wallet_reconnect:2020-01-01T00:00:00.000Z:2035-01-01T00:00:00.000Z",
       scheduler_skip_24h: 2,
       scheduler_skip_7d: 4,
@@ -537,6 +543,7 @@ test("live ops chat campaign service snapshot includes approval summary schedule
   assert.equal(snapshot.scheduler_summary.window_key, "wallet_reconnect:2020-01-01T00:00:00.000Z:2035-01-01T00:00:00.000Z");
   assert.equal(snapshot.scheduler_summary.latest_auto_dispatch_ref, "wallet_reconnect_scheduler_ref");
   assert.equal(snapshot.scheduler_summary.recipient_cap_recommendation.recommended_recipient_cap, 0);
+  assert.equal(snapshot.scheduler_summary.recipient_cap_recommendation.effective_cap_delta, 40);
   assert.equal(snapshot.scheduler_summary.recipient_cap_recommendation.reason, "scene_runtime_alert_blocked");
   assert.equal(snapshot.scheduler_summary.recipient_cap_recommendation.experiment_key, "webapp_react_v1");
   assert.equal(snapshot.delivery_summary.sent_24h, 2);
@@ -563,6 +570,8 @@ test("live ops chat campaign service snapshot includes approval summary schedule
   assert.equal(snapshot.task_summary.artifact_found, true);
   assert.equal(snapshot.task_summary.artifact_age_min, 5);
   assert.equal(snapshot.task_summary.scene_gate_reason, "scene_runtime_watch_capped");
+  assert.equal(snapshot.task_summary.recommended_recipient_cap, 0);
+  assert.equal(snapshot.task_summary.effective_cap_delta, 40);
   assert.equal(snapshot.task_summary.scheduler_skip_alarm_state, "alert");
   assert.equal(snapshot.task_summary.scheduler_skip_24h, 2);
   assert.equal(snapshot.ops_alert_summary.artifact_found, true);
@@ -572,6 +581,8 @@ test("live ops chat campaign service snapshot includes approval summary schedule
   assert.equal(snapshot.ops_alert_trend_summary.raised_24h, 1);
   assert.equal(snapshot.ops_alert_trend_summary.raised_7d, 3);
   assert.equal(snapshot.ops_alert_trend_summary.experiment_key, "webapp_react_v1");
+  assert.equal(snapshot.ops_alert_trend_summary.latest_effective_cap_delta, 40);
+  assert.equal(snapshot.ops_alert_trend_summary.max_effective_cap_delta_7d, 40);
   assert.equal(snapshot.ops_alert_trend_summary.reason_breakdown[0].bucket_key, "alert_state");
   assert.equal(snapshot.ops_alert_trend_summary.daily_breakdown[0].alert_count, 1);
   assert.equal(snapshot.ops_alert_trend_summary.locale_breakdown[0].bucket_key, "tr");

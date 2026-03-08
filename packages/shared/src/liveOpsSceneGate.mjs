@@ -113,6 +113,7 @@ export function resolveLiveOpsRecipientCapRecommendation(
       configured_recipients: configuredRecipients,
       scene_gate_recipient_cap: baseCap,
       recommended_recipient_cap: 0,
+      effective_cap_delta: Math.max(0, configuredRecipients),
       pressure_band: "alert",
       reason: sceneGate.scene_gate_reason || "scene_gate_blocked",
       experiment_key: experimentKey,
@@ -146,11 +147,13 @@ export function resolveLiveOpsRecipientCapRecommendation(
 
   const recommendedCap =
     pressureBand === "clear" ? baseCap : Math.max(1, Math.min(baseCap, Math.floor(baseCap * multiplier)));
+  const effectiveCapDelta = Math.max(0, configuredRecipients - recommendedCap);
 
   return {
     configured_recipients: configuredRecipients,
     scene_gate_recipient_cap: baseCap,
     recommended_recipient_cap: recommendedCap,
+    effective_cap_delta: effectiveCapDelta,
     pressure_band: pressureBand,
     reason,
     experiment_key: experimentKey,

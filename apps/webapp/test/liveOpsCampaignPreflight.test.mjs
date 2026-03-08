@@ -43,6 +43,7 @@ test("buildLiveOpsCampaignPreflight exposes capped watch gate for draft campaign
   assert.equal(result.gate.scene_gate_effect, "capped");
   assert.equal(result.gate.scene_gate_recipient_cap, 20);
   assert.equal(result.recipient_cap_recommendation.recommended_recipient_cap, 12);
+  assert.equal(result.recipient_cap_recommendation.effective_cap_delta, 28);
   assert.equal(result.recipient_cap_recommendation.reason, "ops_alert_segment_pressure");
   assert.equal(result.recipient_cap_recommendation.experiment_key, "webapp_react_v1");
 });

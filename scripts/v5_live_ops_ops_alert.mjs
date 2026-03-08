@@ -108,6 +108,7 @@ function evaluateOpsAlert(dispatchArtifact, previousAlertArtifact, options = {})
   const now = options.now instanceof Date ? options.now : new Date();
   const recommendationPressure = String(recipientCapRecommendation.pressure_band || "clear").trim().toLowerCase();
   const recommendedCap = Math.max(0, Number(recipientCapRecommendation.recommended_recipient_cap || 0));
+  const effectiveCapDelta = Math.max(0, Number(recipientCapRecommendation.effective_cap_delta || 0));
   const fingerprint = buildAlertFingerprint(schedulerSkip);
   let shouldNotify = false;
   let notificationReason = "state_clear";
@@ -143,6 +144,7 @@ function evaluateOpsAlert(dispatchArtifact, previousAlertArtifact, options = {})
     latest_skip_at: schedulerSkip.latest_skip_at,
     recommendation_pressure_band: recommendationPressure,
     recommended_recipient_cap: recommendedCap,
+    effective_cap_delta: effectiveCapDelta,
     recommendation_reason: String(recipientCapRecommendation.reason || "").trim(),
     notify_on_watch: notifyOnWatch,
     cooldown_minutes: cooldownMinutes,
@@ -172,6 +174,7 @@ function formatOpsAlertMessage(dispatchArtifact = {}, evaluation = {}) {
     `scene_gate=${String(scheduler.scene_gate_state || "no_data")}/${String(scheduler.scene_gate_effect || "open")}`,
     `scene_reason=${String(scheduler.scene_gate_reason || "-")}`,
     `recommended_cap=${Math.max(0, Number(recommendation.recommended_recipient_cap || 0))}`,
+    `effective_cap_delta=${Math.max(0, Number(recommendation.effective_cap_delta || 0))}`,
     `pressure_band=${String(recommendation.pressure_band || "clear")}`,
     `pressure_reason=${String(recommendation.reason || "-")}`,
     `pressure_focus=${String(recommendation.segment_key || "-")}/${String(recommendation.locale_bucket || "-")}/${String(
@@ -363,6 +366,7 @@ async function runLiveOpsOpsAlert(args = {}, deps = {}) {
       cohort_bucket: String(campaignContext.cohort_bucket || "").trim(),
       recommendation_pressure_band: String(evaluation.recommendation_pressure_band || "clear").trim() || "clear",
       recommended_recipient_cap: Math.max(0, Number(evaluation.recommended_recipient_cap || 0)),
+      effective_cap_delta: Math.max(0, Number(evaluation.effective_cap_delta || 0)),
       recommendation_reason: String(evaluation.recommendation_reason || "").trim(),
       telegram_sent: telegram.sent === true,
       telegram_reason: String(telegram.reason || "").trim(),

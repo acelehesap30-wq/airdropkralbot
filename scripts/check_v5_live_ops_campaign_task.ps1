@@ -103,6 +103,7 @@ if ($latestPayload -ne $null) {
   $scheduler = Get-PropValue -Source $latestPayload -Name "scheduler_summary"
   $schedulerSkip = Get-PropValue -Source $latestPayload -Name "scheduler_skip_summary"
   $opsAlarm = Get-PropValue -Source $latestPayload -Name "ops_alarm"
+  $recommendation = Get-PropValue -Source $scheduler -Name "recipient_cap_recommendation"
   $data = Get-PropValue -Source $latestPayload -Name "data"
   $latestSummary = [pscustomobject]@{
     ok = [bool](Get-PropValue -Source $latestPayload -Name "ok" -Fallback $false)
@@ -114,6 +115,10 @@ if ($latestPayload -ne $null) {
     scene_gate_effect = [string](Get-PropValue -Source $scheduler -Name "scene_gate_effect" -Fallback (Get-PropValue -Source $data -Name "scene_gate_effect" -Fallback ""))
     scene_gate_reason = [string](Get-PropValue -Source $scheduler -Name "scene_gate_reason" -Fallback (Get-PropValue -Source $data -Name "scene_gate_reason" -Fallback ""))
     scene_gate_recipient_cap = [int](Get-PropValue -Source $scheduler -Name "scene_gate_recipient_cap" -Fallback (Get-PropValue -Source $data -Name "scene_gate_recipient_cap" -Fallback 0))
+    recommended_recipient_cap = [int](Get-PropValue -Source $recommendation -Name "recommended_recipient_cap" -Fallback 0)
+    effective_cap_delta = [int](Get-PropValue -Source $recommendation -Name "effective_cap_delta" -Fallback 0)
+    recommendation_pressure_band = [string](Get-PropValue -Source $recommendation -Name "pressure_band" -Fallback "clear")
+    recommendation_reason = [string](Get-PropValue -Source $recommendation -Name "reason" -Fallback "")
     scheduler_skip_24h = [int](Get-PropValue -Source $schedulerSkip -Name "skipped_24h" -Fallback 0)
     scheduler_skip_7d = [int](Get-PropValue -Source $schedulerSkip -Name "skipped_7d" -Fallback 0)
     scheduler_skip_alarm_state = [string](Get-PropValue -Source $schedulerSkip -Name "alarm_state" -Fallback (Get-PropValue -Source $opsAlarm -Name "state" -Fallback "clear"))

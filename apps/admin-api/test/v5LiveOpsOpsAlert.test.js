@@ -61,6 +61,7 @@ test("evaluateOpsAlert escalates watch state when recipient cap pressure is aler
         recipient_cap_recommendation: {
           pressure_band: "alert",
           recommended_recipient_cap: 8,
+          effective_cap_delta: 32,
           reason: "ops_alert_segment_pressure"
         }
       }
@@ -75,6 +76,7 @@ test("evaluateOpsAlert escalates watch state when recipient cap pressure is aler
   assert.equal(result.should_notify, true);
   assert.equal(result.notification_reason, "watch_state_pressure");
   assert.equal(result.recommended_recipient_cap, 8);
+  assert.equal(result.effective_cap_delta, 32);
   assert.equal(result.recommendation_pressure_band, "alert");
 });
 
@@ -172,6 +174,7 @@ test("runLiveOpsOpsAlert records audit when alert fingerprint changes", async ()
           configured_recipients: 40,
           scene_gate_recipient_cap: 0,
           recommended_recipient_cap: 0,
+          effective_cap_delta: 40,
           pressure_band: "alert",
           reason: "scene_runtime_alert_blocked",
           experiment_key: "webapp_react_v1",
@@ -217,5 +220,6 @@ test("runLiveOpsOpsAlert records audit when alert fingerprint changes", async ()
   assert.equal(auditPayloads[0].cohort_bucket, "17");
   assert.equal(auditPayloads[0].recommendation_pressure_band, "alert");
   assert.equal(auditPayloads[0].recommended_recipient_cap, 0);
+  assert.equal(auditPayloads[0].effective_cap_delta, 40);
   assert.equal(auditPayloads[0].recommendation_reason, "scene_runtime_alert_blocked");
 });

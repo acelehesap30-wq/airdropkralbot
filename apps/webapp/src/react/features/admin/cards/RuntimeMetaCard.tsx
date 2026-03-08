@@ -371,10 +371,16 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
             {t(props.lang, "admin_runtime_live_ops_recommend_cap_label")}: {Math.floor(readNum(recipientCapRecommendation, "recommended_recipient_cap"))}
           </span>
           <span className="akrChip">
+            {t(props.lang, "admin_runtime_live_ops_recommend_delta_label")}: {Math.floor(readNum(recipientCapRecommendation, "effective_cap_delta"))}
+          </span>
+          <span className="akrChip">
             {t(props.lang, "admin_runtime_live_ops_recommend_pressure_label")}: {readText(recipientCapRecommendation, "pressure_band") || "-"}
           </span>
           <span className="akrChip">
             {t(props.lang, "admin_runtime_live_ops_ops_alert_experiment_label")}: {readText(opsAlertTrend, "experiment_key") || "-"}
+          </span>
+          <span className="akrChip">
+            {t(props.lang, "admin_runtime_live_ops_ops_alert_delta_max_label")}: {Math.floor(readNum(opsAlertTrend, "max_effective_cap_delta_7d"))}
           </span>
           <span className="akrChip">
             {t(props.lang, "admin_live_ops_scheduler_scene_effect_label")}: {readText(liveOpsKpi, "scene_gate_effect") || "-"}
@@ -410,6 +416,10 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
             {t(props.lang, "admin_runtime_live_ops_recommend_reason_label")}: {readText(recipientCapRecommendation, "reason") || "-"} |{" "}
             {t(props.lang, "admin_runtime_live_ops_recommend_focus_label")}: {readText(recipientCapRecommendation, "segment_key") || "-"} /{" "}
             {readText(recipientCapRecommendation, "locale_bucket") || "-"} / {readText(recipientCapRecommendation, "surface_bucket") || "-"}
+          </p>
+          <p className="akrMutedLine">
+            {t(props.lang, "admin_runtime_live_ops_recommend_delta_label")}: {Math.floor(readNum(recipientCapRecommendation, "effective_cap_delta"))} |{" "}
+            {t(props.lang, "admin_runtime_live_ops_ops_alert_delta_max_label")}: {Math.floor(readNum(opsAlertTrend, "max_effective_cap_delta_7d"))}
           </p>
           <p className="akrMutedLine">
             {t(props.lang, "admin_live_ops_scheduler_scene_state_label")}: {readText(liveOpsKpi, "scene_gate_state") || "-"} /{" "}

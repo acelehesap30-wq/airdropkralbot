@@ -80,6 +80,7 @@ test("resolveLiveOpsRecipientCapRecommendation tightens cap on matching segment 
 
   assert.equal(recommendation.scene_gate_recipient_cap, 20);
   assert.equal(recommendation.recommended_recipient_cap, 12);
+  assert.equal(recommendation.effective_cap_delta, 28);
   assert.equal(recommendation.pressure_band, "watch");
   assert.equal(recommendation.reason, "ops_alert_segment_pressure");
   assert.equal(recommendation.segment_match, true);

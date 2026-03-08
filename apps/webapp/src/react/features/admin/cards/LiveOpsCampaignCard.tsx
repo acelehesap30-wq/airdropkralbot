@@ -138,6 +138,7 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
   const snapshot = asRecord(props.liveOpsCampaignData);
   const approvalSummary = asRecord(snapshot.approval_summary);
   const schedulerSummary = asRecord(snapshot.scheduler_summary);
+  const schedulerRecommendation = asRecord(schedulerSummary.recipient_cap_recommendation);
   const schedulerSkipSummary = asRecord(snapshot.scheduler_skip_summary);
   const versionHistory = asArray(snapshot.version_history);
   const dispatchHistory = asArray(snapshot.dispatch_history);
@@ -269,6 +270,9 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
                 {t(props.lang, "admin_live_ops_recommend_cap_label")}: {asCount(preflightRecommendation.recommended_recipient_cap)}
               </span>
               <span className="akrChip">
+                {t(props.lang, "admin_live_ops_recommend_delta_label")}: {asCount(preflightRecommendation.effective_cap_delta)}
+              </span>
+              <span className="akrChip">
                 {t(props.lang, "admin_live_ops_recommend_pressure_label")}: {asText(preflightRecommendation.pressure_band)}
               </span>
               <span className="akrChip">
@@ -395,6 +399,22 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
             <strong>{asCount(schedulerSummary.scene_gate_recipient_cap)}</strong>
           </li>
           <li>
+            <span>{t(props.lang, "admin_live_ops_recommend_cap_label")}</span>
+            <strong>{asCount(schedulerRecommendation.recommended_recipient_cap)}</strong>
+          </li>
+          <li>
+            <span>{t(props.lang, "admin_live_ops_recommend_delta_label")}</span>
+            <strong>{asCount(schedulerRecommendation.effective_cap_delta)}</strong>
+          </li>
+          <li>
+            <span>{t(props.lang, "admin_live_ops_recommend_pressure_label")}</span>
+            <strong>{asText(schedulerRecommendation.pressure_band)}</strong>
+          </li>
+          <li>
+            <span>{t(props.lang, "admin_live_ops_recommend_reason_label")}</span>
+            <strong>{asText(schedulerRecommendation.reason)}</strong>
+          </li>
+          <li>
             <span>{t(props.lang, "admin_live_ops_scheduler_already_sent_label")}</span>
             <strong>{schedulerSummary.already_dispatched_for_window === true ? t(props.lang, "admin_live_ops_bool_yes") : t(props.lang, "admin_live_ops_bool_no")}</strong>
           </li>
@@ -482,6 +502,22 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
             <span>{t(props.lang, "admin_live_ops_task_scene_reason_label")}</span>
             <strong>{asText(taskSummary.scene_gate_reason)}</strong>
           </li>
+          <li>
+            <span>{t(props.lang, "admin_live_ops_task_recommend_cap_label")}</span>
+            <strong>{asCount(taskSummary.recommended_recipient_cap)}</strong>
+          </li>
+          <li>
+            <span>{t(props.lang, "admin_live_ops_task_recommend_delta_label")}</span>
+            <strong>{asCount(taskSummary.effective_cap_delta)}</strong>
+          </li>
+          <li>
+            <span>{t(props.lang, "admin_live_ops_recommend_pressure_label")}</span>
+            <strong>{asText(taskSummary.recommendation_pressure_band)}</strong>
+          </li>
+          <li>
+            <span>{t(props.lang, "admin_live_ops_task_recommend_reason_label")}</span>
+            <strong>{asText(taskSummary.recommendation_reason)}</strong>
+          </li>
         </ul>
       </section>
       <section className="akrMiniPanel" data-akr-focus-key="ops_alert_summary">
@@ -528,6 +564,12 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
           </span>
           <span className="akrChip">
             {t(props.lang, "admin_live_ops_ops_alert_experiment_label")}: {asText(opsAlertTrendSummary.experiment_key)}
+          </span>
+          <span className="akrChip">
+            {t(props.lang, "admin_live_ops_ops_alert_delta_latest_label")}: {asCount(opsAlertTrendSummary.latest_effective_cap_delta)}
+          </span>
+          <span className="akrChip">
+            {t(props.lang, "admin_live_ops_ops_alert_delta_max_label")}: {asCount(opsAlertTrendSummary.max_effective_cap_delta_7d)}
           </span>
         </div>
         <p className="akrMutedLine">

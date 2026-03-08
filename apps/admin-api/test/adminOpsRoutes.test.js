@@ -127,6 +127,7 @@ function buildLiveOpsSnapshot() {
         configured_recipients: 40,
         scene_gate_recipient_cap: 20,
         recommended_recipient_cap: 12,
+        effective_cap_delta: 28,
         pressure_band: "watch",
         reason: "ops_alert_segment_pressure",
         experiment_key: "webapp_react_v1",
@@ -204,6 +205,8 @@ function buildLiveOpsSnapshot() {
       latest_alarm_state: "watch",
       latest_notification_reason: "scene_runtime_watch_capped_repeated",
       latest_telegram_sent_at: "2026-03-07T03:05:00.000Z",
+      latest_effective_cap_delta: 28,
+      max_effective_cap_delta_7d: 28,
       daily_breakdown: [
         { day: "2026-03-08", alert_count: 2, telegram_sent_count: 0 },
         { day: "2026-03-07", alert_count: 2, telegram_sent_count: 1 }
@@ -361,9 +364,11 @@ test("v2 admin ops kpi latest includes live ops campaign breakdowns", async () =
   assert.equal(body.data.live_ops_campaign.ops_alert.telegram_sent, false);
   assert.equal(body.data.live_ops_campaign.ops_alert_trend.raised_7d, 4);
   assert.equal(body.data.live_ops_campaign.ops_alert_trend.experiment_key, "webapp_react_v1");
+  assert.equal(body.data.live_ops_campaign.ops_alert_trend.max_effective_cap_delta_7d, 28);
   assert.equal(body.data.live_ops_campaign.ops_alert_trend.reason_breakdown[0].bucket_key, "scene_runtime_watch_capped_repeated");
   assert.equal(body.data.live_ops_campaign.ops_alert_trend.surface_breakdown[0].bucket_key, "wallet_panel");
   assert.equal(body.data.live_ops_campaign.recipient_cap_recommendation.recommended_recipient_cap, 12);
+  assert.equal(body.data.live_ops_campaign.recipient_cap_recommendation.effective_cap_delta, 28);
   assert.equal(body.data.live_ops_campaign.recipient_cap_recommendation.reason, "ops_alert_segment_pressure");
   assert.equal(body.data.live_ops_campaign.scene_gate_effect, "capped");
   assert.equal(body.data.live_ops_campaign.scene_runtime.health_band_24h, "yellow");
