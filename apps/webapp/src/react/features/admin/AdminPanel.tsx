@@ -1,12 +1,37 @@
+import { Suspense, lazy } from "react";
 import { t, type Lang } from "../../i18n";
-import { AdminQueueCard } from "./cards/AdminQueueCard";
-import { DynamicPolicyCard } from "./cards/DynamicPolicyCard";
-import { LiveOpsCampaignCard } from "./cards/LiveOpsCampaignCard";
-import { RuntimeBotCard } from "./cards/RuntimeBotCard";
-import { RuntimeFlagsCard } from "./cards/RuntimeFlagsCard";
-import { RuntimeMetaCard } from "./cards/RuntimeMetaCard";
 import { SHELL_ACTION_KEY } from "../../../core/navigation/shellActions.js";
 import { buildAdminSurfaceActionsView } from "../../../core/admin/adminSurfaceActions.js";
+
+const AdminQueueCard = lazy(async () => {
+  const module = await import("./cards/AdminQueueCard");
+  return { default: module.AdminQueueCard };
+});
+
+const DynamicPolicyCard = lazy(async () => {
+  const module = await import("./cards/DynamicPolicyCard");
+  return { default: module.DynamicPolicyCard };
+});
+
+const LiveOpsCampaignCard = lazy(async () => {
+  const module = await import("./cards/LiveOpsCampaignCard");
+  return { default: module.LiveOpsCampaignCard };
+});
+
+const RuntimeBotCard = lazy(async () => {
+  const module = await import("./cards/RuntimeBotCard");
+  return { default: module.RuntimeBotCard };
+});
+
+const RuntimeFlagsCard = lazy(async () => {
+  const module = await import("./cards/RuntimeFlagsCard");
+  return { default: module.RuntimeFlagsCard };
+});
+
+const RuntimeMetaCard = lazy(async () => {
+  const module = await import("./cards/RuntimeMetaCard");
+  return { default: module.RuntimeMetaCard };
+});
 
 type QueueActionState = {
   action_key: string;
@@ -106,6 +131,15 @@ function DisabledPanel(props: { lang: Lang; title: string }) {
   );
 }
 
+function AdminCardFallback(props: { lang: Lang; title: string }) {
+  return (
+    <section className="akrCard akrCardWide">
+      <h3>{props.title}</h3>
+      <p className="akrMuted">{t(props.lang, "loading")}</p>
+    </section>
+  );
+}
+
 export function AdminPanel(props: AdminPanelProps) {
   const surfaceActions = buildAdminSurfaceActionsView({
     adminSummary: props.adminRuntime.summary,
@@ -188,110 +222,122 @@ export function AdminPanel(props: AdminPanelProps) {
       {props.isAdmin && (
         <>
           {props.panelVisibility.queue ? (
-            <AdminQueueCard
-              lang={props.lang}
-              advanced={props.advanced}
-              adminRuntime={props.adminRuntime}
-              queueAction={props.queueAction}
-              onQueueActionChange={props.onQueueActionChange}
-              onRefresh={props.onRefresh}
-              onRunQueueAction={props.onRunQueueAction}
-              onSurfaceAction={runSurfaceAction}
-            />
+            <Suspense fallback={<AdminCardFallback lang={props.lang} title={t(props.lang, "admin_queue_title")} />}>
+              <AdminQueueCard
+                lang={props.lang}
+                advanced={props.advanced}
+                adminRuntime={props.adminRuntime}
+                queueAction={props.queueAction}
+                onQueueActionChange={props.onQueueActionChange}
+                onRefresh={props.onRefresh}
+                onRunQueueAction={props.onRunQueueAction}
+                onSurfaceAction={runSurfaceAction}
+              />
+            </Suspense>
           ) : (
             <DisabledPanel lang={props.lang} title={t(props.lang, "admin_queue_title")} />
           )}
           {props.panelVisibility.dynamicPolicy ? (
-            <DynamicPolicyCard
-              lang={props.lang}
-              dynamicPolicyData={props.dynamicPolicyData}
-              dynamicPolicyTokenSymbol={props.dynamicPolicyTokenSymbol}
-              dynamicPolicyDraft={props.dynamicPolicyDraft}
-              dynamicPolicyError={props.dynamicPolicyError}
-              dynamicPolicySaving={props.dynamicPolicySaving}
-              onDynamicPolicyTokenSymbolChange={props.onDynamicPolicyTokenSymbolChange}
-              onDynamicPolicyDraftChange={props.onDynamicPolicyDraftChange}
-              onRefreshDynamicPolicy={props.onRefreshDynamicPolicy}
-              onSaveDynamicPolicy={props.onSaveDynamicPolicy}
-              onSurfaceAction={runSurfaceAction}
-            />
+            <Suspense fallback={<AdminCardFallback lang={props.lang} title={t(props.lang, "admin_dynamic_policy_title")} />}>
+              <DynamicPolicyCard
+                lang={props.lang}
+                dynamicPolicyData={props.dynamicPolicyData}
+                dynamicPolicyTokenSymbol={props.dynamicPolicyTokenSymbol}
+                dynamicPolicyDraft={props.dynamicPolicyDraft}
+                dynamicPolicyError={props.dynamicPolicyError}
+                dynamicPolicySaving={props.dynamicPolicySaving}
+                onDynamicPolicyTokenSymbolChange={props.onDynamicPolicyTokenSymbolChange}
+                onDynamicPolicyDraftChange={props.onDynamicPolicyDraftChange}
+                onRefreshDynamicPolicy={props.onRefreshDynamicPolicy}
+                onSaveDynamicPolicy={props.onSaveDynamicPolicy}
+                onSurfaceAction={runSurfaceAction}
+              />
+            </Suspense>
           ) : (
             <DisabledPanel lang={props.lang} title={t(props.lang, "admin_dynamic_policy_title")} />
           )}
           {props.panelVisibility.liveOps ? (
-            <LiveOpsCampaignCard
-              lang={props.lang}
-              liveOpsCampaignData={props.liveOpsCampaignData}
-              liveOpsCampaignDispatchData={props.liveOpsCampaignDispatchData}
-              liveOpsCampaignDraft={props.liveOpsCampaignDraft}
-              liveOpsCampaignError={props.liveOpsCampaignError}
-              liveOpsCampaignApprovalError={props.liveOpsCampaignApprovalError}
-              liveOpsCampaignDispatchError={props.liveOpsCampaignDispatchError}
-              liveOpsCampaignSaving={props.liveOpsCampaignSaving}
-              liveOpsCampaignApprovaling={props.liveOpsCampaignApprovaling}
-              liveOpsCampaignDispatching={props.liveOpsCampaignDispatching}
-              onLiveOpsCampaignDraftChange={props.onLiveOpsCampaignDraftChange}
-              onRefreshLiveOpsCampaign={props.onRefreshLiveOpsCampaign}
-              onSaveLiveOpsCampaign={props.onSaveLiveOpsCampaign}
-              onRequestLiveOpsCampaignApproval={props.onRequestLiveOpsCampaignApproval}
-              onApproveLiveOpsCampaign={props.onApproveLiveOpsCampaign}
-              onRevokeLiveOpsCampaignApproval={props.onRevokeLiveOpsCampaignApproval}
-              onDryRunLiveOpsCampaign={props.onDryRunLiveOpsCampaign}
-              onDispatchLiveOpsCampaign={props.onDispatchLiveOpsCampaign}
-              onSurfaceAction={runSurfaceAction}
-            />
+            <Suspense fallback={<AdminCardFallback lang={props.lang} title={t(props.lang, "admin_live_ops_title")} />}>
+              <LiveOpsCampaignCard
+                lang={props.lang}
+                liveOpsCampaignData={props.liveOpsCampaignData}
+                liveOpsCampaignDispatchData={props.liveOpsCampaignDispatchData}
+                liveOpsCampaignDraft={props.liveOpsCampaignDraft}
+                liveOpsCampaignError={props.liveOpsCampaignError}
+                liveOpsCampaignApprovalError={props.liveOpsCampaignApprovalError}
+                liveOpsCampaignDispatchError={props.liveOpsCampaignDispatchError}
+                liveOpsCampaignSaving={props.liveOpsCampaignSaving}
+                liveOpsCampaignApprovaling={props.liveOpsCampaignApprovaling}
+                liveOpsCampaignDispatching={props.liveOpsCampaignDispatching}
+                onLiveOpsCampaignDraftChange={props.onLiveOpsCampaignDraftChange}
+                onRefreshLiveOpsCampaign={props.onRefreshLiveOpsCampaign}
+                onSaveLiveOpsCampaign={props.onSaveLiveOpsCampaign}
+                onRequestLiveOpsCampaignApproval={props.onRequestLiveOpsCampaignApproval}
+                onApproveLiveOpsCampaign={props.onApproveLiveOpsCampaign}
+                onRevokeLiveOpsCampaignApproval={props.onRevokeLiveOpsCampaignApproval}
+                onDryRunLiveOpsCampaign={props.onDryRunLiveOpsCampaign}
+                onDispatchLiveOpsCampaign={props.onDispatchLiveOpsCampaign}
+                onSurfaceAction={runSurfaceAction}
+              />
+            </Suspense>
           ) : (
             <DisabledPanel lang={props.lang} title={t(props.lang, "admin_live_ops_title")} />
           )}
           {props.panelVisibility.runtimeFlags ? (
-            <RuntimeFlagsCard
-              lang={props.lang}
-              runtimeFlagsData={props.runtimeFlagsData}
-              runtimeFlagsDraft={props.runtimeFlagsDraft}
-              runtimeFlagsError={props.runtimeFlagsError}
-              runtimeFlagsSaving={props.runtimeFlagsSaving}
-              onRuntimeFlagsDraftChange={props.onRuntimeFlagsDraftChange}
-              onRefreshRuntimeFlags={props.onRefreshRuntimeFlags}
-              onSaveRuntimeFlags={props.onSaveRuntimeFlags}
-              onSurfaceAction={runSurfaceAction}
-            />
+            <Suspense fallback={<AdminCardFallback lang={props.lang} title={t(props.lang, "admin_runtime_flags_title")} />}>
+              <RuntimeFlagsCard
+                lang={props.lang}
+                runtimeFlagsData={props.runtimeFlagsData}
+                runtimeFlagsDraft={props.runtimeFlagsDraft}
+                runtimeFlagsError={props.runtimeFlagsError}
+                runtimeFlagsSaving={props.runtimeFlagsSaving}
+                onRuntimeFlagsDraftChange={props.onRuntimeFlagsDraftChange}
+                onRefreshRuntimeFlags={props.onRefreshRuntimeFlags}
+                onSaveRuntimeFlags={props.onSaveRuntimeFlags}
+                onSurfaceAction={runSurfaceAction}
+              />
+            </Suspense>
           ) : (
             <DisabledPanel lang={props.lang} title={t(props.lang, "admin_runtime_flags_title")} />
           )}
           {props.panelVisibility.runtimeBot ? (
-            <RuntimeBotCard
-              lang={props.lang}
-              botRuntimeData={props.botRuntimeData}
-              botReconcileDraft={props.botReconcileDraft}
-              botReconcileError={props.botReconcileError}
-              botReconcileSaving={props.botReconcileSaving}
-              onBotReconcileDraftChange={props.onBotReconcileDraftChange}
-              onRefreshBotRuntime={props.onRefreshBotRuntime}
-              onRunBotReconcile={props.onRunBotReconcile}
-              onSurfaceAction={runSurfaceAction}
-            />
+            <Suspense fallback={<AdminCardFallback lang={props.lang} title={t(props.lang, "admin_runtime_bot_title")} />}>
+              <RuntimeBotCard
+                lang={props.lang}
+                botRuntimeData={props.botRuntimeData}
+                botReconcileDraft={props.botReconcileDraft}
+                botReconcileError={props.botReconcileError}
+                botReconcileSaving={props.botReconcileSaving}
+                onBotReconcileDraftChange={props.onBotReconcileDraftChange}
+                onRefreshBotRuntime={props.onRefreshBotRuntime}
+                onRunBotReconcile={props.onRunBotReconcile}
+                onSurfaceAction={runSurfaceAction}
+              />
+            </Suspense>
           ) : (
             <DisabledPanel lang={props.lang} title={t(props.lang, "admin_runtime_bot_title")} />
           )}
           {props.panelVisibility.runtimeMeta ? (
-            <RuntimeMetaCard
-              lang={props.lang}
-              metricsData={props.metricsData}
-              opsKpiData={props.opsKpiData}
-              opsKpiRunData={props.opsKpiRunData}
-              opsKpiRunError={props.opsKpiRunError}
-              opsKpiRunning={props.opsKpiRunning}
-              deployStatusData={props.deployStatusData}
-              assetsStatusData={props.assetsStatusData}
-              assetsReloading={props.assetsReloading}
-              auditPhaseStatusData={props.auditPhaseStatusData}
-              auditIntegrityData={props.auditIntegrityData}
-              onRefreshRuntimeMeta={props.onRefreshRuntimeMeta}
-              onRefreshOpsKpi={props.onRefreshOpsKpi}
-              onRunOpsKpi={props.onRunOpsKpi}
-              onReloadAssets={props.onReloadAssets}
-              onSurfaceAction={runSurfaceAction}
-            />
+            <Suspense fallback={<AdminCardFallback lang={props.lang} title={t(props.lang, "admin_runtime_meta_title")} />}>
+              <RuntimeMetaCard
+                lang={props.lang}
+                metricsData={props.metricsData}
+                opsKpiData={props.opsKpiData}
+                opsKpiRunData={props.opsKpiRunData}
+                opsKpiRunError={props.opsKpiRunError}
+                opsKpiRunning={props.opsKpiRunning}
+                deployStatusData={props.deployStatusData}
+                assetsStatusData={props.assetsStatusData}
+                assetsReloading={props.assetsReloading}
+                auditPhaseStatusData={props.auditPhaseStatusData}
+                auditIntegrityData={props.auditIntegrityData}
+                onRefreshRuntimeMeta={props.onRefreshRuntimeMeta}
+                onRefreshOpsKpi={props.onRefreshOpsKpi}
+                onRunOpsKpi={props.onRunOpsKpi}
+                onReloadAssets={props.onReloadAssets}
+                onSurfaceAction={runSurfaceAction}
+              />
+            </Suspense>
           ) : (
             <DisabledPanel lang={props.lang} title={t(props.lang, "admin_runtime_meta_title")} />
           )}
