@@ -169,6 +169,30 @@ function SelectionDailyTrendList(props: { title: string; rows: Array<Record<stri
   );
 }
 
+function SelectionAdjustmentDailyTrendList(props: { title: string; rows: Array<Record<string, unknown>> }) {
+  if (!props.rows.length) {
+    return (
+      <div>
+        <strong>{props.title}</strong>
+        <p className="akrMutedLine">-</p>
+      </div>
+    );
+  }
+  return (
+    <div>
+      <strong>{props.title}</strong>
+      <div className="akrStack">
+        {props.rows.slice(0, 7).map((row, index) => (
+          <p className="akrMutedLine" key={`${props.title}_${String(row.day || index)}`}>
+            {String(row.day || "-")} | count {Math.floor(Number(row.adjustment_count || 0))} | delta{" "}
+            {Math.floor(Number(row.total_delta_sum || 0))} | max {Math.floor(Number(row.max_delta_value || 0))}
+          </p>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function SelectionFamilyDailyTrendList(props: { title: string; rows: Array<Record<string, unknown>> }) {
   if (!props.rows.length) {
     return (
@@ -301,12 +325,19 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
   const opsAlertVariantBreakdown = asRows(opsAlertTrend?.variant_breakdown);
   const opsAlertCohortBreakdown = asRows(opsAlertTrend?.cohort_breakdown);
   const selectionTrendDaily = asRows(selectionTrend?.daily_breakdown);
+  const selectionTrendAdjustmentDaily = asRows(selectionTrend?.query_adjustment_daily_breakdown);
   const selectionTrendQueryReasons = asRows(selectionTrend?.query_strategy_reason_breakdown);
+  const selectionTrendAdjustmentFields = asRows(selectionTrend?.query_adjustment_field_breakdown);
+  const selectionTrendAdjustmentReasons = asRows(selectionTrend?.query_adjustment_reason_breakdown);
   const selectionTrendQueryFamilies = asRows(selectionTrend?.query_strategy_family_breakdown);
+  const selectionTrendAdjustmentQueryFamilies = asRows(selectionTrend?.query_adjustment_query_family_breakdown);
   const selectionTrendQueryFamilyDaily = asRows(selectionTrend?.query_strategy_family_daily_breakdown);
+  const selectionTrendAdjustmentQueryFamilyDaily = asRows(selectionTrend?.query_adjustment_query_family_daily_breakdown);
   const selectionTrendSegmentReasons = asRows(selectionTrend?.segment_strategy_reason_breakdown);
+  const selectionTrendAdjustmentSegmentFamilies = asRows(selectionTrend?.query_adjustment_segment_family_breakdown);
   const selectionTrendSegmentFamilies = asRows(selectionTrend?.segment_strategy_family_breakdown);
   const selectionTrendSegmentFamilyDaily = asRows(selectionTrend?.segment_strategy_family_daily_breakdown);
+  const selectionTrendAdjustmentSegmentFamilyDaily = asRows(selectionTrend?.query_adjustment_segment_family_daily_breakdown);
   const selectionTrendFamilyRiskDaily = asRows(selectionTrend?.family_risk_daily_breakdown);
   const selectionTrendFamilyRiskBands = asRows(selectionTrend?.family_risk_band_breakdown);
   const selectionTrendReasons = asRows(selectionTrend?.prefilter_reason_breakdown);
@@ -681,6 +712,13 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
             {Math.floor(readNum(selectionTrend, "prefilter_delta_7d"))}
           </p>
           <p className="akrMutedLine">
+            {t(props.lang, "admin_runtime_live_ops_selection_trend_adjustment_label")}: {Math.floor(readNum(selectionTrend, "query_adjustment_applied_24h"))} /{" "}
+            {Math.floor(readNum(selectionTrend, "query_adjustment_applied_7d"))} | {t(props.lang, "admin_runtime_live_ops_selection_trend_adjustment_delta_label")}:{" "}
+            {Math.floor(readNum(selectionTrend, "query_adjustment_total_delta_24h"))} / {Math.floor(readNum(selectionTrend, "query_adjustment_total_delta_7d"))} |{" "}
+            {t(props.lang, "admin_runtime_live_ops_selection_trend_adjustment_latest_label")}: {readText(selectionTrend, "latest_query_adjustment_field") || "-"} /{" "}
+            {readText(selectionTrend, "latest_query_adjustment_reason") || "-"} / {Math.floor(readNum(selectionTrend, "latest_query_adjustment_total_delta"))}
+          </p>
+          <p className="akrMutedLine">
             {t(props.lang, "admin_runtime_live_ops_selection_trend_focus_label")}: {Math.floor(readNum(selectionTrend, "selected_focus_matches_24h"))} /{" "}
             {Math.floor(readNum(selectionTrend, "prioritized_focus_matches_24h"))} | {t(props.lang, "admin_runtime_live_ops_selection_trend_latest_label")}:{" "}
             {readText(selectionTrend, "latest_guidance_mode") || "-"} / {readText(selectionTrend, "latest_focus_dimension") || "-"} /{" "}
@@ -725,21 +763,37 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
         <BreakdownList title={t(props.lang, "admin_runtime_live_ops_variant_title")} rows={variantBreakdown} />
         <BreakdownList title={t(props.lang, "admin_runtime_live_ops_cohort_title")} rows={cohortBreakdown} />
         <SelectionDailyTrendList title={t(props.lang, "admin_runtime_live_ops_selection_daily_title")} rows={selectionTrendDaily} />
+        <SelectionAdjustmentDailyTrendList
+          title={t(props.lang, "admin_runtime_live_ops_selection_adjustment_daily_title")}
+          rows={selectionTrendAdjustmentDaily}
+        />
         <SelectionFamilyDailyTrendList
           title={t(props.lang, "admin_runtime_live_ops_selection_query_family_daily_title")}
           rows={selectionTrendQueryFamilyDaily}
         />
         <SelectionFamilyDailyTrendList
+          title={t(props.lang, "admin_runtime_live_ops_selection_adjustment_query_family_daily_title")}
+          rows={selectionTrendAdjustmentQueryFamilyDaily}
+        />
+        <SelectionFamilyDailyTrendList
           title={t(props.lang, "admin_runtime_live_ops_selection_segment_family_daily_title")}
           rows={selectionTrendSegmentFamilyDaily}
+        />
+        <SelectionFamilyDailyTrendList
+          title={t(props.lang, "admin_runtime_live_ops_selection_adjustment_segment_family_daily_title")}
+          rows={selectionTrendAdjustmentSegmentFamilyDaily}
         />
         <SelectionFamilyRiskDailyTrendList
           title={t(props.lang, "admin_runtime_live_ops_selection_family_risk_daily_title")}
           rows={selectionTrendFamilyRiskDaily}
         />
+        <BreakdownList title={t(props.lang, "admin_runtime_live_ops_selection_adjustment_field_breakdown_title")} rows={selectionTrendAdjustmentFields} />
+        <BreakdownList title={t(props.lang, "admin_runtime_live_ops_selection_adjustment_reason_breakdown_title")} rows={selectionTrendAdjustmentReasons} />
         <BreakdownList title={t(props.lang, "admin_runtime_live_ops_selection_query_reason_breakdown_title")} rows={selectionTrendQueryReasons} />
+        <BreakdownList title={t(props.lang, "admin_runtime_live_ops_selection_adjustment_query_family_breakdown_title")} rows={selectionTrendAdjustmentQueryFamilies} />
         <BreakdownList title={t(props.lang, "admin_runtime_live_ops_selection_query_family_breakdown_title")} rows={selectionTrendQueryFamilies} />
         <BreakdownList title={t(props.lang, "admin_runtime_live_ops_selection_segment_reason_breakdown_title")} rows={selectionTrendSegmentReasons} />
+        <BreakdownList title={t(props.lang, "admin_runtime_live_ops_selection_adjustment_segment_family_breakdown_title")} rows={selectionTrendAdjustmentSegmentFamilies} />
         <BreakdownList title={t(props.lang, "admin_runtime_live_ops_selection_segment_family_breakdown_title")} rows={selectionTrendSegmentFamilies} />
         <BreakdownList title={t(props.lang, "admin_runtime_live_ops_selection_family_risk_band_title")} rows={selectionTrendFamilyRiskBands} />
         <BreakdownList title={t(props.lang, "admin_runtime_live_ops_selection_reason_breakdown_title")} rows={selectionTrendReasons} />

@@ -384,6 +384,10 @@ function buildLiveOpsCampaignKpiSummary(snapshot) {
       prioritized_focus_matches_7d: Math.max(0, Number(selectionTrend.prioritized_focus_matches_7d || 0)),
       selected_focus_matches_24h: Math.max(0, Number(selectionTrend.selected_focus_matches_24h || 0)),
       selected_focus_matches_7d: Math.max(0, Number(selectionTrend.selected_focus_matches_7d || 0)),
+      query_adjustment_applied_24h: Math.max(0, Number(selectionTrend.query_adjustment_applied_24h || 0)),
+      query_adjustment_applied_7d: Math.max(0, Number(selectionTrend.query_adjustment_applied_7d || 0)),
+      query_adjustment_total_delta_24h: Math.max(0, Number(selectionTrend.query_adjustment_total_delta_24h || 0)),
+      query_adjustment_total_delta_7d: Math.max(0, Number(selectionTrend.query_adjustment_total_delta_7d || 0)),
       latest_selection_at: selectionTrend.latest_selection_at || null,
       latest_guidance_mode: String(selectionTrend.latest_guidance_mode || "balanced"),
       latest_focus_dimension: String(selectionTrend.latest_focus_dimension || ""),
@@ -392,6 +396,9 @@ function buildLiveOpsCampaignKpiSummary(snapshot) {
       latest_query_strategy_family: String(selectionTrend.latest_query_strategy_family || ""),
       latest_segment_strategy_reason: String(selectionTrend.latest_segment_strategy_reason || ""),
       latest_segment_strategy_family: String(selectionTrend.latest_segment_strategy_family || ""),
+      latest_query_adjustment_field: String(selectionTrend.latest_query_adjustment_field || ""),
+      latest_query_adjustment_reason: String(selectionTrend.latest_query_adjustment_reason || ""),
+      latest_query_adjustment_total_delta: Math.max(0, Number(selectionTrend.latest_query_adjustment_total_delta || 0)),
       latest_prefilter_reason: String(selectionTrend.latest_prefilter_reason || ""),
       latest_family_risk_state: String(selectionTrend.latest_family_risk_state || "clear"),
       latest_family_risk_reason: String(selectionTrend.latest_family_risk_reason || ""),
@@ -399,8 +406,21 @@ function buildLiveOpsCampaignKpiSummary(snapshot) {
       latest_family_risk_bucket: String(selectionTrend.latest_family_risk_bucket || ""),
       latest_family_risk_score: Math.max(0, Number(selectionTrend.latest_family_risk_score || 0)),
       daily_breakdown: normalizeSelectionTrendDailyRows(selectionTrend.daily_breakdown),
+      query_adjustment_daily_breakdown: Array.isArray(selectionTrend.query_adjustment_daily_breakdown)
+        ? selectionTrend.query_adjustment_daily_breakdown
+            .map((row) => ({
+              day: String(row?.day || ""),
+              adjustment_count: Math.max(0, Number(row?.adjustment_count || 0)),
+              total_delta_sum: Math.max(0, Number(row?.total_delta_sum || 0)),
+              max_delta_value: Math.max(0, Number(row?.max_delta_value || 0))
+            }))
+            .filter((row) => row.day)
+            .slice(0, 7)
+        : [],
       query_strategy_family_daily_breakdown: normalizeSelectionFamilyDailyRows(selectionTrend.query_strategy_family_daily_breakdown),
+      query_adjustment_query_family_daily_breakdown: normalizeSelectionFamilyDailyRows(selectionTrend.query_adjustment_query_family_daily_breakdown),
       segment_strategy_family_daily_breakdown: normalizeSelectionFamilyDailyRows(selectionTrend.segment_strategy_family_daily_breakdown),
+      query_adjustment_segment_family_daily_breakdown: normalizeSelectionFamilyDailyRows(selectionTrend.query_adjustment_segment_family_daily_breakdown),
       family_risk_daily_breakdown: Array.isArray(selectionTrend.family_risk_daily_breakdown)
         ? selectionTrend.family_risk_daily_breakdown
             .map((row) => ({
@@ -420,9 +440,13 @@ function buildLiveOpsCampaignKpiSummary(snapshot) {
             .filter((row) => row.day)
             .slice(0, 7)
         : [],
+      query_adjustment_field_breakdown: normalizeBreakdownRows(selectionTrend.query_adjustment_field_breakdown),
+      query_adjustment_reason_breakdown: normalizeBreakdownRows(selectionTrend.query_adjustment_reason_breakdown),
       query_strategy_reason_breakdown: normalizeBreakdownRows(selectionTrend.query_strategy_reason_breakdown),
       query_strategy_family_breakdown: normalizeBreakdownRows(selectionTrend.query_strategy_family_breakdown),
+      query_adjustment_query_family_breakdown: normalizeBreakdownRows(selectionTrend.query_adjustment_query_family_breakdown),
       segment_strategy_reason_breakdown: normalizeBreakdownRows(selectionTrend.segment_strategy_reason_breakdown),
+      query_adjustment_segment_family_breakdown: normalizeBreakdownRows(selectionTrend.query_adjustment_segment_family_breakdown),
       segment_strategy_family_breakdown: normalizeBreakdownRows(selectionTrend.segment_strategy_family_breakdown),
       family_risk_band_breakdown: normalizeBreakdownRows(selectionTrend.family_risk_band_breakdown),
       prefilter_reason_breakdown: normalizeBreakdownRows(selectionTrend.prefilter_reason_breakdown)
@@ -638,6 +662,10 @@ async function getLiveOpsCampaignKpiSummary(service, logger) {
         prioritized_focus_matches_7d: 0,
         selected_focus_matches_24h: 0,
         selected_focus_matches_7d: 0,
+        query_adjustment_applied_24h: 0,
+        query_adjustment_applied_7d: 0,
+        query_adjustment_total_delta_24h: 0,
+        query_adjustment_total_delta_7d: 0,
         latest_selection_at: null,
         latest_guidance_mode: "balanced",
         latest_focus_dimension: "",
@@ -646,6 +674,9 @@ async function getLiveOpsCampaignKpiSummary(service, logger) {
         latest_query_strategy_family: "",
         latest_segment_strategy_reason: "",
         latest_segment_strategy_family: "",
+        latest_query_adjustment_field: "",
+        latest_query_adjustment_reason: "",
+        latest_query_adjustment_total_delta: 0,
         latest_prefilter_reason: "",
         latest_family_risk_state: "clear",
         latest_family_risk_reason: "",
@@ -653,12 +684,19 @@ async function getLiveOpsCampaignKpiSummary(service, logger) {
         latest_family_risk_bucket: "",
         latest_family_risk_score: 0,
         daily_breakdown: [],
+        query_adjustment_daily_breakdown: [],
         query_strategy_family_daily_breakdown: [],
+        query_adjustment_query_family_daily_breakdown: [],
         segment_strategy_family_daily_breakdown: [],
+        query_adjustment_segment_family_daily_breakdown: [],
         family_risk_daily_breakdown: [],
+        query_adjustment_field_breakdown: [],
+        query_adjustment_reason_breakdown: [],
         query_strategy_reason_breakdown: [],
         query_strategy_family_breakdown: [],
+        query_adjustment_query_family_breakdown: [],
         segment_strategy_reason_breakdown: [],
+        query_adjustment_segment_family_breakdown: [],
         segment_strategy_family_breakdown: [],
         family_risk_band_breakdown: [],
         prefilter_reason_breakdown: []

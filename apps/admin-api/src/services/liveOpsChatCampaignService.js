@@ -1989,6 +1989,18 @@ function normalizeSelectionTrendDailyRows(rows) {
     .slice(0, 7);
 }
 
+function normalizeSelectionAdjustmentDailyRows(rows) {
+  return (Array.isArray(rows) ? rows : [])
+    .map((row) => ({
+      day: String(row?.day || "").trim(),
+      adjustment_count: Math.max(0, Number(row?.adjustment_count || 0)),
+      total_delta_sum: Math.max(0, Number(row?.total_delta_sum || 0)),
+      max_delta_value: Math.max(0, Number(row?.max_delta_value || 0))
+    }))
+    .filter((row) => row.day)
+    .slice(0, 7);
+}
+
 function normalizeSelectionFamilyDailyRows(rows) {
   return (Array.isArray(rows) ? rows : [])
     .map((row) => ({
@@ -2125,6 +2137,10 @@ function normalizeSelectionTrendSummary(summary) {
     prioritized_focus_matches_7d: Math.max(0, Number(safeSummary.prioritized_focus_matches_7d || 0)),
     selected_focus_matches_24h: Math.max(0, Number(safeSummary.selected_focus_matches_24h || 0)),
     selected_focus_matches_7d: Math.max(0, Number(safeSummary.selected_focus_matches_7d || 0)),
+    query_adjustment_applied_24h: Math.max(0, Number(safeSummary.query_adjustment_applied_24h || 0)),
+    query_adjustment_applied_7d: Math.max(0, Number(safeSummary.query_adjustment_applied_7d || 0)),
+    query_adjustment_total_delta_24h: Math.max(0, Number(safeSummary.query_adjustment_total_delta_24h || 0)),
+    query_adjustment_total_delta_7d: Math.max(0, Number(safeSummary.query_adjustment_total_delta_7d || 0)),
     latest_selection_at: safeSummary.latest_selection_at || null,
     latest_guidance_mode: String(safeSummary.latest_guidance_mode || "balanced").trim() || "balanced",
     latest_focus_dimension: String(safeSummary.latest_focus_dimension || "").trim(),
@@ -2133,6 +2149,9 @@ function normalizeSelectionTrendSummary(summary) {
     latest_query_strategy_family: String(safeSummary.latest_query_strategy_family || "").trim(),
     latest_segment_strategy_reason: String(safeSummary.latest_segment_strategy_reason || "").trim(),
     latest_segment_strategy_family: String(safeSummary.latest_segment_strategy_family || "").trim(),
+    latest_query_adjustment_field: String(safeSummary.latest_query_adjustment_field || "").trim(),
+    latest_query_adjustment_reason: String(safeSummary.latest_query_adjustment_reason || "").trim(),
+    latest_query_adjustment_total_delta: Math.max(0, Number(safeSummary.latest_query_adjustment_total_delta || 0)),
     latest_prefilter_reason: String(safeSummary.latest_prefilter_reason || "").trim(),
     latest_family_risk_state: ["clear", "watch", "alert"].includes(String(safeSummary.latest_family_risk_state || "").trim().toLowerCase())
       ? String(safeSummary.latest_family_risk_state || "").trim().toLowerCase()
@@ -2142,8 +2161,11 @@ function normalizeSelectionTrendSummary(summary) {
     latest_family_risk_bucket: String(safeSummary.latest_family_risk_bucket || "").trim(),
     latest_family_risk_score: Math.max(0, Number(safeSummary.latest_family_risk_score || 0)),
     daily_breakdown: normalizeSelectionTrendDailyRows(safeSummary.daily_breakdown),
+    query_adjustment_daily_breakdown: normalizeSelectionAdjustmentDailyRows(safeSummary.query_adjustment_daily_breakdown),
     query_strategy_family_daily_breakdown: normalizeSelectionFamilyDailyRows(safeSummary.query_strategy_family_daily_breakdown),
+    query_adjustment_query_family_daily_breakdown: normalizeSelectionFamilyDailyRows(safeSummary.query_adjustment_query_family_daily_breakdown),
     segment_strategy_family_daily_breakdown: normalizeSelectionFamilyDailyRows(safeSummary.segment_strategy_family_daily_breakdown),
+    query_adjustment_segment_family_daily_breakdown: normalizeSelectionFamilyDailyRows(safeSummary.query_adjustment_segment_family_daily_breakdown),
     family_risk_daily_breakdown: (Array.isArray(safeSummary.family_risk_daily_breakdown) ? safeSummary.family_risk_daily_breakdown : [])
       .map((row) => ({
         day: String(row?.day || "").trim(),
@@ -2163,9 +2185,13 @@ function normalizeSelectionTrendSummary(summary) {
       }))
       .filter((row) => row.day)
       .slice(0, 7),
+    query_adjustment_field_breakdown: normalizeBreakdownRows(safeSummary.query_adjustment_field_breakdown),
+    query_adjustment_reason_breakdown: normalizeBreakdownRows(safeSummary.query_adjustment_reason_breakdown),
     query_strategy_reason_breakdown: normalizeBreakdownRows(safeSummary.query_strategy_reason_breakdown),
     query_strategy_family_breakdown: normalizeBreakdownRows(safeSummary.query_strategy_family_breakdown),
+    query_adjustment_query_family_breakdown: normalizeBreakdownRows(safeSummary.query_adjustment_query_family_breakdown),
     segment_strategy_reason_breakdown: normalizeBreakdownRows(safeSummary.segment_strategy_reason_breakdown),
+    query_adjustment_segment_family_breakdown: normalizeBreakdownRows(safeSummary.query_adjustment_segment_family_breakdown),
     segment_strategy_family_breakdown: normalizeBreakdownRows(safeSummary.segment_strategy_family_breakdown),
     family_risk_band_breakdown: normalizeBreakdownRows(safeSummary.family_risk_band_breakdown),
     prefilter_reason_breakdown: normalizeBreakdownRows(safeSummary.prefilter_reason_breakdown)
@@ -2179,11 +2205,18 @@ async function loadSelectionTrendSummary(client, campaignKey) {
     totalsResult,
     latestResult,
     dailyResult,
+    adjustmentDailyResult,
     prefilterReasonResult,
+    adjustmentFieldResult,
+    adjustmentReasonResult,
     queryReasonResult,
+    adjustmentQueryReasonResult,
     segmentReasonResult,
     queryReasonDailyResult,
-    segmentReasonDailyResult
+    adjustmentQueryReasonDailyResult,
+    segmentReasonDailyResult,
+    adjustmentSegmentReasonResult,
+    adjustmentSegmentReasonDailyResult
   ] = await Promise.all([
     client.query(
       `SELECT
@@ -2280,7 +2313,41 @@ async function loadSelectionTrendSummary(client, campaignKey) {
              END
            ),
            0
-         )::bigint AS selected_focus_matches_7d
+         )::bigint AS selected_focus_matches_7d,
+         COUNT(*) FILTER (
+           WHERE created_at >= now() - interval '24 hours'
+             AND jsonb_array_length(COALESCE(payload_json#>'{targeting_selection_summary,query_strategy_summary,adjustment_rows}', '[]'::jsonb)) > 0
+         )::bigint AS query_adjustment_applied_24h,
+         COUNT(*) FILTER (
+           WHERE created_at >= now() - interval '7 days'
+             AND jsonb_array_length(COALESCE(payload_json#>'{targeting_selection_summary,query_strategy_summary,adjustment_rows}', '[]'::jsonb)) > 0
+         )::bigint AS query_adjustment_applied_7d,
+         COALESCE(
+           SUM(
+             CASE
+               WHEN created_at >= now() - interval '24 hours'
+                 THEN (
+                   SELECT COALESCE(SUM(ABS(COALESCE(NULLIF(adj->>'delta_value', ''), '0')::int)), 0)
+                   FROM jsonb_array_elements(COALESCE(payload_json#>'{targeting_selection_summary,query_strategy_summary,adjustment_rows}', '[]'::jsonb)) adj
+                 )
+               ELSE 0
+             END
+           ),
+           0
+         )::bigint AS query_adjustment_total_delta_24h,
+         COALESCE(
+           SUM(
+             CASE
+               WHEN created_at >= now() - interval '7 days'
+                 THEN (
+                   SELECT COALESCE(SUM(ABS(COALESCE(NULLIF(adj->>'delta_value', ''), '0')::int)), 0)
+                   FROM jsonb_array_elements(COALESCE(payload_json#>'{targeting_selection_summary,query_strategy_summary,adjustment_rows}', '[]'::jsonb)) adj
+                 )
+               ELSE 0
+             END
+           ),
+           0
+         )::bigint AS query_adjustment_total_delta_7d
        FROM admin_audit
        WHERE target = $1
          AND action = 'live_ops_campaign_dispatch'
@@ -2357,6 +2424,41 @@ async function loadSelectionTrendSummary(client, campaignKey) {
     ),
     client.query(
       `SELECT
+         to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS day,
+         COUNT(*) FILTER (
+           WHERE jsonb_array_length(COALESCE(payload_json#>'{targeting_selection_summary,query_strategy_summary,adjustment_rows}', '[]'::jsonb)) > 0
+         )::bigint AS adjustment_count,
+         COALESCE(
+           SUM(
+             (
+               SELECT COALESCE(SUM(ABS(COALESCE(NULLIF(adj->>'delta_value', ''), '0')::int)), 0)
+               FROM jsonb_array_elements(COALESCE(payload_json#>'{targeting_selection_summary,query_strategy_summary,adjustment_rows}', '[]'::jsonb)) adj
+             )
+           ),
+           0
+         )::bigint AS total_delta_sum,
+         COALESCE(
+           MAX(
+             (
+               SELECT COALESCE(MAX(ABS(COALESCE(NULLIF(adj->>'delta_value', ''), '0')::int)), 0)
+               FROM jsonb_array_elements(COALESCE(payload_json#>'{targeting_selection_summary,query_strategy_summary,adjustment_rows}', '[]'::jsonb)) adj
+             )
+           ),
+           0
+         )::bigint AS max_delta_value
+       FROM admin_audit
+       WHERE target = $1
+         AND action = 'live_ops_campaign_dispatch'
+         AND COALESCE(payload_json->>'campaign_key', '') = $2
+         AND COALESCE(payload_json->>'dispatch_source', 'manual') = 'scheduler'
+         AND created_at >= now() - interval '7 days'
+       GROUP BY 1
+       ORDER BY day DESC
+       LIMIT 7;`,
+      [target, key]
+    ),
+    client.query(
+      `SELECT
          COALESCE(NULLIF(payload_json#>>'{targeting_selection_summary,prefilter_summary,reason}', ''), 'unknown') AS bucket_key,
          COUNT(*)::bigint AS item_count
        FROM admin_audit
@@ -2372,9 +2474,57 @@ async function loadSelectionTrendSummary(client, campaignKey) {
     ),
     client.query(
       `SELECT
+         COALESCE(NULLIF(adj->>'field_key', ''), 'unknown') AS bucket_key,
+         COALESCE(SUM(ABS(COALESCE(NULLIF(adj->>'delta_value', ''), '0')::int)), 0)::bigint AS item_count
+       FROM admin_audit
+       CROSS JOIN LATERAL jsonb_array_elements(COALESCE(payload_json#>'{targeting_selection_summary,query_strategy_summary,adjustment_rows}', '[]'::jsonb)) adj
+       WHERE target = $1
+         AND action = 'live_ops_campaign_dispatch'
+         AND COALESCE(payload_json->>'campaign_key', '') = $2
+         AND COALESCE(payload_json->>'dispatch_source', 'manual') = 'scheduler'
+         AND created_at >= now() - interval '7 days'
+       GROUP BY 1
+       ORDER BY item_count DESC, bucket_key ASC
+       LIMIT 8;`,
+      [target, key]
+    ),
+    client.query(
+      `SELECT
+         COALESCE(NULLIF(adj->>'reason_code', ''), 'unknown') AS bucket_key,
+         COALESCE(SUM(ABS(COALESCE(NULLIF(adj->>'delta_value', ''), '0')::int)), 0)::bigint AS item_count
+       FROM admin_audit
+       CROSS JOIN LATERAL jsonb_array_elements(COALESCE(payload_json#>'{targeting_selection_summary,query_strategy_summary,adjustment_rows}', '[]'::jsonb)) adj
+       WHERE target = $1
+         AND action = 'live_ops_campaign_dispatch'
+         AND COALESCE(payload_json->>'campaign_key', '') = $2
+         AND COALESCE(payload_json->>'dispatch_source', 'manual') = 'scheduler'
+         AND created_at >= now() - interval '7 days'
+       GROUP BY 1
+       ORDER BY item_count DESC, bucket_key ASC
+       LIMIT 8;`,
+      [target, key]
+    ),
+    client.query(
+      `SELECT
          COALESCE(NULLIF(payload_json#>>'{targeting_selection_summary,query_strategy_summary,reason}', ''), 'unknown') AS bucket_key,
          COUNT(*)::bigint AS item_count
        FROM admin_audit
+       WHERE target = $1
+         AND action = 'live_ops_campaign_dispatch'
+         AND COALESCE(payload_json->>'campaign_key', '') = $2
+         AND COALESCE(payload_json->>'dispatch_source', 'manual') = 'scheduler'
+         AND created_at >= now() - interval '7 days'
+       GROUP BY 1
+       ORDER BY item_count DESC, bucket_key ASC
+       LIMIT 8;`,
+      [target, key]
+    ),
+    client.query(
+      `SELECT
+         COALESCE(NULLIF(payload_json#>>'{targeting_selection_summary,query_strategy_summary,reason}', ''), 'unknown') AS bucket_key,
+         COALESCE(SUM(ABS(COALESCE(NULLIF(adj->>'delta_value', ''), '0')::int)), 0)::bigint AS item_count
+       FROM admin_audit
+       CROSS JOIN LATERAL jsonb_array_elements(COALESCE(payload_json#>'{targeting_selection_summary,query_strategy_summary,adjustment_rows}', '[]'::jsonb)) adj
        WHERE target = $1
          AND action = 'live_ops_campaign_dispatch'
          AND COALESCE(payload_json->>'campaign_key', '') = $2
@@ -2418,9 +2568,57 @@ async function loadSelectionTrendSummary(client, campaignKey) {
     client.query(
       `SELECT
          to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS day,
+         COALESCE(NULLIF(payload_json#>>'{targeting_selection_summary,query_strategy_summary,reason}', ''), 'unknown') AS bucket_key,
+         COALESCE(SUM(ABS(COALESCE(NULLIF(adj->>'delta_value', ''), '0')::int)), 0)::bigint AS item_count
+       FROM admin_audit
+       CROSS JOIN LATERAL jsonb_array_elements(COALESCE(payload_json#>'{targeting_selection_summary,query_strategy_summary,adjustment_rows}', '[]'::jsonb)) adj
+       WHERE target = $1
+         AND action = 'live_ops_campaign_dispatch'
+         AND COALESCE(payload_json->>'campaign_key', '') = $2
+         AND COALESCE(payload_json->>'dispatch_source', 'manual') = 'scheduler'
+         AND created_at >= now() - interval '7 days'
+       GROUP BY 1, 2
+       ORDER BY day DESC, item_count DESC, bucket_key ASC;`,
+      [target, key]
+    ),
+    client.query(
+      `SELECT
+         to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS day,
          COALESCE(NULLIF(payload_json#>>'{targeting_selection_summary,query_strategy_summary,segment_strategy_reason}', ''), 'unknown') AS bucket_key,
          COUNT(*)::bigint AS item_count
        FROM admin_audit
+       WHERE target = $1
+         AND action = 'live_ops_campaign_dispatch'
+         AND COALESCE(payload_json->>'campaign_key', '') = $2
+         AND COALESCE(payload_json->>'dispatch_source', 'manual') = 'scheduler'
+         AND created_at >= now() - interval '7 days'
+       GROUP BY 1, 2
+       ORDER BY day DESC, item_count DESC, bucket_key ASC;`,
+      [target, key]
+    ),
+    client.query(
+      `SELECT
+         COALESCE(NULLIF(payload_json#>>'{targeting_selection_summary,query_strategy_summary,segment_strategy_reason}', ''), 'unknown') AS bucket_key,
+         COALESCE(SUM(ABS(COALESCE(NULLIF(adj->>'delta_value', ''), '0')::int)), 0)::bigint AS item_count
+       FROM admin_audit
+       CROSS JOIN LATERAL jsonb_array_elements(COALESCE(payload_json#>'{targeting_selection_summary,query_strategy_summary,adjustment_rows}', '[]'::jsonb)) adj
+       WHERE target = $1
+         AND action = 'live_ops_campaign_dispatch'
+         AND COALESCE(payload_json->>'campaign_key', '') = $2
+         AND COALESCE(payload_json->>'dispatch_source', 'manual') = 'scheduler'
+         AND created_at >= now() - interval '7 days'
+       GROUP BY 1
+       ORDER BY item_count DESC, bucket_key ASC
+       LIMIT 8;`,
+      [target, key]
+    ),
+    client.query(
+      `SELECT
+         to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS day,
+         COALESCE(NULLIF(payload_json#>>'{targeting_selection_summary,query_strategy_summary,segment_strategy_reason}', ''), 'unknown') AS bucket_key,
+         COALESCE(SUM(ABS(COALESCE(NULLIF(adj->>'delta_value', ''), '0')::int)), 0)::bigint AS item_count
+       FROM admin_audit
+       CROSS JOIN LATERAL jsonb_array_elements(COALESCE(payload_json#>'{targeting_selection_summary,query_strategy_summary,adjustment_rows}', '[]'::jsonb)) adj
        WHERE target = $1
          AND action = 'live_ops_campaign_dispatch'
          AND COALESCE(payload_json->>'campaign_key', '') = $2
@@ -2449,6 +2647,12 @@ async function loadSelectionTrendSummary(client, campaignKey) {
     !Array.isArray(latestSelection.query_strategy_summary)
       ? latestSelection.query_strategy_summary
       : {};
+  const latestQueryStrategySummary = buildLiveOpsCandidateQueryStrategySummary(latestQueryStrategy);
+  const latestTopAdjustment = Array.isArray(latestQueryStrategySummary.adjustment_rows) && latestQueryStrategySummary.adjustment_rows[0]
+    ? latestQueryStrategySummary.adjustment_rows
+        .slice()
+        .sort((left, right) => Math.abs(Number(right?.delta_value || 0)) - Math.abs(Number(left?.delta_value || 0)))[0]
+    : null;
   const latestPrefilter =
     latestSelection.prefilter_summary &&
     typeof latestSelection.prefilter_summary === "object" &&
@@ -2456,7 +2660,9 @@ async function loadSelectionTrendSummary(client, campaignKey) {
       ? latestSelection.prefilter_summary
       : {};
   const queryFamilyDailyBreakdown = buildFamilyDailyBreakdown(queryReasonDailyResult.rows, resolveLiveOpsQueryStrategyFamily);
+  const adjustmentQueryFamilyDailyBreakdown = buildFamilyDailyBreakdown(adjustmentQueryReasonDailyResult.rows, resolveLiveOpsQueryStrategyFamily);
   const segmentFamilyDailyBreakdown = buildFamilyDailyBreakdown(segmentReasonDailyResult.rows, resolveLiveOpsSegmentStrategyFamily);
+  const adjustmentSegmentFamilyDailyBreakdown = buildFamilyDailyBreakdown(adjustmentSegmentReasonDailyResult.rows, resolveLiveOpsSegmentStrategyFamily);
   const familyRiskDailyBreakdown = buildSelectionFamilyRiskDailyBreakdown(queryFamilyDailyBreakdown, segmentFamilyDailyBreakdown);
   const latestFamilyRisk = familyRiskDailyBreakdown[0] || {};
   return {
@@ -2472,6 +2678,10 @@ async function loadSelectionTrendSummary(client, campaignKey) {
     prioritized_focus_matches_7d: Math.max(0, Number(totals.prioritized_focus_matches_7d || 0)),
     selected_focus_matches_24h: Math.max(0, Number(totals.selected_focus_matches_24h || 0)),
     selected_focus_matches_7d: Math.max(0, Number(totals.selected_focus_matches_7d || 0)),
+    query_adjustment_applied_24h: Math.max(0, Number(totals.query_adjustment_applied_24h || 0)),
+    query_adjustment_applied_7d: Math.max(0, Number(totals.query_adjustment_applied_7d || 0)),
+    query_adjustment_total_delta_24h: Math.max(0, Number(totals.query_adjustment_total_delta_24h || 0)),
+    query_adjustment_total_delta_7d: Math.max(0, Number(totals.query_adjustment_total_delta_7d || 0)),
     latest_selection_at: latest.created_at || null,
     latest_guidance_mode: String(latestSelection.guidance_mode || "balanced"),
     latest_focus_dimension: String(latestSelection.focus_dimension || ""),
@@ -2480,6 +2690,9 @@ async function loadSelectionTrendSummary(client, campaignKey) {
     latest_query_strategy_family: resolveLiveOpsQueryStrategyFamily(latestQueryStrategy.reason),
     latest_segment_strategy_reason: String(latestQueryStrategy.segment_strategy_reason || ""),
     latest_segment_strategy_family: resolveLiveOpsSegmentStrategyFamily(latestQueryStrategy.segment_strategy_reason),
+    latest_query_adjustment_field: String(latestTopAdjustment?.field_key || ""),
+    latest_query_adjustment_reason: String(latestTopAdjustment?.reason_code || ""),
+    latest_query_adjustment_total_delta: Math.max(0, Math.abs(Number(latestTopAdjustment?.delta_value || 0))),
     latest_prefilter_reason: String(latestPrefilter.reason || ""),
     latest_family_risk_state: String(latestFamilyRisk.risk_state || "clear"),
     latest_family_risk_reason: String(latestFamilyRisk.risk_reason || ""),
@@ -2487,12 +2700,19 @@ async function loadSelectionTrendSummary(client, campaignKey) {
     latest_family_risk_bucket: String(latestFamilyRisk.risk_bucket || ""),
     latest_family_risk_score: Math.max(0, Number(latestFamilyRisk.risk_score || 0)),
     daily_breakdown: normalizeSelectionTrendDailyRows(dailyResult.rows),
+    query_adjustment_daily_breakdown: normalizeSelectionAdjustmentDailyRows(adjustmentDailyResult.rows),
     query_strategy_family_daily_breakdown: queryFamilyDailyBreakdown,
+    query_adjustment_query_family_daily_breakdown: adjustmentQueryFamilyDailyBreakdown,
     segment_strategy_family_daily_breakdown: segmentFamilyDailyBreakdown,
+    query_adjustment_segment_family_daily_breakdown: adjustmentSegmentFamilyDailyBreakdown,
     family_risk_daily_breakdown: familyRiskDailyBreakdown,
+    query_adjustment_field_breakdown: normalizeBreakdownRows(adjustmentFieldResult.rows),
+    query_adjustment_reason_breakdown: normalizeBreakdownRows(adjustmentReasonResult.rows),
     query_strategy_reason_breakdown: normalizeBreakdownRows(queryReasonResult.rows),
     query_strategy_family_breakdown: buildFamilyBreakdown(queryReasonResult.rows, resolveLiveOpsQueryStrategyFamily),
+    query_adjustment_query_family_breakdown: buildFamilyBreakdown(adjustmentQueryReasonResult.rows, resolveLiveOpsQueryStrategyFamily),
     segment_strategy_reason_breakdown: normalizeBreakdownRows(segmentReasonResult.rows),
+    query_adjustment_segment_family_breakdown: buildFamilyBreakdown(adjustmentSegmentReasonResult.rows, resolveLiveOpsSegmentStrategyFamily),
     segment_strategy_family_breakdown: buildFamilyBreakdown(segmentReasonResult.rows, resolveLiveOpsSegmentStrategyFamily),
     family_risk_band_breakdown: buildSelectionFamilyRiskBandBreakdown(familyRiskDailyBreakdown),
     prefilter_reason_breakdown: normalizeBreakdownRows(prefilterReasonResult.rows)
@@ -2984,6 +3204,10 @@ function buildEmptyLiveOpsSelectionTrendSummary() {
     prioritized_focus_matches_7d: 0,
     selected_focus_matches_24h: 0,
     selected_focus_matches_7d: 0,
+    query_adjustment_applied_24h: 0,
+    query_adjustment_applied_7d: 0,
+    query_adjustment_total_delta_24h: 0,
+    query_adjustment_total_delta_7d: 0,
     latest_selection_at: null,
     latest_guidance_mode: "balanced",
     latest_focus_dimension: "",
@@ -2992,6 +3216,9 @@ function buildEmptyLiveOpsSelectionTrendSummary() {
     latest_query_strategy_family: "",
     latest_segment_strategy_reason: "",
     latest_segment_strategy_family: "",
+    latest_query_adjustment_field: "",
+    latest_query_adjustment_reason: "",
+    latest_query_adjustment_total_delta: 0,
     latest_prefilter_reason: "",
     latest_family_risk_state: "clear",
     latest_family_risk_reason: "",
@@ -2999,12 +3226,19 @@ function buildEmptyLiveOpsSelectionTrendSummary() {
     latest_family_risk_bucket: "",
     latest_family_risk_score: 0,
     daily_breakdown: [],
+    query_adjustment_daily_breakdown: [],
     query_strategy_family_daily_breakdown: [],
+    query_adjustment_query_family_daily_breakdown: [],
     segment_strategy_family_daily_breakdown: [],
+    query_adjustment_segment_family_daily_breakdown: [],
     family_risk_daily_breakdown: [],
+    query_adjustment_field_breakdown: [],
+    query_adjustment_reason_breakdown: [],
     query_strategy_reason_breakdown: [],
     query_strategy_family_breakdown: [],
+    query_adjustment_query_family_breakdown: [],
     segment_strategy_reason_breakdown: [],
+    query_adjustment_segment_family_breakdown: [],
     segment_strategy_family_breakdown: [],
     family_risk_band_breakdown: [],
     prefilter_reason_breakdown: []

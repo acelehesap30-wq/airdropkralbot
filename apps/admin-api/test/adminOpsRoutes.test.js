@@ -407,6 +407,10 @@ function buildLiveOpsSnapshot() {
       dispatches_7d: 5,
       query_strategy_applied_24h: 2,
       query_strategy_applied_7d: 5,
+      query_adjustment_applied_24h: 2,
+      query_adjustment_applied_7d: 4,
+      query_adjustment_total_delta_24h: 11,
+      query_adjustment_total_delta_7d: 19,
       prefilter_applied_24h: 2,
       prefilter_applied_7d: 4,
       prefilter_delta_24h: 7,
@@ -423,6 +427,9 @@ function buildLiveOpsSnapshot() {
       latest_query_strategy_family: "locale_and_segment",
       latest_segment_strategy_reason: "segment_query_active_window_tight",
       latest_segment_strategy_family: "active_window",
+      latest_query_adjustment_field: "active_within_days_cap",
+      latest_query_adjustment_reason: "selection_family_risk_tightened",
+      latest_query_adjustment_total_delta: 7,
       latest_prefilter_reason: "prefilter_applied",
       latest_family_risk_state: "watch",
       latest_family_risk_reason: "query_strategy_family_streak_watch",
@@ -433,13 +440,25 @@ function buildLiveOpsSnapshot() {
         { day: "2026-03-08", dispatch_count: 2, query_strategy_applied_count: 2, prefilter_applied_count: 2, prefilter_delta_sum: 7, prioritized_focus_matches: 5, selected_focus_matches: 0 },
         { day: "2026-03-07", dispatch_count: 3, query_strategy_applied_count: 3, prefilter_applied_count: 2, prefilter_delta_sum: 8, prioritized_focus_matches: 8, selected_focus_matches: 1 }
       ],
+      query_adjustment_daily_breakdown: [
+        { day: "2026-03-08", adjustment_count: 2, total_delta_sum: 11, max_delta_value: 7 },
+        { day: "2026-03-07", adjustment_count: 2, total_delta_sum: 8, max_delta_value: 5 }
+      ],
       query_strategy_family_daily_breakdown: [
         { day: "2026-03-08", bucket_key: "locale_and_segment", item_count: 2 },
         { day: "2026-03-07", bucket_key: "locale_and_segment", item_count: 3 }
       ],
+      query_adjustment_query_family_daily_breakdown: [
+        { day: "2026-03-08", bucket_key: "locale_and_segment", item_count: 11 },
+        { day: "2026-03-07", bucket_key: "locale_and_segment", item_count: 8 }
+      ],
       segment_strategy_family_daily_breakdown: [
         { day: "2026-03-08", bucket_key: "active_window", item_count: 2 },
         { day: "2026-03-07", bucket_key: "active_window", item_count: 2 }
+      ],
+      query_adjustment_segment_family_daily_breakdown: [
+        { day: "2026-03-08", bucket_key: "active_window", item_count: 11 },
+        { day: "2026-03-07", bucket_key: "active_window", item_count: 8 }
       ],
       family_risk_daily_breakdown: [
         { day: "2026-03-08", risk_state: "watch", risk_reason: "query_strategy_family_streak_watch", risk_dimension: "query_family", risk_bucket: "locale_and_segment", risk_score: 4, query_family: "locale_and_segment", segment_family: "active_window", query_match_days: 2, segment_match_days: 2, query_weight: 4, segment_weight: 3 },
@@ -447,8 +466,15 @@ function buildLiveOpsSnapshot() {
       ],
       query_strategy_reason_breakdown: [{ bucket_key: "query_strategy_locale_and_segment", item_count: 5 }],
       query_strategy_family_breakdown: [{ bucket_key: "locale_and_segment", item_count: 5 }],
+      query_adjustment_field_breakdown: [
+        { bucket_key: "active_within_days_cap", item_count: 12 },
+        { bucket_key: "pool_limit_multiplier", item_count: 7 }
+      ],
+      query_adjustment_reason_breakdown: [{ bucket_key: "selection_family_risk_tightened", item_count: 19 }],
+      query_adjustment_query_family_breakdown: [{ bucket_key: "locale_and_segment", item_count: 19 }],
       segment_strategy_reason_breakdown: [{ bucket_key: "segment_query_active_window_tight", item_count: 4 }],
       segment_strategy_family_breakdown: [{ bucket_key: "active_window", item_count: 4 }],
+      query_adjustment_segment_family_breakdown: [{ bucket_key: "active_window", item_count: 19 }],
       family_risk_band_breakdown: [{ bucket_key: "watch", item_count: 2 }],
       prefilter_reason_breakdown: [{ bucket_key: "prefilter_applied", item_count: 4 }]
     },
@@ -596,12 +622,20 @@ test("v2 admin ops kpi latest includes live ops campaign breakdowns", async () =
   assert.equal(body.data.live_ops_campaign.selection_summary.prefilter_summary.candidates_after, 5);
   assert.equal(body.data.live_ops_campaign.selection_trend.dispatches_7d, 5);
   assert.equal(body.data.live_ops_campaign.selection_trend.query_strategy_applied_7d, 5);
+  assert.equal(body.data.live_ops_campaign.selection_trend.query_adjustment_applied_24h, 2);
+  assert.equal(body.data.live_ops_campaign.selection_trend.query_adjustment_applied_7d, 4);
+  assert.equal(body.data.live_ops_campaign.selection_trend.query_adjustment_total_delta_24h, 11);
+  assert.equal(body.data.live_ops_campaign.selection_trend.query_adjustment_total_delta_7d, 19);
   assert.equal(body.data.live_ops_campaign.selection_trend.prefilter_applied_7d, 4);
   assert.equal(body.data.live_ops_campaign.selection_trend.prefilter_delta_7d, 15);
   assert.equal(body.data.live_ops_campaign.selection_trend.daily_breakdown[0].query_strategy_applied_count, 2);
   assert.equal(body.data.live_ops_campaign.selection_trend.daily_breakdown[0].prefilter_delta_sum, 7);
+  assert.equal(body.data.live_ops_campaign.selection_trend.query_adjustment_daily_breakdown[0].adjustment_count, 2);
+  assert.equal(body.data.live_ops_campaign.selection_trend.query_adjustment_daily_breakdown[0].total_delta_sum, 11);
   assert.equal(body.data.live_ops_campaign.selection_trend.query_strategy_reason_breakdown[0].bucket_key, "query_strategy_locale_and_segment");
+  assert.equal(body.data.live_ops_campaign.selection_trend.query_adjustment_reason_breakdown[0].bucket_key, "selection_family_risk_tightened");
   assert.equal(body.data.live_ops_campaign.selection_trend.segment_strategy_reason_breakdown[0].bucket_key, "segment_query_active_window_tight");
+  assert.equal(body.data.live_ops_campaign.selection_trend.query_adjustment_field_breakdown[0].bucket_key, "active_within_days_cap");
   assert.equal(body.data.live_ops_campaign.selection_trend.prefilter_reason_breakdown[0].bucket_key, "prefilter_applied");
   assert.equal(body.data.live_ops_campaign.scene_gate_effect, "capped");
   assert.equal(body.data.live_ops_campaign.scene_runtime.health_band_24h, "yellow");
@@ -695,14 +729,21 @@ test("v2 admin ops kpi run includes live ops campaign summary", async () => {
   assert.equal(body.data.live_ops_campaign.selection_trend.latest_query_strategy_family, "locale_and_segment");
   assert.equal(body.data.live_ops_campaign.selection_trend.latest_segment_strategy_reason, "segment_query_active_window_tight");
   assert.equal(body.data.live_ops_campaign.selection_trend.latest_segment_strategy_family, "active_window");
+  assert.equal(body.data.live_ops_campaign.selection_trend.latest_query_adjustment_field, "active_within_days_cap");
+  assert.equal(body.data.live_ops_campaign.selection_trend.latest_query_adjustment_reason, "selection_family_risk_tightened");
+  assert.equal(body.data.live_ops_campaign.selection_trend.latest_query_adjustment_total_delta, 7);
   assert.equal(body.data.live_ops_campaign.selection_trend.latest_family_risk_state, "watch");
   assert.equal(body.data.live_ops_campaign.selection_trend.latest_family_risk_reason, "query_strategy_family_streak_watch");
   assert.equal(body.data.live_ops_campaign.selection_trend.latest_family_risk_bucket, "locale_and_segment");
   assert.equal(body.data.live_ops_campaign.selection_trend.latest_family_risk_score, 4);
   assert.equal(body.data.live_ops_campaign.selection_trend.query_strategy_family_breakdown[0].bucket_key, "locale_and_segment");
   assert.equal(body.data.live_ops_campaign.selection_trend.query_strategy_family_daily_breakdown[0].bucket_key, "locale_and_segment");
+  assert.equal(body.data.live_ops_campaign.selection_trend.query_adjustment_query_family_breakdown[0].bucket_key, "locale_and_segment");
+  assert.equal(body.data.live_ops_campaign.selection_trend.query_adjustment_query_family_daily_breakdown[0].bucket_key, "locale_and_segment");
   assert.equal(body.data.live_ops_campaign.selection_trend.segment_strategy_family_breakdown[0].bucket_key, "active_window");
   assert.equal(body.data.live_ops_campaign.selection_trend.segment_strategy_family_daily_breakdown[0].bucket_key, "active_window");
+  assert.equal(body.data.live_ops_campaign.selection_trend.query_adjustment_segment_family_breakdown[0].bucket_key, "active_window");
+  assert.equal(body.data.live_ops_campaign.selection_trend.query_adjustment_segment_family_daily_breakdown[0].bucket_key, "active_window");
   assert.equal(body.data.live_ops_campaign.selection_trend.family_risk_daily_breakdown[0].risk_state, "watch");
   assert.equal(body.data.live_ops_campaign.selection_trend.family_risk_daily_breakdown[0].risk_score, 4);
   assert.equal(body.data.live_ops_campaign.selection_trend.family_risk_band_breakdown[0].bucket_key, "watch");

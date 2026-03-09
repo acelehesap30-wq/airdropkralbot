@@ -392,6 +392,10 @@ test("live ops chat campaign service snapshot includes approval summary schedule
                     dispatches_7d: 3,
                     query_strategy_applied_24h: 1,
                     query_strategy_applied_7d: 3,
+                    query_adjustment_applied_24h: 1,
+                    query_adjustment_applied_7d: 2,
+                    query_adjustment_total_delta_24h: 7,
+                    query_adjustment_total_delta_7d: 9,
                     prefilter_applied_24h: 1,
                     prefilter_applied_7d: 2,
                     prefilter_delta_24h: 4,
@@ -428,11 +432,32 @@ test("live ops chat campaign service snapshot includes approval summary schedule
                 ]
               };
             }
+            if (text.includes("action = 'live_ops_campaign_dispatch'") && text.includes("adjustment_count")) {
+              return {
+                rows: [
+                  { day: "2026-03-08", adjustment_count: 1, total_delta_sum: 7, max_delta_value: 7 },
+                  { day: "2026-03-07", adjustment_count: 1, total_delta_sum: 2, max_delta_value: 2 }
+                ]
+              };
+            }
             if (text.includes("action = 'live_ops_campaign_dispatch'") && text.includes("targeting_selection_summary,prefilter_summary,reason")) {
               return {
                 rows: [
                   { bucket_key: "prefilter_applied", item_count: 2 },
                   { bucket_key: "prefilter_shifted_to_query_strategy", item_count: 1 }
+                ]
+              };
+            }
+            if (
+              text.includes("action = 'live_ops_campaign_dispatch'") &&
+              text.includes("CROSS JOIN LATERAL jsonb_array_elements") &&
+              text.includes("query_strategy_summary,segment_strategy_reason") &&
+              text.includes("to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS day")
+            ) {
+              return {
+                rows: [
+                  { day: "2026-03-08", bucket_key: "segment_query_active_window_tight", item_count: 7 },
+                  { day: "2026-03-07", bucket_key: "segment_query_active_window_tight", item_count: 2 }
                 ]
               };
             }
@@ -451,6 +476,19 @@ test("live ops chat campaign service snapshot includes approval summary schedule
             }
             if (
               text.includes("action = 'live_ops_campaign_dispatch'") &&
+              text.includes("CROSS JOIN LATERAL jsonb_array_elements") &&
+              text.includes("query_strategy_summary,reason") &&
+              text.includes("to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS day")
+            ) {
+              return {
+                rows: [
+                  { day: "2026-03-08", bucket_key: "query_strategy_locale_and_segment", item_count: 7 },
+                  { day: "2026-03-07", bucket_key: "query_strategy_locale_and_segment", item_count: 2 }
+                ]
+              };
+            }
+            if (
+              text.includes("action = 'live_ops_campaign_dispatch'") &&
               text.includes("to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS day") &&
               text.includes("targeting_selection_summary,query_strategy_summary,reason")
             ) {
@@ -462,6 +500,29 @@ test("live ops chat campaign service snapshot includes approval summary schedule
                 ]
               };
             }
+            if (
+              text.includes("action = 'live_ops_campaign_dispatch'") &&
+              text.includes("CROSS JOIN LATERAL jsonb_array_elements") &&
+              text.includes("adj->>'field_key'")
+            ) {
+              return {
+                rows: [
+                  { bucket_key: "active_within_days_cap", item_count: 7 },
+                  { bucket_key: "pool_limit_multiplier", item_count: 2 }
+                ]
+              };
+            }
+            if (
+              text.includes("action = 'live_ops_campaign_dispatch'") &&
+              text.includes("CROSS JOIN LATERAL jsonb_array_elements") &&
+              text.includes("adj->>'reason_code'")
+            ) {
+              return {
+                rows: [
+                  { bucket_key: "selection_family_risk_tightened", item_count: 9 }
+                ]
+              };
+            }
             if (text.includes("action = 'live_ops_campaign_dispatch'") && text.includes("targeting_selection_summary,query_strategy_summary,segment_strategy_reason")) {
               return {
                 rows: [
@@ -470,10 +531,32 @@ test("live ops chat campaign service snapshot includes approval summary schedule
                 ]
               };
             }
+            if (
+              text.includes("action = 'live_ops_campaign_dispatch'") &&
+              text.includes("CROSS JOIN LATERAL jsonb_array_elements") &&
+              text.includes("query_strategy_summary,segment_strategy_reason")
+            ) {
+              return {
+                rows: [
+                  { bucket_key: "segment_query_active_window_tight", item_count: 9 }
+                ]
+              };
+            }
             if (text.includes("action = 'live_ops_campaign_dispatch'") && text.includes("targeting_selection_summary,query_strategy_summary,reason")) {
               return {
                 rows: [
                   { bucket_key: "query_strategy_locale_and_segment", item_count: 3 }
+                ]
+              };
+            }
+            if (
+              text.includes("action = 'live_ops_campaign_dispatch'") &&
+              text.includes("CROSS JOIN LATERAL jsonb_array_elements") &&
+              text.includes("query_strategy_summary,reason")
+            ) {
+              return {
+                rows: [
+                  { bucket_key: "query_strategy_locale_and_segment", item_count: 9 }
                 ]
               };
             }
@@ -550,7 +633,25 @@ test("live ops chat campaign service snapshot includes approval summary schedule
                         focus_bucket: "tr",
                         query_strategy_summary: {
                           reason: "query_strategy_locale_and_segment",
-                          segment_strategy_reason: "segment_query_active_window_tight"
+                          segment_strategy_reason: "segment_query_active_window_tight",
+                          adjustment_rows: [
+                            {
+                              field_key: "pool_limit_multiplier",
+                              before_value: 3,
+                              after_value: 2,
+                              delta_value: -1,
+                              direction: "decrease",
+                              reason_code: "selection_family_risk_tightened"
+                            },
+                            {
+                              field_key: "active_within_days_cap",
+                              before_value: 14,
+                              after_value: 7,
+                              delta_value: -7,
+                              direction: "decrease",
+                              reason_code: "selection_family_risk_tightened"
+                            }
+                          ]
                         },
                         prefilter_summary: {
                           reason: "prefilter_applied"
@@ -666,6 +767,10 @@ test("live ops chat campaign service snapshot includes approval summary schedule
         dispatches_7d: 3,
         query_strategy_applied_24h: 1,
         query_strategy_applied_7d: 3,
+        query_adjustment_applied_24h: 1,
+        query_adjustment_applied_7d: 2,
+        query_adjustment_total_delta_24h: 7,
+        query_adjustment_total_delta_7d: 9,
         prefilter_applied_24h: 1,
         prefilter_applied_7d: 2,
         prefilter_delta_24h: 4,
@@ -682,6 +787,9 @@ test("live ops chat campaign service snapshot includes approval summary schedule
         latest_query_strategy_family: "locale_and_segment",
         latest_segment_strategy_reason: "segment_query_active_window_tight",
         latest_segment_strategy_family: "active_window",
+        latest_query_adjustment_field: "active_within_days_cap",
+        latest_query_adjustment_reason: "selection_family_risk_tightened",
+        latest_query_adjustment_total_delta: 7,
         latest_prefilter_reason: "prefilter_applied",
         daily_breakdown: [
           {
@@ -694,16 +802,34 @@ test("live ops chat campaign service snapshot includes approval summary schedule
             selected_focus_matches: 0
           }
         ],
+        query_adjustment_daily_breakdown: [
+          { day: "2026-03-08", adjustment_count: 1, total_delta_sum: 7, max_delta_value: 7 },
+          { day: "2026-03-07", adjustment_count: 1, total_delta_sum: 2, max_delta_value: 2 }
+        ],
         query_strategy_reason_breakdown: [
           { bucket_key: "query_strategy_locale_and_segment", item_count: 3 }
         ],
         query_strategy_family_breakdown: [
           { bucket_key: "locale_and_segment", item_count: 3 }
         ],
+        query_adjustment_field_breakdown: [
+          { bucket_key: "active_within_days_cap", item_count: 7 },
+          { bucket_key: "pool_limit_multiplier", item_count: 2 }
+        ],
+        query_adjustment_reason_breakdown: [
+          { bucket_key: "selection_family_risk_tightened", item_count: 9 }
+        ],
+        query_adjustment_query_family_breakdown: [
+          { bucket_key: "locale_and_segment", item_count: 9 }
+        ],
         query_strategy_family_daily_breakdown: [
           { day: "2026-03-08", bucket_key: "locale_and_segment", item_count: 2 },
           { day: "2026-03-07", bucket_key: "locale_and_segment", item_count: 1 },
           { day: "2026-03-06", bucket_key: "locale_and_segment", item_count: 1 }
+        ],
+        query_adjustment_query_family_daily_breakdown: [
+          { day: "2026-03-08", bucket_key: "locale_and_segment", item_count: 7 },
+          { day: "2026-03-07", bucket_key: "locale_and_segment", item_count: 2 }
         ],
         segment_strategy_reason_breakdown: [
           { bucket_key: "segment_query_active_window_tight", item_count: 2 }
@@ -711,10 +837,17 @@ test("live ops chat campaign service snapshot includes approval summary schedule
         segment_strategy_family_breakdown: [
           { bucket_key: "active_window", item_count: 2 }
         ],
+        query_adjustment_segment_family_breakdown: [
+          { bucket_key: "active_window", item_count: 9 }
+        ],
         segment_strategy_family_daily_breakdown: [
           { day: "2026-03-08", bucket_key: "active_window", item_count: 2 },
           { day: "2026-03-07", bucket_key: "active_window", item_count: 1 },
           { day: "2026-03-06", bucket_key: "offer_window", item_count: 1 }
+        ],
+        query_adjustment_segment_family_daily_breakdown: [
+          { day: "2026-03-08", bucket_key: "active_window", item_count: 7 },
+          { day: "2026-03-07", bucket_key: "active_window", item_count: 2 }
         ],
         prefilter_reason_breakdown: [
           { bucket_key: "prefilter_applied", item_count: 2 }
@@ -846,6 +979,10 @@ test("live ops chat campaign service snapshot includes approval summary schedule
   assert.equal(snapshot.selection_trend_summary.dispatches_7d, 3);
   assert.equal(snapshot.selection_trend_summary.query_strategy_applied_24h, 1);
   assert.equal(snapshot.selection_trend_summary.query_strategy_applied_7d, 3);
+  assert.equal(snapshot.selection_trend_summary.query_adjustment_applied_24h, 1);
+  assert.equal(snapshot.selection_trend_summary.query_adjustment_applied_7d, 2);
+  assert.equal(snapshot.selection_trend_summary.query_adjustment_total_delta_24h, 7);
+  assert.equal(snapshot.selection_trend_summary.query_adjustment_total_delta_7d, 9);
   assert.equal(snapshot.selection_trend_summary.prefilter_applied_7d, 2);
   assert.equal(snapshot.selection_trend_summary.prefilter_delta_7d, 6);
   assert.equal(snapshot.selection_trend_summary.latest_guidance_mode, "protective");
@@ -854,6 +991,9 @@ test("live ops chat campaign service snapshot includes approval summary schedule
   assert.equal(snapshot.selection_trend_summary.latest_query_strategy_family, "locale_and_segment");
   assert.equal(snapshot.selection_trend_summary.latest_segment_strategy_reason, "segment_query_active_window_tight");
   assert.equal(snapshot.selection_trend_summary.latest_segment_strategy_family, "active_window");
+  assert.equal(snapshot.selection_trend_summary.latest_query_adjustment_field, "active_within_days_cap");
+  assert.equal(snapshot.selection_trend_summary.latest_query_adjustment_reason, "selection_family_risk_tightened");
+  assert.equal(snapshot.selection_trend_summary.latest_query_adjustment_total_delta, 7);
   assert.equal(snapshot.selection_trend_summary.latest_prefilter_reason, "prefilter_applied");
   assert.equal(snapshot.selection_trend_summary.latest_family_risk_state, "watch");
   assert.equal(snapshot.selection_trend_summary.latest_family_risk_reason, "query_strategy_family_streak_watch");
@@ -861,12 +1001,21 @@ test("live ops chat campaign service snapshot includes approval summary schedule
   assert.equal(snapshot.selection_trend_summary.latest_family_risk_score, 4);
   assert.equal(snapshot.selection_trend_summary.daily_breakdown[0].query_strategy_applied_count, 1);
   assert.equal(snapshot.selection_trend_summary.daily_breakdown[0].prefilter_delta_sum, 4);
+  assert.equal(snapshot.selection_trend_summary.query_adjustment_daily_breakdown[0].adjustment_count, 1);
+  assert.equal(snapshot.selection_trend_summary.query_adjustment_daily_breakdown[0].total_delta_sum, 7);
+  assert.equal(snapshot.selection_trend_summary.query_adjustment_daily_breakdown[0].max_delta_value, 7);
   assert.equal(snapshot.selection_trend_summary.query_strategy_reason_breakdown[0].bucket_key, "query_strategy_locale_and_segment");
   assert.equal(snapshot.selection_trend_summary.query_strategy_family_breakdown[0].bucket_key, "locale_and_segment");
+  assert.equal(snapshot.selection_trend_summary.query_adjustment_field_breakdown[0].bucket_key, "active_within_days_cap");
+  assert.equal(snapshot.selection_trend_summary.query_adjustment_reason_breakdown[0].bucket_key, "selection_family_risk_tightened");
+  assert.equal(snapshot.selection_trend_summary.query_adjustment_query_family_breakdown[0].bucket_key, "locale_and_segment");
   assert.equal(snapshot.selection_trend_summary.query_strategy_family_daily_breakdown[0].bucket_key, "locale_and_segment");
+  assert.equal(snapshot.selection_trend_summary.query_adjustment_query_family_daily_breakdown[0].bucket_key, "locale_and_segment");
   assert.equal(snapshot.selection_trend_summary.segment_strategy_reason_breakdown[0].bucket_key, "segment_query_active_window_tight");
   assert.equal(snapshot.selection_trend_summary.segment_strategy_family_breakdown[0].bucket_key, "active_window");
+  assert.equal(snapshot.selection_trend_summary.query_adjustment_segment_family_breakdown[0].bucket_key, "active_window");
   assert.equal(snapshot.selection_trend_summary.segment_strategy_family_daily_breakdown[0].bucket_key, "active_window");
+  assert.equal(snapshot.selection_trend_summary.query_adjustment_segment_family_daily_breakdown[0].bucket_key, "active_window");
   assert.equal(snapshot.selection_trend_summary.family_risk_daily_breakdown[0].risk_state, "watch");
   assert.equal(snapshot.selection_trend_summary.family_risk_daily_breakdown[0].risk_score, 4);
   assert.equal(snapshot.selection_trend_summary.family_risk_band_breakdown[0].bucket_key, "watch");
