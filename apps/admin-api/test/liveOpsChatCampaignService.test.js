@@ -705,6 +705,13 @@ test("live ops chat campaign service snapshot includes approval summary schedule
       pressure_focus_escalation_bucket: "tr",
       pressure_focus_escalation_share: 0.875,
       pressure_focus_effective_delta_ratio: 0.8,
+      selection_family_escalation_band: "alert",
+      selection_family_escalation_reason: "watch_state_query_family_pressure",
+      selection_family_escalation_dimension: "query_family",
+      selection_family_escalation_bucket: "locale_and_segment",
+      selection_family_escalation_score: 8,
+      selection_query_family_weight: 4,
+      selection_segment_family_weight: 3,
       selection_query_strategy_applied_24h: 1,
       selection_query_strategy_applied_7d: 3,
       selection_latest_query_strategy_reason: "query_strategy_locale_and_segment",
@@ -816,6 +823,11 @@ test("live ops chat campaign service snapshot includes approval summary schedule
   assert.equal(snapshot.ops_alert_summary.pressure_focus_escalation_reason, "watch_state_locale_pressure");
   assert.equal(snapshot.ops_alert_summary.pressure_focus_escalation_dimension, "locale");
   assert.equal(snapshot.ops_alert_summary.pressure_focus_escalation_bucket, "tr");
+  assert.equal(snapshot.ops_alert_summary.selection_family_escalation_band, "alert");
+  assert.equal(snapshot.ops_alert_summary.selection_family_escalation_reason, "watch_state_query_family_pressure");
+  assert.equal(snapshot.ops_alert_summary.selection_family_escalation_dimension, "query_family");
+  assert.equal(snapshot.ops_alert_summary.selection_family_escalation_bucket, "locale_and_segment");
+  assert.equal(snapshot.ops_alert_summary.selection_family_escalation_score, 8);
   assert.equal(snapshot.ops_alert_summary.selection_query_strategy_applied_7d, 3);
   assert.equal(snapshot.ops_alert_summary.selection_latest_query_strategy_reason, "query_strategy_locale_and_segment");
   assert.equal(snapshot.ops_alert_summary.selection_latest_query_strategy_family, "locale_and_segment");

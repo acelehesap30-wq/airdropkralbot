@@ -289,6 +289,70 @@ test("evaluateOpsAlert escalates watch state on severe selection prefilter press
   assert.equal(result.selection_prefilter_reduction_share, 0.6);
 });
 
+test("evaluateOpsAlert escalates watch state on high query family pressure", async () => {
+  const mod = await loadModule();
+  const result = mod.evaluateOpsAlert(
+    {
+      scheduler_skip_summary: {
+        alarm_state: "watch",
+        alarm_reason: "scene_runtime_watch_capped_repeated",
+        skipped_24h: 2,
+        skipped_7d: 5,
+        latest_skip_reason: "scene_runtime_watch_capped",
+        latest_skip_at: "2026-03-08T15:00:00.000Z"
+      },
+      scheduler_summary: {
+        recipient_cap_recommendation: {
+          pressure_band: "watch",
+          configured_recipients: 40,
+          recommended_recipient_cap: 10,
+          effective_cap_delta: 30,
+          reason: "ops_alert_segment_pressure"
+        }
+      },
+      selection_trend_summary: {
+        query_strategy_applied_24h: 2,
+        query_strategy_applied_7d: 5,
+        latest_query_strategy_reason: "query_strategy_locale_and_segment",
+        latest_query_strategy_family: "locale_and_segment",
+        latest_segment_strategy_reason: "segment_query_active_window_tight",
+        latest_segment_strategy_family: "active_window",
+        query_strategy_reason_breakdown: [
+          { bucket_key: "query_strategy_locale_and_segment", item_count: 5 }
+        ],
+        query_strategy_family_breakdown: [
+          { bucket_key: "locale_and_segment", item_count: 5 }
+        ],
+        segment_strategy_reason_breakdown: [
+          { bucket_key: "segment_query_active_window_tight", item_count: 2 }
+        ],
+        segment_strategy_family_breakdown: [
+          { bucket_key: "active_window", item_count: 2 }
+        ]
+      },
+      pressure_focus_summary: {
+        pressure_band: "watch",
+        warning_rows: []
+      }
+    },
+    null,
+    {
+      now: new Date("2026-03-08T15:10:00.000Z"),
+      cooldownMinutes: 180
+    }
+  );
+
+  assert.equal(result.should_notify, true);
+  assert.equal(result.notification_reason, "watch_state_query_family_pressure");
+  assert.equal(result.selection_family_escalation_band, "alert");
+  assert.equal(result.selection_family_escalation_reason, "watch_state_query_family_pressure");
+  assert.equal(result.selection_family_escalation_dimension, "query_family");
+  assert.equal(result.selection_family_escalation_bucket, "locale_and_segment");
+  assert.equal(result.selection_family_escalation_score, 9);
+  assert.equal(result.selection_query_family_weight, 4);
+  assert.equal(result.selection_segment_family_weight, 3);
+});
+
 test("runLiveOpsOpsAlert writes latest artifact and skips telegram on clear state", async () => {
   const mod = await loadModule();
   const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "akr-liveops-alert-"));

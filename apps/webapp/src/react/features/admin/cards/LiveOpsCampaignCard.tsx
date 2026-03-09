@@ -858,6 +858,13 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
           {asText(opsAlertSummary.selection_top_query_strategy_family, "-")} | {t(props.lang, "admin_live_ops_ops_alert_segment_family_label")}:{" "}
           {asText(opsAlertSummary.selection_latest_segment_strategy_family, "-")} / {asText(opsAlertSummary.selection_top_segment_strategy_family, "-")}
         </p>
+        <p className="akrMutedLine">
+          {t(props.lang, "admin_live_ops_ops_alert_selection_family_pressure_label")}: {asText(opsAlertSummary.selection_family_escalation_band, "-")} /{" "}
+          {asText(opsAlertSummary.selection_family_escalation_reason, "-")} / {asText(opsAlertSummary.selection_family_escalation_dimension, "-")} /{" "}
+          {asText(opsAlertSummary.selection_family_escalation_bucket, "-")} | {t(props.lang, "admin_live_ops_ops_alert_selection_family_score_label")}:{" "}
+          {asCount(opsAlertSummary.selection_family_escalation_score)} | Q {asCount(opsAlertSummary.selection_query_family_weight)} / S{" "}
+          {asCount(opsAlertSummary.selection_segment_family_weight)}
+        </p>
         <div className="akrSplit">
           <OpsAlertDailyTrendList title={t(props.lang, "admin_live_ops_ops_alert_daily_title")} rows={opsAlertTrendDailyBreakdown} />
           <BreakdownList title={t(props.lang, "admin_live_ops_ops_alert_reason_title")} rows={opsAlertTrendReasonBreakdown} />

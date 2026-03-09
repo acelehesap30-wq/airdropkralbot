@@ -94,6 +94,118 @@ function buildAlertFingerprint(alarm) {
   ].join("|");
 }
 
+function resolveSelectionQueryFamilyWeight(familyKey) {
+  switch (String(familyKey || "").trim().toLowerCase()) {
+    case "locale_and_segment":
+      return 4;
+    case "locale":
+      return 3;
+    case "segment_only":
+      return 2;
+    case "prefilter_only":
+      return 1;
+    case "not_applied":
+    case "":
+      return 0;
+    default:
+      return 1;
+  }
+}
+
+function resolveSelectionSegmentFamilyWeight(familyKey) {
+  switch (String(familyKey || "").trim().toLowerCase()) {
+    case "active_window":
+      return 3;
+    case "inactive_window":
+      return 2;
+    case "offer_window":
+      return 1;
+    case "not_needed":
+    case "":
+      return 0;
+    default:
+      return 1;
+  }
+}
+
+function resolveSelectionFamilyCountWeight(count) {
+  const safeCount = Math.max(0, Number(count || 0));
+  if (safeCount >= 5) {
+    return 2;
+  }
+  if (safeCount >= 3) {
+    return 1;
+  }
+  return 0;
+}
+
+function resolveSelectionFamilyDeltaWeight(effectiveCapDelta) {
+  const safeDelta = Math.max(0, Number(effectiveCapDelta || 0));
+  if (safeDelta >= 24) {
+    return 2;
+  }
+  if (safeDelta >= 8) {
+    return 1;
+  }
+  return 0;
+}
+
+function resolveSelectionFamilyEscalation(selectionTrend = {}, effectiveCapDelta = 0) {
+  const latestQueryFamily = String(selectionTrend?.latest_query_strategy_family || "").trim().toLowerCase();
+  const latestSegmentFamily = String(selectionTrend?.latest_segment_strategy_family || "").trim().toLowerCase();
+  const queryApplied7d = Math.max(0, Number(selectionTrend?.query_strategy_applied_7d || 0));
+  const topQueryFamily =
+    Array.isArray(selectionTrend?.query_strategy_family_breakdown) && selectionTrend.query_strategy_family_breakdown[0]
+      ? selectionTrend.query_strategy_family_breakdown[0]
+      : {};
+  const topSegmentFamily =
+    Array.isArray(selectionTrend?.segment_strategy_family_breakdown) && selectionTrend.segment_strategy_family_breakdown[0]
+      ? selectionTrend.segment_strategy_family_breakdown[0]
+      : {};
+  const topQueryFamilyKey = String(topQueryFamily?.bucket_key || latestQueryFamily || "").trim().toLowerCase();
+  const topSegmentFamilyKey = String(topSegmentFamily?.bucket_key || latestSegmentFamily || "").trim().toLowerCase();
+  const topQueryFamilyCount = Math.max(0, Number(topQueryFamily?.item_count || 0));
+  const topSegmentFamilyCount = Math.max(0, Number(topSegmentFamily?.item_count || 0));
+  const deltaWeight = resolveSelectionFamilyDeltaWeight(effectiveCapDelta);
+  const queryFamilyWeight = resolveSelectionQueryFamilyWeight(topQueryFamilyKey || latestQueryFamily);
+  const segmentFamilyWeight = resolveSelectionSegmentFamilyWeight(topSegmentFamilyKey || latestSegmentFamily);
+  const queryScore =
+    queryFamilyWeight +
+    resolveSelectionFamilyCountWeight(topQueryFamilyCount) +
+    (queryApplied7d >= 4 ? 1 : 0) +
+    deltaWeight;
+  const segmentScore =
+    segmentFamilyWeight +
+    resolveSelectionFamilyCountWeight(topSegmentFamilyCount) +
+    deltaWeight;
+  const dominantDimension = queryScore >= segmentScore ? "query_family" : "segment_family";
+  const dominantFamily = dominantDimension === "query_family" ? topQueryFamilyKey : topSegmentFamilyKey;
+  const dominantScore = dominantDimension === "query_family" ? queryScore : segmentScore;
+  const hasDominantSignal = dominantScore > 0 && dominantFamily;
+  let escalationBand = "clear";
+  let reason = "";
+  if (dominantScore >= 7) {
+    escalationBand = "alert";
+    reason = dominantDimension === "query_family" ? "watch_state_query_family_pressure" : "watch_state_segment_family_pressure";
+  } else if (dominantScore >= 4) {
+    escalationBand = "watch";
+    reason = dominantDimension === "query_family" ? "query_family_watch_pressure" : "segment_family_watch_pressure";
+  }
+  return {
+    escalation_band: escalationBand,
+    reason,
+    dominant_dimension: hasDominantSignal ? dominantDimension : "",
+    dominant_family: hasDominantSignal ? dominantFamily : "",
+    dominant_score: dominantScore,
+    query_family_weight: queryFamilyWeight,
+    segment_family_weight: segmentFamilyWeight,
+    top_query_family: topQueryFamilyKey,
+    top_query_family_count: topQueryFamilyCount,
+    top_segment_family: topSegmentFamilyKey,
+    top_segment_family_count: topSegmentFamilyCount
+  };
+}
+
 function evaluateOpsAlert(dispatchArtifact, previousAlertArtifact, options = {}) {
   const schedulerSkip = normalizeOpsAlarm(dispatchArtifact?.scheduler_skip_summary || dispatchArtifact?.ops_alarm || {});
   const targetingGuidance =
@@ -173,6 +285,7 @@ function evaluateOpsAlert(dispatchArtifact, previousAlertArtifact, options = {})
       ? prefilterReductionCount / prefilterCandidatesBefore
       : 0;
   const pressureEscalation = resolveLiveOpsPressureEscalation(pressureFocusSummary, recipientCapRecommendation);
+  const selectionFamilyEscalation = resolveSelectionFamilyEscalation(selectionTrend, effectiveCapDelta);
   const fingerprint = buildAlertFingerprint(schedulerSkip);
   let shouldNotify = false;
   let notificationReason = "state_clear";
@@ -186,6 +299,9 @@ function evaluateOpsAlert(dispatchArtifact, previousAlertArtifact, options = {})
   } else if (schedulerSkip.state === "watch" && pressureEscalation.escalation_band === "alert") {
     shouldNotify = true;
     notificationReason = String(pressureEscalation.reason || "watch_state_focus_pressure").trim() || "watch_state_focus_pressure";
+  } else if (schedulerSkip.state === "watch" && selectionFamilyEscalation.escalation_band === "alert") {
+    shouldNotify = true;
+    notificationReason = String(selectionFamilyEscalation.reason || "watch_state_selection_family_pressure").trim() || "watch_state_selection_family_pressure";
   } else if (
     schedulerSkip.state === "watch" &&
     selectionPrefilter.applied === true &&
@@ -241,6 +357,13 @@ function evaluateOpsAlert(dispatchArtifact, previousAlertArtifact, options = {})
     pressure_focus_escalation_share: Math.max(0, Number(pressureEscalation.focus_share_of_recommended_cap || 0)),
     pressure_focus_escalation_matches_target: pressureEscalation.focus_matches_target === true,
     pressure_focus_effective_delta_ratio: Math.max(0, Number(pressureEscalation.effective_cap_delta_ratio || 0)),
+    selection_family_escalation_band: String(selectionFamilyEscalation.escalation_band || "clear").trim().toLowerCase(),
+    selection_family_escalation_reason: String(selectionFamilyEscalation.reason || "").trim(),
+    selection_family_escalation_dimension: String(selectionFamilyEscalation.dominant_dimension || "").trim(),
+    selection_family_escalation_bucket: String(selectionFamilyEscalation.dominant_family || "").trim(),
+    selection_family_escalation_score: Math.max(0, Number(selectionFamilyEscalation.dominant_score || 0)),
+    selection_query_family_weight: Math.max(0, Number(selectionFamilyEscalation.query_family_weight || 0)),
+    selection_segment_family_weight: Math.max(0, Number(selectionFamilyEscalation.segment_family_weight || 0)),
     selection_focus_dimension: String(selectionSummary.focus_dimension || "").trim(),
     selection_focus_bucket: String(selectionSummary.focus_bucket || "").trim(),
     selection_focus_selected_matches: Math.max(0, Number(selectionSummary.selected_focus_matches || 0)),
@@ -310,6 +433,12 @@ function formatOpsAlertMessage(dispatchArtifact = {}, evaluation = {}) {
     `focus_escalation=${String(evaluation.pressure_focus_escalation_band || "-")}/${String(
       evaluation.pressure_focus_escalation_reason || "-"
     )}/${String(evaluation.pressure_focus_escalation_dimension || "-")}/${String(evaluation.pressure_focus_escalation_bucket || "-")}`,
+    `selection_family_escalation=${String(evaluation.selection_family_escalation_band || "-")}/${String(
+      evaluation.selection_family_escalation_reason || "-"
+    )}/${String(evaluation.selection_family_escalation_dimension || "-")}/${String(evaluation.selection_family_escalation_bucket || "-")}:${Math.max(
+      0,
+      Number(evaluation.selection_family_escalation_score || 0)
+    )}`,
     `selection_focus=${String(evaluation.selection_focus_dimension || "-")}/${String(evaluation.selection_focus_bucket || "-")}:${Math.max(
       0,
       Number(evaluation.selection_focus_selected_matches || 0)
@@ -547,6 +676,13 @@ async function runLiveOpsOpsAlert(args = {}, deps = {}) {
       pressure_focus_escalation_share: Math.max(0, Number(evaluation.pressure_focus_escalation_share || 0)),
       pressure_focus_escalation_matches_target: evaluation.pressure_focus_escalation_matches_target === true,
       pressure_focus_effective_delta_ratio: Math.max(0, Number(evaluation.pressure_focus_effective_delta_ratio || 0)),
+      selection_family_escalation_band: String(evaluation.selection_family_escalation_band || "clear").trim() || "clear",
+      selection_family_escalation_reason: String(evaluation.selection_family_escalation_reason || "").trim(),
+      selection_family_escalation_dimension: String(evaluation.selection_family_escalation_dimension || "").trim(),
+      selection_family_escalation_bucket: String(evaluation.selection_family_escalation_bucket || "").trim(),
+      selection_family_escalation_score: Math.max(0, Number(evaluation.selection_family_escalation_score || 0)),
+      selection_query_family_weight: Math.max(0, Number(evaluation.selection_query_family_weight || 0)),
+      selection_segment_family_weight: Math.max(0, Number(evaluation.selection_segment_family_weight || 0)),
       selection_focus_dimension: String(evaluation.selection_focus_dimension || "").trim(),
       selection_focus_bucket: String(evaluation.selection_focus_bucket || "").trim(),
       selection_focus_selected_matches: Math.max(0, Number(evaluation.selection_focus_selected_matches || 0)),
@@ -571,6 +707,13 @@ async function runLiveOpsOpsAlert(args = {}, deps = {}) {
       selection_prefilter_candidates_after: Math.max(0, Number(evaluation.selection_prefilter_candidates_after || 0)),
       selection_prefilter_reduction_count: Math.max(0, Number(evaluation.selection_prefilter_reduction_count || 0)),
       selection_prefilter_reduction_share: Math.max(0, Number(evaluation.selection_prefilter_reduction_share || 0)),
+      selection_family_escalation_band: String(evaluation.selection_family_escalation_band || "clear").trim(),
+      selection_family_escalation_reason: String(evaluation.selection_family_escalation_reason || "").trim(),
+      selection_family_escalation_dimension: String(evaluation.selection_family_escalation_dimension || "").trim(),
+      selection_family_escalation_bucket: String(evaluation.selection_family_escalation_bucket || "").trim(),
+      selection_family_escalation_score: Math.max(0, Number(evaluation.selection_family_escalation_score || 0)),
+      selection_query_family_weight: Math.max(0, Number(evaluation.selection_query_family_weight || 0)),
+      selection_segment_family_weight: Math.max(0, Number(evaluation.selection_segment_family_weight || 0)),
       telegram_sent: telegram.sent === true,
       telegram_reason: String(telegram.reason || "").trim(),
       telegram_sent_at: telegram.sent_at || null

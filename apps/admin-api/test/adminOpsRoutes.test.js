@@ -207,6 +207,13 @@ function buildLiveOpsSnapshot() {
       should_notify: false,
       notification_reason: "scene_runtime_watch_capped_repeated",
       fingerprint: "watch|scene_runtime_watch_capped_repeated|2026-03-08T04:05:00.000Z",
+      selection_family_escalation_band: "alert",
+      selection_family_escalation_reason: "watch_state_query_family_pressure",
+      selection_family_escalation_dimension: "query_family",
+      selection_family_escalation_bucket: "locale_and_segment",
+      selection_family_escalation_score: 8,
+      selection_query_family_weight: 4,
+      selection_segment_family_weight: 3,
       selection_latest_query_strategy_family: "locale_and_segment",
       selection_latest_segment_strategy_family: "active_window",
       selection_top_query_strategy_family: "locale_and_segment",
@@ -487,6 +494,8 @@ test("v2 admin ops kpi latest includes live ops campaign breakdowns", async () =
   assert.equal(body.data.live_ops_campaign.scheduler_skip.scene_watch_capped_7d, 4);
   assert.equal(body.data.live_ops_campaign.ops_alert.alarm_state, "watch");
   assert.equal(body.data.live_ops_campaign.ops_alert.telegram_sent, false);
+  assert.equal(body.data.live_ops_campaign.ops_alert.selection_family_escalation_band, "alert");
+  assert.equal(body.data.live_ops_campaign.ops_alert.selection_family_escalation_bucket, "locale_and_segment");
   assert.equal(body.data.live_ops_campaign.ops_alert.selection_latest_query_strategy_family, "locale_and_segment");
   assert.equal(body.data.live_ops_campaign.ops_alert.selection_top_segment_strategy_family, "active_window");
   assert.equal(body.data.live_ops_campaign.ops_alert_trend.raised_7d, 4);

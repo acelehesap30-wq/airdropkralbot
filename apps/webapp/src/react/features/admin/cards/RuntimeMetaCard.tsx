@@ -511,6 +511,13 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
             {readText(opsAlert, "selection_latest_segment_strategy_family") || "-"} / {readText(opsAlert, "selection_top_segment_strategy_family") || "-"}
           </p>
           <p className="akrMutedLine">
+            {t(props.lang, "admin_runtime_live_ops_ops_alert_selection_family_pressure_label")}: {readText(opsAlert, "selection_family_escalation_band") || "-"} /{" "}
+            {readText(opsAlert, "selection_family_escalation_reason") || "-"} / {readText(opsAlert, "selection_family_escalation_dimension") || "-"} /{" "}
+            {readText(opsAlert, "selection_family_escalation_bucket") || "-"} | {t(props.lang, "admin_runtime_live_ops_ops_alert_selection_family_score_label")}:{" "}
+            {Math.floor(readNum(opsAlert, "selection_family_escalation_score"))} | Q {Math.floor(readNum(opsAlert, "selection_query_family_weight"))} / S{" "}
+            {Math.floor(readNum(opsAlert, "selection_segment_family_weight"))}
+          </p>
+          <p className="akrMutedLine">
             {t(props.lang, "admin_runtime_live_ops_recommend_reason_label")}: {readText(recipientCapRecommendation, "reason") || "-"} |{" "}
             {t(props.lang, "admin_runtime_live_ops_recommend_focus_label")}: {readText(recipientCapRecommendation, "segment_key") || "-"} /{" "}
             {readText(recipientCapRecommendation, "locale_bucket") || "-"} / {readText(recipientCapRecommendation, "surface_bucket") || "-"}
