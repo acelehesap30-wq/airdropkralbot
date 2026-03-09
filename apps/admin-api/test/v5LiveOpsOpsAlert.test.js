@@ -323,11 +323,21 @@ test("evaluateOpsAlert escalates watch state on high query family pressure", asy
         query_strategy_family_breakdown: [
           { bucket_key: "locale_and_segment", item_count: 5 }
         ],
+        query_strategy_family_daily_breakdown: [
+          { day: "2026-03-08", bucket_key: "locale_and_segment", item_count: 2 },
+          { day: "2026-03-07", bucket_key: "locale_and_segment", item_count: 1 },
+          { day: "2026-03-06", bucket_key: "locale_and_segment", item_count: 1 },
+          { day: "2026-03-05", bucket_key: "locale_and_segment", item_count: 1 }
+        ],
         segment_strategy_reason_breakdown: [
           { bucket_key: "segment_query_active_window_tight", item_count: 2 }
         ],
         segment_strategy_family_breakdown: [
           { bucket_key: "active_window", item_count: 2 }
+        ],
+        segment_strategy_family_daily_breakdown: [
+          { day: "2026-03-08", bucket_key: "active_window", item_count: 1 },
+          { day: "2026-03-07", bucket_key: "active_window", item_count: 1 }
         ]
       },
       pressure_focus_summary: {
@@ -348,9 +358,12 @@ test("evaluateOpsAlert escalates watch state on high query family pressure", asy
   assert.equal(result.selection_family_escalation_reason, "watch_state_query_family_pressure");
   assert.equal(result.selection_family_escalation_dimension, "query_family");
   assert.equal(result.selection_family_escalation_bucket, "locale_and_segment");
-  assert.equal(result.selection_family_escalation_score, 9);
+  assert.equal(result.selection_family_escalation_score, 11);
+  assert.equal(result.selection_family_daily_weight, 2);
   assert.equal(result.selection_query_family_weight, 4);
   assert.equal(result.selection_segment_family_weight, 3);
+  assert.equal(result.selection_query_family_match_days, 4);
+  assert.equal(result.selection_segment_family_match_days, 2);
 });
 
 test("runLiveOpsOpsAlert writes latest artifact and skips telegram on clear state", async () => {

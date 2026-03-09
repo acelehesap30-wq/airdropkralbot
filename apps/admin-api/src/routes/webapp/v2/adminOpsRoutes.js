@@ -102,6 +102,20 @@ function normalizeSelectionTrendDailyRows(rows) {
     .slice(0, 7);
 }
 
+function normalizeSelectionFamilyDailyRows(rows) {
+  if (!Array.isArray(rows)) {
+    return [];
+  }
+  return rows
+    .map((row) => ({
+      day: String(row?.day || ""),
+      bucket_key: String(row?.bucket_key || "unknown"),
+      item_count: Math.max(0, Number(row?.item_count || 0))
+    }))
+    .filter((row) => row.day)
+    .slice(0, 7);
+}
+
 function buildLiveOpsCampaignKpiSummary(snapshot) {
   const safeSnapshot = snapshot && typeof snapshot === "object" ? snapshot : {};
   const campaign = safeSnapshot.campaign && typeof safeSnapshot.campaign === "object" ? safeSnapshot.campaign : {};
@@ -279,8 +293,11 @@ function buildLiveOpsCampaignKpiSummary(snapshot) {
       selection_family_escalation_dimension: String(opsAlert.selection_family_escalation_dimension || ""),
       selection_family_escalation_bucket: String(opsAlert.selection_family_escalation_bucket || ""),
       selection_family_escalation_score: Math.max(0, Number(opsAlert.selection_family_escalation_score || 0)),
+      selection_family_daily_weight: Math.max(0, Number(opsAlert.selection_family_daily_weight || 0)),
       selection_query_family_weight: Math.max(0, Number(opsAlert.selection_query_family_weight || 0)),
       selection_segment_family_weight: Math.max(0, Number(opsAlert.selection_segment_family_weight || 0)),
+      selection_query_family_match_days: Math.max(0, Number(opsAlert.selection_query_family_match_days || 0)),
+      selection_segment_family_match_days: Math.max(0, Number(opsAlert.selection_segment_family_match_days || 0)),
       selection_query_strategy_applied_24h: Math.max(0, Number(opsAlert.selection_query_strategy_applied_24h || 0)),
       selection_query_strategy_applied_7d: Math.max(0, Number(opsAlert.selection_query_strategy_applied_7d || 0)),
       selection_latest_query_strategy_reason: String(opsAlert.selection_latest_query_strategy_reason || ""),
@@ -342,6 +359,8 @@ function buildLiveOpsCampaignKpiSummary(snapshot) {
       latest_segment_strategy_family: String(selectionTrend.latest_segment_strategy_family || ""),
       latest_prefilter_reason: String(selectionTrend.latest_prefilter_reason || ""),
       daily_breakdown: normalizeSelectionTrendDailyRows(selectionTrend.daily_breakdown),
+      query_strategy_family_daily_breakdown: normalizeSelectionFamilyDailyRows(selectionTrend.query_strategy_family_daily_breakdown),
+      segment_strategy_family_daily_breakdown: normalizeSelectionFamilyDailyRows(selectionTrend.segment_strategy_family_daily_breakdown),
       query_strategy_reason_breakdown: normalizeBreakdownRows(selectionTrend.query_strategy_reason_breakdown),
       query_strategy_family_breakdown: normalizeBreakdownRows(selectionTrend.query_strategy_family_breakdown),
       segment_strategy_reason_breakdown: normalizeBreakdownRows(selectionTrend.segment_strategy_reason_breakdown),
@@ -492,8 +511,11 @@ async function getLiveOpsCampaignKpiSummary(service, logger) {
         selection_family_escalation_dimension: "",
         selection_family_escalation_bucket: "",
         selection_family_escalation_score: 0,
+        selection_family_daily_weight: 0,
         selection_query_family_weight: 0,
         selection_segment_family_weight: 0,
+        selection_query_family_match_days: 0,
+        selection_segment_family_match_days: 0,
         selection_query_strategy_applied_24h: 0,
         selection_query_strategy_applied_7d: 0,
         selection_latest_query_strategy_reason: "",
@@ -555,6 +577,8 @@ async function getLiveOpsCampaignKpiSummary(service, logger) {
         latest_segment_strategy_family: "",
         latest_prefilter_reason: "",
         daily_breakdown: [],
+        query_strategy_family_daily_breakdown: [],
+        segment_strategy_family_daily_breakdown: [],
         query_strategy_reason_breakdown: [],
         query_strategy_family_breakdown: [],
         segment_strategy_reason_breakdown: [],

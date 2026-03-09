@@ -1740,6 +1740,17 @@ function normalizeSelectionTrendDailyRows(rows) {
     .slice(0, 7);
 }
 
+function normalizeSelectionFamilyDailyRows(rows) {
+  return (Array.isArray(rows) ? rows : [])
+    .map((row) => ({
+      day: String(row?.day || "").trim(),
+      bucket_key: String(row?.bucket_key || "unknown").trim() || "unknown",
+      item_count: Math.max(0, Number(row?.item_count || 0))
+    }))
+    .filter((row) => row.day)
+    .slice(0, 7);
+}
+
 function buildFamilyBreakdown(rows, resolver) {
   const counts = new Map();
   for (const row of Array.isArray(rows) ? rows : []) {
@@ -1758,6 +1769,38 @@ function buildFamilyBreakdown(rows, resolver) {
       return String(left.bucket_key).localeCompare(String(right.bucket_key));
     })
     .slice(0, 8);
+}
+
+function buildFamilyDailyBreakdown(rows, resolver) {
+  const countsByDay = new Map();
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const dayKey = String(row?.day || "").trim();
+    const familyKey = String(resolver?.(row?.bucket_key) || "").trim().toLowerCase();
+    if (!dayKey || !familyKey) {
+      continue;
+    }
+    const itemCount = Math.max(0, Number(row?.item_count || 0));
+    if (!countsByDay.has(dayKey)) {
+      countsByDay.set(dayKey, new Map());
+    }
+    const dayCounts = countsByDay.get(dayKey);
+    dayCounts.set(familyKey, (dayCounts.get(familyKey) || 0) + itemCount);
+  }
+  return Array.from(countsByDay.entries())
+    .map(([day, dayCounts]) => {
+      const topRow = Array.from(dayCounts.entries())
+        .map(([bucket_key, item_count]) => ({ bucket_key, item_count }))
+        .sort((left, right) => {
+          if (right.item_count !== left.item_count) {
+            return right.item_count - left.item_count;
+          }
+          return String(left.bucket_key).localeCompare(String(right.bucket_key));
+        })[0];
+      return topRow ? { day, bucket_key: topRow.bucket_key, item_count: topRow.item_count } : null;
+    })
+    .filter(Boolean)
+    .sort((left, right) => String(right.day).localeCompare(String(left.day)))
+    .slice(0, 7);
 }
 
 function normalizeSelectionTrendSummary(summary) {
@@ -1785,6 +1828,8 @@ function normalizeSelectionTrendSummary(summary) {
     latest_segment_strategy_family: String(safeSummary.latest_segment_strategy_family || "").trim(),
     latest_prefilter_reason: String(safeSummary.latest_prefilter_reason || "").trim(),
     daily_breakdown: normalizeSelectionTrendDailyRows(safeSummary.daily_breakdown),
+    query_strategy_family_daily_breakdown: normalizeSelectionFamilyDailyRows(safeSummary.query_strategy_family_daily_breakdown),
+    segment_strategy_family_daily_breakdown: normalizeSelectionFamilyDailyRows(safeSummary.segment_strategy_family_daily_breakdown),
     query_strategy_reason_breakdown: normalizeBreakdownRows(safeSummary.query_strategy_reason_breakdown),
     query_strategy_family_breakdown: normalizeBreakdownRows(safeSummary.query_strategy_family_breakdown),
     segment_strategy_reason_breakdown: normalizeBreakdownRows(safeSummary.segment_strategy_reason_breakdown),
@@ -1796,7 +1841,16 @@ function normalizeSelectionTrendSummary(summary) {
 async function loadSelectionTrendSummary(client, campaignKey) {
   const target = `config:${LIVE_OPS_CAMPAIGN_CONFIG_KEY}`;
   const key = String(campaignKey || "");
-  const [totalsResult, latestResult, dailyResult, prefilterReasonResult, queryReasonResult, segmentReasonResult] = await Promise.all([
+  const [
+    totalsResult,
+    latestResult,
+    dailyResult,
+    prefilterReasonResult,
+    queryReasonResult,
+    segmentReasonResult,
+    queryReasonDailyResult,
+    segmentReasonDailyResult
+  ] = await Promise.all([
     client.query(
       `SELECT
          COUNT(*) FILTER (WHERE created_at >= now() - interval '24 hours')::bigint AS dispatches_24h,
@@ -2011,6 +2065,36 @@ async function loadSelectionTrendSummary(client, campaignKey) {
        ORDER BY item_count DESC, bucket_key ASC
        LIMIT 8;`,
       [target, key]
+    ),
+    client.query(
+      `SELECT
+         to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS day,
+         COALESCE(NULLIF(payload_json#>>'{targeting_selection_summary,query_strategy_summary,reason}', ''), 'unknown') AS bucket_key,
+         COUNT(*)::bigint AS item_count
+       FROM admin_audit
+       WHERE target = $1
+         AND action = 'live_ops_campaign_dispatch'
+         AND COALESCE(payload_json->>'campaign_key', '') = $2
+         AND COALESCE(payload_json->>'dispatch_source', 'manual') = 'scheduler'
+         AND created_at >= now() - interval '7 days'
+       GROUP BY 1, 2
+       ORDER BY day DESC, item_count DESC, bucket_key ASC;`,
+      [target, key]
+    ),
+    client.query(
+      `SELECT
+         to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS day,
+         COALESCE(NULLIF(payload_json#>>'{targeting_selection_summary,query_strategy_summary,segment_strategy_reason}', ''), 'unknown') AS bucket_key,
+         COUNT(*)::bigint AS item_count
+       FROM admin_audit
+       WHERE target = $1
+         AND action = 'live_ops_campaign_dispatch'
+         AND COALESCE(payload_json->>'campaign_key', '') = $2
+         AND COALESCE(payload_json->>'dispatch_source', 'manual') = 'scheduler'
+         AND created_at >= now() - interval '7 days'
+       GROUP BY 1, 2
+       ORDER BY day DESC, item_count DESC, bucket_key ASC;`,
+      [target, key]
     )
   ]);
 
@@ -2060,6 +2144,8 @@ async function loadSelectionTrendSummary(client, campaignKey) {
     latest_segment_strategy_family: resolveLiveOpsSegmentStrategyFamily(latestQueryStrategy.segment_strategy_reason),
     latest_prefilter_reason: String(latestPrefilter.reason || ""),
     daily_breakdown: normalizeSelectionTrendDailyRows(dailyResult.rows),
+    query_strategy_family_daily_breakdown: buildFamilyDailyBreakdown(queryReasonDailyResult.rows, resolveLiveOpsQueryStrategyFamily),
+    segment_strategy_family_daily_breakdown: buildFamilyDailyBreakdown(segmentReasonDailyResult.rows, resolveLiveOpsSegmentStrategyFamily),
     query_strategy_reason_breakdown: normalizeBreakdownRows(queryReasonResult.rows),
     query_strategy_family_breakdown: buildFamilyBreakdown(queryReasonResult.rows, resolveLiveOpsQueryStrategyFamily),
     segment_strategy_reason_breakdown: normalizeBreakdownRows(segmentReasonResult.rows),
@@ -2483,8 +2569,11 @@ function buildEmptyLiveOpsOpsAlertSummary() {
     selection_family_escalation_dimension: "",
     selection_family_escalation_bucket: "",
     selection_family_escalation_score: 0,
+    selection_family_daily_weight: 0,
     selection_query_family_weight: 0,
     selection_segment_family_weight: 0,
+    selection_query_family_match_days: 0,
+    selection_segment_family_match_days: 0,
     selection_query_strategy_applied_24h: 0,
     selection_query_strategy_applied_7d: 0,
     selection_latest_query_strategy_reason: "",
@@ -2552,6 +2641,8 @@ function buildEmptyLiveOpsSelectionTrendSummary() {
     latest_segment_strategy_family: "",
     latest_prefilter_reason: "",
     daily_breakdown: [],
+    query_strategy_family_daily_breakdown: [],
+    segment_strategy_family_daily_breakdown: [],
     query_strategy_reason_breakdown: [],
     query_strategy_family_breakdown: [],
     segment_strategy_reason_breakdown: [],
@@ -2705,8 +2796,11 @@ function readLatestOpsAlertArtifactSummaryFromDisk(now, repoRootDir) {
       selection_family_escalation_dimension: String(evaluation.selection_family_escalation_dimension || "").trim(),
       selection_family_escalation_bucket: String(evaluation.selection_family_escalation_bucket || "").trim(),
       selection_family_escalation_score: Math.max(0, Number(evaluation.selection_family_escalation_score || 0)),
+      selection_family_daily_weight: Math.max(0, Number(evaluation.selection_family_daily_weight || 0)),
       selection_query_family_weight: Math.max(0, Number(evaluation.selection_query_family_weight || 0)),
       selection_segment_family_weight: Math.max(0, Number(evaluation.selection_segment_family_weight || 0)),
+      selection_query_family_match_days: Math.max(0, Number(evaluation.selection_query_family_match_days || 0)),
+      selection_segment_family_match_days: Math.max(0, Number(evaluation.selection_segment_family_match_days || 0)),
       selection_query_strategy_applied_24h: Math.max(0, Number(evaluation.selection_query_strategy_applied_24h || 0)),
       selection_query_strategy_applied_7d: Math.max(0, Number(evaluation.selection_query_strategy_applied_7d || 0)),
       selection_latest_query_strategy_reason: String(evaluation.selection_latest_query_strategy_reason || "").trim(),

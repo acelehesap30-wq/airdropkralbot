@@ -203,6 +203,12 @@ const LiveOpsCampaignSelectionDailyTrendPointSchema = z.object({
   selected_focus_matches: z.number().int().nonnegative().default(0)
 });
 
+const LiveOpsCampaignSelectionFamilyDailyTrendPointSchema = z.object({
+  day: z.string().default(""),
+  bucket_key: z.string().default("unknown"),
+  item_count: z.number().int().nonnegative().default(0)
+});
+
 const LiveOpsCampaignSkipDailyTrendPointSchema = z.object({
   day: z.string().default(""),
   skip_count: z.number().int().nonnegative().default(0)
@@ -282,8 +288,11 @@ const LiveOpsCampaignOpsAlertSummarySchema = z.object({
   selection_family_escalation_dimension: z.string().default(""),
   selection_family_escalation_bucket: z.string().default(""),
   selection_family_escalation_score: z.number().int().nonnegative().default(0),
+  selection_family_daily_weight: z.number().int().nonnegative().default(0),
   selection_query_family_weight: z.number().int().nonnegative().default(0),
   selection_segment_family_weight: z.number().int().nonnegative().default(0),
+  selection_query_family_match_days: z.number().int().nonnegative().default(0),
+  selection_segment_family_match_days: z.number().int().nonnegative().default(0),
   selection_query_strategy_applied_24h: z.number().int().nonnegative().default(0),
   selection_query_strategy_applied_7d: z.number().int().nonnegative().default(0),
   selection_latest_query_strategy_reason: z.string().default(""),
@@ -432,6 +441,8 @@ const LiveOpsCampaignSelectionTrendSummarySchema = z.object({
   latest_segment_strategy_family: z.string().default(""),
   latest_prefilter_reason: z.string().default(""),
   daily_breakdown: z.array(LiveOpsCampaignSelectionDailyTrendPointSchema).default([]),
+  query_strategy_family_daily_breakdown: z.array(LiveOpsCampaignSelectionFamilyDailyTrendPointSchema).default([]),
+  segment_strategy_family_daily_breakdown: z.array(LiveOpsCampaignSelectionFamilyDailyTrendPointSchema).default([]),
   query_strategy_reason_breakdown: z.array(KpiLiveOpsCampaignBreakdownSchema).default([]),
   query_strategy_family_breakdown: z.array(KpiLiveOpsCampaignBreakdownSchema).default([]),
   segment_strategy_reason_breakdown: z.array(KpiLiveOpsCampaignBreakdownSchema).default([]),

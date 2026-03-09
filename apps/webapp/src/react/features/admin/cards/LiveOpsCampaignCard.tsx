@@ -233,6 +233,27 @@ function SelectionDailyTrendList(props: { title: string; rows: Array<Record<stri
   );
 }
 
+function SelectionFamilyDailyTrendList(props: { title: string; rows: Array<Record<string, unknown>> }) {
+  if (!props.rows.length) {
+    return <p className="akrMuted">{props.title}: -</p>;
+  }
+  return (
+    <section className="akrMiniPanel">
+      <h4>{props.title}</h4>
+      <ul className="akrList">
+        {props.rows.map((row, index) => (
+          <li key={`${asText(row.day, "day")}_${asText(row.bucket_key, "bucket")}_${index}`}>
+            <span>{asText(row.day)}</span>
+            <strong>
+              {asText(row.bucket_key, "-")} / {asCount(row.item_count)}
+            </strong>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
   const snapshot = asRecord(props.liveOpsCampaignData);
   const approvalSummary = asRecord(snapshot.approval_summary);
@@ -277,6 +298,8 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
   const selectionTrendQueryFamilies = asArray(selectionTrendSummary.query_strategy_family_breakdown);
   const selectionTrendSegmentReasons = asArray(selectionTrendSummary.segment_strategy_reason_breakdown);
   const selectionTrendSegmentFamilies = asArray(selectionTrendSummary.segment_strategy_family_breakdown);
+  const selectionTrendQueryFamilyDaily = asArray(selectionTrendSummary.query_strategy_family_daily_breakdown);
+  const selectionTrendSegmentFamilyDaily = asArray(selectionTrendSummary.segment_strategy_family_daily_breakdown);
   const selectionTrendPrefilterReasons = asArray(selectionTrendSummary.prefilter_reason_breakdown);
   const sceneAlarmReasons = Array.isArray(sceneRuntimeSummary.alarm_reasons_7d)
     ? sceneRuntimeSummary.alarm_reasons_7d.map((row) => String(row || "").trim()).filter(Boolean)
@@ -761,6 +784,14 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
           </p>
         </div>
         <SelectionDailyTrendList title={t(props.lang, "admin_live_ops_selection_trend_daily_title")} rows={selectionTrendDailyBreakdown} />
+        <SelectionFamilyDailyTrendList
+          title={t(props.lang, "admin_live_ops_selection_trend_query_family_daily_title")}
+          rows={selectionTrendQueryFamilyDaily}
+        />
+        <SelectionFamilyDailyTrendList
+          title={t(props.lang, "admin_live_ops_selection_trend_segment_family_daily_title")}
+          rows={selectionTrendSegmentFamilyDaily}
+        />
         <BreakdownList title={t(props.lang, "admin_live_ops_selection_trend_query_reason_title")} rows={selectionTrendQueryReasons} />
         <BreakdownList title={t(props.lang, "admin_live_ops_selection_trend_query_family_title")} rows={selectionTrendQueryFamilies} />
         <BreakdownList title={t(props.lang, "admin_live_ops_selection_trend_segment_reason_title")} rows={selectionTrendSegmentReasons} />
@@ -862,7 +893,9 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
           {t(props.lang, "admin_live_ops_ops_alert_selection_family_pressure_label")}: {asText(opsAlertSummary.selection_family_escalation_band, "-")} /{" "}
           {asText(opsAlertSummary.selection_family_escalation_reason, "-")} / {asText(opsAlertSummary.selection_family_escalation_dimension, "-")} /{" "}
           {asText(opsAlertSummary.selection_family_escalation_bucket, "-")} | {t(props.lang, "admin_live_ops_ops_alert_selection_family_score_label")}:{" "}
-          {asCount(opsAlertSummary.selection_family_escalation_score)} | Q {asCount(opsAlertSummary.selection_query_family_weight)} / S{" "}
+          {asCount(opsAlertSummary.selection_family_escalation_score)} | {t(props.lang, "admin_live_ops_ops_alert_selection_family_daily_label")}:{" "}
+          {asCount(opsAlertSummary.selection_family_daily_weight)} / {asCount(opsAlertSummary.selection_query_family_match_days)} /{" "}
+          {asCount(opsAlertSummary.selection_segment_family_match_days)} | Q {asCount(opsAlertSummary.selection_query_family_weight)} / S{" "}
           {asCount(opsAlertSummary.selection_segment_family_weight)}
         </p>
         <div className="akrSplit">
