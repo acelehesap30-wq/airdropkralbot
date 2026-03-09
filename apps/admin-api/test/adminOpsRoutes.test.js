@@ -207,6 +207,10 @@ function buildLiveOpsSnapshot() {
       should_notify: false,
       notification_reason: "scene_runtime_watch_capped_repeated",
       fingerprint: "watch|scene_runtime_watch_capped_repeated|2026-03-08T04:05:00.000Z",
+      selection_latest_query_strategy_family: "locale_and_segment",
+      selection_latest_segment_strategy_family: "active_window",
+      selection_top_query_strategy_family: "locale_and_segment",
+      selection_top_segment_strategy_family: "active_window",
       telegram_sent: false,
       telegram_reason: "watch_band_no_notify",
       telegram_sent_at: null
@@ -370,14 +374,18 @@ function buildLiveOpsSnapshot() {
       latest_focus_dimension: "locale",
       latest_focus_bucket: "tr",
       latest_query_strategy_reason: "query_strategy_locale_and_segment",
+      latest_query_strategy_family: "locale_and_segment",
       latest_segment_strategy_reason: "segment_query_active_window_tight",
+      latest_segment_strategy_family: "active_window",
       latest_prefilter_reason: "prefilter_applied",
       daily_breakdown: [
         { day: "2026-03-08", dispatch_count: 2, query_strategy_applied_count: 2, prefilter_applied_count: 2, prefilter_delta_sum: 7, prioritized_focus_matches: 5, selected_focus_matches: 0 },
         { day: "2026-03-07", dispatch_count: 3, query_strategy_applied_count: 3, prefilter_applied_count: 2, prefilter_delta_sum: 8, prioritized_focus_matches: 8, selected_focus_matches: 1 }
       ],
       query_strategy_reason_breakdown: [{ bucket_key: "query_strategy_locale_and_segment", item_count: 5 }],
+      query_strategy_family_breakdown: [{ bucket_key: "locale_and_segment", item_count: 5 }],
       segment_strategy_reason_breakdown: [{ bucket_key: "segment_query_active_window_tight", item_count: 4 }],
+      segment_strategy_family_breakdown: [{ bucket_key: "active_window", item_count: 4 }],
       prefilter_reason_breakdown: [{ bucket_key: "prefilter_applied", item_count: 4 }]
     },
     latest_dispatch: {
@@ -479,6 +487,8 @@ test("v2 admin ops kpi latest includes live ops campaign breakdowns", async () =
   assert.equal(body.data.live_ops_campaign.scheduler_skip.scene_watch_capped_7d, 4);
   assert.equal(body.data.live_ops_campaign.ops_alert.alarm_state, "watch");
   assert.equal(body.data.live_ops_campaign.ops_alert.telegram_sent, false);
+  assert.equal(body.data.live_ops_campaign.ops_alert.selection_latest_query_strategy_family, "locale_and_segment");
+  assert.equal(body.data.live_ops_campaign.ops_alert.selection_top_segment_strategy_family, "active_window");
   assert.equal(body.data.live_ops_campaign.ops_alert_trend.raised_7d, 4);
   assert.equal(body.data.live_ops_campaign.ops_alert_trend.experiment_key, "webapp_react_v1");
   assert.equal(body.data.live_ops_campaign.ops_alert_trend.effective_cap_delta_24h, 28);
@@ -598,7 +608,11 @@ test("v2 admin ops kpi run includes live ops campaign summary", async () => {
   assert.equal(body.data.live_ops_campaign.selection_summary.query_strategy_summary.reason, "query_strategy_locale_and_segment");
   assert.equal(body.data.live_ops_campaign.selection_summary.query_strategy_summary.segment_strategy_reason, "segment_query_active_window_tight");
   assert.equal(body.data.live_ops_campaign.selection_trend.latest_query_strategy_reason, "query_strategy_locale_and_segment");
+  assert.equal(body.data.live_ops_campaign.selection_trend.latest_query_strategy_family, "locale_and_segment");
   assert.equal(body.data.live_ops_campaign.selection_trend.latest_segment_strategy_reason, "segment_query_active_window_tight");
+  assert.equal(body.data.live_ops_campaign.selection_trend.latest_segment_strategy_family, "active_window");
+  assert.equal(body.data.live_ops_campaign.selection_trend.query_strategy_family_breakdown[0].bucket_key, "locale_and_segment");
+  assert.equal(body.data.live_ops_campaign.selection_trend.segment_strategy_family_breakdown[0].bucket_key, "active_window");
   assert.equal(body.data.live_ops_campaign.selection_summary.prefilter_summary.reason, "prefilter_applied");
   assert.equal(body.data.live_ops_campaign.selection_trend.latest_prefilter_reason, "prefilter_applied");
   assert.equal(body.data.live_ops_campaign.selection_trend.latest_focus_bucket, "tr");

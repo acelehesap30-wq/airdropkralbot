@@ -101,12 +101,20 @@ test("evaluateOpsAlert escalates watch state when recipient cap pressure is aler
         query_strategy_applied_24h: 1,
         query_strategy_applied_7d: 4,
         latest_query_strategy_reason: "query_strategy_locale_and_segment",
+        latest_query_strategy_family: "locale_and_segment",
         latest_segment_strategy_reason: "segment_query_active_window_tight",
+        latest_segment_strategy_family: "active_window",
         query_strategy_reason_breakdown: [
           { bucket_key: "query_strategy_locale_and_segment", item_count: 4 }
         ],
+        query_strategy_family_breakdown: [
+          { bucket_key: "locale_and_segment", item_count: 4 }
+        ],
         segment_strategy_reason_breakdown: [
           { bucket_key: "segment_query_active_window_tight", item_count: 3 }
+        ],
+        segment_strategy_family_breakdown: [
+          { bucket_key: "active_window", item_count: 3 }
         ]
       }
     },
@@ -135,10 +143,14 @@ test("evaluateOpsAlert escalates watch state when recipient cap pressure is aler
   assert.equal(result.selection_query_strategy_applied_24h, 1);
   assert.equal(result.selection_query_strategy_applied_7d, 4);
   assert.equal(result.selection_latest_query_strategy_reason, "query_strategy_locale_and_segment");
+  assert.equal(result.selection_latest_query_strategy_family, "locale_and_segment");
   assert.equal(result.selection_latest_segment_strategy_reason, "segment_query_active_window_tight");
+  assert.equal(result.selection_latest_segment_strategy_family, "active_window");
   assert.equal(result.selection_top_query_strategy_reason, "query_strategy_locale_and_segment");
+  assert.equal(result.selection_top_query_strategy_family, "locale_and_segment");
   assert.equal(result.selection_top_query_strategy_reason_count, 4);
   assert.equal(result.selection_top_segment_strategy_reason, "segment_query_active_window_tight");
+  assert.equal(result.selection_top_segment_strategy_family, "active_window");
   assert.equal(result.selection_top_segment_strategy_reason_count, 3);
 });
 

@@ -501,18 +501,93 @@ function buildLiveOpsCandidatePrefilterSummary(summary = {}) {
   };
 }
 
+function resolveLiveOpsQueryStrategyFamily(reason) {
+  const safeReason = String(reason || "").trim().toLowerCase();
+  if (!safeReason) {
+    return "";
+  }
+  if (safeReason === "query_strategy_locale_and_segment") {
+    return "locale_and_segment";
+  }
+  if (safeReason.startsWith("query_strategy_locale_")) {
+    return "locale";
+  }
+  if (safeReason.startsWith("query_strategy_prefilter_")) {
+    return "prefilter_only";
+  }
+  if (safeReason.startsWith("segment_query_")) {
+    return "segment_only";
+  }
+  if (safeReason === "query_strategy_not_applied") {
+    return "not_applied";
+  }
+  return "other";
+}
+
+function resolveLiveOpsLocaleStrategyFamily(reason) {
+  const safeReason = String(reason || "").trim().toLowerCase();
+  if (!safeReason) {
+    return "";
+  }
+  if (safeReason === "query_strategy_locale_exclusion") {
+    return "locale_exclusion";
+  }
+  if (safeReason === "query_strategy_locale_conflict") {
+    return "locale_conflict";
+  }
+  if (safeReason === "query_strategy_prefilter_only") {
+    return "prefilter_only";
+  }
+  if (safeReason === "prefilter_ready") {
+    return "prefilter_ready";
+  }
+  if (safeReason === "query_strategy_not_applied") {
+    return "not_applied";
+  }
+  return "other";
+}
+
+function resolveLiveOpsSegmentStrategyFamily(reason) {
+  const safeReason = String(reason || "").trim().toLowerCase();
+  if (!safeReason) {
+    return "";
+  }
+  if (safeReason.includes("inactive_window")) {
+    return "inactive_window";
+  }
+  if (safeReason.includes("active_window")) {
+    return "active_window";
+  }
+  if (safeReason.includes("offer_window")) {
+    return "offer_window";
+  }
+  if (safeReason === "segment_query_not_needed") {
+    return "not_needed";
+  }
+  if (safeReason === "segment_query_segment_unsupported") {
+    return "unsupported";
+  }
+  return "other";
+}
+
 function buildLiveOpsCandidateQueryStrategySummary(summary = {}) {
+  const reason = String(summary.reason || "").trim();
+  const localeStrategyReason = String(summary.locale_strategy_reason || "").trim();
+  const segmentStrategyReason = String(summary.segment_strategy_reason || "").trim();
   return {
     applied: summary.applied === true,
-    reason: String(summary.reason || "").trim(),
+    reason,
+    strategy_family: resolveLiveOpsQueryStrategyFamily(reason),
     mode_key: String(summary.mode_key || "balanced").trim().toLowerCase() || "balanced",
     segment_key: String(summary.segment_key || "").trim().toLowerCase(),
     focus_matches_target: summary.focus_matches_target === true,
     dimension: String(summary.dimension || "").trim().toLowerCase(),
     bucket: String(summary.bucket || "").trim().toLowerCase(),
     exclude_locale_prefix: String(summary.exclude_locale_prefix || "").trim().toLowerCase(),
-    locale_strategy_reason: String(summary.locale_strategy_reason || "").trim(),
-    segment_strategy_reason: String(summary.segment_strategy_reason || "").trim(),
+    locale_strategy_reason: localeStrategyReason,
+    locale_strategy_family: resolveLiveOpsLocaleStrategyFamily(localeStrategyReason),
+    segment_strategy_reason: segmentStrategyReason,
+    segment_strategy_family: resolveLiveOpsSegmentStrategyFamily(segmentStrategyReason),
     pool_limit_multiplier: Math.max(1, Math.min(4, toPositiveInt(summary.pool_limit_multiplier, 4))),
     active_within_days_cap: Math.max(0, Math.floor(Number(summary.active_within_days_cap || 0) || 0)),
     inactive_hours_floor: Math.max(0, Math.floor(Number(summary.inactive_hours_floor || 0) || 0)),
@@ -1665,6 +1740,26 @@ function normalizeSelectionTrendDailyRows(rows) {
     .slice(0, 7);
 }
 
+function buildFamilyBreakdown(rows, resolver) {
+  const counts = new Map();
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const familyKey = String(resolver?.(row?.bucket_key) || "").trim().toLowerCase();
+    if (!familyKey) {
+      continue;
+    }
+    counts.set(familyKey, (counts.get(familyKey) || 0) + Math.max(0, Number(row?.item_count || 0)));
+  }
+  return Array.from(counts.entries())
+    .map(([bucket_key, item_count]) => ({ bucket_key, item_count }))
+    .sort((left, right) => {
+      if (right.item_count !== left.item_count) {
+        return right.item_count - left.item_count;
+      }
+      return String(left.bucket_key).localeCompare(String(right.bucket_key));
+    })
+    .slice(0, 8);
+}
+
 function normalizeSelectionTrendSummary(summary) {
   const safeSummary = summary && typeof summary === "object" && !Array.isArray(summary) ? summary : {};
   return {
@@ -1685,11 +1780,15 @@ function normalizeSelectionTrendSummary(summary) {
     latest_focus_dimension: String(safeSummary.latest_focus_dimension || "").trim(),
     latest_focus_bucket: String(safeSummary.latest_focus_bucket || "").trim(),
     latest_query_strategy_reason: String(safeSummary.latest_query_strategy_reason || "").trim(),
+    latest_query_strategy_family: String(safeSummary.latest_query_strategy_family || "").trim(),
     latest_segment_strategy_reason: String(safeSummary.latest_segment_strategy_reason || "").trim(),
+    latest_segment_strategy_family: String(safeSummary.latest_segment_strategy_family || "").trim(),
     latest_prefilter_reason: String(safeSummary.latest_prefilter_reason || "").trim(),
     daily_breakdown: normalizeSelectionTrendDailyRows(safeSummary.daily_breakdown),
     query_strategy_reason_breakdown: normalizeBreakdownRows(safeSummary.query_strategy_reason_breakdown),
+    query_strategy_family_breakdown: normalizeBreakdownRows(safeSummary.query_strategy_family_breakdown),
     segment_strategy_reason_breakdown: normalizeBreakdownRows(safeSummary.segment_strategy_reason_breakdown),
+    segment_strategy_family_breakdown: normalizeBreakdownRows(safeSummary.segment_strategy_family_breakdown),
     prefilter_reason_breakdown: normalizeBreakdownRows(safeSummary.prefilter_reason_breakdown)
   };
 }
@@ -1956,11 +2055,15 @@ async function loadSelectionTrendSummary(client, campaignKey) {
     latest_focus_dimension: String(latestSelection.focus_dimension || ""),
     latest_focus_bucket: String(latestSelection.focus_bucket || ""),
     latest_query_strategy_reason: String(latestQueryStrategy.reason || ""),
+    latest_query_strategy_family: resolveLiveOpsQueryStrategyFamily(latestQueryStrategy.reason),
     latest_segment_strategy_reason: String(latestQueryStrategy.segment_strategy_reason || ""),
+    latest_segment_strategy_family: resolveLiveOpsSegmentStrategyFamily(latestQueryStrategy.segment_strategy_reason),
     latest_prefilter_reason: String(latestPrefilter.reason || ""),
     daily_breakdown: normalizeSelectionTrendDailyRows(dailyResult.rows),
     query_strategy_reason_breakdown: normalizeBreakdownRows(queryReasonResult.rows),
+    query_strategy_family_breakdown: buildFamilyBreakdown(queryReasonResult.rows, resolveLiveOpsQueryStrategyFamily),
     segment_strategy_reason_breakdown: normalizeBreakdownRows(segmentReasonResult.rows),
+    segment_strategy_family_breakdown: buildFamilyBreakdown(segmentReasonResult.rows, resolveLiveOpsSegmentStrategyFamily),
     prefilter_reason_breakdown: normalizeBreakdownRows(prefilterReasonResult.rows)
   };
 }
@@ -2378,10 +2481,14 @@ function buildEmptyLiveOpsOpsAlertSummary() {
     selection_query_strategy_applied_24h: 0,
     selection_query_strategy_applied_7d: 0,
     selection_latest_query_strategy_reason: "",
+    selection_latest_query_strategy_family: "",
     selection_latest_segment_strategy_reason: "",
+    selection_latest_segment_strategy_family: "",
     selection_top_query_strategy_reason: "",
+    selection_top_query_strategy_family: "",
     selection_top_query_strategy_reason_count: 0,
     selection_top_segment_strategy_reason: "",
+    selection_top_segment_strategy_family: "",
     selection_top_segment_strategy_reason_count: 0,
     telegram_sent: false,
     telegram_reason: "",
@@ -2433,11 +2540,15 @@ function buildEmptyLiveOpsSelectionTrendSummary() {
     latest_focus_dimension: "",
     latest_focus_bucket: "",
     latest_query_strategy_reason: "",
+    latest_query_strategy_family: "",
     latest_segment_strategy_reason: "",
+    latest_segment_strategy_family: "",
     latest_prefilter_reason: "",
     daily_breakdown: [],
     query_strategy_reason_breakdown: [],
+    query_strategy_family_breakdown: [],
     segment_strategy_reason_breakdown: [],
+    segment_strategy_family_breakdown: [],
     prefilter_reason_breakdown: []
   };
 }
@@ -2585,10 +2696,14 @@ function readLatestOpsAlertArtifactSummaryFromDisk(now, repoRootDir) {
       selection_query_strategy_applied_24h: Math.max(0, Number(evaluation.selection_query_strategy_applied_24h || 0)),
       selection_query_strategy_applied_7d: Math.max(0, Number(evaluation.selection_query_strategy_applied_7d || 0)),
       selection_latest_query_strategy_reason: String(evaluation.selection_latest_query_strategy_reason || "").trim(),
+      selection_latest_query_strategy_family: String(evaluation.selection_latest_query_strategy_family || "").trim(),
       selection_latest_segment_strategy_reason: String(evaluation.selection_latest_segment_strategy_reason || "").trim(),
+      selection_latest_segment_strategy_family: String(evaluation.selection_latest_segment_strategy_family || "").trim(),
       selection_top_query_strategy_reason: String(evaluation.selection_top_query_strategy_reason || "").trim(),
+      selection_top_query_strategy_family: String(evaluation.selection_top_query_strategy_family || "").trim(),
       selection_top_query_strategy_reason_count: Math.max(0, Number(evaluation.selection_top_query_strategy_reason_count || 0)),
       selection_top_segment_strategy_reason: String(evaluation.selection_top_segment_strategy_reason || "").trim(),
+      selection_top_segment_strategy_family: String(evaluation.selection_top_segment_strategy_family || "").trim(),
       selection_top_segment_strategy_reason_count: Math.max(0, Number(evaluation.selection_top_segment_strategy_reason_count || 0)),
       telegram_sent: telegram.sent === true,
       telegram_reason: String(telegram.reason || "").trim(),
