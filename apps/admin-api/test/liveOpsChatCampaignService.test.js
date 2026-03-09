@@ -1439,10 +1439,158 @@ test("live ops chat campaign service applies locale-aware query strategy before 
     entry.sql.includes("NOT (lower(COALESCE(u.locale, '')) LIKE CONCAT($3, '%'))")
   );
   assert.ok(candidateQuery);
+  assert.equal(candidateQuery.params[0], 7);
   assert.equal(candidateQuery.params[2], "tr");
+  assert.equal(candidateQuery.params[6], 4);
   assert.equal(result.ok, true);
   assert.deepEqual(sentChatIds, [8203]);
   assert.equal(result.data.selection_summary.prefilter_summary.reason, "prefilter_shifted_to_query_strategy");
   assert.equal(result.data.selection_summary.prefilter_summary.candidates_before, 3);
   assert.equal(result.data.selection_summary.prefilter_summary.candidates_after, 3);
+});
+
+test("live ops chat campaign service narrows mission-idle scheduler query windows before selection", async () => {
+  const sentChatIds = [];
+  const { pool, recordedQueries } = createQueryRecorder((text) => {
+    if (text.includes("FROM config_versions") && text.includes("LIMIT 1")) {
+      return { rows: [{ version: 9, created_at: "2026-03-08T12:00:00.000Z", created_by: 7001, config_json: buildCampaign({ targeting: { segment_key: "mission_idle" } }) }] };
+    }
+    if (text.includes("COUNT(*)::int AS sent_total") && text.includes("interval '72 hours'")) {
+      return { rows: [{ sent_total: 0, sent_72h: 0, last_sent_at: null, last_segment_key: "", last_dispatch_ref: "" }] };
+    }
+    if (text.includes("event_key IN ('runtime.scene.ready', 'runtime.scene.failed')")) {
+      return {
+        rows: [
+          {
+            ready_24h: 10,
+            failed_24h: 0,
+            low_end_24h: 1,
+            avg_loaded_bundles_24h: 3.2,
+            daily_breakdown_7d: [{ day: "2026-03-08", total_count: 10, ready_count: 10, failed_count: 0, low_end_count: 1 }],
+            quality_breakdown_24h: [],
+            perf_breakdown_24h: []
+          }
+        ]
+      };
+    }
+    if (text.includes("COUNT(*) FILTER (WHERE created_at >= now() - interval '24 hours')::bigint AS raised_24h")) {
+      return {
+        rows: [
+          {
+            raised_24h: 2,
+            raised_7d: 4,
+            telegram_sent_24h: 1,
+            telegram_sent_7d: 2,
+            effective_cap_delta_24h: 6,
+            effective_cap_delta_7d: 12,
+            max_effective_cap_delta_7d: 6
+          }
+        ]
+      };
+    }
+    if (text.includes("FROM admin_audit") && text.includes("ORDER BY created_at DESC") && text.includes("live_ops_campaign_ops_alert")) {
+      return {
+        rows: [
+          {
+            created_at: "2026-03-08T12:20:00.000Z",
+            payload_json: {
+              alarm_state: "alert",
+              notification_reason: "alert_state",
+              telegram_sent: true,
+              telegram_sent_at: "2026-03-08T12:20:00.000Z",
+              effective_cap_delta: 6
+            }
+          }
+        ]
+      };
+    }
+    if (text.includes("payload_json->>'notification_reason'")) {
+      return { rows: [{ bucket_key: "alert_state", item_count: 4 }] };
+    }
+    if (text.includes("to_char(date_trunc('day', created_at), 'YYYY-MM-DD')")) {
+      return {
+        rows: [{ day: "2026-03-08", alert_count: 4, telegram_sent_count: 1, effective_cap_delta_sum: 6, effective_cap_delta_max: 6 }]
+      };
+    }
+    if (text.includes("payload_json->>'locale_bucket'")) {
+      return { rows: [{ bucket_key: "tr", item_count: 7 }, { bucket_key: "en", item_count: 1 }] };
+    }
+    if (text.includes("payload_json->>'segment_key'")) {
+      return { rows: [{ bucket_key: "mission_idle", item_count: 4 }] };
+    }
+    if (text.includes("payload_json->>'surface_bucket'")) {
+      return { rows: [{ bucket_key: "missions_panel", item_count: 4 }] };
+    }
+    if (text.includes("payload_json->>'variant_bucket'")) {
+      return { rows: [{ bucket_key: "treatment", item_count: 6 }, { bucket_key: "control", item_count: 2 }] };
+    }
+    if (text.includes("payload_json->>'cohort_bucket'")) {
+      return { rows: [{ bucket_key: "17", item_count: 5 }, { bucket_key: "42", item_count: 1 }] };
+    }
+    if (text.includes("WITH mission_windows AS")) {
+      return {
+        rows: [
+          { user_id: 31, telegram_id: 8301, locale: "en", last_seen_at: "2026-03-08T10:00:00.000Z", public_name: "m1", prefs_json: {}, latest_offer_id: 501, active_offer_count: 2, latest_offer_created_at: "2026-03-08T09:00:00.000Z" },
+          { user_id: 32, telegram_id: 8302, locale: "en", last_seen_at: "2026-03-08T10:00:00.000Z", public_name: "m2", prefs_json: {}, latest_offer_id: 502, active_offer_count: 2, latest_offer_created_at: "2026-03-08T08:00:00.000Z" },
+          { user_id: 33, telegram_id: 8303, locale: "en", last_seen_at: "2026-03-08T10:00:00.000Z", public_name: "m3", prefs_json: {}, latest_offer_id: 503, active_offer_count: 1, latest_offer_created_at: "2026-03-08T07:00:00.000Z" }
+        ]
+      };
+    }
+    if (text.includes("FROM v5_webapp_experiment_assignments")) {
+      return {
+        rows: [
+          { uid: 31, variant_key: "control", cohort_bucket: 42 },
+          { uid: 32, variant_key: "control", cohort_bucket: 42 },
+          { uid: 33, variant_key: "control", cohort_bucket: 42 }
+        ]
+      };
+    }
+    if (text.includes("INSERT INTO behavior_events") || text.includes("INSERT INTO admin_audit")) {
+      return { rows: [] };
+    }
+    return { rows: [] };
+  });
+
+  const service = createLiveOpsChatCampaignService({
+    pool,
+    fetchImpl: async (_url, options) => {
+      const payload = JSON.parse(String(options.body || "{}"));
+      sentChatIds.push(Number(payload.chat_id || 0));
+      return { ok: true };
+    },
+    botToken: "bot_token",
+    botUsername: "airdropkral_2026_bot",
+    webappPublicUrl: "https://example.com/app",
+    webappHmacSecret: "secret",
+    resolveWebappVersion: async () => ({ version: "abc123" }),
+    nowFactory: () => new Date("2026-03-08T12:30:00.000Z"),
+    logger: () => {}
+  });
+
+  const result = await service.dispatchCampaign({
+    adminId: 7010,
+    dryRun: false,
+    reason: "scheduled_window_dispatch",
+    dispatchSource: "scheduler",
+    campaign: buildCampaign({
+      targeting: {
+        segment_key: "mission_idle",
+        max_recipients: 2
+      },
+      surfaces: [{ slot_key: "mission_lane", surface_key: "missions_panel" }]
+    })
+  });
+
+  const candidateQuery = recordedQueries.find((entry) => entry.sql.includes("WITH mission_windows AS"));
+  assert.ok(candidateQuery);
+  assert.match(candidateQuery.sql, /mw\.latest_offer_created_at >= now\(\) - make_interval\(days => \$4::int\)/);
+  assert.match(candidateQuery.sql, /be\.event_type = \$5/);
+  assert.match(candidateQuery.sql, /LIMIT \$8;/);
+  assert.equal(candidateQuery.params[0], 7);
+  assert.equal(candidateQuery.params[2], "tr");
+  assert.equal(candidateQuery.params[3], 3);
+  assert.equal(candidateQuery.params[7], 4);
+  assert.equal(result.ok, true);
+  assert.deepEqual(sentChatIds, [8301]);
+  assert.equal(result.data.selection_summary.prefilter_summary.reason, "prefilter_shifted_to_query_strategy");
 });

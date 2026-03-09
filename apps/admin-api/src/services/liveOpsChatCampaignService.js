@@ -219,8 +219,12 @@ function buildPersistedCampaign(currentCampaign, nextCampaignInput) {
 async function queryInactiveReturningCandidates(client, campaign, queryStrategy = {}) {
   const targeting = campaign.targeting || {};
   const limit = Math.max(1, toPositiveInt(targeting.max_recipients, 50));
-  const inactiveHours = Math.max(24, toPositiveInt(targeting.inactive_hours, 72));
-  const maxAgeDays = Math.max(3, toPositiveInt(targeting.max_age_days, 30));
+  const poolLimitMultiplier = Math.max(1, Math.min(4, toPositiveInt(queryStrategy?.pool_limit_multiplier, 4)));
+  const inactiveHoursBase = Math.max(24, toPositiveInt(targeting.inactive_hours, 72));
+  const inactiveHours = Math.max(inactiveHoursBase, Math.max(0, Number(queryStrategy?.inactive_hours_floor || 0) || 0));
+  const maxAgeDaysBase = Math.max(3, toPositiveInt(targeting.max_age_days, 30));
+  const maxAgeDaysCap = Math.max(0, Number(queryStrategy?.max_age_days_cap || 0) || 0);
+  const maxAgeDays = maxAgeDaysCap > 0 ? Math.max(3, Math.min(maxAgeDaysBase, maxAgeDaysCap)) : maxAgeDaysBase;
   const localeFilter = String(targeting.locale_filter || "").trim().toLowerCase();
   const excludeLocalePrefix = String(queryStrategy?.exclude_locale_prefix || "").trim().toLowerCase();
   const result = await client.query(
@@ -250,7 +254,7 @@ async function queryInactiveReturningCandidates(client, campaign, queryStrategy 
        )
      ORDER BY u.last_seen_at ASC
      LIMIT $8;`,
-    [inactiveHours, maxAgeDays, localeFilter, excludeLocalePrefix, LIVE_OPS_CAMPAIGN_EVENT_TYPE, campaign.campaign_key, campaign.targeting.dedupe_hours, limit * 4]
+    [inactiveHours, maxAgeDays, localeFilter, excludeLocalePrefix, LIVE_OPS_CAMPAIGN_EVENT_TYPE, campaign.campaign_key, campaign.targeting.dedupe_hours, limit * poolLimitMultiplier]
   );
   return result.rows;
 }
@@ -258,7 +262,10 @@ async function queryInactiveReturningCandidates(client, campaign, queryStrategy 
 async function queryWalletUnlinkedCandidates(client, campaign, queryStrategy = {}) {
   const targeting = campaign.targeting || {};
   const limit = Math.max(1, toPositiveInt(targeting.max_recipients, 50));
-  const activeWithinDays = Math.max(1, toPositiveInt(targeting.active_within_days, 14));
+  const poolLimitMultiplier = Math.max(1, Math.min(4, toPositiveInt(queryStrategy?.pool_limit_multiplier, 4)));
+  const activeWithinDaysBase = Math.max(1, toPositiveInt(targeting.active_within_days, 14));
+  const activeWithinDaysCap = Math.max(0, Number(queryStrategy?.active_within_days_cap || 0) || 0);
+  const activeWithinDays = activeWithinDaysCap > 0 ? Math.max(1, Math.min(activeWithinDaysBase, activeWithinDaysCap)) : activeWithinDaysBase;
   const localeFilter = String(targeting.locale_filter || "").trim().toLowerCase();
   const excludeLocalePrefix = String(queryStrategy?.exclude_locale_prefix || "").trim().toLowerCase();
   const result = await client.query(
@@ -293,7 +300,7 @@ async function queryWalletUnlinkedCandidates(client, campaign, queryStrategy = {
        )
      ORDER BY u.last_seen_at DESC
      LIMIT $7;`,
-    [activeWithinDays, localeFilter, excludeLocalePrefix, LIVE_OPS_CAMPAIGN_EVENT_TYPE, campaign.campaign_key, campaign.targeting.dedupe_hours, limit * 4]
+    [activeWithinDays, localeFilter, excludeLocalePrefix, LIVE_OPS_CAMPAIGN_EVENT_TYPE, campaign.campaign_key, campaign.targeting.dedupe_hours, limit * poolLimitMultiplier]
   );
   return result.rows;
 }
@@ -301,7 +308,11 @@ async function queryWalletUnlinkedCandidates(client, campaign, queryStrategy = {
 async function queryMissionIdleCandidates(client, campaign, queryStrategy = {}) {
   const targeting = campaign.targeting || {};
   const limit = Math.max(1, toPositiveInt(targeting.max_recipients, 50));
-  const activeWithinDays = Math.max(1, toPositiveInt(targeting.active_within_days, 14));
+  const poolLimitMultiplier = Math.max(1, Math.min(4, toPositiveInt(queryStrategy?.pool_limit_multiplier, 4)));
+  const activeWithinDaysBase = Math.max(1, toPositiveInt(targeting.active_within_days, 14));
+  const activeWithinDaysCap = Math.max(0, Number(queryStrategy?.active_within_days_cap || 0) || 0);
+  const activeWithinDays = activeWithinDaysCap > 0 ? Math.max(1, Math.min(activeWithinDaysBase, activeWithinDaysCap)) : activeWithinDaysBase;
+  const offerAgeDaysCap = Math.max(0, Number(queryStrategy?.offer_age_days_cap || 0) || 0);
   const localeFilter = String(targeting.locale_filter || "").trim().toLowerCase();
   const excludeLocalePrefix = String(queryStrategy?.exclude_locale_prefix || "").trim().toLowerCase();
   const result = await client.query(
@@ -335,6 +346,7 @@ async function queryMissionIdleCandidates(client, campaign, queryStrategy = {}) 
        AND u.last_seen_at >= now() - make_interval(days => $1::int)
        AND ($2 = '' OR lower(COALESCE(u.locale, '')) LIKE CONCAT($2, '%'))
        AND ($3 = '' OR NOT (lower(COALESCE(u.locale, '')) LIKE CONCAT($3, '%')))
+       AND ($4 = 0 OR mw.latest_offer_created_at >= now() - make_interval(days => $4::int))
        AND NOT EXISTS (
          SELECT 1
          FROM task_attempts a
@@ -345,13 +357,13 @@ async function queryMissionIdleCandidates(client, campaign, queryStrategy = {}) 
          SELECT 1
          FROM behavior_events be
          WHERE be.user_id = u.id
-           AND be.event_type = $4
-           AND COALESCE(be.meta_json->>'campaign_key', '') = $5
-           AND be.event_at >= now() - make_interval(hours => $6::int)
+          AND be.event_type = $5
+          AND COALESCE(be.meta_json->>'campaign_key', '') = $6
+          AND be.event_at >= now() - make_interval(hours => $7::int)
        )
      ORDER BY mw.latest_offer_created_at DESC
-     LIMIT $7;`,
-    [activeWithinDays, localeFilter, excludeLocalePrefix, LIVE_OPS_CAMPAIGN_EVENT_TYPE, campaign.campaign_key, campaign.targeting.dedupe_hours, limit * 4]
+     LIMIT $8;`,
+    [activeWithinDays, localeFilter, excludeLocalePrefix, offerAgeDaysCap, LIVE_OPS_CAMPAIGN_EVENT_TYPE, campaign.campaign_key, campaign.targeting.dedupe_hours, limit * poolLimitMultiplier]
   );
   return result.rows;
 }
@@ -359,7 +371,10 @@ async function queryMissionIdleCandidates(client, campaign, queryStrategy = {}) 
 async function queryAllActiveCandidates(client, campaign, queryStrategy = {}) {
   const targeting = campaign.targeting || {};
   const limit = Math.max(1, toPositiveInt(targeting.max_recipients, 50));
-  const activeWithinDays = Math.max(1, toPositiveInt(targeting.active_within_days, 14));
+  const poolLimitMultiplier = Math.max(1, Math.min(4, toPositiveInt(queryStrategy?.pool_limit_multiplier, 4)));
+  const activeWithinDaysBase = Math.max(1, toPositiveInt(targeting.active_within_days, 14));
+  const activeWithinDaysCap = Math.max(0, Number(queryStrategy?.active_within_days_cap || 0) || 0);
+  const activeWithinDays = activeWithinDaysCap > 0 ? Math.max(1, Math.min(activeWithinDaysBase, activeWithinDaysCap)) : activeWithinDaysBase;
   const localeFilter = String(targeting.locale_filter || "").trim().toLowerCase();
   const excludeLocalePrefix = String(queryStrategy?.exclude_locale_prefix || "").trim().toLowerCase();
   const result = await client.query(
@@ -388,7 +403,7 @@ async function queryAllActiveCandidates(client, campaign, queryStrategy = {}) {
        )
      ORDER BY u.last_seen_at DESC
      LIMIT $7;`,
-    [activeWithinDays, localeFilter, excludeLocalePrefix, LIVE_OPS_CAMPAIGN_EVENT_TYPE, campaign.campaign_key, campaign.targeting.dedupe_hours, limit * 4]
+    [activeWithinDays, localeFilter, excludeLocalePrefix, LIVE_OPS_CAMPAIGN_EVENT_TYPE, campaign.campaign_key, campaign.targeting.dedupe_hours, limit * poolLimitMultiplier]
   );
   return result.rows;
 }
@@ -486,6 +501,26 @@ function buildLiveOpsCandidatePrefilterSummary(summary = {}) {
   };
 }
 
+function buildLiveOpsCandidateQueryStrategySummary(summary = {}) {
+  return {
+    applied: summary.applied === true,
+    reason: String(summary.reason || "").trim(),
+    mode_key: String(summary.mode_key || "balanced").trim().toLowerCase() || "balanced",
+    segment_key: String(summary.segment_key || "").trim().toLowerCase(),
+    focus_matches_target: summary.focus_matches_target === true,
+    dimension: String(summary.dimension || "").trim().toLowerCase(),
+    bucket: String(summary.bucket || "").trim().toLowerCase(),
+    exclude_locale_prefix: String(summary.exclude_locale_prefix || "").trim().toLowerCase(),
+    locale_strategy_reason: String(summary.locale_strategy_reason || "").trim(),
+    segment_strategy_reason: String(summary.segment_strategy_reason || "").trim(),
+    pool_limit_multiplier: Math.max(1, Math.min(4, toPositiveInt(summary.pool_limit_multiplier, 4))),
+    active_within_days_cap: Math.max(0, Math.floor(Number(summary.active_within_days_cap || 0) || 0)),
+    inactive_hours_floor: Math.max(0, Math.floor(Number(summary.inactive_hours_floor || 0) || 0)),
+    max_age_days_cap: Math.max(0, Math.floor(Number(summary.max_age_days_cap || 0) || 0)),
+    offer_age_days_cap: Math.max(0, Math.floor(Number(summary.offer_age_days_cap || 0) || 0))
+  };
+}
+
 function buildLiveOpsCandidateSqlPrefilter(selectionProfile) {
   const profile = selectionProfile && typeof selectionProfile === "object" && !Array.isArray(selectionProfile)
     ? selectionProfile
@@ -534,40 +569,160 @@ function buildLiveOpsCandidateSqlPrefilter(selectionProfile) {
   });
 }
 
+function buildLiveOpsSegmentQueryStrategy(campaign, selectionProfile) {
+  const safeCampaign = campaign && typeof campaign === "object" && !Array.isArray(campaign) ? campaign : {};
+  const targeting = safeCampaign.targeting && typeof safeCampaign.targeting === "object" && !Array.isArray(safeCampaign.targeting)
+    ? safeCampaign.targeting
+    : {};
+  const profile = selectionProfile && typeof selectionProfile === "object" && !Array.isArray(selectionProfile)
+    ? selectionProfile
+    : {};
+  const segmentKey = String(targeting.segment_key || LIVE_OPS_SEGMENT_KEY.INACTIVE_RETURNING).trim().toLowerCase();
+  const guidanceMode = String(profile.guidance_mode || "balanced").trim().toLowerCase();
+  const guidanceState = String(profile.guidance_state || "clear").trim().toLowerCase();
+  const focusMatchesTarget = profile.focus_matches_target === true;
+  if (guidanceMode !== "protective" || guidanceState === "clear") {
+    return buildLiveOpsCandidateQueryStrategySummary({
+      applied: false,
+      mode_key: guidanceMode,
+      segment_key: segmentKey,
+      focus_matches_target: focusMatchesTarget,
+      reason: "segment_query_not_needed"
+    });
+  }
+
+  const tightWindow = guidanceState === "alert" || focusMatchesTarget;
+  const poolLimitMultiplier = tightWindow ? 2 : 3;
+
+  if (segmentKey === LIVE_OPS_SEGMENT_KEY.INACTIVE_RETURNING) {
+    return buildLiveOpsCandidateQueryStrategySummary({
+      applied: true,
+      mode_key: guidanceMode,
+      segment_key: segmentKey,
+      focus_matches_target: focusMatchesTarget,
+      reason: tightWindow ? "segment_query_inactive_window_tight" : "segment_query_inactive_window_watch",
+      pool_limit_multiplier: poolLimitMultiplier,
+      inactive_hours_floor: tightWindow ? 120 : 96,
+      max_age_days_cap: tightWindow ? 21 : 28
+    });
+  }
+  if (segmentKey === LIVE_OPS_SEGMENT_KEY.WALLET_UNLINKED) {
+    return buildLiveOpsCandidateQueryStrategySummary({
+      applied: true,
+      mode_key: guidanceMode,
+      segment_key: segmentKey,
+      focus_matches_target: focusMatchesTarget,
+      reason: tightWindow ? "segment_query_active_window_tight" : "segment_query_active_window_watch",
+      pool_limit_multiplier: poolLimitMultiplier,
+      active_within_days_cap: tightWindow ? 7 : 10
+    });
+  }
+  if (segmentKey === LIVE_OPS_SEGMENT_KEY.MISSION_IDLE) {
+    return buildLiveOpsCandidateQueryStrategySummary({
+      applied: true,
+      mode_key: guidanceMode,
+      segment_key: segmentKey,
+      focus_matches_target: focusMatchesTarget,
+      reason: tightWindow ? "segment_query_offer_window_tight" : "segment_query_offer_window_watch",
+      pool_limit_multiplier: poolLimitMultiplier,
+      active_within_days_cap: tightWindow ? 7 : 10,
+      offer_age_days_cap: tightWindow ? 3 : 5
+    });
+  }
+  if (segmentKey === LIVE_OPS_SEGMENT_KEY.ALL_ACTIVE) {
+    return buildLiveOpsCandidateQueryStrategySummary({
+      applied: true,
+      mode_key: guidanceMode,
+      segment_key: segmentKey,
+      focus_matches_target: focusMatchesTarget,
+      reason: tightWindow ? "segment_query_active_window_tight" : "segment_query_active_window_watch",
+      pool_limit_multiplier: poolLimitMultiplier,
+      active_within_days_cap: tightWindow ? 5 : 7
+    });
+  }
+
+  return buildLiveOpsCandidateQueryStrategySummary({
+    applied: false,
+    mode_key: guidanceMode,
+    segment_key: segmentKey,
+    focus_matches_target: focusMatchesTarget,
+    reason: "segment_query_segment_unsupported"
+  });
+}
+
 function buildLiveOpsCandidateQueryStrategy(campaign, selectionProfile) {
   const prefilter = buildLiveOpsCandidateSqlPrefilter(selectionProfile);
   const localeFilter = normalizeLiveOpsCandidateBucket(campaign?.targeting?.locale_filter || "", "");
-  if (prefilter.reason !== "prefilter_ready") {
-    return {
-      applied: false,
-      dimension: prefilter.dimension,
-      bucket: prefilter.bucket,
-      reason: prefilter.reason
-    };
-  }
-  if (prefilter.dimension !== "locale") {
-    return {
-      applied: false,
-      dimension: prefilter.dimension,
-      bucket: prefilter.bucket,
-      reason: "query_strategy_prefilter_only"
-    };
-  }
-  if (localeFilter && localeFilter === prefilter.bucket) {
-    return {
-      applied: false,
-      dimension: prefilter.dimension,
-      bucket: prefilter.bucket,
-      reason: "query_strategy_locale_conflict"
-    };
-  }
-  return {
-    applied: true,
-    dimension: "locale",
+  const segmentStrategy = buildLiveOpsSegmentQueryStrategy(campaign, selectionProfile);
+  let localeStrategy = buildLiveOpsCandidateQueryStrategySummary({
+    applied: false,
+    mode_key: selectionProfile?.guidance_mode,
+    segment_key: campaign?.targeting?.segment_key,
+    focus_matches_target: selectionProfile?.focus_matches_target === true,
+    dimension: prefilter.dimension,
     bucket: prefilter.bucket,
-    reason: "query_strategy_locale_exclusion",
-    exclude_locale_prefix: prefilter.bucket
-  };
+    reason: prefilter.reason
+  });
+  if (prefilter.reason === "prefilter_ready") {
+    if (prefilter.dimension !== "locale") {
+      localeStrategy = buildLiveOpsCandidateQueryStrategySummary({
+        applied: false,
+        mode_key: selectionProfile?.guidance_mode,
+        segment_key: campaign?.targeting?.segment_key,
+        focus_matches_target: selectionProfile?.focus_matches_target === true,
+        dimension: prefilter.dimension,
+        bucket: prefilter.bucket,
+        reason: "query_strategy_prefilter_only"
+      });
+    } else if (localeFilter && localeFilter === prefilter.bucket) {
+      localeStrategy = buildLiveOpsCandidateQueryStrategySummary({
+        applied: false,
+        mode_key: selectionProfile?.guidance_mode,
+        segment_key: campaign?.targeting?.segment_key,
+        focus_matches_target: selectionProfile?.focus_matches_target === true,
+        dimension: prefilter.dimension,
+        bucket: prefilter.bucket,
+        reason: "query_strategy_locale_conflict"
+      });
+    } else {
+      localeStrategy = buildLiveOpsCandidateQueryStrategySummary({
+        applied: true,
+        mode_key: selectionProfile?.guidance_mode,
+        segment_key: campaign?.targeting?.segment_key,
+        focus_matches_target: selectionProfile?.focus_matches_target === true,
+        dimension: "locale",
+        bucket: prefilter.bucket,
+        reason: "query_strategy_locale_exclusion",
+        exclude_locale_prefix: prefilter.bucket
+      });
+    }
+  }
+
+  const applied = localeStrategy.applied === true || segmentStrategy.applied === true;
+  let reason = localeStrategy.reason || segmentStrategy.reason || "query_strategy_not_applied";
+  if (localeStrategy.applied === true && segmentStrategy.applied === true) {
+    reason = "query_strategy_locale_and_segment";
+  } else if (segmentStrategy.applied === true) {
+    reason = segmentStrategy.reason;
+  }
+
+  return buildLiveOpsCandidateQueryStrategySummary({
+    applied,
+    reason,
+    mode_key: selectionProfile?.guidance_mode,
+    segment_key: campaign?.targeting?.segment_key,
+    focus_matches_target: selectionProfile?.focus_matches_target === true,
+    dimension: localeStrategy.dimension,
+    bucket: localeStrategy.bucket,
+    exclude_locale_prefix: localeStrategy.exclude_locale_prefix,
+    locale_strategy_reason: localeStrategy.reason,
+    segment_strategy_reason: segmentStrategy.reason,
+    pool_limit_multiplier: segmentStrategy.pool_limit_multiplier || 4,
+    active_within_days_cap: segmentStrategy.active_within_days_cap,
+    inactive_hours_floor: segmentStrategy.inactive_hours_floor,
+    max_age_days_cap: segmentStrategy.max_age_days_cap,
+    offer_age_days_cap: segmentStrategy.offer_age_days_cap
+  });
 }
 
 async function applyLiveOpsCandidateSqlPrefilter(client, candidates, experimentKey, selectionProfile) {
