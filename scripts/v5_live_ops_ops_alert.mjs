@@ -243,6 +243,50 @@ function resolveSelectionFamilyEscalation(selectionTrend = {}, effectiveCapDelta
   };
 }
 
+function normalizeQueryAdjustmentRows(rows) {
+  if (!Array.isArray(rows)) {
+    return [];
+  }
+  return rows
+    .filter((row) => row && typeof row === "object" && !Array.isArray(row))
+    .map((row) => {
+      const beforeValue = Math.max(0, Math.floor(Number(row.before_value || 0) || 0));
+      const afterValue = Math.max(0, Math.floor(Number(row.after_value || 0) || 0));
+      const deltaValue = Math.floor(Number(row.delta_value ?? afterValue - beforeValue) || 0);
+      return {
+        field_key: String(row.field_key || "").trim().toLowerCase(),
+        before_value: beforeValue,
+        after_value: afterValue,
+        delta_value: deltaValue,
+        direction_key: String(row.direction_key || (deltaValue === 0 ? "same" : deltaValue > 0 ? "increase" : "decrease"))
+          .trim()
+          .toLowerCase(),
+        reason_code: String(row.reason_code || "").trim()
+      };
+    })
+    .filter((row) => row.field_key);
+}
+
+function buildSelectionQueryAdjustmentSummary(rows) {
+  const normalizedRows = normalizeQueryAdjustmentRows(rows);
+  const topRow = normalizedRows.reduce((best, row) => {
+    if (!best) {
+      return row;
+    }
+    return Math.abs(row.delta_value) > Math.abs(best.delta_value) ? row : best;
+  }, null);
+  return {
+    applied: normalizedRows.length > 0,
+    count: normalizedRows.length,
+    total_delta: normalizedRows.reduce((sum, row) => sum + Math.abs(Math.floor(Number(row.delta_value || 0) || 0)), 0),
+    top_field_key: String(topRow?.field_key || "").trim(),
+    top_after_value: Math.max(0, Math.floor(Number(topRow?.after_value || 0) || 0)),
+    top_delta_value: Math.floor(Number(topRow?.delta_value || 0) || 0),
+    top_direction_key: String(topRow?.direction_key || "").trim().toLowerCase() || "same",
+    top_reason_code: String(topRow?.reason_code || "").trim()
+  };
+}
+
 function evaluateOpsAlert(dispatchArtifact, previousAlertArtifact, options = {}) {
   const schedulerSkip = normalizeOpsAlarm(dispatchArtifact?.scheduler_skip_summary || dispatchArtifact?.ops_alarm || {});
   const targetingGuidance =
@@ -263,6 +307,11 @@ function evaluateOpsAlert(dispatchArtifact, previousAlertArtifact, options = {})
     selectionSummary?.prefilter_summary && typeof selectionSummary.prefilter_summary === "object"
       ? selectionSummary.prefilter_summary
       : {};
+  const selectionQueryStrategy =
+    selectionSummary?.query_strategy_summary && typeof selectionSummary.query_strategy_summary === "object"
+      ? selectionSummary.query_strategy_summary
+      : {};
+  const selectionQueryAdjustmentSummary = buildSelectionQueryAdjustmentSummary(selectionQueryStrategy.adjustment_rows);
   const recipientCapRecommendation =
     dispatchArtifact?.scheduler_summary && typeof dispatchArtifact.scheduler_summary === "object"
       ? dispatchArtifact.scheduler_summary.recipient_cap_recommendation || {}
@@ -420,6 +469,14 @@ function evaluateOpsAlert(dispatchArtifact, previousAlertArtifact, options = {})
     selection_top_segment_strategy_reason: String(topSegmentStrategyReason.bucket_key || "").trim(),
     selection_top_segment_strategy_family: String(topSegmentStrategyFamily.bucket_key || "").trim(),
     selection_top_segment_strategy_reason_count: Math.max(0, Number(topSegmentStrategyReason.item_count || 0)),
+    selection_query_adjustment_applied: selectionQueryAdjustmentSummary.applied === true,
+    selection_query_adjustment_count: Math.max(0, Number(selectionQueryAdjustmentSummary.count || 0)),
+    selection_query_adjustment_total_delta: Math.max(0, Number(selectionQueryAdjustmentSummary.total_delta || 0)),
+    selection_query_adjustment_top_field: String(selectionQueryAdjustmentSummary.top_field_key || "").trim(),
+    selection_query_adjustment_top_after_value: Math.max(0, Number(selectionQueryAdjustmentSummary.top_after_value || 0)),
+    selection_query_adjustment_top_delta: Number(selectionQueryAdjustmentSummary.top_delta_value || 0),
+    selection_query_adjustment_top_direction: String(selectionQueryAdjustmentSummary.top_direction_key || "").trim(),
+    selection_query_adjustment_top_reason: String(selectionQueryAdjustmentSummary.top_reason_code || "").trim(),
     selection_prefilter_applied: selectionPrefilter.applied === true,
     selection_prefilter_dimension: String(selectionPrefilter.dimension || "").trim(),
     selection_prefilter_bucket: String(selectionPrefilter.bucket || "").trim(),
@@ -493,6 +550,12 @@ function formatOpsAlertMessage(dispatchArtifact = {}, evaluation = {}) {
     `selection_query_family=${String(evaluation.selection_latest_query_strategy_family || "-")}/${String(
       evaluation.selection_top_query_strategy_family || "-"
     )}`,
+    `selection_query_adjustment=${Math.max(0, Number(evaluation.selection_query_adjustment_count || 0))}/${Math.max(
+      0,
+      Number(evaluation.selection_query_adjustment_total_delta || 0)
+    )}/${String(evaluation.selection_query_adjustment_top_field || "-")}/${String(
+      evaluation.selection_query_adjustment_top_reason || "-"
+    )}/${Math.max(0, Number(evaluation.selection_query_adjustment_top_after_value || 0))}`,
     `selection_segment_reason=${String(evaluation.selection_latest_segment_strategy_reason || "-")}/${String(
       evaluation.selection_top_segment_strategy_reason || "-"
     )}:${Math.max(0, Number(evaluation.selection_top_segment_strategy_reason_count || 0))}`,
@@ -742,6 +805,14 @@ async function runLiveOpsOpsAlert(args = {}, deps = {}) {
       selection_top_segment_strategy_reason: String(evaluation.selection_top_segment_strategy_reason || "").trim(),
       selection_top_segment_strategy_family: String(evaluation.selection_top_segment_strategy_family || "").trim(),
       selection_top_segment_strategy_reason_count: Math.max(0, Number(evaluation.selection_top_segment_strategy_reason_count || 0)),
+      selection_query_adjustment_applied: evaluation.selection_query_adjustment_applied === true,
+      selection_query_adjustment_count: Math.max(0, Number(evaluation.selection_query_adjustment_count || 0)),
+      selection_query_adjustment_total_delta: Math.max(0, Number(evaluation.selection_query_adjustment_total_delta || 0)),
+      selection_query_adjustment_top_field: String(evaluation.selection_query_adjustment_top_field || "").trim(),
+      selection_query_adjustment_top_after_value: Math.max(0, Number(evaluation.selection_query_adjustment_top_after_value || 0)),
+      selection_query_adjustment_top_delta: Number(evaluation.selection_query_adjustment_top_delta || 0),
+      selection_query_adjustment_top_direction: String(evaluation.selection_query_adjustment_top_direction || "").trim(),
+      selection_query_adjustment_top_reason: String(evaluation.selection_query_adjustment_top_reason || "").trim(),
       selection_prefilter_applied: evaluation.selection_prefilter_applied === true,
       selection_prefilter_dimension: String(evaluation.selection_prefilter_dimension || "").trim(),
       selection_prefilter_bucket: String(evaluation.selection_prefilter_bucket || "").trim(),

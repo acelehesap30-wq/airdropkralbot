@@ -587,6 +587,13 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
             {readText(opsAlert, "selection_latest_segment_strategy_family") || "-"} / {readText(opsAlert, "selection_top_segment_strategy_family") || "-"}
           </p>
           <p className="akrMutedLine">
+            {t(props.lang, "admin_runtime_live_ops_ops_alert_query_adjustment_label")}:{" "}
+            {opsAlert?.selection_query_adjustment_applied ? t(props.lang, "admin_live_ops_bool_yes") : t(props.lang, "admin_live_ops_bool_no")} /{" "}
+            {Math.floor(readNum(opsAlert, "selection_query_adjustment_count"))} / {Math.floor(readNum(opsAlert, "selection_query_adjustment_total_delta"))} /{" "}
+            {readText(opsAlert, "selection_query_adjustment_top_field") || "-"} / {readText(opsAlert, "selection_query_adjustment_top_reason") || "-"} /{" "}
+            {Math.floor(readNum(opsAlert, "selection_query_adjustment_top_after_value"))}
+          </p>
+          <p className="akrMutedLine">
             {t(props.lang, "admin_runtime_live_ops_ops_alert_selection_family_pressure_label")}: {readText(opsAlert, "selection_family_escalation_band") || "-"} /{" "}
             {readText(opsAlert, "selection_family_escalation_reason") || "-"} / {readText(opsAlert, "selection_family_escalation_dimension") || "-"} /{" "}
             {readText(opsAlert, "selection_family_escalation_bucket") || "-"} | {t(props.lang, "admin_runtime_live_ops_ops_alert_selection_family_score_label")}:{" "}

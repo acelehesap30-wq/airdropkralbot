@@ -97,6 +97,28 @@ test("evaluateOpsAlert escalates watch state when recipient cap pressure is aler
           }
         ]
       },
+      selection_summary: {
+        query_strategy_summary: {
+          adjustment_rows: [
+            {
+              field_key: "active_within_days_cap",
+              before_value: 14,
+              after_value: 7,
+              delta_value: -7,
+              direction_key: "decrease",
+              reason_code: "selection_family_risk_tightened"
+            },
+            {
+              field_key: "pool_limit_multiplier",
+              before_value: 4,
+              after_value: 2,
+              delta_value: -2,
+              direction_key: "decrease",
+              reason_code: "selection_family_risk_tightened"
+            }
+          ]
+        }
+      },
       selection_trend_summary: {
         query_strategy_applied_24h: 1,
         query_strategy_applied_7d: 4,
@@ -152,6 +174,14 @@ test("evaluateOpsAlert escalates watch state when recipient cap pressure is aler
   assert.equal(result.selection_top_segment_strategy_reason, "segment_query_active_window_tight");
   assert.equal(result.selection_top_segment_strategy_family, "active_window");
   assert.equal(result.selection_top_segment_strategy_reason_count, 3);
+  assert.equal(result.selection_query_adjustment_applied, true);
+  assert.equal(result.selection_query_adjustment_count, 2);
+  assert.equal(result.selection_query_adjustment_total_delta, 9);
+  assert.equal(result.selection_query_adjustment_top_field, "active_within_days_cap");
+  assert.equal(result.selection_query_adjustment_top_after_value, 7);
+  assert.equal(result.selection_query_adjustment_top_delta, -7);
+  assert.equal(result.selection_query_adjustment_top_direction, "decrease");
+  assert.equal(result.selection_query_adjustment_top_reason, "selection_family_risk_tightened");
 });
 
 test("evaluateOpsAlert escalates watch state on concentrated locale pressure focus", async () => {

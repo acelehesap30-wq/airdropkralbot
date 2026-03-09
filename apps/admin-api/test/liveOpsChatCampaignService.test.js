@@ -763,6 +763,14 @@ test("live ops chat campaign service snapshot includes approval summary schedule
       selection_top_segment_strategy_reason: "segment_query_active_window_tight",
       selection_top_segment_strategy_family: "active_window",
       selection_top_segment_strategy_reason_count: 2,
+      selection_query_adjustment_applied: true,
+      selection_query_adjustment_count: 2,
+      selection_query_adjustment_total_delta: 9,
+      selection_query_adjustment_top_field: "active_within_days_cap",
+      selection_query_adjustment_top_after_value: 7,
+      selection_query_adjustment_top_delta: -7,
+      selection_query_adjustment_top_direction: "decrease",
+      selection_query_adjustment_top_reason: "selection_family_risk_tightened",
       telegram_sent: true,
       telegram_reason: "",
       telegram_sent_at: "2026-03-08T12:26:30.000Z"
@@ -887,6 +895,14 @@ test("live ops chat campaign service snapshot includes approval summary schedule
   assert.equal(snapshot.ops_alert_summary.selection_top_segment_strategy_reason, "segment_query_active_window_tight");
   assert.equal(snapshot.ops_alert_summary.selection_latest_segment_strategy_family, "active_window");
   assert.equal(snapshot.ops_alert_summary.selection_top_segment_strategy_family, "active_window");
+  assert.equal(snapshot.ops_alert_summary.selection_query_adjustment_applied, true);
+  assert.equal(snapshot.ops_alert_summary.selection_query_adjustment_count, 2);
+  assert.equal(snapshot.ops_alert_summary.selection_query_adjustment_total_delta, 9);
+  assert.equal(snapshot.ops_alert_summary.selection_query_adjustment_top_field, "active_within_days_cap");
+  assert.equal(snapshot.ops_alert_summary.selection_query_adjustment_top_after_value, 7);
+  assert.equal(snapshot.ops_alert_summary.selection_query_adjustment_top_delta, -7);
+  assert.equal(snapshot.ops_alert_summary.selection_query_adjustment_top_direction, "decrease");
+  assert.equal(snapshot.ops_alert_summary.selection_query_adjustment_top_reason, "selection_family_risk_tightened");
   assert.equal(snapshot.ops_alert_trend_summary.raised_24h, 1);
   assert.equal(snapshot.ops_alert_trend_summary.raised_7d, 3);
   assert.equal(snapshot.ops_alert_trend_summary.experiment_key, "webapp_react_v1");

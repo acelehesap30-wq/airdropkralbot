@@ -221,6 +221,14 @@ function buildLiveOpsSnapshot() {
       selection_latest_segment_strategy_family: "active_window",
       selection_top_query_strategy_family: "locale_and_segment",
       selection_top_segment_strategy_family: "active_window",
+      selection_query_adjustment_applied: true,
+      selection_query_adjustment_count: 2,
+      selection_query_adjustment_total_delta: 9,
+      selection_query_adjustment_top_field: "active_within_days_cap",
+      selection_query_adjustment_top_after_value: 7,
+      selection_query_adjustment_top_delta: -7,
+      selection_query_adjustment_top_direction: "decrease",
+      selection_query_adjustment_top_reason: "selection_family_risk_tightened",
       telegram_sent: false,
       telegram_reason: "watch_band_no_notify",
       telegram_sent_at: null
@@ -549,6 +557,10 @@ test("v2 admin ops kpi latest includes live ops campaign breakdowns", async () =
   assert.equal(body.data.live_ops_campaign.ops_alert.selection_query_family_match_days, 4);
   assert.equal(body.data.live_ops_campaign.ops_alert.selection_latest_query_strategy_family, "locale_and_segment");
   assert.equal(body.data.live_ops_campaign.ops_alert.selection_top_segment_strategy_family, "active_window");
+  assert.equal(body.data.live_ops_campaign.ops_alert.selection_query_adjustment_applied, true);
+  assert.equal(body.data.live_ops_campaign.ops_alert.selection_query_adjustment_count, 2);
+  assert.equal(body.data.live_ops_campaign.ops_alert.selection_query_adjustment_total_delta, 9);
+  assert.equal(body.data.live_ops_campaign.ops_alert.selection_query_adjustment_top_field, "active_within_days_cap");
   assert.equal(body.data.live_ops_campaign.ops_alert_trend.raised_7d, 4);
   assert.equal(body.data.live_ops_campaign.ops_alert_trend.experiment_key, "webapp_react_v1");
   assert.equal(body.data.live_ops_campaign.ops_alert_trend.effective_cap_delta_24h, 28);

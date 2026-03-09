@@ -961,6 +961,13 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
           {asText(opsAlertSummary.selection_latest_segment_strategy_family, "-")} / {asText(opsAlertSummary.selection_top_segment_strategy_family, "-")}
         </p>
         <p className="akrMutedLine">
+          {t(props.lang, "admin_live_ops_ops_alert_query_adjustment_label")}:{" "}
+          {opsAlertSummary.selection_query_adjustment_applied === true ? t(props.lang, "admin_live_ops_bool_yes") : t(props.lang, "admin_live_ops_bool_no")} /{" "}
+          {asCount(opsAlertSummary.selection_query_adjustment_count)} / {asCount(opsAlertSummary.selection_query_adjustment_total_delta)} /{" "}
+          {asText(opsAlertSummary.selection_query_adjustment_top_field, "-")} / {asText(opsAlertSummary.selection_query_adjustment_top_reason, "-")} /{" "}
+          {asCount(opsAlertSummary.selection_query_adjustment_top_after_value)}
+        </p>
+        <p className="akrMutedLine">
           {t(props.lang, "admin_live_ops_ops_alert_selection_family_pressure_label")}: {asText(opsAlertSummary.selection_family_escalation_band, "-")} /{" "}
           {asText(opsAlertSummary.selection_family_escalation_reason, "-")} / {asText(opsAlertSummary.selection_family_escalation_dimension, "-")} /{" "}
           {asText(opsAlertSummary.selection_family_escalation_bucket, "-")} | {t(props.lang, "admin_live_ops_ops_alert_selection_family_score_label")}:{" "}

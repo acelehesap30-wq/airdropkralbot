@@ -111,6 +111,11 @@ if ($latestPayload -ne $null) {
   $selectionSummary = Get-PropValue -Source $latestPayload -Name "selection_summary"
   $selectionTrend = Get-PropValue -Source $latestPayload -Name "selection_trend_summary"
   $selectionPrefilter = Get-PropValue -Source $selectionSummary -Name "prefilter_summary"
+  $selectionQueryStrategy = Get-PropValue -Source $selectionSummary -Name "query_strategy_summary"
+  $selectionAdjustmentRows = @((Get-PropValue -Source $selectionQueryStrategy -Name "adjustment_rows" -Fallback @()))
+  $topSelectionAdjustment = $selectionAdjustmentRows |
+    Sort-Object { [math]::Abs([int](Get-PropValue -Source $_ -Name "delta_value" -Fallback 0)) } -Descending |
+    Select-Object -First 1
   $latestSummary = [pscustomobject]@{
     ok = [bool](Get-PropValue -Source $latestPayload -Name "ok" -Fallback $false)
     skipped = [bool](Get-PropValue -Source $latestPayload -Name "skipped" -Fallback $false)
@@ -140,6 +145,15 @@ if ($latestPayload -ne $null) {
       reduction_share = if ([int](Get-PropValue -Source $selectionPrefilter -Name "candidates_before" -Fallback 0) -gt 0) {
         [math]::Max(0, [double](([int](Get-PropValue -Source $selectionPrefilter -Name "candidates_before" -Fallback 0) - [int](Get-PropValue -Source $selectionPrefilter -Name "candidates_after" -Fallback 0)) / [double][int](Get-PropValue -Source $selectionPrefilter -Name "candidates_before" -Fallback 0)))
       } else { 0 }
+    }
+    selection_query_adjustment = [pscustomobject]@{
+      applied = [bool]($selectionAdjustmentRows.Count -gt 0)
+      count = [int]$selectionAdjustmentRows.Count
+      total_delta = [int](($selectionAdjustmentRows | ForEach-Object { [math]::Abs([int](Get-PropValue -Source $_ -Name "delta_value" -Fallback 0)) } | Measure-Object -Sum).Sum)
+      top_field = [string](Get-PropValue -Source $topSelectionAdjustment -Name "field_key" -Fallback "")
+      top_after_value = [int](Get-PropValue -Source $topSelectionAdjustment -Name "after_value" -Fallback 0)
+      top_delta = [int](Get-PropValue -Source $topSelectionAdjustment -Name "delta_value" -Fallback 0)
+      top_reason = [string](Get-PropValue -Source $topSelectionAdjustment -Name "reason_code" -Fallback "")
     }
     selection_trend = [pscustomobject]@{
       query_strategy_applied_24h = [int](Get-PropValue -Source $selectionTrend -Name "query_strategy_applied_24h" -Fallback 0)
@@ -220,6 +234,14 @@ if ($latestAlertPayload -ne $null) {
     selection_top_segment_strategy_reason = [string](Get-PropValue -Source $evaluation -Name "selection_top_segment_strategy_reason" -Fallback "")
     selection_top_segment_strategy_family = [string](Get-PropValue -Source $evaluation -Name "selection_top_segment_strategy_family" -Fallback "")
     selection_top_segment_strategy_reason_count = [int](Get-PropValue -Source $evaluation -Name "selection_top_segment_strategy_reason_count" -Fallback 0)
+    selection_query_adjustment_applied = [bool](Get-PropValue -Source $evaluation -Name "selection_query_adjustment_applied" -Fallback $false)
+    selection_query_adjustment_count = [int](Get-PropValue -Source $evaluation -Name "selection_query_adjustment_count" -Fallback 0)
+    selection_query_adjustment_total_delta = [int](Get-PropValue -Source $evaluation -Name "selection_query_adjustment_total_delta" -Fallback 0)
+    selection_query_adjustment_top_field = [string](Get-PropValue -Source $evaluation -Name "selection_query_adjustment_top_field" -Fallback "")
+    selection_query_adjustment_top_after_value = [int](Get-PropValue -Source $evaluation -Name "selection_query_adjustment_top_after_value" -Fallback 0)
+    selection_query_adjustment_top_delta = [int](Get-PropValue -Source $evaluation -Name "selection_query_adjustment_top_delta" -Fallback 0)
+    selection_query_adjustment_top_direction = [string](Get-PropValue -Source $evaluation -Name "selection_query_adjustment_top_direction" -Fallback "")
+    selection_query_adjustment_top_reason = [string](Get-PropValue -Source $evaluation -Name "selection_query_adjustment_top_reason" -Fallback "")
     selection_prefilter_applied = [bool](Get-PropValue -Source $evaluation -Name "selection_prefilter_applied" -Fallback $false)
     selection_prefilter_dimension = [string](Get-PropValue -Source $evaluation -Name "selection_prefilter_dimension" -Fallback "")
     selection_prefilter_bucket = [string](Get-PropValue -Source $evaluation -Name "selection_prefilter_bucket" -Fallback "")
