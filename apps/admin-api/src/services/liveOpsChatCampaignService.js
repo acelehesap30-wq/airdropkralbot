@@ -570,6 +570,24 @@ function resolveLiveOpsSegmentStrategyFamily(reason) {
   return "other";
 }
 
+function resolveLiveOpsAdjustmentFieldFamily(fieldKey) {
+  switch (String(fieldKey || "").trim().toLowerCase()) {
+    case "active_within_days_cap":
+    case "inactive_hours_floor":
+      return "activity_window";
+    case "offer_age_days_cap":
+      return "offer_window";
+    case "max_age_days_cap":
+      return "recency_window";
+    case "pool_limit_multiplier":
+      return "pool_limit";
+    case "":
+      return "";
+    default:
+      return "other";
+  }
+}
+
 function buildLiveOpsCandidateQueryStrategySummary(summary = {}) {
   const reason = String(summary.reason || "").trim();
   const localeStrategyReason = String(summary.locale_strategy_reason || "").trim();
@@ -2150,6 +2168,7 @@ function normalizeSelectionTrendSummary(summary) {
     latest_segment_strategy_reason: String(safeSummary.latest_segment_strategy_reason || "").trim(),
     latest_segment_strategy_family: String(safeSummary.latest_segment_strategy_family || "").trim(),
     latest_query_adjustment_field: String(safeSummary.latest_query_adjustment_field || "").trim(),
+    latest_query_adjustment_field_family: String(safeSummary.latest_query_adjustment_field_family || "").trim(),
     latest_query_adjustment_reason: String(safeSummary.latest_query_adjustment_reason || "").trim(),
     latest_query_adjustment_total_delta: Math.max(0, Number(safeSummary.latest_query_adjustment_total_delta || 0)),
     latest_prefilter_reason: String(safeSummary.latest_prefilter_reason || "").trim(),
@@ -2166,6 +2185,7 @@ function normalizeSelectionTrendSummary(summary) {
     query_adjustment_query_family_daily_breakdown: normalizeSelectionFamilyDailyRows(safeSummary.query_adjustment_query_family_daily_breakdown),
     segment_strategy_family_daily_breakdown: normalizeSelectionFamilyDailyRows(safeSummary.segment_strategy_family_daily_breakdown),
     query_adjustment_segment_family_daily_breakdown: normalizeSelectionFamilyDailyRows(safeSummary.query_adjustment_segment_family_daily_breakdown),
+    query_adjustment_field_family_daily_breakdown: normalizeSelectionFamilyDailyRows(safeSummary.query_adjustment_field_family_daily_breakdown),
     family_risk_daily_breakdown: (Array.isArray(safeSummary.family_risk_daily_breakdown) ? safeSummary.family_risk_daily_breakdown : [])
       .map((row) => ({
         day: String(row?.day || "").trim(),
@@ -2186,6 +2206,7 @@ function normalizeSelectionTrendSummary(summary) {
       .filter((row) => row.day)
       .slice(0, 7),
     query_adjustment_field_breakdown: normalizeBreakdownRows(safeSummary.query_adjustment_field_breakdown),
+    query_adjustment_field_family_breakdown: normalizeBreakdownRows(safeSummary.query_adjustment_field_family_breakdown),
     query_adjustment_reason_breakdown: normalizeBreakdownRows(safeSummary.query_adjustment_reason_breakdown),
     query_strategy_reason_breakdown: normalizeBreakdownRows(safeSummary.query_strategy_reason_breakdown),
     query_strategy_family_breakdown: normalizeBreakdownRows(safeSummary.query_strategy_family_breakdown),
@@ -2208,6 +2229,7 @@ async function loadSelectionTrendSummary(client, campaignKey) {
     adjustmentDailyResult,
     prefilterReasonResult,
     adjustmentFieldResult,
+    adjustmentFieldDailyResult,
     adjustmentReasonResult,
     queryReasonResult,
     adjustmentQueryReasonResult,
@@ -2490,6 +2512,22 @@ async function loadSelectionTrendSummary(client, campaignKey) {
     ),
     client.query(
       `SELECT
+         to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS day,
+         COALESCE(NULLIF(adj->>'field_key', ''), 'unknown') AS bucket_key,
+         COALESCE(SUM(ABS(COALESCE(NULLIF(adj->>'delta_value', ''), '0')::int)), 0)::bigint AS item_count
+       FROM admin_audit
+       CROSS JOIN LATERAL jsonb_array_elements(COALESCE(payload_json#>'{targeting_selection_summary,query_strategy_summary,adjustment_rows}', '[]'::jsonb)) adj
+       WHERE target = $1
+         AND action = 'live_ops_campaign_dispatch'
+         AND COALESCE(payload_json->>'campaign_key', '') = $2
+         AND COALESCE(payload_json->>'dispatch_source', 'manual') = 'scheduler'
+         AND created_at >= now() - interval '7 days'
+       GROUP BY 1, 2
+       ORDER BY day DESC, item_count DESC, bucket_key ASC;`,
+      [target, key]
+    ),
+    client.query(
+      `SELECT
          COALESCE(NULLIF(adj->>'reason_code', ''), 'unknown') AS bucket_key,
          COALESCE(SUM(ABS(COALESCE(NULLIF(adj->>'delta_value', ''), '0')::int)), 0)::bigint AS item_count
        FROM admin_audit
@@ -2663,6 +2701,10 @@ async function loadSelectionTrendSummary(client, campaignKey) {
   const adjustmentQueryFamilyDailyBreakdown = buildFamilyDailyBreakdown(adjustmentQueryReasonDailyResult.rows, resolveLiveOpsQueryStrategyFamily);
   const segmentFamilyDailyBreakdown = buildFamilyDailyBreakdown(segmentReasonDailyResult.rows, resolveLiveOpsSegmentStrategyFamily);
   const adjustmentSegmentFamilyDailyBreakdown = buildFamilyDailyBreakdown(adjustmentSegmentReasonDailyResult.rows, resolveLiveOpsSegmentStrategyFamily);
+  const adjustmentFieldFamilyDailyBreakdown = buildFamilyDailyBreakdown(
+    adjustmentFieldDailyResult.rows,
+    resolveLiveOpsAdjustmentFieldFamily
+  );
   const familyRiskDailyBreakdown = buildSelectionFamilyRiskDailyBreakdown(queryFamilyDailyBreakdown, segmentFamilyDailyBreakdown);
   const latestFamilyRisk = familyRiskDailyBreakdown[0] || {};
   return {
@@ -2691,6 +2733,7 @@ async function loadSelectionTrendSummary(client, campaignKey) {
     latest_segment_strategy_reason: String(latestQueryStrategy.segment_strategy_reason || ""),
     latest_segment_strategy_family: resolveLiveOpsSegmentStrategyFamily(latestQueryStrategy.segment_strategy_reason),
     latest_query_adjustment_field: String(latestTopAdjustment?.field_key || ""),
+    latest_query_adjustment_field_family: resolveLiveOpsAdjustmentFieldFamily(latestTopAdjustment?.field_key || ""),
     latest_query_adjustment_reason: String(latestTopAdjustment?.reason_code || ""),
     latest_query_adjustment_total_delta: Math.max(0, Math.abs(Number(latestTopAdjustment?.delta_value || 0))),
     latest_prefilter_reason: String(latestPrefilter.reason || ""),
@@ -2705,8 +2748,10 @@ async function loadSelectionTrendSummary(client, campaignKey) {
     query_adjustment_query_family_daily_breakdown: adjustmentQueryFamilyDailyBreakdown,
     segment_strategy_family_daily_breakdown: segmentFamilyDailyBreakdown,
     query_adjustment_segment_family_daily_breakdown: adjustmentSegmentFamilyDailyBreakdown,
+    query_adjustment_field_family_daily_breakdown: adjustmentFieldFamilyDailyBreakdown,
     family_risk_daily_breakdown: familyRiskDailyBreakdown,
     query_adjustment_field_breakdown: normalizeBreakdownRows(adjustmentFieldResult.rows),
+    query_adjustment_field_family_breakdown: buildFamilyBreakdown(adjustmentFieldResult.rows, resolveLiveOpsAdjustmentFieldFamily),
     query_adjustment_reason_breakdown: normalizeBreakdownRows(adjustmentReasonResult.rows),
     query_strategy_reason_breakdown: normalizeBreakdownRows(queryReasonResult.rows),
     query_strategy_family_breakdown: buildFamilyBreakdown(queryReasonResult.rows, resolveLiveOpsQueryStrategyFamily),
@@ -3229,6 +3274,7 @@ function buildEmptyLiveOpsSelectionTrendSummary() {
     latest_segment_strategy_reason: "",
     latest_segment_strategy_family: "",
     latest_query_adjustment_field: "",
+    latest_query_adjustment_field_family: "",
     latest_query_adjustment_reason: "",
     latest_query_adjustment_total_delta: 0,
     latest_prefilter_reason: "",
@@ -3243,8 +3289,10 @@ function buildEmptyLiveOpsSelectionTrendSummary() {
     query_adjustment_query_family_daily_breakdown: [],
     segment_strategy_family_daily_breakdown: [],
     query_adjustment_segment_family_daily_breakdown: [],
+    query_adjustment_field_family_daily_breakdown: [],
     family_risk_daily_breakdown: [],
     query_adjustment_field_breakdown: [],
+    query_adjustment_field_family_breakdown: [],
     query_adjustment_reason_breakdown: [],
     query_strategy_reason_breakdown: [],
     query_strategy_family_breakdown: [],

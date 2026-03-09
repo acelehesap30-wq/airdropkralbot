@@ -440,6 +440,7 @@ function buildLiveOpsSnapshot() {
       latest_segment_strategy_reason: "segment_query_active_window_tight",
       latest_segment_strategy_family: "active_window",
       latest_query_adjustment_field: "active_within_days_cap",
+      latest_query_adjustment_field_family: "activity_window",
       latest_query_adjustment_reason: "selection_family_risk_tightened",
       latest_query_adjustment_total_delta: 7,
       latest_prefilter_reason: "prefilter_applied",
@@ -472,6 +473,10 @@ function buildLiveOpsSnapshot() {
         { day: "2026-03-08", bucket_key: "active_window", item_count: 11 },
         { day: "2026-03-07", bucket_key: "active_window", item_count: 8 }
       ],
+      query_adjustment_field_family_daily_breakdown: [
+        { day: "2026-03-08", bucket_key: "activity_window", item_count: 12 },
+        { day: "2026-03-07", bucket_key: "pool_limit", item_count: 7 }
+      ],
       family_risk_daily_breakdown: [
         { day: "2026-03-08", risk_state: "watch", risk_reason: "query_strategy_family_streak_watch", risk_dimension: "query_family", risk_bucket: "locale_and_segment", risk_score: 4, query_family: "locale_and_segment", segment_family: "active_window", query_match_days: 2, segment_match_days: 2, query_weight: 4, segment_weight: 3 },
         { day: "2026-03-07", risk_state: "watch", risk_reason: "query_strategy_family_streak_watch", risk_dimension: "query_family", risk_bucket: "locale_and_segment", risk_score: 3, query_family: "locale_and_segment", segment_family: "active_window", query_match_days: 1, segment_match_days: 1, query_weight: 3, segment_weight: 2 }
@@ -481,6 +486,10 @@ function buildLiveOpsSnapshot() {
       query_adjustment_field_breakdown: [
         { bucket_key: "active_within_days_cap", item_count: 12 },
         { bucket_key: "pool_limit_multiplier", item_count: 7 }
+      ],
+      query_adjustment_field_family_breakdown: [
+        { bucket_key: "activity_window", item_count: 12 },
+        { bucket_key: "pool_limit", item_count: 7 }
       ],
       query_adjustment_reason_breakdown: [{ bucket_key: "selection_family_risk_tightened", item_count: 19 }],
       query_adjustment_query_family_breakdown: [{ bucket_key: "locale_and_segment", item_count: 19 }],
@@ -746,6 +755,7 @@ test("v2 admin ops kpi run includes live ops campaign summary", async () => {
   assert.equal(body.data.live_ops_campaign.selection_trend.latest_segment_strategy_reason, "segment_query_active_window_tight");
   assert.equal(body.data.live_ops_campaign.selection_trend.latest_segment_strategy_family, "active_window");
   assert.equal(body.data.live_ops_campaign.selection_trend.latest_query_adjustment_field, "active_within_days_cap");
+  assert.equal(body.data.live_ops_campaign.selection_trend.latest_query_adjustment_field_family, "activity_window");
   assert.equal(body.data.live_ops_campaign.selection_trend.latest_query_adjustment_reason, "selection_family_risk_tightened");
   assert.equal(body.data.live_ops_campaign.selection_trend.latest_query_adjustment_total_delta, 7);
   assert.equal(body.data.live_ops_campaign.selection_trend.latest_family_risk_state, "watch");
@@ -754,8 +764,10 @@ test("v2 admin ops kpi run includes live ops campaign summary", async () => {
   assert.equal(body.data.live_ops_campaign.selection_trend.latest_family_risk_score, 4);
   assert.equal(body.data.live_ops_campaign.selection_trend.query_strategy_family_breakdown[0].bucket_key, "locale_and_segment");
   assert.equal(body.data.live_ops_campaign.selection_trend.query_strategy_family_daily_breakdown[0].bucket_key, "locale_and_segment");
+  assert.equal(body.data.live_ops_campaign.selection_trend.query_adjustment_field_family_breakdown[0].bucket_key, "activity_window");
   assert.equal(body.data.live_ops_campaign.selection_trend.query_adjustment_query_family_breakdown[0].bucket_key, "locale_and_segment");
   assert.equal(body.data.live_ops_campaign.selection_trend.query_adjustment_query_family_daily_breakdown[0].bucket_key, "locale_and_segment");
+  assert.equal(body.data.live_ops_campaign.selection_trend.query_adjustment_field_family_daily_breakdown[0].bucket_key, "activity_window");
   assert.equal(body.data.live_ops_campaign.selection_trend.segment_strategy_family_breakdown[0].bucket_key, "active_window");
   assert.equal(body.data.live_ops_campaign.selection_trend.segment_strategy_family_daily_breakdown[0].bucket_key, "active_window");
   assert.equal(body.data.live_ops_campaign.selection_trend.query_adjustment_segment_family_breakdown[0].bucket_key, "active_window");

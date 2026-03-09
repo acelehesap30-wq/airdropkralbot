@@ -505,6 +505,14 @@ test("live ops chat campaign service snapshot includes approval summary schedule
               text.includes("CROSS JOIN LATERAL jsonb_array_elements") &&
               text.includes("adj->>'field_key'")
             ) {
+              if (text.includes("to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS day")) {
+                return {
+                  rows: [
+                    { day: "2026-03-08", bucket_key: "active_within_days_cap", item_count: 7 },
+                    { day: "2026-03-08", bucket_key: "pool_limit_multiplier", item_count: 2 }
+                  ]
+                };
+              }
               return {
                 rows: [
                   { bucket_key: "active_within_days_cap", item_count: 7 },
@@ -788,6 +796,7 @@ test("live ops chat campaign service snapshot includes approval summary schedule
         latest_segment_strategy_reason: "segment_query_active_window_tight",
         latest_segment_strategy_family: "active_window",
         latest_query_adjustment_field: "active_within_days_cap",
+        latest_query_adjustment_field_family: "activity_window",
         latest_query_adjustment_reason: "selection_family_risk_tightened",
         latest_query_adjustment_total_delta: 7,
         latest_prefilter_reason: "prefilter_applied",
@@ -849,8 +858,16 @@ test("live ops chat campaign service snapshot includes approval summary schedule
           { day: "2026-03-08", bucket_key: "active_window", item_count: 7 },
           { day: "2026-03-07", bucket_key: "active_window", item_count: 2 }
         ],
+        query_adjustment_field_family_daily_breakdown: [
+          { day: "2026-03-08", bucket_key: "activity_window", item_count: 7 },
+          { day: "2026-03-07", bucket_key: "pool_limit", item_count: 2 }
+        ],
         prefilter_reason_breakdown: [
           { bucket_key: "prefilter_applied", item_count: 2 }
+        ],
+        query_adjustment_field_family_breakdown: [
+          { bucket_key: "activity_window", item_count: 7 },
+          { bucket_key: "pool_limit", item_count: 2 }
         ]
       },
       window_key: "wallet_reconnect:2020-01-01T00:00:00.000Z:2035-01-01T00:00:00.000Z",
@@ -1004,6 +1021,7 @@ test("live ops chat campaign service snapshot includes approval summary schedule
   assert.equal(snapshot.selection_trend_summary.latest_segment_strategy_reason, "segment_query_active_window_tight");
   assert.equal(snapshot.selection_trend_summary.latest_segment_strategy_family, "active_window");
   assert.equal(snapshot.selection_trend_summary.latest_query_adjustment_field, "active_within_days_cap");
+  assert.equal(snapshot.selection_trend_summary.latest_query_adjustment_field_family, "activity_window");
   assert.equal(snapshot.selection_trend_summary.latest_query_adjustment_reason, "selection_family_risk_tightened");
   assert.equal(snapshot.selection_trend_summary.latest_query_adjustment_total_delta, 7);
   assert.equal(snapshot.selection_trend_summary.latest_prefilter_reason, "prefilter_applied");
@@ -1019,10 +1037,12 @@ test("live ops chat campaign service snapshot includes approval summary schedule
   assert.equal(snapshot.selection_trend_summary.query_strategy_reason_breakdown[0].bucket_key, "query_strategy_locale_and_segment");
   assert.equal(snapshot.selection_trend_summary.query_strategy_family_breakdown[0].bucket_key, "locale_and_segment");
   assert.equal(snapshot.selection_trend_summary.query_adjustment_field_breakdown[0].bucket_key, "active_within_days_cap");
+  assert.equal(snapshot.selection_trend_summary.query_adjustment_field_family_breakdown[0].bucket_key, "activity_window");
   assert.equal(snapshot.selection_trend_summary.query_adjustment_reason_breakdown[0].bucket_key, "selection_family_risk_tightened");
   assert.equal(snapshot.selection_trend_summary.query_adjustment_query_family_breakdown[0].bucket_key, "locale_and_segment");
   assert.equal(snapshot.selection_trend_summary.query_strategy_family_daily_breakdown[0].bucket_key, "locale_and_segment");
   assert.equal(snapshot.selection_trend_summary.query_adjustment_query_family_daily_breakdown[0].bucket_key, "locale_and_segment");
+  assert.equal(snapshot.selection_trend_summary.query_adjustment_field_family_daily_breakdown[0].bucket_key, "activity_window");
   assert.equal(snapshot.selection_trend_summary.segment_strategy_reason_breakdown[0].bucket_key, "segment_query_active_window_tight");
   assert.equal(snapshot.selection_trend_summary.segment_strategy_family_breakdown[0].bucket_key, "active_window");
   assert.equal(snapshot.selection_trend_summary.query_adjustment_segment_family_breakdown[0].bucket_key, "active_window");

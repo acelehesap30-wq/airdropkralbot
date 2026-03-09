@@ -362,6 +362,7 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
   const selectionTrendQueryReasons = asArray(selectionTrendSummary.query_strategy_reason_breakdown);
   const selectionTrendQueryFamilies = asArray(selectionTrendSummary.query_strategy_family_breakdown);
   const selectionTrendAdjustmentFields = asArray(selectionTrendSummary.query_adjustment_field_breakdown);
+  const selectionTrendAdjustmentFieldFamilies = asArray(selectionTrendSummary.query_adjustment_field_family_breakdown);
   const selectionTrendAdjustmentReasons = asArray(selectionTrendSummary.query_adjustment_reason_breakdown);
   const selectionTrendAdjustmentQueryFamilies = asArray(selectionTrendSummary.query_adjustment_query_family_breakdown);
   const selectionTrendSegmentReasons = asArray(selectionTrendSummary.segment_strategy_reason_breakdown);
@@ -370,6 +371,7 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
   const selectionTrendAdjustmentQueryFamilyDaily = asArray(selectionTrendSummary.query_adjustment_query_family_daily_breakdown);
   const selectionTrendSegmentFamilyDaily = asArray(selectionTrendSummary.segment_strategy_family_daily_breakdown);
   const selectionTrendAdjustmentSegmentFamilyDaily = asArray(selectionTrendSummary.query_adjustment_segment_family_daily_breakdown);
+  const selectionTrendAdjustmentFieldFamilyDaily = asArray(selectionTrendSummary.query_adjustment_field_family_daily_breakdown);
   const selectionTrendFamilyRiskDaily = asArray(selectionTrendSummary.family_risk_daily_breakdown);
   const selectionTrendPrefilterReasons = asArray(selectionTrendSummary.prefilter_reason_breakdown);
   const selectionTrendFamilyRiskBands = asArray(selectionTrendSummary.family_risk_band_breakdown);
@@ -865,7 +867,8 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
             {asCount(selectionTrendSummary.query_adjustment_applied_7d)} | {t(props.lang, "admin_live_ops_selection_trend_adjustment_delta_label")}:{" "}
             {asCount(selectionTrendSummary.query_adjustment_total_delta_24h)} / {asCount(selectionTrendSummary.query_adjustment_total_delta_7d)} |{" "}
             {t(props.lang, "admin_live_ops_selection_trend_adjustment_latest_label")}: {asText(selectionTrendSummary.latest_query_adjustment_field, "-")} /{" "}
-            {asText(selectionTrendSummary.latest_query_adjustment_reason, "-")} / {asCount(selectionTrendSummary.latest_query_adjustment_total_delta)}
+            {asText(selectionTrendSummary.latest_query_adjustment_field_family, "-")} / {asText(selectionTrendSummary.latest_query_adjustment_reason, "-")} /{" "}
+            {asCount(selectionTrendSummary.latest_query_adjustment_total_delta)}
           </p>
           <p className="akrMutedLine">
             {t(props.lang, "admin_live_ops_selection_trend_focus_label")}: {asCount(selectionTrendSummary.selected_focus_matches_24h)} /{" "}
@@ -905,11 +908,16 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
           title={t(props.lang, "admin_live_ops_selection_trend_adjustment_segment_family_daily_title")}
           rows={selectionTrendAdjustmentSegmentFamilyDaily}
         />
+        <SelectionFamilyDailyTrendList
+          title={t(props.lang, "admin_live_ops_selection_trend_adjustment_field_family_daily_title")}
+          rows={selectionTrendAdjustmentFieldFamilyDaily}
+        />
         <SelectionFamilyRiskDailyTrendList
           title={t(props.lang, "admin_live_ops_selection_trend_family_risk_daily_title")}
           rows={selectionTrendFamilyRiskDaily}
         />
         <BreakdownList title={t(props.lang, "admin_live_ops_selection_trend_adjustment_field_title")} rows={selectionTrendAdjustmentFields} />
+        <BreakdownList title={t(props.lang, "admin_live_ops_selection_trend_adjustment_field_family_title")} rows={selectionTrendAdjustmentFieldFamilies} />
         <BreakdownList title={t(props.lang, "admin_live_ops_selection_trend_adjustment_reason_title")} rows={selectionTrendAdjustmentReasons} />
         <BreakdownList title={t(props.lang, "admin_live_ops_selection_trend_query_reason_title")} rows={selectionTrendQueryReasons} />
         <BreakdownList title={t(props.lang, "admin_live_ops_selection_trend_query_family_title")} rows={selectionTrendQueryFamilies} />
