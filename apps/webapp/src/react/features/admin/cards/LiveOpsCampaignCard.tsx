@@ -247,6 +247,7 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
   const sceneRuntimeSummary = asRecord(snapshot.scene_runtime_summary);
   const taskSummary = asRecord(snapshot.task_summary);
   const taskSelectionSummary = asRecord(taskSummary.selection_summary);
+  const taskSelectionQueryStrategy = asRecord(taskSelectionSummary.query_strategy_summary);
   const taskSelectionPrefilter = asRecord(taskSelectionSummary.prefilter_summary);
   const selectionTrendSummary = asRecord(snapshot.selection_trend_summary);
   const opsAlertSummary = asRecord(snapshot.ops_alert_summary);
@@ -712,6 +713,22 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
           <p className="akrMutedLine">
             {t(props.lang, "admin_live_ops_selection_focus_match_label")}: {asCount(taskSelectionSummary.selected_focus_matches)} /{" "}
             {asCount(taskSelectionSummary.prioritized_focus_matches)}
+          </p>
+          <p className="akrMutedLine">
+            {t(props.lang, "admin_live_ops_selection_query_label")}:{" "}
+            {taskSelectionQueryStrategy.applied === true ? t(props.lang, "admin_live_ops_bool_yes") : t(props.lang, "admin_live_ops_bool_no")} |{" "}
+            {t(props.lang, "admin_live_ops_selection_query_reason_label")}: {asText(taskSelectionQueryStrategy.reason, "-")} /{" "}
+            {asText(taskSelectionQueryStrategy.locale_strategy_reason, "-")} / {asText(taskSelectionQueryStrategy.segment_strategy_reason, "-")}
+          </p>
+          <p className="akrMutedLine">
+            {t(props.lang, "admin_live_ops_selection_query_window_label")}: {asText(taskSelectionQueryStrategy.mode_key, "balanced")} /{" "}
+            {asText(taskSelectionQueryStrategy.segment_key, "-")} / x{asCount(taskSelectionQueryStrategy.pool_limit_multiplier)} /{" "}
+            {asText(taskSelectionQueryStrategy.exclude_locale_prefix, "-")}
+          </p>
+          <p className="akrMutedLine">
+            {t(props.lang, "admin_live_ops_selection_query_caps_label")}: active {asCount(taskSelectionQueryStrategy.active_within_days_cap)} | inactive{" "}
+            {asCount(taskSelectionQueryStrategy.inactive_hours_floor)} | max-age {asCount(taskSelectionQueryStrategy.max_age_days_cap)} | offer{" "}
+            {asCount(taskSelectionQueryStrategy.offer_age_days_cap)}
           </p>
           <p className="akrMutedLine">
             {t(props.lang, "admin_live_ops_selection_prefilter_focus_label")}: {asText(taskSelectionPrefilter.dimension, "-")} /{" "}

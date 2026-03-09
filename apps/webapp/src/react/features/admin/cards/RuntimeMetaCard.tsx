@@ -218,6 +218,7 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
   const recipientCapRecommendation = asRecord(liveOpsKpi?.recipient_cap_recommendation);
   const targetingGuidance = asRecord(liveOpsKpi?.targeting_guidance);
   const selectionSummary = asRecord(liveOpsKpi?.selection_summary);
+  const selectionQueryStrategy = asRecord(selectionSummary?.query_strategy_summary);
   const selectionTrend = asRecord(liveOpsKpi?.selection_trend);
   const selectionPrefilter = asRecord(selectionSummary?.prefilter_summary);
   const schedulerSkipDaily = asRows(schedulerSkip?.daily_breakdown);
@@ -513,6 +514,22 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
           <p className="akrMutedLine">
             {t(props.lang, "admin_runtime_live_ops_selection_focus_match_label")}: {Math.floor(readNum(selectionSummary, "selected_focus_matches"))} /{" "}
             {Math.floor(readNum(selectionSummary, "prioritized_focus_matches"))}
+          </p>
+          <p className="akrMutedLine">
+            {t(props.lang, "admin_runtime_live_ops_selection_query_label")}:{" "}
+            {selectionQueryStrategy?.applied ? t(props.lang, "admin_live_ops_bool_yes") : t(props.lang, "admin_live_ops_bool_no")} |{" "}
+            {t(props.lang, "admin_runtime_live_ops_selection_query_reason_label")}: {readText(selectionQueryStrategy, "reason") || "-"} /{" "}
+            {readText(selectionQueryStrategy, "locale_strategy_reason") || "-"} / {readText(selectionQueryStrategy, "segment_strategy_reason") || "-"}
+          </p>
+          <p className="akrMutedLine">
+            {t(props.lang, "admin_runtime_live_ops_selection_query_window_label")}: {readText(selectionQueryStrategy, "mode_key") || "-"} /{" "}
+            {readText(selectionQueryStrategy, "segment_key") || "-"} / x{Math.floor(readNum(selectionQueryStrategy, "pool_limit_multiplier") || 0)} /{" "}
+            {readText(selectionQueryStrategy, "exclude_locale_prefix") || "-"}
+          </p>
+          <p className="akrMutedLine">
+            {t(props.lang, "admin_runtime_live_ops_selection_query_caps_label")}: active {Math.floor(readNum(selectionQueryStrategy, "active_within_days_cap"))} | inactive{" "}
+            {Math.floor(readNum(selectionQueryStrategy, "inactive_hours_floor"))} | max-age {Math.floor(readNum(selectionQueryStrategy, "max_age_days_cap"))} | offer{" "}
+            {Math.floor(readNum(selectionQueryStrategy, "offer_age_days_cap"))}
           </p>
           <p className="akrMutedLine">
             {t(props.lang, "admin_runtime_live_ops_selection_prefilter_focus_label")}: {readText(selectionPrefilter, "dimension") || "-"} /{" "}

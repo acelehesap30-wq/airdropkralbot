@@ -320,6 +320,23 @@ function buildLiveOpsSnapshot() {
         selected_top_variant_matches: 1,
         prioritized_top_cohort_matches: 4,
         selected_top_cohort_matches: 1,
+        query_strategy_summary: {
+          applied: true,
+          reason: "query_strategy_locale_and_segment",
+          mode_key: "protective",
+          segment_key: "wallet_unlinked",
+          focus_matches_target: true,
+          dimension: "locale",
+          bucket: "tr",
+          exclude_locale_prefix: "tr",
+          locale_strategy_reason: "query_strategy_locale_exclusion",
+          segment_strategy_reason: "segment_query_active_window_tight",
+          pool_limit_multiplier: 2,
+          active_within_days_cap: 7,
+          inactive_hours_floor: 0,
+          max_age_days_cap: 0,
+          offer_age_days_cap: 0
+        },
         prefilter_summary: {
           applied: true,
           dimension: "locale",
@@ -472,6 +489,9 @@ test("v2 admin ops kpi latest includes live ops campaign breakdowns", async () =
   assert.equal(body.data.live_ops_campaign.selection_summary.guidance_mode, "protective");
   assert.equal(body.data.live_ops_campaign.selection_summary.selected_candidates, 4);
   assert.equal(body.data.live_ops_campaign.selection_summary.selected_top_locale_matches, 0);
+  assert.equal(body.data.live_ops_campaign.selection_summary.query_strategy_summary.applied, true);
+  assert.equal(body.data.live_ops_campaign.selection_summary.query_strategy_summary.pool_limit_multiplier, 2);
+  assert.equal(body.data.live_ops_campaign.selection_summary.query_strategy_summary.active_within_days_cap, 7);
   assert.equal(body.data.live_ops_campaign.selection_summary.prefilter_summary.applied, true);
   assert.equal(body.data.live_ops_campaign.selection_summary.prefilter_summary.candidates_after, 5);
   assert.equal(body.data.live_ops_campaign.selection_trend.dispatches_7d, 5);
@@ -565,6 +585,8 @@ test("v2 admin ops kpi run includes live ops campaign summary", async () => {
   assert.equal(body.data.live_ops_campaign.targeting_guidance.guidance_state, "alert");
   assert.equal(body.data.live_ops_campaign.selection_summary.focus_dimension, "locale");
   assert.equal(body.data.live_ops_campaign.selection_summary.prioritized_top_variant_matches, 6);
+  assert.equal(body.data.live_ops_campaign.selection_summary.query_strategy_summary.reason, "query_strategy_locale_and_segment");
+  assert.equal(body.data.live_ops_campaign.selection_summary.query_strategy_summary.segment_strategy_reason, "segment_query_active_window_tight");
   assert.equal(body.data.live_ops_campaign.selection_summary.prefilter_summary.reason, "prefilter_applied");
   assert.equal(body.data.live_ops_campaign.selection_trend.latest_prefilter_reason, "prefilter_applied");
   assert.equal(body.data.live_ops_campaign.selection_trend.latest_focus_bucket, "tr");

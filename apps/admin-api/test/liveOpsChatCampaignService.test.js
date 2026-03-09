@@ -586,6 +586,23 @@ test("live ops chat campaign service snapshot includes approval summary schedule
         selected_top_variant_matches: 1,
         prioritized_top_cohort_matches: 5,
         selected_top_cohort_matches: 1,
+        query_strategy_summary: {
+          applied: true,
+          reason: "query_strategy_locale_and_segment",
+          mode_key: "protective",
+          segment_key: "wallet_unlinked",
+          focus_matches_target: true,
+          dimension: "locale",
+          bucket: "tr",
+          exclude_locale_prefix: "tr",
+          locale_strategy_reason: "query_strategy_locale_exclusion",
+          segment_strategy_reason: "segment_query_active_window_tight",
+          pool_limit_multiplier: 2,
+          active_within_days_cap: 7,
+          inactive_hours_floor: 0,
+          max_age_days_cap: 0,
+          offer_age_days_cap: 0
+        },
         prefilter_summary: {
           applied: true,
           dimension: "locale",
@@ -673,6 +690,9 @@ test("live ops chat campaign service snapshot includes approval summary schedule
   assert.equal(snapshot.task_summary.selection_summary.guidance_mode, "protective");
   assert.equal(snapshot.task_summary.selection_summary.selected_candidates, 4);
   assert.equal(snapshot.task_summary.selection_summary.selected_top_locale_matches, 0);
+  assert.equal(snapshot.task_summary.selection_summary.query_strategy_summary.applied, true);
+  assert.equal(snapshot.task_summary.selection_summary.query_strategy_summary.pool_limit_multiplier, 2);
+  assert.equal(snapshot.task_summary.selection_summary.query_strategy_summary.active_within_days_cap, 7);
   assert.equal(snapshot.task_summary.selection_summary.prefilter_summary.applied, true);
   assert.equal(snapshot.task_summary.selection_summary.prefilter_summary.candidates_after, 5);
   assert.equal(snapshot.task_summary.scheduler_skip_alarm_state, "alert");
@@ -1299,6 +1319,7 @@ test("live ops chat campaign service scheduler prioritizes away from pressured l
   assert.equal(result.data.selection_summary.prefilter_summary.reason, "prefilter_applied");
   assert.equal(result.data.selection_summary.prefilter_summary.candidates_before, 5);
   assert.equal(result.data.selection_summary.prefilter_summary.candidates_after, 3);
+  assert.equal(result.data.selection_summary.query_strategy_summary.applied, false);
   assert.equal(result.data.selection_summary.selected_top_locale_matches, 0);
   assert.equal(result.data.selection_summary.selected_top_variant_matches, 0);
   assert.equal(result.data.selection_summary.prioritized_top_locale_matches, 0);
@@ -1444,6 +1465,12 @@ test("live ops chat campaign service applies locale-aware query strategy before 
   assert.equal(candidateQuery.params[6], 4);
   assert.equal(result.ok, true);
   assert.deepEqual(sentChatIds, [8203]);
+  assert.equal(result.data.selection_summary.query_strategy_summary.applied, true);
+  assert.equal(result.data.selection_summary.query_strategy_summary.reason, "query_strategy_locale_and_segment");
+  assert.equal(result.data.selection_summary.query_strategy_summary.locale_strategy_reason, "query_strategy_locale_exclusion");
+  assert.equal(result.data.selection_summary.query_strategy_summary.segment_strategy_reason, "segment_query_active_window_tight");
+  assert.equal(result.data.selection_summary.query_strategy_summary.pool_limit_multiplier, 2);
+  assert.equal(result.data.selection_summary.query_strategy_summary.active_within_days_cap, 7);
   assert.equal(result.data.selection_summary.prefilter_summary.reason, "prefilter_shifted_to_query_strategy");
   assert.equal(result.data.selection_summary.prefilter_summary.candidates_before, 3);
   assert.equal(result.data.selection_summary.prefilter_summary.candidates_after, 3);
@@ -1592,5 +1619,12 @@ test("live ops chat campaign service narrows mission-idle scheduler query window
   assert.equal(candidateQuery.params[7], 4);
   assert.equal(result.ok, true);
   assert.deepEqual(sentChatIds, [8301]);
+  assert.equal(result.data.selection_summary.query_strategy_summary.applied, true);
+  assert.equal(result.data.selection_summary.query_strategy_summary.reason, "query_strategy_locale_and_segment");
+  assert.equal(result.data.selection_summary.query_strategy_summary.locale_strategy_reason, "query_strategy_locale_exclusion");
+  assert.equal(result.data.selection_summary.query_strategy_summary.segment_strategy_reason, "segment_query_offer_window_tight");
+  assert.equal(result.data.selection_summary.query_strategy_summary.pool_limit_multiplier, 2);
+  assert.equal(result.data.selection_summary.query_strategy_summary.active_within_days_cap, 7);
+  assert.equal(result.data.selection_summary.query_strategy_summary.offer_age_days_cap, 3);
   assert.equal(result.data.selection_summary.prefilter_summary.reason, "prefilter_shifted_to_query_strategy");
 });

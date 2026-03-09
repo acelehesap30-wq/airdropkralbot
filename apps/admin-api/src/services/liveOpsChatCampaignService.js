@@ -947,13 +947,14 @@ async function prioritizeLiveOpsCandidates(client, candidates, experimentKey, se
   };
 }
 
-function buildLiveOpsSelectionSummary(selectionProfile, prioritizedCandidates, selectedCandidates, prefilterSummary) {
+function buildLiveOpsSelectionSummary(selectionProfile, prioritizedCandidates, selectedCandidates, prefilterSummary, queryStrategySummary) {
   const profile = selectionProfile && typeof selectionProfile === "object" && !Array.isArray(selectionProfile)
     ? selectionProfile
     : {};
   const prioritized = Array.isArray(prioritizedCandidates) ? prioritizedCandidates : [];
   const selected = Array.isArray(selectedCandidates) ? selectedCandidates : [];
   const safePrefilterSummary = buildLiveOpsCandidatePrefilterSummary(prefilterSummary);
+  const safeQueryStrategySummary = buildLiveOpsCandidateQueryStrategySummary(queryStrategySummary);
   const countMatches = (rows, dimension, bucketKey) => {
     if (!bucketKey) {
       return 0;
@@ -977,6 +978,7 @@ function buildLiveOpsSelectionSummary(selectionProfile, prioritizedCandidates, s
     selected_top_variant_matches: countMatches(selected, "variant", String(profile.top_variant_bucket || "")),
     prioritized_top_cohort_matches: countMatches(prioritized, "cohort", String(profile.top_cohort_bucket || "")),
     selected_top_cohort_matches: countMatches(selected, "cohort", String(profile.top_cohort_bucket || "")),
+    query_strategy_summary: safeQueryStrategySummary,
     prefilter_summary: safePrefilterSummary
   };
 }
@@ -2256,6 +2258,7 @@ function buildEmptyLiveOpsTaskSummary() {
       selected_top_variant_matches: 0,
       prioritized_top_cohort_matches: 0,
       selected_top_cohort_matches: 0,
+      query_strategy_summary: buildLiveOpsCandidateQueryStrategySummary(),
       prefilter_summary: buildLiveOpsCandidatePrefilterSummary()
     },
     window_key: "",
@@ -2428,6 +2431,7 @@ function readLatestTaskArtifactSummaryFromDisk(now, repoRootDir) {
         selected_top_variant_matches: Math.max(0, Number(selectionSummary.selected_top_variant_matches || 0) || 0),
         prioritized_top_cohort_matches: Math.max(0, Number(selectionSummary.prioritized_top_cohort_matches || 0) || 0),
         selected_top_cohort_matches: Math.max(0, Number(selectionSummary.selected_top_cohort_matches || 0) || 0),
+        query_strategy_summary: buildLiveOpsCandidateQueryStrategySummary(selectionSummary.query_strategy_summary),
         prefilter_summary: buildLiveOpsCandidatePrefilterSummary(selectionSummary.prefilter_summary)
       },
       window_key: String(scheduler?.window_key || data?.window_key || "").trim(),
@@ -3146,7 +3150,8 @@ async function buildCampaignSnapshot(client, current) {
               prioritization.selection_profile,
               candidates,
               selectedCandidates,
-              prefilterResult.prefilter_summary
+              prefilterResult.prefilter_summary,
+              candidateQueryStrategy
             )
           : null;
       await client.query(

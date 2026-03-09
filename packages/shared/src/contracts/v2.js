@@ -359,6 +359,23 @@ const LiveOpsCampaignSelectionSummarySchema = z.object({
   selected_top_variant_matches: z.number().int().nonnegative().default(0),
   prioritized_top_cohort_matches: z.number().int().nonnegative().default(0),
   selected_top_cohort_matches: z.number().int().nonnegative().default(0),
+  query_strategy_summary: z.object({
+    applied: z.boolean().default(false),
+    reason: z.string().default(""),
+    mode_key: z.enum(["protective", "balanced", "aggressive"]).default("balanced"),
+    segment_key: z.string().default(""),
+    focus_matches_target: z.boolean().default(false),
+    dimension: z.string().default(""),
+    bucket: z.string().default(""),
+    exclude_locale_prefix: z.string().default(""),
+    locale_strategy_reason: z.string().default(""),
+    segment_strategy_reason: z.string().default(""),
+    pool_limit_multiplier: z.number().int().min(1).max(4).default(4),
+    active_within_days_cap: z.number().int().nonnegative().default(0),
+    inactive_hours_floor: z.number().int().nonnegative().default(0),
+    max_age_days_cap: z.number().int().nonnegative().default(0),
+    offer_age_days_cap: z.number().int().nonnegative().default(0)
+  }).default({}),
   prefilter_summary: z.object({
     applied: z.boolean().default(false),
     dimension: z.string().default(""),
