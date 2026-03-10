@@ -2527,6 +2527,106 @@ function buildDistrictInteractionTerminal(
   };
 }
 
+function buildDistrictInteractionModal(districtKey, activeHotspot, interactionTerminal) {
+  if (!activeHotspot || !interactionTerminal) {
+    return null;
+  }
+
+  const hotspotKey = toText(activeHotspot.key, "");
+  let modalKindKey = "world_modal_kind_travel_gate";
+  let modalClassKey = "travel_gate";
+
+  switch (districtKey) {
+    case "arena_prime":
+      if (hotspotKey === "ladder_bridge" || hotspotKey === "ranking_orbit") {
+        modalKindKey = "world_modal_kind_ladder_sequence";
+        modalClassKey = "ladder_sequence";
+      } else if (hotspotKey === "diagnostics_rail" || hotspotKey === "tick_chamber") {
+        modalKindKey = "world_modal_kind_telemetry_scan";
+        modalClassKey = "telemetry_scan";
+      } else {
+        modalKindKey = "world_modal_kind_duel_sequence";
+        modalClassKey = "duel_sequence";
+      }
+      break;
+    case "mission_quarter":
+      if (hotspotKey === "claim_dais") {
+        modalKindKey = "world_modal_kind_loot_reveal";
+        modalClassKey = "loot_reveal";
+      } else if (hotspotKey === "streak_pulse" || hotspotKey === "contract_pulse") {
+        modalKindKey = "world_modal_kind_streak_sync";
+        modalClassKey = "streak_sync";
+      } else {
+        modalKindKey = "world_modal_kind_contract_sequence";
+        modalClassKey = "contract_sequence";
+      }
+      break;
+    case "exchange_district":
+      if (hotspotKey === "rewards_vault") {
+        modalKindKey = "world_modal_kind_loot_reveal";
+        modalClassKey = "loot_reveal";
+      } else if (hotspotKey === "premium_lane") {
+        modalKindKey = "world_modal_kind_premium_unlock";
+        modalClassKey = "premium_unlock";
+      } else if (hotspotKey === "payout_bay" || hotspotKey === "support_bay") {
+        modalKindKey = "world_modal_kind_payout_route";
+        modalClassKey = "payout_route";
+      } else {
+        modalKindKey = "world_modal_kind_wallet_terminal";
+        modalClassKey = "wallet_terminal";
+      }
+      break;
+    case "ops_citadel":
+      if (hotspotKey === "liveops_table") {
+        modalKindKey = "world_modal_kind_dispatch_sequence";
+        modalClassKey = "dispatch_sequence";
+      } else if (hotspotKey === "runtime_dais" || hotspotKey === "flags_console" || hotspotKey === "bot_relay") {
+        modalKindKey = "world_modal_kind_runtime_scan";
+        modalClassKey = "runtime_scan";
+      } else {
+        modalKindKey = "world_modal_kind_queue_review";
+        modalClassKey = "queue_review";
+      }
+      break;
+    default:
+      if (hotspotKey === "rewards_cache") {
+        modalKindKey = "world_modal_kind_loot_reveal";
+        modalClassKey = "loot_reveal";
+      } else if (hotspotKey === "wallet_port") {
+        modalKindKey = "world_modal_kind_wallet_terminal";
+        modalClassKey = "wallet_terminal";
+      } else if (hotspotKey === "mission_desk" || hotspotKey === "discover_arc") {
+        modalKindKey = "world_modal_kind_mission_terminal";
+        modalClassKey = "mission_terminal";
+      }
+      break;
+  }
+
+  return {
+    modal_key: `${districtKey}:${hotspotKey || "modal"}`,
+    modal_kind_key: modalKindKey,
+    modal_class_key: modalClassKey,
+    status_key: toText(interactionTerminal.status_key, "ready"),
+    status_label_key: toText(interactionTerminal.status_label_key, "world_flow_state_ready"),
+    title_key: toText(interactionTerminal.terminal_title_key, ""),
+    title: toText(interactionTerminal.terminal_title, ""),
+    intent_label_key: toText(interactionTerminal.intent_label_key, ""),
+    intent_tone_key: toText(interactionTerminal.intent_tone_key, ""),
+    hint_label_key: toText(interactionTerminal.hint_label_key, ""),
+    stage_label_key: toText(interactionTerminal.stage_label_key, ""),
+    stage_value_key: toText(interactionTerminal.stage_value_key, ""),
+    readiness_label_key: toText(interactionTerminal.readiness_label_key, ""),
+    readiness_value_key: toText(interactionTerminal.readiness_value_key, ""),
+    tempo_label_key: toText(interactionTerminal.tempo_label_key, ""),
+    tempo_value: toText(interactionTerminal.tempo_value, ""),
+    preview_rows: asList(interactionTerminal.preview_rows).slice(0, 3),
+    flow_rows: asList(interactionTerminal.flow_rows).slice(0, 3),
+    signal_rows: asList(interactionTerminal.signal_rows).slice(0, 4),
+    action_items: asList(interactionTerminal.action_items).slice(0, 3),
+    action_count: toNum(interactionTerminal.action_count, 0)
+  };
+}
+
 export function buildDistrictWorldState(input = {}) {
   const workspace = normalizeWorkspace(input.workspace);
   const tab = normalizeTab(input.tab);
@@ -2588,6 +2688,7 @@ export function buildDistrictWorldState(input = {}) {
     interactionFlow,
     interactionEntry
   );
+  const interactionModal = buildDistrictInteractionModal(districtKey, activeHotspot, interactionTerminal);
 
   return {
     world_key: `${workspace}:${tab}:${districtKey}`,
@@ -2644,6 +2745,7 @@ export function buildDistrictWorldState(input = {}) {
     interaction_flow: interactionFlow,
     interaction_entry: interactionEntry,
     interaction_terminal: interactionTerminal,
+    interaction_modal: interactionModal,
     theme: districtTheme,
     actors,
     interaction_cluster_count: interactionClusters.length,

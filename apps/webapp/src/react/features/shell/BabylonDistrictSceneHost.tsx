@@ -133,6 +133,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
   const [hoverPreview, setHoverPreview] = useState<HoverPreview | null>(null);
   const [hoveredClusterKeyState, setHoveredClusterKeyState] = useState("");
   const [terminalOpen, setTerminalOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const worldState = useMemo(
     () =>
       buildDistrictWorldState({
@@ -238,6 +239,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
 
   useEffect(() => {
     setTerminalOpen(false);
+    setModalOpen(false);
   }, [worldState.interaction_terminal?.terminal_key]);
 
   const triggerSceneAction = useCallback(
@@ -1151,6 +1153,16 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                 <span>{t(props.lang, terminalOpen ? ("world_terminal_close" as never) : ("world_terminal_open" as never))}</span>
                 <strong>{t(props.lang, worldState.interaction_terminal.terminal_kind_key as never)}</strong>
               </button>
+              {worldState.interaction_modal ? (
+                <button
+                  type="button"
+                  className={`akrSceneEntrySurfaceConsoleToggle isAccent ${modalOpen ? "isOpen" : ""}`}
+                  onClick={() => setModalOpen((current) => !current)}
+                >
+                  <span>{t(props.lang, modalOpen ? ("world_modal_close" as never) : ("world_modal_open" as never))}</span>
+                  <strong>{t(props.lang, worldState.interaction_modal.modal_kind_key as never)}</strong>
+                </button>
+              ) : null}
             </div>
           ) : null}
           <div className="akrSceneEntrySurfaceActions">
@@ -1296,6 +1308,133 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                       label: action.label,
                       labelKey: action.label_key,
                       sourceType: "district_scene_terminal_console",
+                      actorKey: action.actor_key,
+                      interactionKind: action.interaction_kind,
+                      clusterKey: action.cluster_key,
+                      isSecondary: action.is_secondary,
+                      workspace: props.workspace,
+                      tab: props.tab,
+                      districtKey: worldState.district_key
+                    })
+                  }
+                >
+                  <span>{t(props.lang, (action.intent_profile?.intent_label_key || "world_intent_open") as never)}</span>
+                  <strong>{action.label_key ? t(props.lang, action.label_key as never) : action.label}</strong>
+                  <span>{t(props.lang, action.hint_label_key as never)}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {modalOpen && worldState.interaction_modal ? (
+        <div className={`akrSceneInteractionModal akrGlass is-${worldState.interaction_modal.modal_class_key}`}>
+          <div className="akrSceneInteractionModalHeader">
+            <div className="akrSceneInteractionModalTitle">
+              <span>{t(props.lang, worldState.interaction_modal.modal_kind_key as never)}</span>
+              <strong>
+                {worldState.interaction_modal.title_key
+                  ? t(props.lang, worldState.interaction_modal.title_key as never)
+                  : worldState.interaction_modal.title}
+              </strong>
+            </div>
+            <button type="button" className="akrSceneInteractionModalClose" onClick={() => setModalOpen(false)}>
+              {t(props.lang, "world_modal_close" as never)}
+            </button>
+          </div>
+          <div className="akrSceneInteractionModalMeta">
+            <strong>{t(props.lang, worldState.interaction_modal.status_label_key as never)}</strong>
+            {worldState.interaction_modal.intent_label_key ? (
+              <span>{t(props.lang, worldState.interaction_modal.intent_label_key as never)}</span>
+            ) : null}
+            {worldState.interaction_modal.intent_tone_key ? (
+              <span>{t(props.lang, worldState.interaction_modal.intent_tone_key as never)}</span>
+            ) : null}
+            {worldState.interaction_modal.hint_label_key ? (
+              <span>{t(props.lang, worldState.interaction_modal.hint_label_key as never)}</span>
+            ) : null}
+          </div>
+          <div className="akrSceneInteractionModalGrid">
+            <section className="akrSceneInteractionModalSection">
+              <div className="akrSceneInteractionModalSectionHeader">
+                <span>{t(props.lang, "world_modal_section_preview" as never)}</span>
+                <strong>{t(props.lang, worldState.interaction_modal.status_label_key as never)}</strong>
+              </div>
+              <div className="akrSceneInteractionModalRows">
+                {worldState.interaction_modal.preview_rows.map((row: { label_key: string; value: string; status_key: string }) => (
+                  <div key={`${worldState.interaction_modal.modal_key}:preview:${row.label_key}`} className={`akrSceneInteractionModalRow is-${row.status_key}`}>
+                    <span>{t(props.lang, row.label_key as never)}</span>
+                    <strong>{row.value}</strong>
+                  </div>
+                ))}
+              </div>
+            </section>
+            <section className="akrSceneInteractionModalSection">
+              <div className="akrSceneInteractionModalSectionHeader">
+                <span>{t(props.lang, "world_modal_section_protocol" as never)}</span>
+                <strong>{worldState.interaction_modal.action_count}</strong>
+              </div>
+              <div className="akrSceneInteractionModalRows">
+                {worldState.interaction_modal.signal_rows.map((row: { label_key: string; value: string; status_key: string }) => (
+                  <div key={`${worldState.interaction_modal.modal_key}:signal:${row.label_key}`} className={`akrSceneInteractionModalRow is-${row.status_key}`}>
+                    <span>{t(props.lang, row.label_key as never)}</span>
+                    <strong>{row.value}</strong>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
+          <div className="akrSceneInteractionModalFlow">
+            <div className="akrSceneInteractionModalSectionHeader">
+              <span>{t(props.lang, "world_modal_section_flow" as never)}</span>
+              <strong>{t(props.lang, worldState.interaction_modal.stage_value_key as never)}</strong>
+            </div>
+            <div className="akrSceneInteractionModalChips">
+              <div className={`akrSceneInteractionModalChip is-${worldState.interaction_modal.status_key}`}>
+                <span>{t(props.lang, worldState.interaction_modal.stage_label_key as never)}</span>
+                <strong>{t(props.lang, worldState.interaction_modal.stage_value_key as never)}</strong>
+              </div>
+              <div className={`akrSceneInteractionModalChip is-${worldState.interaction_modal.status_key}`}>
+                <span>{t(props.lang, worldState.interaction_modal.readiness_label_key as never)}</span>
+                <strong>{t(props.lang, worldState.interaction_modal.readiness_value_key as never)}</strong>
+              </div>
+              <div className="akrSceneInteractionModalChip is-tempo">
+                <span>{t(props.lang, worldState.interaction_modal.tempo_label_key as never)}</span>
+                <strong>{worldState.interaction_modal.tempo_value}</strong>
+              </div>
+            </div>
+            <div className="akrSceneInteractionModalRows">
+              {worldState.interaction_modal.flow_rows.map((row: { label_key: string; value: string; status_key: string }) => (
+                <div key={`${worldState.interaction_modal.modal_key}:flow:${row.label_key}`} className={`akrSceneInteractionModalRow is-${row.status_key}`}>
+                  <span>{t(props.lang, row.label_key as never)}</span>
+                  <strong>{row.value}</strong>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="akrSceneInteractionModalActions">
+            <div className="akrSceneInteractionModalSectionHeader">
+              <span>{t(props.lang, "world_modal_section_actions" as never)}</span>
+              {worldState.interaction_modal.hint_label_key ? (
+                <strong>{t(props.lang, worldState.interaction_modal.hint_label_key as never)}</strong>
+              ) : null}
+            </div>
+            <div className="akrSceneInteractionModalActionGrid">
+              {worldState.interaction_modal.action_items.map((action: ClusterActionItem) => (
+                <button
+                  key={`${worldState.interaction_modal.modal_key}:${action.surface_slot_key || action.key}`}
+                  type="button"
+                  className={`akrSceneInteractionModalAction ${action.is_primary_surface_action ? "isPrimary" : "isSecondary"} is-${
+                    action.intent_profile_key || "open"
+                  }`}
+                  onClick={() =>
+                    triggerSceneAction({
+                      actionKey: action.action_key,
+                      nodeKey: action.key,
+                      laneKey: action.cluster_key,
+                      label: action.label,
+                      labelKey: action.label_key,
+                      sourceType: "district_scene_interaction_modal",
                       actorKey: action.actor_key,
                       interactionKind: action.interaction_kind,
                       clusterKey: action.cluster_key,
