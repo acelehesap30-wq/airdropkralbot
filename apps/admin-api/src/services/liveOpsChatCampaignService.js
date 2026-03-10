@@ -854,6 +854,13 @@ function applySelectionFamilyRiskToQueryStrategy(strategySummary, campaign) {
   let maxAgeDaysCap = strategy.max_age_days_cap;
   let offerAgeDaysCap = strategy.offer_age_days_cap;
   let tightened = false;
+  const strategySegmentPathKey = String(strategy.strategy_segment_path_key || "").trim().toLowerCase();
+  const adjustmentSegmentPathKey = String(strategy.adjustment_segment_path_key || "").trim().toLowerCase();
+  const hasPathSignal = (...pathKeys) =>
+    pathKeys.some((pathKey) => {
+      const safePathKey = String(pathKey || "").trim().toLowerCase();
+      return !!safePathKey && (safePathKey === strategySegmentPathKey || safePathKey === adjustmentSegmentPathKey);
+    });
 
   if (strategy.family_risk_dimension === "query_family") {
     if (["locale_and_segment", "locale"].includes(strategy.family_risk_bucket)) {
@@ -918,6 +925,13 @@ function applySelectionFamilyRiskToQueryStrategy(strategySummary, campaign) {
       if (segmentKey === LIVE_OPS_SEGMENT_KEY.MISSION_IDLE && offerAgeDaysCap > 0) {
         offerAgeDaysCap = tightenByDelta(offerAgeDaysCap, 1, strategy.family_risk_state === "alert" ? 2 : 1);
       }
+      if (
+        segmentKey === LIVE_OPS_SEGMENT_KEY.MISSION_IDLE &&
+        hasPathSignal("mission_idle:offer_window", "mission_idle:activity_window") &&
+        activeWithinDaysCap > 0
+      ) {
+        activeWithinDaysCap = tightenByDelta(activeWithinDaysCap, 2, strategy.family_risk_state === "alert" ? 1 : 0);
+      }
       if (segmentKey === LIVE_OPS_SEGMENT_KEY.INACTIVE_RETURNING) {
         if (inactiveHoursFloor > 0) {
           inactiveHoursFloor += strategy.family_risk_state === "alert" ? 96 : 48;
@@ -925,8 +939,23 @@ function applySelectionFamilyRiskToQueryStrategy(strategySummary, campaign) {
         if (maxAgeDaysCap > 0) {
           maxAgeDaysCap = tightenByDelta(maxAgeDaysCap, 7, strategy.family_risk_state === "alert" ? 14 : 7);
         }
+        if (hasPathSignal("inactive_returning:inactive_window", "inactive_returning:activity_window")) {
+          if (inactiveHoursFloor > 0) {
+            inactiveHoursFloor += strategy.family_risk_state === "alert" ? 24 : 12;
+          }
+          if (maxAgeDaysCap > 0) {
+            maxAgeDaysCap = tightenByDelta(maxAgeDaysCap, strategy.family_risk_state === "alert" ? 5 : 6, strategy.family_risk_state === "alert" ? 2 : 1);
+          }
+        }
       } else if (inactiveHoursFloor > 0) {
         inactiveHoursFloor += strategy.family_risk_state === "alert" ? 24 : 12;
+      }
+      if (
+        segmentKey === LIVE_OPS_SEGMENT_KEY.ALL_ACTIVE &&
+        hasPathSignal("all_active:active_window", "all_active:activity_window") &&
+        activeWithinDaysCap > 0
+      ) {
+        activeWithinDaysCap = tightenByDelta(activeWithinDaysCap, strategy.family_risk_state === "alert" ? 1 : 2, 1);
       }
     } else if (strategy.family_risk_bucket === "pool_limit") {
       poolLimitMultiplier = 1;
@@ -973,7 +1002,14 @@ function applySelectionFamilyRiskToQueryStrategy(strategySummary, campaign) {
   }
 
   if (segmentKey === LIVE_OPS_SEGMENT_KEY.ALL_ACTIVE && activeWithinDaysCap > 0) {
-    activeWithinDaysCap = Math.max(2, activeWithinDaysCap);
+    const minActiveWindowDays =
+      strategy.family_risk_dimension === "field_family" &&
+      strategy.family_risk_bucket === "activity_window" &&
+      strategy.family_risk_state === "alert" &&
+      hasPathSignal("all_active:active_window", "all_active:activity_window")
+        ? 1
+        : 2;
+    activeWithinDaysCap = Math.max(minActiveWindowDays, activeWithinDaysCap);
   }
 
   const adjustmentRows = tightened

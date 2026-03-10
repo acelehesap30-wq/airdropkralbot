@@ -2625,7 +2625,7 @@ test("live ops chat campaign service applies field-family risk to mission-idle s
 
   const candidateQuery = recordedQueries.find((entry) => entry.sql.includes("WITH mission_windows AS"));
   assert.ok(candidateQuery);
-  assert.equal(candidateQuery.params[0], 3);
+  assert.equal(candidateQuery.params[0], 2);
   assert.equal(candidateQuery.params[2], "tr");
   assert.equal(candidateQuery.params[3], 1);
   assert.equal(candidateQuery.params[7], 2);
@@ -2638,11 +2638,11 @@ test("live ops chat campaign service applies field-family risk to mission-idle s
   assert.equal(result.data.selection_summary.query_strategy_summary.strategy_segment_path_key, "mission_idle:offer_window");
   assert.equal(result.data.selection_summary.query_strategy_summary.adjustment_segment_path_key, "mission_idle:activity_window");
   assert.equal(result.data.selection_summary.query_strategy_summary.pool_limit_multiplier, 1);
-  assert.equal(result.data.selection_summary.query_strategy_summary.active_within_days_cap, 3);
+  assert.equal(result.data.selection_summary.query_strategy_summary.active_within_days_cap, 2);
   assert.equal(result.data.selection_summary.query_strategy_summary.offer_age_days_cap, 1);
   const queryAdjustments = result.data.selection_summary.query_strategy_summary.adjustment_rows;
   assert.equal(queryAdjustments.find((row) => row.field_key === "pool_limit_multiplier")?.after_value, 1);
-  assert.equal(queryAdjustments.find((row) => row.field_key === "active_within_days_cap")?.after_value, 3);
+  assert.equal(queryAdjustments.find((row) => row.field_key === "active_within_days_cap")?.after_value, 2);
   assert.equal(queryAdjustments.find((row) => row.field_key === "offer_age_days_cap")?.after_value, 1);
   assert.equal(result.data.selection_summary.prefilter_summary.reason, "prefilter_shifted_to_query_strategy");
 });
@@ -2870,7 +2870,7 @@ test("live ops chat campaign service applies field-family risk to all-active sch
     (entry) => entry.sql.includes("FROM users u") && entry.sql.includes("LIMIT $7;") && !entry.sql.includes("v5_wallet_links")
   );
   assert.ok(candidateQuery);
-  assert.equal(candidateQuery.params[0], 2);
+  assert.equal(candidateQuery.params[0], 1);
   assert.equal(candidateQuery.params[2], "");
   assert.equal(candidateQuery.params[6], 2);
   assert.equal(result.ok, true);
@@ -2881,10 +2881,10 @@ test("live ops chat campaign service applies field-family risk to all-active sch
   assert.equal(result.data.selection_summary.query_strategy_summary.strategy_segment_path_key, "all_active:active_window");
   assert.equal(result.data.selection_summary.query_strategy_summary.adjustment_segment_path_key, "all_active:activity_window");
   assert.equal(result.data.selection_summary.query_strategy_summary.pool_limit_multiplier, 1);
-  assert.equal(result.data.selection_summary.query_strategy_summary.active_within_days_cap, 2);
+  assert.equal(result.data.selection_summary.query_strategy_summary.active_within_days_cap, 1);
   const queryAdjustments = result.data.selection_summary.query_strategy_summary.adjustment_rows;
   assert.equal(queryAdjustments.find((row) => row.field_key === "pool_limit_multiplier")?.after_value, 1);
-  assert.equal(queryAdjustments.find((row) => row.field_key === "active_within_days_cap")?.after_value, 2);
+  assert.equal(queryAdjustments.find((row) => row.field_key === "active_within_days_cap")?.after_value, 1);
   assert.equal(result.data.selection_summary.prefilter_summary.reason, "prefilter_shifted_to_query_strategy");
 });
 
@@ -2970,8 +2970,8 @@ test("live ops chat campaign service applies field-family risk to inactive-retur
                   reason: "query_strategy_locale_and_segment",
                   segment_strategy_reason: "segment_query_inactive_window_tight",
                   adjustment_rows: [
-                    { field_key: "inactive_hours_floor", before_value: 120, after_value: 216, delta_value: 96, direction_key: "increase", reason_code: "selection_family_risk_tightened" },
-                    { field_key: "max_age_days_cap", before_value: 21, after_value: 7, delta_value: -14, direction_key: "decrease", reason_code: "selection_family_risk_tightened" }
+                    { field_key: "inactive_hours_floor", before_value: 120, after_value: 240, delta_value: 120, direction_key: "increase", reason_code: "selection_family_risk_tightened" },
+                    { field_key: "max_age_days_cap", before_value: 21, after_value: 5, delta_value: -16, direction_key: "decrease", reason_code: "selection_family_risk_tightened" }
                   ]
                 },
                 prefilter_summary: {
@@ -3103,8 +3103,8 @@ test("live ops chat campaign service applies field-family risk to inactive-retur
       entry.sql.includes("u.last_seen_at <= now() - make_interval(hours => $1::int)")
   );
   assert.ok(candidateQuery);
-  assert.equal(candidateQuery.params[0], 216);
-  assert.equal(candidateQuery.params[1], 7);
+  assert.equal(candidateQuery.params[0], 240);
+  assert.equal(candidateQuery.params[1], 5);
   assert.equal(candidateQuery.params[7], 2);
   assert.equal(result.ok, true);
   assert.deepEqual(sentChatIds, [8501]);
@@ -3114,11 +3114,11 @@ test("live ops chat campaign service applies field-family risk to inactive-retur
   assert.equal(result.data.selection_summary.query_strategy_summary.strategy_segment_path_key, "inactive_returning:inactive_window");
   assert.equal(result.data.selection_summary.query_strategy_summary.adjustment_segment_path_key, "inactive_returning:activity_window");
   assert.equal(result.data.selection_summary.query_strategy_summary.pool_limit_multiplier, 1);
-  assert.equal(result.data.selection_summary.query_strategy_summary.inactive_hours_floor, 216);
-  assert.equal(result.data.selection_summary.query_strategy_summary.max_age_days_cap, 7);
+  assert.equal(result.data.selection_summary.query_strategy_summary.inactive_hours_floor, 240);
+  assert.equal(result.data.selection_summary.query_strategy_summary.max_age_days_cap, 5);
   const queryAdjustments = result.data.selection_summary.query_strategy_summary.adjustment_rows;
   assert.equal(queryAdjustments.find((row) => row.field_key === "pool_limit_multiplier")?.after_value, 1);
-  assert.equal(queryAdjustments.find((row) => row.field_key === "inactive_hours_floor")?.after_value, 216);
-  assert.equal(queryAdjustments.find((row) => row.field_key === "max_age_days_cap")?.after_value, 7);
+  assert.equal(queryAdjustments.find((row) => row.field_key === "inactive_hours_floor")?.after_value, 240);
+  assert.equal(queryAdjustments.find((row) => row.field_key === "max_age_days_cap")?.after_value, 5);
   assert.equal(result.data.selection_summary.prefilter_summary.reason, "prefilter_shifted_to_query_strategy");
 });
