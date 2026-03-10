@@ -2556,6 +2556,174 @@ function buildModalProtocolActionItem(actionKey, labelKey, hintLabelKey = "", to
   };
 }
 
+function resolveProtocolPodFocusMeta(labelKey) {
+  switch (labelKey) {
+    case "world_modal_lane_duel_sync":
+      return {
+        entry_kind_key: "world_entry_kind_duel_console",
+        sequence_kind_key: "world_modal_kind_duel_sequence",
+        tempo_label_key: "world_sequence_tempo_burst",
+        camera_profile_label_key: "world_camera_focus_strike",
+        camera_radius_scale: 0.84,
+        camera_focus_y_offset: 0.2,
+        motion_scalar: 1.12
+      };
+    case "world_modal_lane_ladder_charge":
+      return {
+        entry_kind_key: "world_entry_kind_ladder_console",
+        sequence_kind_key: "world_modal_kind_ladder_sequence",
+        tempo_label_key: "world_sequence_tempo_charge",
+        camera_profile_label_key: "world_camera_focus_charge",
+        camera_radius_scale: 0.88,
+        camera_focus_y_offset: 0.16,
+        motion_scalar: 1.06
+      };
+    case "world_modal_lane_telemetry_scan":
+    case "world_modal_lane_tick_window":
+    case "world_modal_lane_risk_watch":
+      return {
+        entry_kind_key: "world_entry_kind_telemetry_console",
+        sequence_kind_key: "world_modal_kind_telemetry_scan",
+        tempo_label_key: "world_sequence_tempo_scan",
+        camera_profile_label_key: "world_camera_focus_scan",
+        camera_radius_scale: 0.94,
+        camera_focus_y_offset: 0.1,
+        motion_scalar: 0.94
+      };
+    case "world_modal_lane_offer_stack":
+      return {
+        entry_kind_key: "world_entry_kind_mission_terminal",
+        sequence_kind_key: "world_modal_kind_mission_terminal",
+        tempo_label_key: "world_sequence_tempo_stack",
+        camera_profile_label_key: "world_camera_focus_stack",
+        camera_radius_scale: 0.9,
+        camera_focus_y_offset: 0.12,
+        motion_scalar: 1
+      };
+    case "world_modal_lane_claim_lane":
+      return {
+        entry_kind_key: "world_entry_kind_claim_terminal",
+        sequence_kind_key: "world_modal_kind_contract_sequence",
+        tempo_label_key: "world_sequence_tempo_claim",
+        camera_profile_label_key: "world_camera_focus_claim",
+        camera_radius_scale: 0.88,
+        camera_focus_y_offset: 0.14,
+        motion_scalar: 1.04
+      };
+    case "world_modal_lane_contract_pulse":
+      return {
+        entry_kind_key: "world_entry_kind_mission_terminal",
+        sequence_kind_key: "world_modal_kind_contract_sequence",
+        tempo_label_key: "world_sequence_tempo_sync",
+        camera_profile_label_key: "world_camera_focus_stack",
+        camera_radius_scale: 0.92,
+        camera_focus_y_offset: 0.12,
+        motion_scalar: 0.98
+      };
+    case "world_modal_lane_streak_pulse":
+      return {
+        entry_kind_key: "world_entry_kind_streak_terminal",
+        sequence_kind_key: "world_modal_kind_streak_sync",
+        tempo_label_key: "world_sequence_tempo_sync",
+        camera_profile_label_key: "world_camera_focus_watch",
+        camera_radius_scale: 0.94,
+        camera_focus_y_offset: 0.08,
+        motion_scalar: 0.92
+      };
+    case "world_modal_lane_wallet_link":
+      return {
+        entry_kind_key: "world_entry_kind_wallet_terminal",
+        sequence_kind_key: "world_modal_kind_wallet_terminal",
+        tempo_label_key: "world_sequence_tempo_link",
+        camera_profile_label_key: "world_camera_focus_route",
+        camera_radius_scale: 0.9,
+        camera_focus_y_offset: 0.12,
+        motion_scalar: 0.94
+      };
+    case "world_modal_lane_payout_lane":
+      return {
+        entry_kind_key: "world_entry_kind_payout_terminal",
+        sequence_kind_key: "world_modal_kind_payout_route",
+        tempo_label_key: "world_sequence_tempo_route",
+        camera_profile_label_key: "world_camera_focus_route",
+        camera_radius_scale: 0.88,
+        camera_focus_y_offset: 0.1,
+        motion_scalar: 0.9
+      };
+    case "world_modal_lane_premium_lane":
+      return {
+        entry_kind_key: "world_entry_kind_premium_terminal",
+        sequence_kind_key: "world_modal_kind_premium_unlock",
+        tempo_label_key: "world_sequence_tempo_unlock",
+        camera_profile_label_key: "world_camera_focus_route",
+        camera_radius_scale: 0.9,
+        camera_focus_y_offset: 0.12,
+        motion_scalar: 0.96
+      };
+    case "world_modal_lane_route_matrix":
+      return {
+        entry_kind_key: "world_entry_kind_rewards_vault",
+        sequence_kind_key: "world_modal_kind_payout_route",
+        tempo_label_key: "world_sequence_tempo_route",
+        camera_profile_label_key: "world_camera_focus_route",
+        camera_radius_scale: 0.92,
+        camera_focus_y_offset: 0.1,
+        motion_scalar: 0.9
+      };
+    case "world_modal_lane_queue_review":
+      return {
+        entry_kind_key: "world_entry_kind_queue_console",
+        sequence_kind_key: "world_modal_kind_queue_review",
+        tempo_label_key: "world_sequence_tempo_watch",
+        camera_profile_label_key: "world_camera_focus_watch",
+        camera_radius_scale: 0.9,
+        camera_focus_y_offset: 0.16,
+        motion_scalar: 0.86
+      };
+    case "world_modal_lane_runtime_watch":
+      return {
+        entry_kind_key: "world_entry_kind_runtime_console",
+        sequence_kind_key: "world_modal_kind_runtime_scan",
+        tempo_label_key: "world_sequence_tempo_watch",
+        camera_profile_label_key: "world_camera_focus_watch",
+        camera_radius_scale: 0.94,
+        camera_focus_y_offset: 0.14,
+        motion_scalar: 0.84
+      };
+    case "world_modal_lane_dispatch_gate":
+      return {
+        entry_kind_key: "world_entry_kind_dispatch_console",
+        sequence_kind_key: "world_modal_kind_dispatch_sequence",
+        tempo_label_key: "world_sequence_tempo_dispatch",
+        camera_profile_label_key: "world_camera_focus_dispatch",
+        camera_radius_scale: 0.86,
+        camera_focus_y_offset: 0.18,
+        motion_scalar: 0.88
+      };
+    case "world_modal_lane_mission_queue":
+      return {
+        entry_kind_key: "world_entry_kind_mission_terminal",
+        sequence_kind_key: "world_modal_kind_mission_terminal",
+        tempo_label_key: "world_sequence_tempo_stack",
+        camera_profile_label_key: "world_camera_focus_glide",
+        camera_radius_scale: 0.96,
+        camera_focus_y_offset: 0.08,
+        motion_scalar: 0.96
+      };
+    case "world_modal_lane_season_arc":
+    default:
+      return {
+        entry_kind_key: "world_entry_kind_hub_portal",
+        sequence_kind_key: "world_modal_kind_travel_gate",
+        tempo_label_key: "world_sequence_tempo_glide",
+        camera_profile_label_key: "world_camera_focus_glide",
+        camera_radius_scale: 1,
+        camera_focus_y_offset: 0.06,
+        motion_scalar: 0.94
+      };
+  }
+}
+
 function buildModalProtocolPod(labelKey, value, statusKey = "ready", toneKey = "", options = {}) {
   const text = toText(value, "");
   if (!text) {
@@ -2564,6 +2732,15 @@ function buildModalProtocolPod(labelKey, value, statusKey = "ready", toneKey = "
   const rows = asList(options.rows).filter(Boolean).slice(0, 3);
   const actionItems = asList(options.actionItems).filter(Boolean).slice(0, 2);
   const explicitFlowRows = asList(options.flowRows).filter(Boolean).slice(0, 3);
+  const focusMeta = resolveProtocolPodFocusMeta(labelKey);
+  const sequenceRows = [
+    buildFlowStep(rows[0]?.label_key || labelKey, rows[0]?.value || text, rows[0]?.status_key || statusKey),
+    ...explicitFlowRows,
+    ...rows.slice(1)
+  ]
+    .filter(Boolean)
+    .slice(0, 4);
+  const primarySequenceRow = sequenceRows[0] || buildFlowStep(labelKey, text, statusKey);
   return {
     pod_key: `${labelKey}:${statusKey}:${toneKey || "pod"}`,
     label_key: labelKey,
@@ -2579,7 +2756,18 @@ function buildModalProtocolPod(labelKey, value, statusKey = "ready", toneKey = "
       buildTerminalSignalRow("world_terminal_signal_actions", String(Math.max(1, actionItems.length)), actionItems.length ? "ready" : statusKey)
     ].filter(Boolean),
     flow_rows: (explicitFlowRows.length ? explicitFlowRows : rows.slice(0, 2)).filter(Boolean),
-    action_items: actionItems
+    action_items: actionItems,
+    entry_kind_key: focusMeta.entry_kind_key,
+    sequence_kind_key: focusMeta.sequence_kind_key,
+    tempo_label_key: focusMeta.tempo_label_key,
+    camera_profile_label_key: focusMeta.camera_profile_label_key,
+    camera_radius_scale: focusMeta.camera_radius_scale,
+    camera_focus_y_offset: focusMeta.camera_focus_y_offset,
+    motion_scalar: focusMeta.motion_scalar,
+    stage_label_key: primarySequenceRow?.label_key || labelKey,
+    stage_value: primarySequenceRow?.value || text,
+    stage_status_key: primarySequenceRow?.status_key || statusKey,
+    sequence_rows: sequenceRows
   };
 }
 

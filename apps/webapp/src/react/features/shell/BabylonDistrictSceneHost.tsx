@@ -93,9 +93,20 @@ type ProtocolCardFlowPod = {
   status_label_key?: string;
   tone_key?: string;
   hint_label_key?: string;
+  entry_kind_key?: string;
+  sequence_kind_key?: string;
+  tempo_label_key?: string;
+  camera_profile_label_key?: string;
+  camera_radius_scale?: number;
+  camera_focus_y_offset?: number;
+  motion_scalar?: number;
+  stage_label_key?: string;
+  stage_value?: string;
+  stage_status_key?: string;
   rows?: Array<{ label_key: string; value: string; status_key: string }>;
   signal_rows?: Array<{ label_key: string; value: string; status_key: string }>;
   flow_rows?: Array<{ label_key: string; value: string; status_key: string }>;
+  sequence_rows?: Array<{ label_key: string; value: string; status_key: string }>;
   action_items?: ProtocolCardActionItem[];
 };
 
@@ -170,6 +181,8 @@ async function loadBabylonSceneModules() {
 
 export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const modalOpenRef = useRef(false);
+  const selectedProtocolPodRef = useRef<ProtocolCardFlowPod | null>(null);
   const [status, setStatus] = useState<"idle" | "ready" | "failed">("idle");
   const [hoverPreview, setHoverPreview] = useState<HoverPreview | null>(null);
   const [hoveredClusterKeyState, setHoveredClusterKeyState] = useState("");
@@ -326,6 +339,11 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
       setActiveProtocolPodKey(pods[0].pod_key);
     }
   }, [activeProtocolPodKey, selectedProtocolCard]);
+
+  useEffect(() => {
+    modalOpenRef.current = modalOpen;
+    selectedProtocolPodRef.current = selectedProtocolPod;
+  }, [modalOpen, selectedProtocolPod]);
 
   const triggerSceneAction = useCallback(
     (payload: {
@@ -938,7 +956,13 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
 
         engine.runRenderLoop(() => {
           const now = performance.now() * 0.001;
-          const motionScalar = (worldState.reduced_motion ? 0.22 : 1) * directorProfile.motion_scalar;
+          const podFocus = modalOpenRef.current ? selectedProtocolPodRef.current : null;
+          const podMotionScalar = Number.isFinite(Number(podFocus?.motion_scalar)) ? Number(podFocus?.motion_scalar) : 1;
+          const podRadiusScale = Number.isFinite(Number(podFocus?.camera_radius_scale)) ? Number(podFocus?.camera_radius_scale) : 1;
+          const podFocusYOffset = Number.isFinite(Number(podFocus?.camera_focus_y_offset))
+            ? Number(podFocus?.camera_focus_y_offset)
+            : 0;
+          const motionScalar = (worldState.reduced_motion ? 0.22 : 1) * directorProfile.motion_scalar * podMotionScalar;
           const focusHotspot =
             worldState.hotspots.find((hotspot) => hotspot.key === hoveredHotspotKey) || activeHotspot;
           ring.rotation.z = now * worldState.orbit_speed * 22 * directorProfile.orbit_spin_scalar;
@@ -962,9 +986,9 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           camera.beta += (targetBeta - camera.beta) * cameraProfile.beta_lerp;
           if (focusHotspot) {
             camera.target.x += (focusHotspot.x - camera.target.x) * cameraProfile.focus_lerp;
-            camera.target.y += (focusHotspot.focus_y - camera.target.y) * cameraProfile.focus_lerp;
+            camera.target.y += (focusHotspot.focus_y + podFocusYOffset - camera.target.y) * cameraProfile.focus_lerp;
             camera.target.z += (focusHotspot.z - camera.target.z) * cameraProfile.focus_lerp;
-            const desiredRadius = cameraProfile.radius * focusHotspot.camera_radius_scale;
+            const desiredRadius = cameraProfile.radius * focusHotspot.camera_radius_scale * podRadiusScale;
             camera.radius += (desiredRadius - camera.radius) * cameraProfile.radius_lerp;
           }
           satellites.forEach((entry, index) => {
@@ -1077,6 +1101,12 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           <span className="akrSceneWorldFocus">
             {t(props.lang, (hoverPreview?.intentToneKey || worldState.active_hotspot_intent_tone_key) as never)}
           </span>
+        ) : null}
+        {modalOpen && selectedProtocolPod?.entry_kind_key ? (
+          <span className="akrSceneWorldFocus">{t(props.lang, selectedProtocolPod.entry_kind_key as never)}</span>
+        ) : null}
+        {modalOpen && selectedProtocolPod?.tempo_label_key ? (
+          <span className="akrSceneWorldFocus">{t(props.lang, selectedProtocolPod.tempo_label_key as never)}</span>
         ) : null}
         {worldState.hud_profile.show_node_label && worldState.active_node_label ? (
           <span className="akrSceneWorldFocus">
@@ -1675,6 +1705,30 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                           <strong>{t(props.lang, selectedProtocolPod.tone_key as never)}</strong>
                         </div>
                       ) : null}
+                      {selectedProtocolPod.entry_kind_key ? (
+                        <div className={`akrSceneInteractionModalChip is-${selectedProtocolPod.status_key}`}>
+                          <span>{t(props.lang, "world_modal_chip_entry_kind" as never)}</span>
+                          <strong>{t(props.lang, selectedProtocolPod.entry_kind_key as never)}</strong>
+                        </div>
+                      ) : null}
+                      {selectedProtocolPod.sequence_kind_key ? (
+                        <div className={`akrSceneInteractionModalChip is-${selectedProtocolPod.status_key}`}>
+                          <span>{t(props.lang, "world_modal_chip_sequence_kind" as never)}</span>
+                          <strong>{t(props.lang, selectedProtocolPod.sequence_kind_key as never)}</strong>
+                        </div>
+                      ) : null}
+                      {selectedProtocolPod.tempo_label_key ? (
+                        <div className="akrSceneInteractionModalChip is-tempo">
+                          <span>{t(props.lang, "world_modal_chip_tempo" as never)}</span>
+                          <strong>{t(props.lang, selectedProtocolPod.tempo_label_key as never)}</strong>
+                        </div>
+                      ) : null}
+                      {selectedProtocolPod.camera_profile_label_key ? (
+                        <div className="akrSceneInteractionModalChip is-tempo">
+                          <span>{t(props.lang, "world_modal_chip_camera" as never)}</span>
+                          <strong>{t(props.lang, selectedProtocolPod.camera_profile_label_key as never)}</strong>
+                        </div>
+                      ) : null}
                       {selectedProtocolPod.action_items?.length ? (
                         <div className="akrSceneInteractionModalChip is-tempo">
                           <span>{t(props.lang, "world_modal_section_actions" as never)}</span>
@@ -1683,6 +1737,26 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                       ) : null}
                     </div>
                     <div className="akrSceneInteractionModalGrid">
+                      {selectedProtocolPod.sequence_rows?.length ? (
+                        <section className="akrSceneInteractionModalSection">
+                          <div className="akrSceneInteractionModalSectionHeader">
+                            <span>{t(props.lang, "world_modal_section_sequence" as never)}</span>
+                            <strong>
+                              {selectedProtocolPod.sequence_kind_key
+                                ? t(props.lang, selectedProtocolPod.sequence_kind_key as never)
+                                : selectedProtocolPod.stage_value || selectedProtocolPod.value}
+                            </strong>
+                          </div>
+                          <div className="akrSceneInteractionModalRows">
+                            {selectedProtocolPod.sequence_rows.map((row) => (
+                              <div key={`${selectedProtocolPod.pod_key}:sequence:${row.label_key}`} className={`akrSceneInteractionModalRow is-${row.status_key}`}>
+                                <span>{t(props.lang, row.label_key as never)}</span>
+                                <strong>{row.value}</strong>
+                              </div>
+                            ))}
+                          </div>
+                        </section>
+                      ) : null}
                       {selectedProtocolPod.rows?.length ? (
                         <div className="akrSceneInteractionModalRows">
                           {selectedProtocolPod.rows.map((row) => (
