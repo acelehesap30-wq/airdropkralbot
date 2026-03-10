@@ -348,6 +348,11 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
   const selectionTrendAdjustmentFieldFamilyDaily = asRows(selectionTrend?.query_adjustment_field_family_daily_breakdown);
   const selectionTrendAdjustmentPathDaily = asRows(selectionTrend?.query_adjustment_segment_path_daily_breakdown);
   const selectionTrendFamilyRiskDaily = asRows(selectionTrend?.family_risk_daily_breakdown);
+  const selectionTrendFamilyRiskFieldBandDaily = asRows(selectionTrend?.family_risk_field_family_band_daily_breakdown);
+  const selectionTrendFamilyRiskQueryPathBandDaily = asRows(selectionTrend?.family_risk_query_segment_path_band_daily_breakdown);
+  const selectionTrendFamilyRiskAdjustmentPathBandDaily = asRows(
+    selectionTrend?.family_risk_adjustment_segment_path_band_daily_breakdown
+  );
   const selectionTrendFamilyRiskBands = asRows(selectionTrend?.family_risk_band_breakdown);
   const selectionTrendFamilyRiskDimensions = asRows(selectionTrend?.family_risk_dimension_breakdown);
   const selectionTrendFamilyRiskFieldFamilies = asRows(selectionTrend?.family_risk_field_family_breakdown);
@@ -840,6 +845,18 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
         <SelectionFamilyRiskDailyTrendList
           title={t(props.lang, "admin_runtime_live_ops_selection_family_risk_daily_title")}
           rows={selectionTrendFamilyRiskDaily}
+        />
+        <SelectionFamilyDailyTrendList
+          title={t(props.lang, "admin_runtime_live_ops_selection_family_risk_field_band_daily_title")}
+          rows={selectionTrendFamilyRiskFieldBandDaily}
+        />
+        <SelectionFamilyDailyTrendList
+          title={t(props.lang, "admin_runtime_live_ops_selection_family_risk_query_path_band_daily_title")}
+          rows={selectionTrendFamilyRiskQueryPathBandDaily}
+        />
+        <SelectionFamilyDailyTrendList
+          title={t(props.lang, "admin_runtime_live_ops_selection_family_risk_adjustment_path_band_daily_title")}
+          rows={selectionTrendFamilyRiskAdjustmentPathBandDaily}
         />
         <BreakdownList title={t(props.lang, "admin_runtime_live_ops_selection_adjustment_field_breakdown_title")} rows={selectionTrendAdjustmentFields} />
         <BreakdownList title={t(props.lang, "admin_runtime_live_ops_selection_adjustment_field_family_breakdown_title")} rows={selectionTrendAdjustmentFieldFamilies} />

@@ -920,10 +920,10 @@ function applySelectionFamilyRiskToQueryStrategy(strategySummary, campaign) {
       }
       if (segmentKey === LIVE_OPS_SEGMENT_KEY.INACTIVE_RETURNING) {
         if (inactiveHoursFloor > 0) {
-          inactiveHoursFloor += strategy.family_risk_state === "alert" ? 72 : 36;
+          inactiveHoursFloor += strategy.family_risk_state === "alert" ? 96 : 48;
         }
         if (maxAgeDaysCap > 0) {
-          maxAgeDaysCap = tightenByDelta(maxAgeDaysCap, 7, strategy.family_risk_state === "alert" ? 12 : 6);
+          maxAgeDaysCap = tightenByDelta(maxAgeDaysCap, 7, strategy.family_risk_state === "alert" ? 14 : 7);
         }
       } else if (inactiveHoursFloor > 0) {
         inactiveHoursFloor += strategy.family_risk_state === "alert" ? 24 : 12;
@@ -2306,6 +2306,40 @@ function buildSelectionFamilyRiskCompositeBreakdown(rows, leftFieldKey, rightFie
     .slice(0, 8);
 }
 
+function buildSelectionFamilyRiskCompositeDailyBreakdown(rows, leftFieldKey, rightFieldKey) {
+  const countsByDay = new Map();
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const dayKey = String(row?.day || "").trim();
+    const leftKey = String(row?.[leftFieldKey] || "").trim().toLowerCase();
+    const rightKey = String(row?.[rightFieldKey] || "").trim().toLowerCase();
+    if (!dayKey || !leftKey || !rightKey) {
+      continue;
+    }
+    const bucketKey = `${leftKey}::${rightKey}`;
+    const itemCount = Math.max(0, Number(row?.risk_score || 0));
+    if (!countsByDay.has(dayKey)) {
+      countsByDay.set(dayKey, new Map());
+    }
+    const dayCounts = countsByDay.get(dayKey);
+    dayCounts.set(bucketKey, Math.max(dayCounts.get(bucketKey) || 0, itemCount));
+  }
+  return Array.from(countsByDay.entries())
+    .map(([day, dayCounts]) => {
+      const topRow = Array.from(dayCounts.entries())
+        .map(([bucket_key, item_count]) => ({ bucket_key, item_count }))
+        .sort((left, right) => {
+          if (right.item_count !== left.item_count) {
+            return right.item_count - left.item_count;
+          }
+          return String(left.bucket_key).localeCompare(String(right.bucket_key));
+        })[0];
+      return topRow ? { day, bucket_key: topRow.bucket_key, item_count: topRow.item_count } : null;
+    })
+    .filter(Boolean)
+    .sort((left, right) => String(right.day).localeCompare(String(left.day)))
+    .slice(0, 7);
+}
+
 function buildSelectionFamilyRiskDailyBreakdown(
   queryFamilyDailyRows,
   segmentFamilyDailyRows,
@@ -2448,6 +2482,15 @@ function normalizeSelectionTrendSummary(summary) {
       }))
       .filter((row) => row.day)
       .slice(0, 7),
+    family_risk_field_family_band_daily_breakdown: normalizeSelectionFamilyDailyRows(
+      safeSummary.family_risk_field_family_band_daily_breakdown
+    ),
+    family_risk_query_segment_path_band_daily_breakdown: normalizeSelectionFamilyDailyRows(
+      safeSummary.family_risk_query_segment_path_band_daily_breakdown
+    ),
+    family_risk_adjustment_segment_path_band_daily_breakdown: normalizeSelectionFamilyDailyRows(
+      safeSummary.family_risk_adjustment_segment_path_band_daily_breakdown
+    ),
     query_adjustment_field_breakdown: normalizeBreakdownRows(safeSummary.query_adjustment_field_breakdown),
     query_adjustment_field_family_breakdown: normalizeBreakdownRows(safeSummary.query_adjustment_field_family_breakdown),
     query_adjustment_reason_breakdown: normalizeBreakdownRows(safeSummary.query_adjustment_reason_breakdown),
@@ -3042,6 +3085,21 @@ async function loadSelectionTrendSummary(client, campaignKey) {
     queryStrategySegmentPathDailyBreakdown,
     queryAdjustmentSegmentPathDailyBreakdown
   );
+  const familyRiskFieldFamilyBandDailyBreakdown = buildSelectionFamilyRiskCompositeDailyBreakdown(
+    familyRiskDailyBreakdown,
+    "risk_state",
+    "field_family"
+  );
+  const familyRiskQuerySegmentPathBandDailyBreakdown = buildSelectionFamilyRiskCompositeDailyBreakdown(
+    familyRiskDailyBreakdown,
+    "risk_state",
+    "query_segment_path"
+  );
+  const familyRiskAdjustmentSegmentPathBandDailyBreakdown = buildSelectionFamilyRiskCompositeDailyBreakdown(
+    familyRiskDailyBreakdown,
+    "risk_state",
+    "adjustment_segment_path"
+  );
   const latestFamilyRisk = familyRiskDailyBreakdown[0] || {};
   return {
     dispatches_24h: Math.max(0, Number(totals.dispatches_24h || 0)),
@@ -3092,6 +3150,9 @@ async function loadSelectionTrendSummary(client, campaignKey) {
     query_strategy_segment_path_daily_breakdown: queryStrategySegmentPathDailyBreakdown,
     query_adjustment_segment_path_daily_breakdown: queryAdjustmentSegmentPathDailyBreakdown,
     family_risk_daily_breakdown: familyRiskDailyBreakdown,
+    family_risk_field_family_band_daily_breakdown: familyRiskFieldFamilyBandDailyBreakdown,
+    family_risk_query_segment_path_band_daily_breakdown: familyRiskQuerySegmentPathBandDailyBreakdown,
+    family_risk_adjustment_segment_path_band_daily_breakdown: familyRiskAdjustmentSegmentPathBandDailyBreakdown,
     query_adjustment_field_breakdown: normalizeBreakdownRows(adjustmentFieldResult.rows),
     query_adjustment_field_family_breakdown: buildFamilyBreakdown(adjustmentFieldResult.rows, resolveLiveOpsAdjustmentFieldFamily),
     query_adjustment_reason_breakdown: normalizeBreakdownRows(adjustmentReasonResult.rows),
@@ -3665,6 +3726,9 @@ function buildEmptyLiveOpsSelectionTrendSummary() {
     query_strategy_segment_path_daily_breakdown: [],
     query_adjustment_segment_path_daily_breakdown: [],
     family_risk_daily_breakdown: [],
+    family_risk_field_family_band_daily_breakdown: [],
+    family_risk_query_segment_path_band_daily_breakdown: [],
+    family_risk_adjustment_segment_path_band_daily_breakdown: [],
     query_adjustment_field_breakdown: [],
     query_adjustment_field_family_breakdown: [],
     query_adjustment_reason_breakdown: [],

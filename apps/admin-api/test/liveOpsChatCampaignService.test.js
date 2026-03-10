@@ -452,6 +452,7 @@ test("live ops chat campaign service snapshot includes approval summary schedule
               text.includes("action = 'live_ops_campaign_dispatch'") &&
               text.includes("CROSS JOIN LATERAL jsonb_array_elements") &&
               text.includes("query_strategy_summary,segment_strategy_reason") &&
+              !text.includes("AS segment_key") &&
               text.includes("to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS day")
             ) {
               return {
@@ -464,7 +465,8 @@ test("live ops chat campaign service snapshot includes approval summary schedule
             if (
               text.includes("action = 'live_ops_campaign_dispatch'") &&
               text.includes("to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS day") &&
-              text.includes("targeting_selection_summary,query_strategy_summary,segment_strategy_reason")
+              text.includes("targeting_selection_summary,query_strategy_summary,segment_strategy_reason") &&
+              !text.includes("AS segment_key")
             ) {
               return {
                 rows: [
@@ -502,6 +504,47 @@ test("live ops chat campaign service snapshot includes approval summary schedule
             }
             if (
               text.includes("action = 'live_ops_campaign_dispatch'") &&
+              text.includes("targeting_selection_summary,query_strategy_summary,segment_key") &&
+              text.includes("segment_strategy_reason")
+            ) {
+              if (text.includes("to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS day")) {
+                return {
+                  rows: [
+                    { day: "2026-03-08", segment_key: "wallet_unlinked", reason_key: "segment_query_active_window_tight", item_count: 2 },
+                    { day: "2026-03-07", segment_key: "wallet_unlinked", reason_key: "segment_query_active_window_tight", item_count: 1 },
+                    { day: "2026-03-06", segment_key: "wallet_unlinked", reason_key: "segment_query_offer_window_tight", item_count: 1 }
+                  ]
+                };
+              }
+              return {
+                rows: [
+                  { segment_key: "wallet_unlinked", reason_key: "segment_query_active_window_tight", item_count: 3 },
+                  { segment_key: "wallet_unlinked", reason_key: "segment_query_offer_window_tight", item_count: 1 }
+                ]
+              };
+            }
+            if (
+              text.includes("action = 'live_ops_campaign_dispatch'") &&
+              text.includes("targeting_selection_summary,query_strategy_summary,segment_key") &&
+              text.includes("adj->>'field_key'")
+            ) {
+              if (text.includes("to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS day")) {
+                return {
+                  rows: [
+                    { day: "2026-03-08", segment_key: "wallet_unlinked", field_key: "active_within_days_cap", item_count: 7 },
+                    { day: "2026-03-07", segment_key: "wallet_unlinked", field_key: "pool_limit_multiplier", item_count: 2 }
+                  ]
+                };
+              }
+              return {
+                rows: [
+                  { segment_key: "wallet_unlinked", field_key: "active_within_days_cap", item_count: 7 },
+                  { segment_key: "wallet_unlinked", field_key: "pool_limit_multiplier", item_count: 2 }
+                ]
+              };
+            }
+            if (
+              text.includes("action = 'live_ops_campaign_dispatch'") &&
               text.includes("CROSS JOIN LATERAL jsonb_array_elements") &&
               text.includes("adj->>'field_key'")
             ) {
@@ -531,7 +574,11 @@ test("live ops chat campaign service snapshot includes approval summary schedule
                 ]
               };
             }
-            if (text.includes("action = 'live_ops_campaign_dispatch'") && text.includes("targeting_selection_summary,query_strategy_summary,segment_strategy_reason")) {
+            if (
+              text.includes("action = 'live_ops_campaign_dispatch'") &&
+              text.includes("targeting_selection_summary,query_strategy_summary,segment_strategy_reason") &&
+              !text.includes("AS segment_key")
+            ) {
               return {
                 rows: [
                   { bucket_key: "segment_query_active_window_tight", item_count: 2 },
@@ -1058,6 +1105,18 @@ test("live ops chat campaign service snapshot includes approval summary schedule
   assert.equal(snapshot.selection_trend_summary.family_risk_daily_breakdown[0].field_family, "activity_window");
   assert.equal(snapshot.selection_trend_summary.family_risk_daily_breakdown[0].field_match_days, 1);
   assert.equal(snapshot.selection_trend_summary.family_risk_daily_breakdown[0].field_weight, 3);
+  assert.equal(
+    snapshot.selection_trend_summary.family_risk_field_family_band_daily_breakdown[0].bucket_key,
+    "watch::activity_window"
+  );
+  assert.equal(
+    snapshot.selection_trend_summary.family_risk_query_segment_path_band_daily_breakdown[0].bucket_key,
+    "watch::wallet_unlinked:active_window"
+  );
+  assert.equal(
+    snapshot.selection_trend_summary.family_risk_adjustment_segment_path_band_daily_breakdown[0].bucket_key,
+    "watch::wallet_unlinked:activity_window"
+  );
   assert.equal(snapshot.selection_trend_summary.family_risk_band_breakdown[0].bucket_key, "watch");
   assert.equal(snapshot.selection_trend_summary.family_risk_band_breakdown[0].item_count, 3);
   assert.equal(snapshot.selection_trend_summary.family_risk_dimension_breakdown[0].bucket_key, "query_family");
@@ -2810,5 +2869,240 @@ test("live ops chat campaign service applies field-family risk to all-active sch
   const queryAdjustments = result.data.selection_summary.query_strategy_summary.adjustment_rows;
   assert.equal(queryAdjustments.find((row) => row.field_key === "pool_limit_multiplier")?.after_value, 1);
   assert.equal(queryAdjustments.find((row) => row.field_key === "active_within_days_cap")?.after_value, 2);
+  assert.equal(result.data.selection_summary.prefilter_summary.reason, "prefilter_shifted_to_query_strategy");
+});
+
+test("live ops chat campaign service applies field-family risk to inactive-returning scheduler query windows", async () => {
+  const sentChatIds = [];
+  const { pool, recordedQueries } = createQueryRecorder((text) => {
+    if (text.includes("FROM config_versions") && text.includes("LIMIT 1")) {
+      return {
+        rows: [
+          {
+            version: 13,
+            created_at: "2026-03-08T12:00:00.000Z",
+            created_by: 7001,
+            config_json: buildCampaign({ targeting: { segment_key: "inactive_returning" } })
+          }
+        ]
+      };
+    }
+    if (text.includes("COUNT(*)::int AS sent_total") && text.includes("interval '72 hours'")) {
+      return { rows: [{ sent_total: 0, sent_72h: 0, last_sent_at: null, last_segment_key: "", last_dispatch_ref: "" }] };
+    }
+    if (text.includes("event_key IN ('runtime.scene.ready', 'runtime.scene.failed')")) {
+      return {
+        rows: [
+          {
+            ready_24h: 10,
+            failed_24h: 0,
+            low_end_24h: 1,
+            avg_loaded_bundles_24h: 3.2,
+            daily_breakdown_7d: [{ day: "2026-03-08", total_count: 10, ready_count: 10, failed_count: 0, low_end_count: 1 }],
+            quality_breakdown_24h: [],
+            perf_breakdown_24h: []
+          }
+        ]
+      };
+    }
+    if (text.includes("COUNT(*) FILTER (WHERE created_at >= now() - interval '24 hours')::bigint AS raised_24h")) {
+      return {
+        rows: [
+          {
+            raised_24h: 2,
+            raised_7d: 4,
+            telegram_sent_24h: 1,
+            telegram_sent_7d: 2,
+            effective_cap_delta_24h: 6,
+            effective_cap_delta_7d: 12,
+            max_effective_cap_delta_7d: 6
+          }
+        ]
+      };
+    }
+    if (text.includes("FROM admin_audit") && text.includes("action = 'live_ops_campaign_dispatch'") && text.includes("query_strategy_applied_24h")) {
+      return {
+        rows: [
+          {
+            dispatches_24h: 4,
+            dispatches_7d: 4,
+            query_strategy_applied_24h: 4,
+            query_strategy_applied_7d: 4,
+            prefilter_applied_24h: 0,
+            prefilter_applied_7d: 0,
+            prefilter_delta_24h: 0,
+            prefilter_delta_7d: 0,
+            prioritized_focus_matches_24h: 4,
+            prioritized_focus_matches_7d: 4,
+            selected_focus_matches_24h: 1,
+            selected_focus_matches_7d: 1
+          }
+        ]
+      };
+    }
+    if (text.includes("FROM admin_audit") && text.includes("action = 'live_ops_campaign_dispatch'") && text.includes("ORDER BY created_at DESC") && text.includes("LIMIT 1;")) {
+      return {
+        rows: [
+          {
+            created_at: "2026-03-08T12:20:00.000Z",
+            payload_json: {
+              targeting_selection_summary: {
+                guidance_mode: "protective",
+                focus_dimension: "locale",
+                focus_bucket: "tr",
+                query_strategy_summary: {
+                  reason: "query_strategy_locale_and_segment",
+                  segment_strategy_reason: "segment_query_inactive_window_tight",
+                  adjustment_rows: [
+                    { field_key: "inactive_hours_floor", before_value: 120, after_value: 216, delta_value: 96, direction_key: "increase", reason_code: "selection_family_risk_tightened" },
+                    { field_key: "max_age_days_cap", before_value: 21, after_value: 7, delta_value: -14, direction_key: "decrease", reason_code: "selection_family_risk_tightened" }
+                  ]
+                },
+                prefilter_summary: {
+                  reason: "prefilter_shifted_to_query_strategy"
+                }
+              }
+            }
+          }
+        ]
+      };
+    }
+    if (text.includes("FROM admin_audit") && text.includes("dispatch_count") && text.includes("query_strategy_applied_count")) {
+      return {
+        rows: [
+          { day: "2026-03-08", dispatch_count: 2, query_strategy_applied_count: 2, prefilter_applied_count: 0, prefilter_delta_sum: 0, prioritized_focus_matches: 2, selected_focus_matches: 1 },
+          { day: "2026-03-07", dispatch_count: 2, query_strategy_applied_count: 2, prefilter_applied_count: 0, prefilter_delta_sum: 0, prioritized_focus_matches: 2, selected_focus_matches: 0 }
+        ]
+      };
+    }
+    if (text.includes("targeting_selection_summary,prefilter_summary,reason")) {
+      return { rows: [{ bucket_key: "prefilter_shifted_to_query_strategy", item_count: 4 }] };
+    }
+    if (
+      text.includes("targeting_selection_summary,query_strategy_summary,reason") &&
+      !text.includes("segment_strategy_reason") &&
+      !text.includes("GROUP BY 1, 2") &&
+      !text.includes("adj->>'reason_code'")
+    ) {
+      return { rows: [{ bucket_key: "query_strategy_locale_and_segment", item_count: 1 }] };
+    }
+    if (
+      text.includes("targeting_selection_summary,query_strategy_summary,segment_strategy_reason") &&
+      !text.includes("GROUP BY 1, 2") &&
+      !text.includes("adj->>'reason_code'")
+    ) {
+      return { rows: [{ bucket_key: "segment_query_inactive_window_tight", item_count: 1 }] };
+    }
+    if (
+      text.includes("targeting_selection_summary,query_strategy_summary,reason") &&
+      text.includes("GROUP BY 1, 2") &&
+      !text.includes("adj->>'reason_code'")
+    ) {
+      return {
+        rows: [{ day: "2026-03-08", bucket_key: "query_strategy_locale_and_segment", item_count: 1 }]
+      };
+    }
+    if (
+      text.includes("targeting_selection_summary,query_strategy_summary,segment_strategy_reason") &&
+      text.includes("GROUP BY 1, 2") &&
+      !text.includes("adj->>'reason_code'")
+    ) {
+      return {
+        rows: [{ day: "2026-03-08", bucket_key: "segment_query_inactive_window_tight", item_count: 1 }]
+      };
+    }
+    if (text.includes("COALESCE(NULLIF(adj->>'field_key', ''), 'unknown') AS bucket_key") && !text.includes("GROUP BY 1, 2")) {
+      return {
+        rows: [{ bucket_key: "inactive_hours_floor", item_count: 10 }]
+      };
+    }
+    if (text.includes("COALESCE(NULLIF(adj->>'field_key', ''), 'unknown') AS bucket_key") && text.includes("GROUP BY 1, 2")) {
+      return {
+        rows: [
+          { day: "2026-03-08", bucket_key: "inactive_hours_floor", item_count: 4 },
+          { day: "2026-03-07", bucket_key: "inactive_hours_floor", item_count: 4 },
+          { day: "2026-03-06", bucket_key: "inactive_hours_floor", item_count: 4 },
+          { day: "2026-03-05", bucket_key: "inactive_hours_floor", item_count: 4 }
+        ]
+      };
+    }
+    if (text.includes("adj->>'reason_code'")) {
+      return { rows: [{ bucket_key: "selection_family_risk_tightened", item_count: 10 }] };
+    }
+    if (text.includes("FROM users u") && text.includes("u.last_seen_at <= now() - make_interval(hours => $1::int)")) {
+      return {
+        rows: [
+          { user_id: 51, telegram_id: 8501, locale: "en", last_seen_at: "2026-03-01T10:00:00.000Z", public_name: "i1", prefs_json: {} },
+          { user_id: 52, telegram_id: 8502, locale: "en", last_seen_at: "2026-03-01T09:00:00.000Z", public_name: "i2", prefs_json: {} }
+        ]
+      };
+    }
+    if (text.includes("FROM v5_webapp_experiment_assignments")) {
+      return {
+        rows: [
+          { uid: 51, variant_key: "control", cohort_bucket: 42 },
+          { uid: 52, variant_key: "control", cohort_bucket: 42 }
+        ]
+      };
+    }
+    if (text.includes("INSERT INTO behavior_events") || text.includes("INSERT INTO admin_audit")) {
+      return { rows: [] };
+    }
+    return { rows: [] };
+  });
+
+  const service = createLiveOpsChatCampaignService({
+    pool,
+    fetchImpl: async (_url, options) => {
+      const payload = JSON.parse(String(options.body || "{}"));
+      sentChatIds.push(Number(payload.chat_id || 0));
+      return { ok: true };
+    },
+    botToken: "bot_token",
+    botUsername: "airdropkral_2026_bot",
+    webappPublicUrl: "https://example.com/app",
+    webappHmacSecret: "secret",
+    resolveWebappVersion: async () => ({ version: "abc123" }),
+    nowFactory: () => new Date("2026-03-08T12:30:00.000Z"),
+    logger: () => {}
+  });
+
+  const result = await service.dispatchCampaign({
+    adminId: 7010,
+    dryRun: false,
+    reason: "scheduled_window_dispatch",
+    dispatchSource: "scheduler",
+    campaign: buildCampaign({
+      targeting: {
+        segment_key: "inactive_returning",
+        max_recipients: 2
+      },
+      surfaces: [{ slot_key: "return_lane", surface_key: "home_panel" }]
+    })
+  });
+
+  const candidateQuery = recordedQueries.find(
+    (entry) =>
+      entry.sql.includes("FROM users u") &&
+      entry.sql.includes("u.last_seen_at <= now() - make_interval(hours => $1::int)")
+  );
+  assert.ok(candidateQuery);
+  assert.equal(candidateQuery.params[0], 216);
+  assert.equal(candidateQuery.params[1], 7);
+  assert.equal(candidateQuery.params[7], 2);
+  assert.equal(result.ok, true);
+  assert.deepEqual(sentChatIds, [8501]);
+  assert.equal(result.data.selection_summary.query_strategy_summary.family_risk_state, "alert");
+  assert.equal(result.data.selection_summary.query_strategy_summary.family_risk_dimension, "field_family");
+  assert.equal(result.data.selection_summary.query_strategy_summary.family_risk_bucket, "activity_window");
+  assert.equal(result.data.selection_summary.query_strategy_summary.strategy_segment_path_key, "inactive_returning:inactive_window");
+  assert.equal(result.data.selection_summary.query_strategy_summary.adjustment_segment_path_key, "inactive_returning:activity_window");
+  assert.equal(result.data.selection_summary.query_strategy_summary.pool_limit_multiplier, 1);
+  assert.equal(result.data.selection_summary.query_strategy_summary.inactive_hours_floor, 216);
+  assert.equal(result.data.selection_summary.query_strategy_summary.max_age_days_cap, 7);
+  const queryAdjustments = result.data.selection_summary.query_strategy_summary.adjustment_rows;
+  assert.equal(queryAdjustments.find((row) => row.field_key === "pool_limit_multiplier")?.after_value, 1);
+  assert.equal(queryAdjustments.find((row) => row.field_key === "inactive_hours_floor")?.after_value, 216);
+  assert.equal(queryAdjustments.find((row) => row.field_key === "max_age_days_cap")?.after_value, 7);
   assert.equal(result.data.selection_summary.prefilter_summary.reason, "prefilter_shifted_to_query_strategy");
 });

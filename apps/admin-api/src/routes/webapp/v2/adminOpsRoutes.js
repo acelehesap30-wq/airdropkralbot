@@ -448,6 +448,15 @@ function buildLiveOpsCampaignKpiSummary(snapshot) {
       query_adjustment_field_family_daily_breakdown: normalizeSelectionFamilyDailyRows(selectionTrend.query_adjustment_field_family_daily_breakdown),
       query_strategy_segment_path_daily_breakdown: normalizeSelectionFamilyDailyRows(selectionTrend.query_strategy_segment_path_daily_breakdown),
       query_adjustment_segment_path_daily_breakdown: normalizeSelectionFamilyDailyRows(selectionTrend.query_adjustment_segment_path_daily_breakdown),
+      family_risk_field_family_band_daily_breakdown: normalizeSelectionFamilyDailyRows(
+        selectionTrend.family_risk_field_family_band_daily_breakdown
+      ),
+      family_risk_query_segment_path_band_daily_breakdown: normalizeSelectionFamilyDailyRows(
+        selectionTrend.family_risk_query_segment_path_band_daily_breakdown
+      ),
+      family_risk_adjustment_segment_path_band_daily_breakdown: normalizeSelectionFamilyDailyRows(
+        selectionTrend.family_risk_adjustment_segment_path_band_daily_breakdown
+      ),
       family_risk_daily_breakdown: Array.isArray(selectionTrend.family_risk_daily_breakdown)
         ? selectionTrend.family_risk_daily_breakdown
             .map((row) => ({
@@ -766,6 +775,9 @@ async function getLiveOpsCampaignKpiSummary(service, logger) {
         query_adjustment_field_family_daily_breakdown: [],
         query_strategy_segment_path_daily_breakdown: [],
         query_adjustment_segment_path_daily_breakdown: [],
+        family_risk_field_family_band_daily_breakdown: [],
+        family_risk_query_segment_path_band_daily_breakdown: [],
+        family_risk_adjustment_segment_path_band_daily_breakdown: [],
         family_risk_daily_breakdown: [],
         query_adjustment_field_breakdown: [],
         query_adjustment_field_family_breakdown: [],

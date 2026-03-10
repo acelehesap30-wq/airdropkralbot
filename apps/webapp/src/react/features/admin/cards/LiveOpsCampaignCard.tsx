@@ -378,6 +378,13 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
   const selectionTrendQueryPathDaily = asArray(selectionTrendSummary.query_strategy_segment_path_daily_breakdown);
   const selectionTrendAdjustmentPathDaily = asArray(selectionTrendSummary.query_adjustment_segment_path_daily_breakdown);
   const selectionTrendFamilyRiskDaily = asArray(selectionTrendSummary.family_risk_daily_breakdown);
+  const selectionTrendFamilyRiskFieldBandDaily = asArray(selectionTrendSummary.family_risk_field_family_band_daily_breakdown);
+  const selectionTrendFamilyRiskQueryPathBandDaily = asArray(
+    selectionTrendSummary.family_risk_query_segment_path_band_daily_breakdown
+  );
+  const selectionTrendFamilyRiskAdjustmentPathBandDaily = asArray(
+    selectionTrendSummary.family_risk_adjustment_segment_path_band_daily_breakdown
+  );
   const selectionTrendPrefilterReasons = asArray(selectionTrendSummary.prefilter_reason_breakdown);
   const selectionTrendFamilyRiskBands = asArray(selectionTrendSummary.family_risk_band_breakdown);
   const selectionTrendFamilyRiskDimensions = asArray(selectionTrendSummary.family_risk_dimension_breakdown);
@@ -948,6 +955,18 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
         <SelectionFamilyRiskDailyTrendList
           title={t(props.lang, "admin_live_ops_selection_trend_family_risk_daily_title")}
           rows={selectionTrendFamilyRiskDaily}
+        />
+        <SelectionFamilyDailyTrendList
+          title={t(props.lang, "admin_live_ops_selection_trend_family_risk_field_band_daily_title")}
+          rows={selectionTrendFamilyRiskFieldBandDaily}
+        />
+        <SelectionFamilyDailyTrendList
+          title={t(props.lang, "admin_live_ops_selection_trend_family_risk_query_path_band_daily_title")}
+          rows={selectionTrendFamilyRiskQueryPathBandDaily}
+        />
+        <SelectionFamilyDailyTrendList
+          title={t(props.lang, "admin_live_ops_selection_trend_family_risk_adjustment_path_band_daily_title")}
+          rows={selectionTrendFamilyRiskAdjustmentPathBandDaily}
         />
         <BreakdownList title={t(props.lang, "admin_live_ops_selection_trend_adjustment_field_title")} rows={selectionTrendAdjustmentFields} />
         <BreakdownList title={t(props.lang, "admin_live_ops_selection_trend_adjustment_field_family_title")} rows={selectionTrendAdjustmentFieldFamilies} />

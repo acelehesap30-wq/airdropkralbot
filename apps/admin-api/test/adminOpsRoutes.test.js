@@ -500,6 +500,18 @@ function buildLiveOpsSnapshot() {
         { day: "2026-03-08", risk_state: "watch", risk_reason: "query_strategy_family_streak_watch", risk_dimension: "query_family", risk_bucket: "locale_and_segment", risk_score: 4, query_family: "locale_and_segment", segment_family: "active_window", field_family: "activity_window", query_segment_path: "wallet_unlinked:active_window", adjustment_segment_path: "wallet_unlinked:activity_window", query_match_days: 2, segment_match_days: 2, field_match_days: 1, query_weight: 4, segment_weight: 3, field_weight: 3 },
         { day: "2026-03-07", risk_state: "watch", risk_reason: "query_strategy_family_streak_watch", risk_dimension: "query_family", risk_bucket: "locale_and_segment", risk_score: 3, query_family: "locale_and_segment", segment_family: "active_window", field_family: "pool_limit", query_segment_path: "wallet_unlinked:active_window", adjustment_segment_path: "wallet_unlinked:pool_limit", query_match_days: 1, segment_match_days: 1, field_match_days: 1, query_weight: 3, segment_weight: 2, field_weight: 1 }
       ],
+      family_risk_field_family_band_daily_breakdown: [
+        { day: "2026-03-08", bucket_key: "watch::activity_window", item_count: 4 },
+        { day: "2026-03-07", bucket_key: "watch::pool_limit", item_count: 3 }
+      ],
+      family_risk_query_segment_path_band_daily_breakdown: [
+        { day: "2026-03-08", bucket_key: "watch::wallet_unlinked:active_window", item_count: 4 },
+        { day: "2026-03-07", bucket_key: "watch::wallet_unlinked:active_window", item_count: 3 }
+      ],
+      family_risk_adjustment_segment_path_band_daily_breakdown: [
+        { day: "2026-03-08", bucket_key: "watch::wallet_unlinked:activity_window", item_count: 4 },
+        { day: "2026-03-07", bucket_key: "watch::wallet_unlinked:pool_limit", item_count: 3 }
+      ],
       query_strategy_reason_breakdown: [{ bucket_key: "query_strategy_locale_and_segment", item_count: 5 }],
       query_strategy_family_breakdown: [{ bucket_key: "locale_and_segment", item_count: 5 }],
       query_adjustment_field_breakdown: [
@@ -826,6 +838,18 @@ test("v2 admin ops kpi run includes live ops campaign summary", async () => {
   assert.equal(body.data.live_ops_campaign.selection_trend.family_risk_daily_breakdown[0].adjustment_segment_path, "wallet_unlinked:activity_window");
   assert.equal(body.data.live_ops_campaign.selection_trend.family_risk_daily_breakdown[0].field_match_days, 1);
   assert.equal(body.data.live_ops_campaign.selection_trend.family_risk_daily_breakdown[0].field_weight, 3);
+  assert.equal(
+    body.data.live_ops_campaign.selection_trend.family_risk_field_family_band_daily_breakdown[0].bucket_key,
+    "watch::activity_window"
+  );
+  assert.equal(
+    body.data.live_ops_campaign.selection_trend.family_risk_query_segment_path_band_daily_breakdown[0].bucket_key,
+    "watch::wallet_unlinked:active_window"
+  );
+  assert.equal(
+    body.data.live_ops_campaign.selection_trend.family_risk_adjustment_segment_path_band_daily_breakdown[0].bucket_key,
+    "watch::wallet_unlinked:activity_window"
+  );
   assert.equal(body.data.live_ops_campaign.selection_trend.family_risk_band_breakdown[0].bucket_key, "watch");
   assert.equal(body.data.live_ops_campaign.selection_trend.family_risk_dimension_breakdown[0].bucket_key, "query_family");
   assert.equal(body.data.live_ops_campaign.selection_trend.family_risk_field_family_breakdown[0].bucket_key, "activity_window");
