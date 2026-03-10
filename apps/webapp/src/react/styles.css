@@ -325,6 +325,151 @@ body {
   color: #f2fbff;
 }
 
+.akrSceneEntrySurface {
+  position: fixed;
+  left: max(16px, calc((100vw - 1180px) / 2 + 16px));
+  top: 252px;
+  width: min(320px, calc(100vw - 32px));
+  padding: 12px;
+  border-radius: 16px;
+  display: grid;
+  gap: 10px;
+  pointer-events: auto;
+}
+
+.akrSceneEntrySurfaceHeader,
+.akrSceneEntrySurfaceMeta,
+.akrSceneEntrySurfaceTitle {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  font-family: "IBM Plex Mono", monospace;
+}
+
+.akrSceneEntrySurfaceHeader,
+.akrSceneEntrySurfaceMeta {
+  font-size: 0.68rem;
+  color: #9fc7df;
+}
+
+.akrSceneEntrySurfaceHeader strong,
+.akrSceneEntrySurfaceMeta strong {
+  color: #fff3c7;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.akrSceneEntrySurfaceTitle strong {
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  font-size: 0.98rem;
+  color: #f2fbff;
+  letter-spacing: 0.02em;
+}
+
+.akrSceneEntrySurfaceTitle span {
+  font-size: 0.66rem;
+  color: #9fc7df;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.akrSceneEntrySurfaceStatus {
+  display: grid;
+  gap: 8px;
+}
+
+.akrSceneEntrySurfaceStatusRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(120, 181, 225, 0.2);
+  background: rgba(6, 20, 41, 0.38);
+}
+
+.akrSceneEntrySurfaceStatusRow span {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.68rem;
+  color: #9fc7df;
+}
+
+.akrSceneEntrySurfaceStatusRow strong {
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  font-size: 0.92rem;
+  color: #f2fbff;
+}
+
+.akrSceneEntrySurfaceActions {
+  display: grid;
+  gap: 8px;
+}
+
+.akrSceneEntrySurfaceAction {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(120, 181, 225, 0.24);
+  background: linear-gradient(135deg, rgba(8, 22, 44, 0.84), rgba(9, 30, 54, 0.72));
+  color: #e8f8ff;
+  cursor: pointer;
+  transition:
+    transform 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.akrSceneEntrySurfaceAction:hover {
+  transform: translateY(-1px);
+  border-color: rgba(0, 214, 255, 0.42);
+  box-shadow: 0 12px 28px rgba(2, 12, 27, 0.28);
+}
+
+.akrSceneEntrySurfaceAction span {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.68rem;
+  color: #9fc7df;
+}
+
+.akrSceneEntrySurfaceAction strong {
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  font-size: 0.9rem;
+  color: #f2fbff;
+}
+
+.akrSceneEntrySurfaceAction.isPrimary {
+  border-color: rgba(0, 214, 255, 0.28);
+}
+
+.akrSceneEntrySurfaceAction.isSecondary {
+  border-style: dashed;
+  opacity: 0.94;
+}
+
+.akrSceneEntrySurface.is-travel_portal,
+.akrSceneEntrySurface.is-loot_reveal {
+  border-color: rgba(123, 230, 255, 0.24);
+}
+
+.akrSceneEntrySurface.is-arena_console {
+  border-color: rgba(255, 111, 145, 0.24);
+}
+
+.akrSceneEntrySurface.is-contract_terminal,
+.akrSceneEntrySurface.is-vault_terminal,
+.akrSceneEntrySurface.is-premium_terminal {
+  border-color: rgba(47, 255, 181, 0.22);
+}
+
+.akrSceneEntrySurface.is-ops_console,
+.akrSceneEntrySurface.is-dispatch_console {
+  border-color: rgba(255, 180, 93, 0.24);
+}
+
 .akrSceneWorldFocus {
   color: #fff3c7;
   border: 1px solid rgba(255, 211, 111, 0.32);
@@ -1318,6 +1463,14 @@ body {
     width: auto;
   }
 
+  .akrSceneEntrySurface {
+    left: 14px;
+    right: 14px;
+    top: auto;
+    bottom: 330px;
+    width: auto;
+  }
+
   .akrTopbar {
     flex-direction: column;
     align-items: flex-start;
@@ -1361,6 +1514,11 @@ body {
 
   .akrSceneWorldSheet {
     top: 14px;
+    padding: 10px;
+  }
+
+  .akrSceneEntrySurface {
+    bottom: 352px;
     padding: 10px;
   }
 

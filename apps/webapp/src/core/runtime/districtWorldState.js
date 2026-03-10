@@ -2017,6 +2017,105 @@ function buildDistrictInteractionSheet(input, districtKey, activeHotspot, active
   };
 }
 
+function resolveDistrictInteractionSurfaceKind(districtKey, activeHotspot) {
+  const hotspotKey = toText(activeHotspot?.key, "");
+  switch (districtKey) {
+    case "arena_prime":
+      return {
+        surface_kind_key: "world_surface_kind_arena_console",
+        surface_class_key: "arena_console"
+      };
+    case "mission_quarter":
+      if (hotspotKey === "claim_dais") {
+        return {
+          surface_kind_key: "world_surface_kind_loot_reveal",
+          surface_class_key: "loot_reveal"
+        };
+      }
+      return {
+        surface_kind_key: "world_surface_kind_contract_terminal",
+        surface_class_key: "contract_terminal"
+      };
+    case "exchange_district":
+      if (hotspotKey === "rewards_vault") {
+        return {
+          surface_kind_key: "world_surface_kind_loot_reveal",
+          surface_class_key: "loot_reveal"
+        };
+      }
+      if (hotspotKey === "premium_lane") {
+        return {
+          surface_kind_key: "world_surface_kind_premium_terminal",
+          surface_class_key: "premium_terminal"
+        };
+      }
+      return {
+        surface_kind_key: "world_surface_kind_vault_terminal",
+        surface_class_key: "vault_terminal"
+      };
+    case "ops_citadel":
+      if (hotspotKey === "liveops_table") {
+        return {
+          surface_kind_key: "world_surface_kind_dispatch_console",
+          surface_class_key: "dispatch_console"
+        };
+      }
+      return {
+        surface_kind_key: "world_surface_kind_ops_console",
+        surface_class_key: "ops_console"
+      };
+    default:
+      if (hotspotKey === "rewards_cache") {
+        return {
+          surface_kind_key: "world_surface_kind_loot_reveal",
+          surface_class_key: "loot_reveal"
+        };
+      }
+      return {
+        surface_kind_key: "world_surface_kind_travel_portal",
+        surface_class_key: "travel_portal"
+      };
+  }
+}
+
+function buildDistrictInteractionSurface(districtKey, activeHotspot, activeCluster, interactionSheet) {
+  if (!activeHotspot || !activeCluster || !interactionSheet?.rows?.length) {
+    return null;
+  }
+
+  const surfaceKind = resolveDistrictInteractionSurfaceKind(districtKey, activeHotspot);
+  const actions = asList(activeCluster.action_items)
+    .filter((item) => toText(item.action_key, ""))
+    .slice(0, 3)
+    .map((item, index) => ({
+      ...item,
+      surface_slot_key: `${toText(activeHotspot.key, "surface")}:${toText(item.key, index)}`,
+      is_primary_surface_action: index === 0
+    }));
+  const heroRow = interactionSheet.rows[0] || null;
+  const supportRow = interactionSheet.rows[1] || null;
+
+  return {
+    surface_key: `${districtKey}:${toText(activeHotspot.key, "surface")}`,
+    surface_kind_key: surfaceKind.surface_kind_key,
+    surface_class_key: surfaceKind.surface_class_key,
+    variant_key: districtKey,
+    title_key: toText(activeHotspot.label_key, ""),
+    title: toText(activeHotspot.label, ""),
+    hint_label_key: toText(activeHotspot.hint_label_key, ""),
+    intent_label_key: toText(activeHotspot.intent_profile?.intent_label_key, ""),
+    intent_tone_key: toText(activeHotspot.intent_profile?.intent_tone_key, ""),
+    cluster_label_key: toText(activeCluster.label_key, ""),
+    cluster_label: toText(activeCluster.label, ""),
+    hero_label_key: toText(heroRow?.label_key, ""),
+    hero_value: toText(heroRow?.value, ""),
+    support_label_key: toText(supportRow?.label_key, ""),
+    support_value: toText(supportRow?.value, ""),
+    action_items: actions,
+    action_count: actions.length
+  };
+}
+
 export function buildDistrictWorldState(input = {}) {
   const workspace = normalizeWorkspace(input.workspace);
   const tab = normalizeTab(input.tab);
@@ -2066,6 +2165,7 @@ export function buildDistrictWorldState(input = {}) {
   const directorProfile = resolveDistrictDirectorProfile(districtKey, hudDensity, lowEndMode, sceneProfile);
   const railProfile = resolveDistrictRailProfile(districtKey, hudDensity, lowEndMode, sceneProfile);
   const interactionSheet = buildDistrictInteractionSheet(input, districtKey, activeHotspot, activeCluster);
+  const interactionSurface = buildDistrictInteractionSurface(districtKey, activeHotspot, activeCluster, interactionSheet);
 
   return {
     world_key: `${workspace}:${tab}:${districtKey}`,
@@ -2118,6 +2218,7 @@ export function buildDistrictWorldState(input = {}) {
     active_cluster_actions: asList(activeCluster?.action_items),
     active_cluster_slot_count: toNum(activeCluster?.intent_slots?.length, 0),
     interaction_sheet: interactionSheet,
+    interaction_surface: interactionSurface,
     theme: districtTheme,
     actors,
     interaction_cluster_count: interactionClusters.length,

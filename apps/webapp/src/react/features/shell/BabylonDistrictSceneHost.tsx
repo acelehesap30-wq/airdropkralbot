@@ -61,6 +61,7 @@ type ClusterActionItem = {
   label: string;
   label_key: string;
   action_key: string;
+  surface_slot_key?: string;
   actor_key: string;
   cluster_key: string;
   hint_label_key: string;
@@ -72,6 +73,7 @@ type ClusterActionItem = {
     rail_class_key?: string;
   };
   is_secondary: boolean;
+  is_primary_surface_action?: boolean;
 };
 
 async function loadBabylonSceneModules() {
@@ -1074,6 +1076,79 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                 <span>{t(props.lang, row.label_key as never)}</span>
                 <strong>{row.value}</strong>
               </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+      {worldState.interaction_surface?.action_items?.length ? (
+        <div className={`akrSceneEntrySurface akrGlass is-${worldState.interaction_surface.surface_class_key}`}>
+          <div className="akrSceneEntrySurfaceHeader">
+            <span>{t(props.lang, worldState.interaction_surface.surface_kind_key as never)}</span>
+            {worldState.interaction_surface.intent_label_key ? (
+              <strong>{t(props.lang, worldState.interaction_surface.intent_label_key as never)}</strong>
+            ) : null}
+          </div>
+          <div className="akrSceneEntrySurfaceTitle">
+            <strong>
+              {worldState.interaction_surface.title_key
+                ? t(props.lang, worldState.interaction_surface.title_key as never)
+                : worldState.interaction_surface.title}
+            </strong>
+            {worldState.interaction_surface.cluster_label_key ? (
+              <span>{t(props.lang, worldState.interaction_surface.cluster_label_key as never)}</span>
+            ) : worldState.interaction_surface.cluster_label ? (
+              <span>{worldState.interaction_surface.cluster_label}</span>
+            ) : null}
+          </div>
+          <div className="akrSceneEntrySurfaceStatus">
+            <div className="akrSceneEntrySurfaceStatusRow">
+              <span>{t(props.lang, worldState.interaction_surface.hero_label_key as never)}</span>
+              <strong>{worldState.interaction_surface.hero_value}</strong>
+            </div>
+            {worldState.interaction_surface.support_label_key && worldState.interaction_surface.support_value ? (
+              <div className="akrSceneEntrySurfaceStatusRow">
+                <span>{t(props.lang, worldState.interaction_surface.support_label_key as never)}</span>
+                <strong>{worldState.interaction_surface.support_value}</strong>
+              </div>
+            ) : null}
+          </div>
+          <div className="akrSceneEntrySurfaceMeta">
+            {worldState.interaction_surface.intent_tone_key ? (
+              <span>{t(props.lang, worldState.interaction_surface.intent_tone_key as never)}</span>
+            ) : null}
+            {worldState.interaction_surface.hint_label_key ? (
+              <strong>{t(props.lang, worldState.interaction_surface.hint_label_key as never)}</strong>
+            ) : null}
+          </div>
+          <div className="akrSceneEntrySurfaceActions">
+            {worldState.interaction_surface.action_items.map((action: ClusterActionItem) => (
+              <button
+                key={action.surface_slot_key}
+                type="button"
+                className={`akrSceneEntrySurfaceAction ${action.is_primary_surface_action ? "isPrimary" : "isSecondary"} is-${
+                  action.intent_profile_key || "open"
+                }`}
+                onClick={() =>
+                  triggerSceneAction({
+                    actionKey: action.action_key,
+                    nodeKey: action.key,
+                    laneKey: action.cluster_key,
+                    label: action.label,
+                    labelKey: action.label_key,
+                    sourceType: "district_scene_entry_surface",
+                    actorKey: action.actor_key,
+                    interactionKind: action.interaction_kind,
+                    clusterKey: action.cluster_key,
+                    isSecondary: action.is_secondary,
+                    workspace: props.workspace,
+                    tab: props.tab,
+                    districtKey: worldState.district_key
+                  })
+                }
+              >
+                <span>{t(props.lang, (action.intent_profile?.intent_label_key || "world_intent_open") as never)}</span>
+                <strong>{action.label_key ? t(props.lang, action.label_key as never) : action.label}</strong>
+              </button>
             ))}
           </div>
         </div>

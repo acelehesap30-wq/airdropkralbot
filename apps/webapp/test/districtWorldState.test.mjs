@@ -47,6 +47,9 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
   assert.equal(state.interaction_sheet.title_key, "world_hotspot_season_gate");
   assert.equal(state.interaction_sheet.rows.length, 4);
   assert.equal(state.interaction_sheet.rows[0].label_key, "world_sheet_metric_progress");
+  assert.equal(state.interaction_surface.surface_kind_key, "world_surface_kind_travel_portal");
+  assert.equal(state.interaction_surface.hero_label_key, "world_sheet_metric_progress");
+  assert.equal(state.interaction_surface.action_items[0].action_key, SHELL_ACTION_KEY.PLAYER_SEASON_HALL);
   assert.equal(state.active_cluster_key, "hub_gate_north");
   assert.equal(state.interaction_cluster_count, 3);
   assert.equal(state.active_cluster_slot_count, 2);
@@ -111,6 +114,8 @@ test("buildDistrictWorldState trims pvp nodes on low-end profile", () => {
   assert.equal(state.rail_profile_key, "arena_prime");
   assert.equal(state.interaction_sheet.title_key, "world_hotspot_duel_pit");
   assert.equal(state.interaction_sheet.rows[0].label_key, "world_sheet_metric_duel_phase");
+  assert.equal(state.interaction_surface.surface_kind_key, "world_surface_kind_arena_console");
+  assert.equal(state.interaction_surface.hero_label_key, "world_sheet_metric_duel_phase");
   assert.equal(state.hud_profile.compact_mode, true);
   assert.equal(state.interaction_cluster_count, 3);
   assert.deepEqual(
@@ -155,6 +160,8 @@ test("buildDistrictWorldState maps admin runtime into ops citadel", () => {
   assert.equal(state.rail_profile_key, "ops_citadel");
   assert.equal(state.interaction_sheet.title_key, "world_hotspot_queue_gate");
   assert.equal(state.interaction_sheet.rows[0].label_key, "world_sheet_metric_queue_depth");
+  assert.equal(state.interaction_surface.surface_kind_key, "world_surface_kind_ops_console");
+  assert.equal(state.interaction_surface.hero_label_key, "world_sheet_metric_queue_depth");
   assert.equal(state.interaction_cluster_count, 3);
   assert.deepEqual(
     state.actors.map((actor) => actor.kind),
@@ -196,6 +203,8 @@ test("buildDistrictWorldState marks active node from navigation context shell ac
   assert.equal(state.active_hotspot_hint_key, "world_hotspot_hint_payout");
   assert.equal(state.active_hotspot_cluster_key, "exchange_vault_east");
   assert.equal(state.active_cluster_key, "exchange_vault_east");
+  assert.equal(state.interaction_surface.surface_kind_key, "world_surface_kind_vault_terminal");
+  assert.equal(state.interaction_surface.hero_label_key, "world_sheet_metric_wallet_state");
   assert.equal(state.camera_profile.radius, state.camera_radius);
   assert.equal(state.nodes.find((node) => node.key === "payout_lift")?.is_active, true);
   assert.equal(state.hotspots.find((hotspot) => hotspot.key === "payout_bay")?.is_active, true);
