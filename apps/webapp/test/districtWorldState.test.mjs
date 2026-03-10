@@ -84,7 +84,10 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].sequence_rows[0].label_key, "world_sheet_metric_progress");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].label_key, "world_modal_kind_travel_gate");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].entry_kind_key, "world_entry_kind_hub_portal");
+  assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].director_pace_label_key, "world_director_pace_hub");
+  assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].hud_tone_label_key, "world_hud_tone_central_hub");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].sequence_rows[0].label_key, "world_sheet_metric_progress");
+  assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].sequence_cards[1].label_key, "world_modal_chip_tempo");
   assert.equal(state.interaction_modal.protocol_cards[1].action_items[0].action_key, SHELL_ACTION_KEY.PLAYER_TASKS_BOARD);
   assert.equal(state.active_cluster_key, "hub_gate_north");
   assert.equal(state.interaction_cluster_count, 3);
@@ -180,6 +183,8 @@ test("buildDistrictWorldState trims pvp nodes on low-end profile", () => {
   assert.equal(state.interaction_modal.protocol_cards[2].flow_pods[0].camera_profile_label_key, "world_camera_focus_scan");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].label_key, "world_modal_kind_duel_sequence");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].camera_profile_label_key, "world_camera_focus_strike");
+  assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].director_pace_label_key, "world_director_pace_arena");
+  assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].sequence_cards[2].value_key, "world_director_pace_arena");
   assert.equal(state.interaction_modal.protocol_cards[1].action_items[1].action_key, SHELL_ACTION_KEY.PLAYER_PVP_LEADERBOARD);
   assert.equal(state.hud_profile.compact_mode, true);
   assert.equal(state.interaction_cluster_count, 3);
@@ -253,6 +258,7 @@ test("buildDistrictWorldState maps admin runtime into ops citadel", () => {
   assert.equal(state.interaction_modal.protocol_cards[2].flow_pods[0].tempo_label_key, "world_sequence_tempo_dispatch");
   assert.equal(state.interaction_modal.protocol_cards[2].flow_pods[0].microflow_cards[0].label_key, "world_modal_kind_dispatch_sequence");
   assert.equal(state.interaction_modal.protocol_cards[2].flow_pods[0].microflow_cards[0].entry_kind_key, "world_entry_kind_dispatch_console");
+  assert.equal(state.interaction_modal.protocol_cards[2].flow_pods[0].microflow_cards[0].hud_tone_label_key, "world_hud_tone_ops_citadel");
   assert.equal(state.interaction_modal.protocol_cards[1].action_items[1].action_key, SHELL_ACTION_KEY.ADMIN_RUNTIME_FLAGS);
   assert.equal(state.interaction_cluster_count, 3);
   assert.deepEqual(

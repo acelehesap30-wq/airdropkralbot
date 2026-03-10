@@ -120,13 +120,20 @@ type ProtocolCardFlowPod = {
     sequence_kind_key?: string;
     tempo_label_key?: string;
     camera_profile_label_key?: string;
+    director_pace_label_key?: string;
+    hud_tone_label_key?: string;
     camera_radius_scale?: number;
     camera_focus_y_offset?: number;
     motion_scalar?: number;
+    alpha_offset?: number;
+    beta_offset?: number;
+    focus_lerp_scalar?: number;
+    radius_lerp_scalar?: number;
     stage_label_key?: string;
     stage_value?: string;
     stage_status_key?: string;
     sequence_rows?: Array<{ label_key: string; value: string; status_key: string }>;
+    sequence_cards?: Array<{ card_key: string; label_key: string; value: string; value_key?: string; status_key: string }>;
     rows?: Array<{ label_key: string; value: string; status_key: string }>;
   }>;
   action_items?: ProtocolCardActionItem[];
@@ -1015,6 +1022,14 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           const microflowFocusYOffset = Number.isFinite(Number(microflowFocus?.camera_focus_y_offset))
             ? Number(microflowFocus?.camera_focus_y_offset)
             : 0;
+          const microflowAlphaOffset = Number.isFinite(Number(microflowFocus?.alpha_offset)) ? Number(microflowFocus?.alpha_offset) : 0;
+          const microflowBetaOffset = Number.isFinite(Number(microflowFocus?.beta_offset)) ? Number(microflowFocus?.beta_offset) : 0;
+          const microflowFocusLerpScalar = Number.isFinite(Number(microflowFocus?.focus_lerp_scalar))
+            ? Number(microflowFocus?.focus_lerp_scalar)
+            : 1;
+          const microflowRadiusLerpScalar = Number.isFinite(Number(microflowFocus?.radius_lerp_scalar))
+            ? Number(microflowFocus?.radius_lerp_scalar)
+            : 1;
           const motionScalar =
             (worldState.reduced_motion ? 0.22 : 1) *
             directorProfile.motion_scalar *
@@ -1034,20 +1049,25 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           const targetAlpha =
             cameraProfile.alpha_base +
             now * worldState.orbit_speed * cameraProfile.orbit_scalar +
-            (focusHotspot?.camera_alpha_offset || 0);
+            (focusHotspot?.camera_alpha_offset || 0) +
+            microflowAlphaOffset;
           const targetBeta =
             cameraProfile.beta_base +
             Math.sin(now * 0.32) * 0.03 * cameraProfile.sway_scalar * motionScalar +
-            (focusHotspot?.camera_beta_offset || 0);
-          camera.alpha += (targetAlpha - camera.alpha) * cameraProfile.alpha_lerp;
-          camera.beta += (targetBeta - camera.beta) * cameraProfile.beta_lerp;
+            (focusHotspot?.camera_beta_offset || 0) +
+            microflowBetaOffset;
+          camera.alpha += (targetAlpha - camera.alpha) * cameraProfile.alpha_lerp * microflowFocusLerpScalar;
+          camera.beta += (targetBeta - camera.beta) * cameraProfile.beta_lerp * microflowFocusLerpScalar;
           if (focusHotspot) {
-            camera.target.x += (focusHotspot.x - camera.target.x) * cameraProfile.focus_lerp;
-            camera.target.y += (focusHotspot.focus_y + podFocusYOffset + microflowFocusYOffset - camera.target.y) * cameraProfile.focus_lerp;
-            camera.target.z += (focusHotspot.z - camera.target.z) * cameraProfile.focus_lerp;
+            camera.target.x += (focusHotspot.x - camera.target.x) * cameraProfile.focus_lerp * microflowFocusLerpScalar;
+            camera.target.y +=
+              (focusHotspot.focus_y + podFocusYOffset + microflowFocusYOffset - camera.target.y) *
+              cameraProfile.focus_lerp *
+              microflowFocusLerpScalar;
+            camera.target.z += (focusHotspot.z - camera.target.z) * cameraProfile.focus_lerp * microflowFocusLerpScalar;
             const desiredRadius =
               cameraProfile.radius * focusHotspot.camera_radius_scale * podRadiusScale * microflowRadiusScale;
-            camera.radius += (desiredRadius - camera.radius) * cameraProfile.radius_lerp;
+            camera.radius += (desiredRadius - camera.radius) * cameraProfile.radius_lerp * microflowRadiusLerpScalar;
           }
           satellites.forEach((entry, index) => {
             const radiusPulse = theme.satellite_radius + Math.sin(now * (0.8 + index * 0.07)) * 0.06 * motionScalar;
@@ -1890,8 +1910,36 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                                 <strong>{t(props.lang, selectedMicroflow.camera_profile_label_key as never)}</strong>
                               </div>
                             ) : null}
+                            {selectedMicroflow.director_pace_label_key ? (
+                              <div className="akrSceneInteractionModalChip is-tempo">
+                                <span>{t(props.lang, "world_modal_chip_director" as never)}</span>
+                                <strong>{t(props.lang, selectedMicroflow.director_pace_label_key as never)}</strong>
+                              </div>
+                            ) : null}
+                            {selectedMicroflow.hud_tone_label_key ? (
+                              <div className="akrSceneInteractionModalChip is-tempo">
+                                <span>{t(props.lang, "world_modal_chip_hud" as never)}</span>
+                                <strong>{t(props.lang, selectedMicroflow.hud_tone_label_key as never)}</strong>
+                              </div>
+                            ) : null}
                           </div>
                           <div className="akrSceneInteractionModalGrid">
+                            {selectedMicroflow.sequence_cards?.length ? (
+                              <section className="akrSceneInteractionModalSection">
+                                <div className="akrSceneInteractionModalSectionHeader">
+                                  <span>{t(props.lang, "world_modal_section_microflow_sequence" as never)}</span>
+                                  <strong>{selectedMicroflow.sequence_cards.length}</strong>
+                                </div>
+                                <div className="akrSceneInteractionModalFocusCards">
+                                  {selectedMicroflow.sequence_cards.map((card) => (
+                                    <div key={`${selectedMicroflow.microflow_key}:card:${card.card_key}`} className={`akrSceneInteractionModalFocusCard is-${card.status_key}`}>
+                                      <span>{t(props.lang, card.label_key as never)}</span>
+                                      <strong>{card.value_key ? t(props.lang, card.value_key as never) : card.value}</strong>
+                                    </div>
+                                  ))}
+                                </div>
+                              </section>
+                            ) : null}
                             {selectedMicroflow.sequence_rows?.length ? (
                               <div className="akrSceneInteractionModalRows">
                                 {selectedMicroflow.sequence_rows.map((row) => (

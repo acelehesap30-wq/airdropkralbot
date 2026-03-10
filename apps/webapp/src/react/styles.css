@@ -1222,6 +1222,50 @@ body {
   border-color: rgba(255, 111, 145, 0.3);
 }
 
+.akrSceneInteractionModalFocusCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 8px;
+}
+
+.akrSceneInteractionModalFocusCard {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(120, 181, 225, 0.24);
+  background: linear-gradient(145deg, rgba(8, 22, 44, 0.78), rgba(6, 18, 34, 0.7));
+}
+
+.akrSceneInteractionModalFocusCard span {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.66rem;
+  color: #9fc7df;
+}
+
+.akrSceneInteractionModalFocusCard strong {
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  font-size: 0.88rem;
+  color: #f2fbff;
+}
+
+.akrSceneInteractionModalFocusCard.is-live {
+  border-color: rgba(47, 255, 181, 0.26);
+}
+
+.akrSceneInteractionModalFocusCard.is-ready {
+  border-color: rgba(123, 230, 255, 0.26);
+}
+
+.akrSceneInteractionModalFocusCard.is-watch {
+  border-color: rgba(255, 180, 93, 0.28);
+}
+
+.akrSceneInteractionModalFocusCard.is-alert,
+.akrSceneInteractionModalFocusCard.is-locked {
+  border-color: rgba(255, 111, 145, 0.3);
+}
+
 .akrSceneInteractionModalAction {
   display: grid;
   gap: 4px;

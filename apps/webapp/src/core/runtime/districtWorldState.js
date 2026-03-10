@@ -2732,9 +2732,15 @@ function resolveProtocolMicroFlowMeta(labelKey) {
         sequence_kind_key: "world_modal_kind_duel_sequence",
         tempo_label_key: "world_sequence_tempo_burst",
         camera_profile_label_key: "world_camera_focus_strike",
+        director_pace_label_key: "world_director_pace_arena",
+        hud_tone_label_key: "world_hud_tone_arena_prime",
         camera_radius_scale: 0.78,
         camera_focus_y_offset: 0.24,
-        motion_scalar: 1.14
+        motion_scalar: 1.14,
+        alpha_offset: -0.08,
+        beta_offset: 0.03,
+        focus_lerp_scalar: 1.24,
+        radius_lerp_scalar: 1.18
       };
     case "world_modal_kind_ladder_sequence":
       return {
@@ -2742,9 +2748,15 @@ function resolveProtocolMicroFlowMeta(labelKey) {
         sequence_kind_key: "world_modal_kind_ladder_sequence",
         tempo_label_key: "world_sequence_tempo_charge",
         camera_profile_label_key: "world_camera_focus_charge",
+        director_pace_label_key: "world_director_pace_arena",
+        hud_tone_label_key: "world_hud_tone_arena_prime",
         camera_radius_scale: 0.82,
         camera_focus_y_offset: 0.18,
-        motion_scalar: 1.06
+        motion_scalar: 1.06,
+        alpha_offset: -0.05,
+        beta_offset: 0.02,
+        focus_lerp_scalar: 1.14,
+        radius_lerp_scalar: 1.12
       };
     case "world_modal_kind_telemetry_scan":
       return {
@@ -2752,9 +2764,15 @@ function resolveProtocolMicroFlowMeta(labelKey) {
         sequence_kind_key: "world_modal_kind_telemetry_scan",
         tempo_label_key: "world_sequence_tempo_scan",
         camera_profile_label_key: "world_camera_focus_scan",
+        director_pace_label_key: "world_director_pace_arena",
+        hud_tone_label_key: "world_hud_tone_arena_prime",
         camera_radius_scale: 0.88,
         camera_focus_y_offset: 0.12,
-        motion_scalar: 0.92
+        motion_scalar: 0.92,
+        alpha_offset: 0.02,
+        beta_offset: -0.01,
+        focus_lerp_scalar: 0.94,
+        radius_lerp_scalar: 0.96
       };
     case "world_modal_kind_mission_terminal":
       return {
@@ -2762,9 +2780,15 @@ function resolveProtocolMicroFlowMeta(labelKey) {
         sequence_kind_key: "world_modal_kind_mission_terminal",
         tempo_label_key: "world_sequence_tempo_stack",
         camera_profile_label_key: "world_camera_focus_stack",
+        director_pace_label_key: "world_director_pace_mission",
+        hud_tone_label_key: "world_hud_tone_mission_quarter",
         camera_radius_scale: 0.86,
         camera_focus_y_offset: 0.14,
-        motion_scalar: 0.98
+        motion_scalar: 0.98,
+        alpha_offset: -0.03,
+        beta_offset: 0.01,
+        focus_lerp_scalar: 1.06,
+        radius_lerp_scalar: 1.08
       };
     case "world_modal_kind_contract_sequence":
       return {
@@ -2772,9 +2796,15 @@ function resolveProtocolMicroFlowMeta(labelKey) {
         sequence_kind_key: "world_modal_kind_contract_sequence",
         tempo_label_key: "world_sequence_tempo_claim",
         camera_profile_label_key: "world_camera_focus_claim",
+        director_pace_label_key: "world_director_pace_mission",
+        hud_tone_label_key: "world_hud_tone_mission_quarter",
         camera_radius_scale: 0.84,
         camera_focus_y_offset: 0.16,
-        motion_scalar: 1
+        motion_scalar: 1,
+        alpha_offset: -0.04,
+        beta_offset: 0.02,
+        focus_lerp_scalar: 1.08,
+        radius_lerp_scalar: 1.1
       };
     case "world_modal_kind_streak_sync":
       return {
@@ -2782,9 +2812,15 @@ function resolveProtocolMicroFlowMeta(labelKey) {
         sequence_kind_key: "world_modal_kind_streak_sync",
         tempo_label_key: "world_sequence_tempo_sync",
         camera_profile_label_key: "world_camera_focus_watch",
+        director_pace_label_key: "world_director_pace_mission",
+        hud_tone_label_key: "world_hud_tone_mission_quarter",
         camera_radius_scale: 0.9,
         camera_focus_y_offset: 0.1,
-        motion_scalar: 0.9
+        motion_scalar: 0.9,
+        alpha_offset: 0.01,
+        beta_offset: -0.01,
+        focus_lerp_scalar: 0.92,
+        radius_lerp_scalar: 0.94
       };
     case "world_modal_kind_wallet_terminal":
       return {
@@ -2792,9 +2828,15 @@ function resolveProtocolMicroFlowMeta(labelKey) {
         sequence_kind_key: "world_modal_kind_wallet_terminal",
         tempo_label_key: "world_sequence_tempo_link",
         camera_profile_label_key: "world_camera_focus_route",
+        director_pace_label_key: "world_director_pace_exchange",
+        hud_tone_label_key: "world_hud_tone_exchange_district",
         camera_radius_scale: 0.84,
         camera_focus_y_offset: 0.14,
-        motion_scalar: 0.94
+        motion_scalar: 0.94,
+        alpha_offset: -0.03,
+        beta_offset: 0.01,
+        focus_lerp_scalar: 1.02,
+        radius_lerp_scalar: 1.04
       };
     case "world_modal_kind_payout_route":
       return {
@@ -2802,9 +2844,15 @@ function resolveProtocolMicroFlowMeta(labelKey) {
         sequence_kind_key: "world_modal_kind_payout_route",
         tempo_label_key: "world_sequence_tempo_route",
         camera_profile_label_key: "world_camera_focus_route",
+        director_pace_label_key: "world_director_pace_exchange",
+        hud_tone_label_key: "world_hud_tone_exchange_district",
         camera_radius_scale: 0.82,
         camera_focus_y_offset: 0.12,
-        motion_scalar: 0.9
+        motion_scalar: 0.9,
+        alpha_offset: -0.02,
+        beta_offset: 0.01,
+        focus_lerp_scalar: 0.98,
+        radius_lerp_scalar: 1
       };
     case "world_modal_kind_premium_unlock":
       return {
@@ -2812,9 +2860,15 @@ function resolveProtocolMicroFlowMeta(labelKey) {
         sequence_kind_key: "world_modal_kind_premium_unlock",
         tempo_label_key: "world_sequence_tempo_unlock",
         camera_profile_label_key: "world_camera_focus_route",
+        director_pace_label_key: "world_director_pace_exchange",
+        hud_tone_label_key: "world_hud_tone_exchange_district",
         camera_radius_scale: 0.84,
         camera_focus_y_offset: 0.12,
-        motion_scalar: 0.94
+        motion_scalar: 0.94,
+        alpha_offset: -0.03,
+        beta_offset: 0.01,
+        focus_lerp_scalar: 1,
+        radius_lerp_scalar: 1.04
       };
     case "world_modal_kind_queue_review":
       return {
@@ -2822,9 +2876,15 @@ function resolveProtocolMicroFlowMeta(labelKey) {
         sequence_kind_key: "world_modal_kind_queue_review",
         tempo_label_key: "world_sequence_tempo_watch",
         camera_profile_label_key: "world_camera_focus_watch",
+        director_pace_label_key: "world_director_pace_ops",
+        hud_tone_label_key: "world_hud_tone_ops_citadel",
         camera_radius_scale: 0.84,
         camera_focus_y_offset: 0.18,
-        motion_scalar: 0.84
+        motion_scalar: 0.84,
+        alpha_offset: 0.02,
+        beta_offset: -0.02,
+        focus_lerp_scalar: 0.92,
+        radius_lerp_scalar: 0.96
       };
     case "world_modal_kind_runtime_scan":
       return {
@@ -2832,9 +2892,15 @@ function resolveProtocolMicroFlowMeta(labelKey) {
         sequence_kind_key: "world_modal_kind_runtime_scan",
         tempo_label_key: "world_sequence_tempo_watch",
         camera_profile_label_key: "world_camera_focus_watch",
+        director_pace_label_key: "world_director_pace_ops",
+        hud_tone_label_key: "world_hud_tone_ops_citadel",
         camera_radius_scale: 0.88,
         camera_focus_y_offset: 0.16,
-        motion_scalar: 0.82
+        motion_scalar: 0.82,
+        alpha_offset: 0.01,
+        beta_offset: -0.01,
+        focus_lerp_scalar: 0.9,
+        radius_lerp_scalar: 0.94
       };
     case "world_modal_kind_dispatch_sequence":
       return {
@@ -2842,9 +2908,15 @@ function resolveProtocolMicroFlowMeta(labelKey) {
         sequence_kind_key: "world_modal_kind_dispatch_sequence",
         tempo_label_key: "world_sequence_tempo_dispatch",
         camera_profile_label_key: "world_camera_focus_dispatch",
+        director_pace_label_key: "world_director_pace_ops",
+        hud_tone_label_key: "world_hud_tone_ops_citadel",
         camera_radius_scale: 0.8,
         camera_focus_y_offset: 0.2,
-        motion_scalar: 0.86
+        motion_scalar: 0.86,
+        alpha_offset: -0.06,
+        beta_offset: 0.02,
+        focus_lerp_scalar: 1.16,
+        radius_lerp_scalar: 1.14
       };
     case "world_modal_kind_travel_gate":
     default:
@@ -2853,11 +2925,49 @@ function resolveProtocolMicroFlowMeta(labelKey) {
         sequence_kind_key: "world_modal_kind_travel_gate",
         tempo_label_key: "world_sequence_tempo_glide",
         camera_profile_label_key: "world_camera_focus_glide",
+        director_pace_label_key: "world_director_pace_hub",
+        hud_tone_label_key: "world_hud_tone_central_hub",
         camera_radius_scale: 0.92,
         camera_focus_y_offset: 0.08,
-        motion_scalar: 0.9
+        motion_scalar: 0.9,
+        alpha_offset: 0.03,
+        beta_offset: -0.01,
+        focus_lerp_scalar: 0.96,
+        radius_lerp_scalar: 0.98
       };
   }
+}
+
+function buildProtocolMicroFlowSequenceCards(labelKeyValue, statusKey, primaryRow, secondaryRow, tertiaryRow, focusMeta) {
+  const cards = [
+    primaryRow
+      ? {
+          card_key: `${labelKeyValue}:stage`,
+          label_key: primaryRow.label_key || labelKeyValue,
+          value: primaryRow.value || "",
+          status_key: primaryRow.status_key || statusKey
+        }
+      : null,
+    focusMeta.tempo_label_key
+      ? {
+          card_key: `${labelKeyValue}:tempo`,
+          label_key: "world_modal_chip_tempo",
+          value_key: focusMeta.tempo_label_key,
+          value: focusMeta.tempo_label_key,
+          status_key: statusKey
+        }
+      : null,
+    focusMeta.director_pace_label_key
+      ? {
+          card_key: `${labelKeyValue}:director`,
+          label_key: "world_modal_chip_director",
+          value_key: focusMeta.director_pace_label_key,
+          value: focusMeta.director_pace_label_key,
+          status_key: tertiaryRow?.status_key || secondaryRow?.status_key || statusKey
+        }
+      : null
+  ].filter(Boolean);
+  return cards.slice(0, 3);
 }
 
 function buildProtocolPodMicroFlowCards(labelKey, statusKey, toneKey, sequenceRows, actionItems) {
@@ -2886,13 +2996,20 @@ function buildProtocolPodMicroFlowCards(labelKey, statusKey, toneKey, sequenceRo
       sequence_kind_key: focusMeta.sequence_kind_key,
       tempo_label_key: focusMeta.tempo_label_key,
       camera_profile_label_key: focusMeta.camera_profile_label_key,
+      director_pace_label_key: focusMeta.director_pace_label_key,
+      hud_tone_label_key: focusMeta.hud_tone_label_key,
       camera_radius_scale: focusMeta.camera_radius_scale,
       camera_focus_y_offset: focusMeta.camera_focus_y_offset,
       motion_scalar: focusMeta.motion_scalar,
+      alpha_offset: focusMeta.alpha_offset,
+      beta_offset: focusMeta.beta_offset,
+      focus_lerp_scalar: focusMeta.focus_lerp_scalar,
+      radius_lerp_scalar: focusMeta.radius_lerp_scalar,
       stage_label_key: row?.label_key || labelKeyValue,
       stage_value: row?.value || "",
       stage_status_key: row?.status_key || statusKey,
-      sequence_rows: [row, secondaryRow, tertiaryRow].filter(Boolean).slice(0, 3)
+      sequence_rows: [row, secondaryRow, tertiaryRow].filter(Boolean).slice(0, 3),
+      sequence_cards: buildProtocolMicroFlowSequenceCards(labelKeyValue, statusKey, row, secondaryRow, tertiaryRow, focusMeta)
     };
   };
 
