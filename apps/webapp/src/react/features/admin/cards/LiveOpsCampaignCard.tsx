@@ -1097,7 +1097,9 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
           {asCount(opsAlertSummary.selection_query_adjustment_top_delta_weight)} / {asCount(opsAlertSummary.selection_query_adjustment_total_delta_weight)} /{" "}
           {asCount(opsAlertSummary.selection_query_adjustment_field_weight)} / {asCount(opsAlertSummary.selection_query_adjustment_field_family_weight)} /{" "}
           {asCount(opsAlertSummary.selection_query_adjustment_query_family_match_days)} / {asCount(opsAlertSummary.selection_query_adjustment_segment_family_match_days)} /{" "}
-          {asCount(opsAlertSummary.selection_query_adjustment_field_family_match_days)}
+          {asCount(opsAlertSummary.selection_query_adjustment_field_family_match_days)} | B{" "}
+          {asText(opsAlertSummary.selection_query_adjustment_band_signal, "-")} / {asCount(opsAlertSummary.selection_query_adjustment_band_weight)} /{" "}
+          {asCount(opsAlertSummary.selection_query_adjustment_band_match_days)}
         </p>
         <p className="akrMutedLine">
           {t(props.lang, "admin_live_ops_ops_alert_selection_family_pressure_label")}: {asText(opsAlertSummary.selection_family_escalation_band, "-")} /{" "}
@@ -1107,7 +1109,8 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
           {asCount(opsAlertSummary.selection_family_daily_weight)} / {asCount(opsAlertSummary.selection_query_family_match_days)} /{" "}
           {asCount(opsAlertSummary.selection_segment_family_match_days)} / {asCount(opsAlertSummary.selection_field_family_match_days)} | Q{" "}
           {asCount(opsAlertSummary.selection_query_family_weight)} / S {asCount(opsAlertSummary.selection_segment_family_weight)} / F{" "}
-          {asCount(opsAlertSummary.selection_field_family_weight)}
+          {asCount(opsAlertSummary.selection_field_family_weight)} | B {asText(opsAlertSummary.selection_family_band_signal, "-")} /{" "}
+          {asCount(opsAlertSummary.selection_family_band_weight)} / {asCount(opsAlertSummary.selection_family_band_match_days)}
         </p>
         <div className="akrSplit">
           <OpsAlertDailyTrendList title={t(props.lang, "admin_live_ops_ops_alert_daily_title")} rows={opsAlertTrendDailyBreakdown} />

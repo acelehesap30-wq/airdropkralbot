@@ -456,10 +456,18 @@ test("evaluateOpsAlert escalates watch state on query adjustment field family pr
       },
       selection_trend_summary: {
         latest_query_adjustment_field_family: "activity_window",
+        latest_query_adjustment_segment_path: "inactive_returning:activity_window",
         query_adjustment_field_family_daily_breakdown: [
           { day: "2026-03-08", bucket_key: "activity_window", item_count: 6 },
           { day: "2026-03-07", bucket_key: "activity_window", item_count: 4 },
           { day: "2026-03-06", bucket_key: "activity_window", item_count: 3 }
+        ],
+        family_risk_field_family_band_daily_breakdown: [
+          { day: "2026-03-08", bucket_key: "activity_window::alert", item_count: 6 },
+          { day: "2026-03-07", bucket_key: "activity_window::watch", item_count: 4 }
+        ],
+        family_risk_adjustment_segment_path_band_daily_breakdown: [
+          { day: "2026-03-08", bucket_key: "inactive_returning:activity_window::alert", item_count: 5 }
         ]
       },
       pressure_focus_summary: {
@@ -475,14 +483,18 @@ test("evaluateOpsAlert escalates watch state on query adjustment field family pr
   );
 
   assert.equal(result.should_notify, true);
-  assert.equal(result.notification_reason, "watch_state_query_adjustment_field_family_pressure");
+  assert.equal(result.notification_reason, "watch_state_field_family_pressure");
   assert.equal(result.selection_query_adjustment_escalation_band, "alert");
   assert.equal(result.selection_query_adjustment_escalation_reason, "watch_state_query_adjustment_field_family_pressure");
   assert.equal(result.selection_query_adjustment_escalation_dimension, "field_family");
   assert.equal(result.selection_query_adjustment_escalation_bucket, "activity_window");
+  assert.equal(result.selection_query_adjustment_escalation_score, 15);
   assert.equal(result.selection_query_adjustment_field_family, "activity_window");
   assert.equal(result.selection_query_adjustment_field_family_weight, 3);
   assert.equal(result.selection_query_adjustment_field_family_match_days, 3);
+  assert.equal(result.selection_query_adjustment_band_signal, "field_family_band:activity_window::alert");
+  assert.equal(result.selection_query_adjustment_band_weight, 3);
+  assert.equal(result.selection_query_adjustment_band_match_days, 2);
 });
 
 test("evaluateOpsAlert escalates watch state on high query family pressure", async () => {
@@ -587,6 +599,7 @@ test("evaluateOpsAlert escalates watch state on field family pressure", async ()
       },
       selection_trend_summary: {
         latest_query_adjustment_field_family: "activity_window",
+        latest_query_adjustment_segment_path: "all_active:activity_window",
         query_adjustment_field_family_breakdown: [
           { bucket_key: "activity_window", item_count: 6 }
         ],
@@ -594,6 +607,13 @@ test("evaluateOpsAlert escalates watch state on field family pressure", async ()
           { day: "2026-03-08", bucket_key: "activity_window", item_count: 3 },
           { day: "2026-03-07", bucket_key: "activity_window", item_count: 2 },
           { day: "2026-03-06", bucket_key: "activity_window", item_count: 1 }
+        ],
+        family_risk_field_family_band_daily_breakdown: [
+          { day: "2026-03-08", bucket_key: "activity_window::alert", item_count: 7 },
+          { day: "2026-03-07", bucket_key: "activity_window::watch", item_count: 5 }
+        ],
+        family_risk_adjustment_segment_path_band_daily_breakdown: [
+          { day: "2026-03-08", bucket_key: "all_active:activity_window::alert", item_count: 4 }
         ]
       },
       pressure_focus_summary: {
@@ -614,8 +634,12 @@ test("evaluateOpsAlert escalates watch state on field family pressure", async ()
   assert.equal(result.selection_family_escalation_reason, "watch_state_field_family_pressure");
   assert.equal(result.selection_family_escalation_dimension, "field_family");
   assert.equal(result.selection_family_escalation_bucket, "activity_window");
+  assert.equal(result.selection_family_escalation_score, 13);
   assert.equal(result.selection_field_family_weight, 3);
   assert.equal(result.selection_field_family_match_days, 3);
+  assert.equal(result.selection_family_band_signal, "field_family_band:activity_window::alert");
+  assert.equal(result.selection_family_band_weight, 3);
+  assert.equal(result.selection_family_band_match_days, 2);
 });
 
 test("runLiveOpsOpsAlert writes latest artifact and skips telegram on clear state", async () => {

@@ -172,10 +172,116 @@ function countSelectionFamilyDailyMatches(rows, familyKey) {
   }, 0);
 }
 
+function splitSelectionCompositeBucketKey(bucketKey) {
+  const safeBucketKey = String(bucketKey || "").trim().toLowerCase();
+  if (!safeBucketKey) {
+    return { base_key: "", band_key: "" };
+  }
+  const separatorIndex = safeBucketKey.lastIndexOf("::");
+  if (separatorIndex <= 0) {
+    return { base_key: safeBucketKey, band_key: "" };
+  }
+  return {
+    base_key: safeBucketKey.slice(0, separatorIndex),
+    band_key: safeBucketKey.slice(separatorIndex + 2)
+  };
+}
+
+function resolveSelectionRiskBandSeverityWeight(bandKey) {
+  switch (String(bandKey || "").trim().toLowerCase()) {
+    case "alert":
+      return 2;
+    case "watch":
+      return 1;
+    default:
+      return 0;
+  }
+}
+
+function buildSelectionRiskBandSignal(rows, bucketKey, sourceKey, priority = 0) {
+  const safeBucketKey = String(bucketKey || "").trim().toLowerCase();
+  if (!safeBucketKey) {
+    return {
+      source_key: String(sourceKey || "").trim(),
+      signal_key: "",
+      bucket_key: "",
+      band_key: "",
+      match_days: 0,
+      severity_weight: 0,
+      daily_weight: 0,
+      total_weight: 0,
+      priority: Math.max(0, Number(priority || 0))
+    };
+  }
+  let matchDays = 0;
+  let topBandKey = "";
+  let severityWeight = 0;
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const { base_key: baseKey, band_key: bandKey } = splitSelectionCompositeBucketKey(row?.bucket_key);
+    if (baseKey !== safeBucketKey) {
+      continue;
+    }
+    matchDays += 1;
+    const bandWeight = resolveSelectionRiskBandSeverityWeight(bandKey);
+    if (bandWeight > severityWeight) {
+      severityWeight = bandWeight;
+      topBandKey = bandKey;
+    }
+  }
+  const dailyWeight = resolveSelectionFamilyDailyWeight(matchDays);
+  const totalWeight = severityWeight + dailyWeight;
+  return {
+    source_key: String(sourceKey || "").trim(),
+    signal_key: topBandKey ? `${String(sourceKey || "").trim()}:${safeBucketKey}::${topBandKey}` : "",
+    bucket_key: safeBucketKey,
+    band_key: topBandKey,
+    match_days: matchDays,
+    severity_weight: severityWeight,
+    daily_weight: dailyWeight,
+    total_weight: totalWeight,
+    priority: Math.max(0, Number(priority || 0))
+  };
+}
+
+function pickDominantSelectionRiskBandSignal(signals) {
+  return (Array.isArray(signals) ? signals : [])
+    .filter((signal) => signal && typeof signal === "object" && Number(signal.total_weight || 0) > 0)
+    .sort((left, right) => {
+      const rightWeight = Math.max(0, Number(right?.total_weight || 0));
+      const leftWeight = Math.max(0, Number(left?.total_weight || 0));
+      if (rightWeight !== leftWeight) {
+        return rightWeight - leftWeight;
+      }
+      const rightSeverity = Math.max(0, Number(right?.severity_weight || 0));
+      const leftSeverity = Math.max(0, Number(left?.severity_weight || 0));
+      if (rightSeverity !== leftSeverity) {
+        return rightSeverity - leftSeverity;
+      }
+      const rightDays = Math.max(0, Number(right?.match_days || 0));
+      const leftDays = Math.max(0, Number(left?.match_days || 0));
+      if (rightDays !== leftDays) {
+        return rightDays - leftDays;
+      }
+      return Math.max(0, Number(left?.priority || 0)) - Math.max(0, Number(right?.priority || 0));
+    })[0] || {
+    source_key: "",
+    signal_key: "",
+    bucket_key: "",
+    band_key: "",
+    match_days: 0,
+    severity_weight: 0,
+    daily_weight: 0,
+    total_weight: 0,
+    priority: 0
+  };
+}
+
 function resolveSelectionFamilyEscalation(selectionTrend = {}, effectiveCapDelta = 0) {
   const latestQueryFamily = String(selectionTrend?.latest_query_strategy_family || "").trim().toLowerCase();
   const latestSegmentFamily = String(selectionTrend?.latest_segment_strategy_family || "").trim().toLowerCase();
   const latestFieldFamily = String(selectionTrend?.latest_query_adjustment_field_family || "").trim().toLowerCase();
+  const latestQueryPath = String(selectionTrend?.latest_query_strategy_segment_path || "").trim().toLowerCase();
+  const latestAdjustmentPath = String(selectionTrend?.latest_query_adjustment_segment_path || "").trim().toLowerCase();
   const queryApplied7d = Math.max(0, Number(selectionTrend?.query_strategy_applied_7d || 0));
   const topQueryFamily =
     Array.isArray(selectionTrend?.query_strategy_family_breakdown) && selectionTrend.query_strategy_family_breakdown[0]
@@ -214,36 +320,89 @@ function resolveSelectionFamilyEscalation(selectionTrend = {}, effectiveCapDelta
   const queryFamilyDailyWeight = resolveSelectionFamilyDailyWeight(queryFamilyMatchDays);
   const segmentFamilyDailyWeight = resolveSelectionFamilyDailyWeight(segmentFamilyMatchDays);
   const fieldFamilyDailyWeight = resolveSelectionFamilyDailyWeight(fieldFamilyMatchDays);
+  const queryPathBandSignal = buildSelectionRiskBandSignal(
+    selectionTrend?.family_risk_query_segment_path_band_daily_breakdown,
+    latestQueryPath,
+    "query_segment_path_band",
+    0
+  );
+  const fieldFamilyBandSignal = buildSelectionRiskBandSignal(
+    selectionTrend?.family_risk_field_family_band_daily_breakdown,
+    topFieldFamilyKey || latestFieldFamily,
+    "field_family_band",
+    1
+  );
+  const adjustmentPathBandSignal = buildSelectionRiskBandSignal(
+    selectionTrend?.family_risk_adjustment_segment_path_band_daily_breakdown,
+    latestAdjustmentPath,
+    "adjustment_segment_path_band",
+    2
+  );
+  const fieldDominantBandSignal = pickDominantSelectionRiskBandSignal([fieldFamilyBandSignal, adjustmentPathBandSignal]);
   const queryScore =
     queryFamilyWeight +
     resolveSelectionFamilyCountWeight(topQueryFamilyCount) +
     (queryApplied7d >= 4 ? 1 : 0) +
     queryFamilyDailyWeight +
-    deltaWeight;
+    deltaWeight +
+    queryPathBandSignal.total_weight;
   const segmentScore =
     segmentFamilyWeight +
     resolveSelectionFamilyCountWeight(topSegmentFamilyCount) +
     segmentFamilyDailyWeight +
-    deltaWeight;
+    deltaWeight +
+    queryPathBandSignal.total_weight;
   const fieldScore =
     fieldFamilyWeight +
     resolveSelectionFamilyCountWeight(topFieldFamilyCount) +
     fieldFamilyDailyWeight +
-    deltaWeight;
+    deltaWeight +
+    fieldFamilyBandSignal.total_weight +
+    adjustmentPathBandSignal.total_weight;
   const candidates = [
-    { dimension: "query_family", family: topQueryFamilyKey, score: queryScore, dailyWeight: queryFamilyDailyWeight, priority: 0 },
-    { dimension: "segment_family", family: topSegmentFamilyKey, score: segmentScore, dailyWeight: segmentFamilyDailyWeight, priority: 1 },
-    { dimension: "field_family", family: topFieldFamilyKey, score: fieldScore, dailyWeight: fieldFamilyDailyWeight, priority: 2 }
+    {
+      dimension: "query_family",
+      family: topQueryFamilyKey,
+      score: queryScore,
+      dailyWeight: queryFamilyDailyWeight,
+      bandSignal: queryPathBandSignal,
+      priority: 0
+    },
+    {
+      dimension: "segment_family",
+      family: topSegmentFamilyKey,
+      score: segmentScore,
+      dailyWeight: segmentFamilyDailyWeight,
+      bandSignal: queryPathBandSignal,
+      priority: 1
+    },
+    {
+      dimension: "field_family",
+      family: topFieldFamilyKey,
+      score: fieldScore,
+      dailyWeight: fieldFamilyDailyWeight,
+      bandSignal: fieldDominantBandSignal,
+      priority: 2
+    }
   ].sort((left, right) => {
     if (right.score !== left.score) {
       return right.score - left.score;
     }
     return left.priority - right.priority;
   });
-  const dominant = candidates[0] || { dimension: "", family: "", score: 0, dailyWeight: 0 };
+  const dominant = candidates[0] || {
+    dimension: "",
+    family: "",
+    score: 0,
+    dailyWeight: 0,
+    bandSignal: pickDominantSelectionRiskBandSignal([])
+  };
   const dominantDimension = dominant.score > 0 ? dominant.dimension : "";
   const dominantFamily = dominant.score > 0 ? dominant.family : "";
   const dominantScore = dominant.score;
+  const dominantBandSignal = Number(dominant.bandSignal?.total_weight || 0) > 0
+    ? dominant.bandSignal
+    : pickDominantSelectionRiskBandSignal([]);
   const hasDominantSignal = dominantScore > 0 && dominantFamily;
   let escalationBand = "clear";
   let reason = "";
@@ -275,6 +434,11 @@ function resolveSelectionFamilyEscalation(selectionTrend = {}, effectiveCapDelta
     query_family_match_days: queryFamilyMatchDays,
     segment_family_match_days: segmentFamilyMatchDays,
     field_family_match_days: fieldFamilyMatchDays,
+    band_signal: String(dominantBandSignal.signal_key || "").trim(),
+    band_weight: Math.max(0, Number(dominantBandSignal.total_weight || 0)),
+    band_match_days: Math.max(0, Number(dominantBandSignal.match_days || 0)),
+    band_state: String(dominantBandSignal.band_key || "").trim(),
+    band_source: String(dominantBandSignal.source_key || "").trim(),
     top_query_family: topQueryFamilyKey,
     top_query_family_count: topQueryFamilyCount,
     top_segment_family: topSegmentFamilyKey,
@@ -360,6 +524,7 @@ function resolveSelectionAdjustmentEscalation(selectionTrend = {}, adjustmentSum
   const latestQueryFamily = String(selectionTrend?.latest_query_strategy_family || "").trim().toLowerCase();
   const latestSegmentFamily = String(selectionTrend?.latest_segment_strategy_family || "").trim().toLowerCase();
   const latestFieldFamily = String(selectionTrend?.latest_query_adjustment_field_family || "").trim().toLowerCase();
+  const latestAdjustmentPath = String(selectionTrend?.latest_query_adjustment_segment_path || "").trim().toLowerCase();
   const queryAdjustmentFamilyDailyRows = Array.isArray(selectionTrend?.query_adjustment_query_family_daily_breakdown)
     ? selectionTrend.query_adjustment_query_family_daily_breakdown
     : [];
@@ -378,6 +543,19 @@ function resolveSelectionAdjustmentEscalation(selectionTrend = {}, adjustmentSum
   const totalDeltaWeight = resolveSelectionAdjustmentTotalDeltaWeight(adjustmentSummary.total_delta);
   const topDeltaWeight = resolveSelectionAdjustmentTopDeltaWeight(adjustmentSummary.top_delta_value);
   const fieldWeight = resolveSelectionAdjustmentFieldWeight(adjustmentSummary.top_field_key);
+  const fieldFamilyBandSignal = buildSelectionRiskBandSignal(
+    selectionTrend?.family_risk_field_family_band_daily_breakdown,
+    latestFieldFamily,
+    "field_family_band",
+    0
+  );
+  const adjustmentPathBandSignal = buildSelectionRiskBandSignal(
+    selectionTrend?.family_risk_adjustment_segment_path_band_daily_breakdown,
+    latestAdjustmentPath,
+    "adjustment_segment_path_band",
+    1
+  );
+  const dominantBandSignal = pickDominantSelectionRiskBandSignal([fieldFamilyBandSignal, adjustmentPathBandSignal]);
   const candidates = [
     {
       dimension: "query_family",
@@ -422,7 +600,13 @@ function resolveSelectionAdjustmentEscalation(selectionTrend = {}, adjustmentSum
   };
   const dominantDimension = dominant.score > 0 ? dominant.dimension : "";
   const dominantBucket = dominant.score > 0 ? dominant.bucket : "";
-  const dominantScore = dominant.score + totalDeltaWeight + topDeltaWeight + fieldWeight;
+  const dominantScore =
+    dominant.score +
+    totalDeltaWeight +
+    topDeltaWeight +
+    fieldWeight +
+    fieldFamilyBandSignal.total_weight +
+    adjustmentPathBandSignal.total_weight;
   let escalationBand = "clear";
   let reason = "";
   if (dominantScore >= 8) {
@@ -451,7 +635,12 @@ function resolveSelectionAdjustmentEscalation(selectionTrend = {}, adjustmentSum
     field_family_weight: fieldFamilyWeight,
     query_family_match_days: queryFamilyMatchDays,
     segment_family_match_days: segmentFamilyMatchDays,
-    field_family_match_days: fieldFamilyMatchDays
+    field_family_match_days: fieldFamilyMatchDays,
+    band_signal: String(dominantBandSignal.signal_key || "").trim(),
+    band_weight: Math.max(0, Number(dominantBandSignal.total_weight || 0)),
+    band_match_days: Math.max(0, Number(dominantBandSignal.match_days || 0)),
+    band_state: String(dominantBandSignal.band_key || "").trim(),
+    band_source: String(dominantBandSignal.source_key || "").trim()
   };
 }
 
@@ -671,6 +860,11 @@ function evaluateOpsAlert(dispatchArtifact, previousAlertArtifact, options = {})
     selection_query_family_match_days: Math.max(0, Number(selectionFamilyEscalation.query_family_match_days || 0)),
     selection_segment_family_match_days: Math.max(0, Number(selectionFamilyEscalation.segment_family_match_days || 0)),
     selection_field_family_match_days: Math.max(0, Number(selectionFamilyEscalation.field_family_match_days || 0)),
+    selection_family_band_signal: String(selectionFamilyEscalation.band_signal || "").trim(),
+    selection_family_band_weight: Math.max(0, Number(selectionFamilyEscalation.band_weight || 0)),
+    selection_family_band_match_days: Math.max(0, Number(selectionFamilyEscalation.band_match_days || 0)),
+    selection_family_band_state: String(selectionFamilyEscalation.band_state || "").trim(),
+    selection_family_band_source: String(selectionFamilyEscalation.band_source || "").trim(),
     selection_focus_dimension: String(selectionSummary.focus_dimension || "").trim(),
     selection_focus_bucket: String(selectionSummary.focus_bucket || "").trim(),
     selection_focus_selected_matches: Math.max(0, Number(selectionSummary.selected_focus_matches || 0)),
@@ -710,6 +904,11 @@ function evaluateOpsAlert(dispatchArtifact, previousAlertArtifact, options = {})
     selection_query_adjustment_query_family_match_days: Math.max(0, Number(selectionAdjustmentEscalation.query_family_match_days || 0)),
     selection_query_adjustment_segment_family_match_days: Math.max(0, Number(selectionAdjustmentEscalation.segment_family_match_days || 0)),
     selection_query_adjustment_field_family_match_days: Math.max(0, Number(selectionAdjustmentEscalation.field_family_match_days || 0)),
+    selection_query_adjustment_band_signal: String(selectionAdjustmentEscalation.band_signal || "").trim(),
+    selection_query_adjustment_band_weight: Math.max(0, Number(selectionAdjustmentEscalation.band_weight || 0)),
+    selection_query_adjustment_band_match_days: Math.max(0, Number(selectionAdjustmentEscalation.band_match_days || 0)),
+    selection_query_adjustment_band_state: String(selectionAdjustmentEscalation.band_state || "").trim(),
+    selection_query_adjustment_band_source: String(selectionAdjustmentEscalation.band_source || "").trim(),
     selection_prefilter_applied: selectionPrefilter.applied === true,
     selection_prefilter_dimension: String(selectionPrefilter.dimension || "").trim(),
     selection_prefilter_bucket: String(selectionPrefilter.bucket || "").trim(),
@@ -768,7 +967,12 @@ function formatOpsAlertMessage(dispatchArtifact = {}, evaluation = {}) {
     )}/${String(evaluation.selection_family_escalation_dimension || "-")}/${String(evaluation.selection_family_escalation_bucket || "-")}:${Math.max(
       0,
       Number(evaluation.selection_family_escalation_score || 0)
-    )}/${Math.max(0, Number(evaluation.selection_family_daily_weight || 0))}`,
+    )}/${Math.max(0, Number(evaluation.selection_family_daily_weight || 0))}/${String(
+      evaluation.selection_family_band_signal || "-"
+    )}:${Math.max(0, Number(evaluation.selection_family_band_weight || 0))}/${Math.max(
+      0,
+      Number(evaluation.selection_family_band_match_days || 0)
+    )}`,
     `selection_focus=${String(evaluation.selection_focus_dimension || "-")}/${String(evaluation.selection_focus_bucket || "-")}:${Math.max(
       0,
       Number(evaluation.selection_focus_selected_matches || 0)
@@ -802,7 +1006,10 @@ function formatOpsAlertMessage(dispatchArtifact = {}, evaluation = {}) {
     )}/${Math.max(0, Number(evaluation.selection_query_adjustment_top_delta_weight || 0))}/${Math.max(
       0,
       Number(evaluation.selection_query_adjustment_field_weight || 0)
-    )}`,
+    )}/${String(evaluation.selection_query_adjustment_band_signal || "-")}:${Math.max(
+      0,
+      Number(evaluation.selection_query_adjustment_band_weight || 0)
+    )}/${Math.max(0, Number(evaluation.selection_query_adjustment_band_match_days || 0))}`,
     `selection_segment_reason=${String(evaluation.selection_latest_segment_strategy_reason || "-")}/${String(
       evaluation.selection_top_segment_strategy_reason || "-"
     )}:${Math.max(0, Number(evaluation.selection_top_segment_strategy_reason_count || 0))}`,

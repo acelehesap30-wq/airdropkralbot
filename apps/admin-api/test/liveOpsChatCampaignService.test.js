@@ -950,6 +950,11 @@ test("live ops chat campaign service snapshot includes approval summary schedule
       selection_query_family_match_days: 4,
       selection_segment_family_match_days: 2,
       selection_field_family_match_days: 0,
+      selection_family_band_signal: "query_segment_path_band:wallet_unlinked:active_window::alert",
+      selection_family_band_weight: 3,
+      selection_family_band_match_days: 2,
+      selection_family_band_state: "alert",
+      selection_family_band_source: "query_segment_path_band",
       selection_query_strategy_applied_24h: 1,
       selection_query_strategy_applied_7d: 3,
       selection_latest_query_strategy_reason: "query_strategy_locale_and_segment",
@@ -985,6 +990,11 @@ test("live ops chat campaign service snapshot includes approval summary schedule
       selection_query_adjustment_query_family_match_days: 2,
       selection_query_adjustment_segment_family_match_days: 1,
       selection_query_adjustment_field_family_match_days: 1,
+      selection_query_adjustment_band_signal: "field_family_band:activity_window::alert",
+      selection_query_adjustment_band_weight: 3,
+      selection_query_adjustment_band_match_days: 2,
+      selection_query_adjustment_band_state: "alert",
+      selection_query_adjustment_band_source: "field_family_band",
       telegram_sent: true,
       telegram_reason: "",
       telegram_sent_at: "2026-03-08T12:26:30.000Z"
@@ -1139,6 +1149,9 @@ test("live ops chat campaign service snapshot includes approval summary schedule
   assert.equal(snapshot.ops_alert_summary.selection_family_daily_weight, 2);
   assert.equal(snapshot.ops_alert_summary.selection_query_family_match_days, 4);
   assert.equal(snapshot.ops_alert_summary.selection_segment_family_match_days, 2);
+  assert.equal(snapshot.ops_alert_summary.selection_family_band_signal, "query_segment_path_band:wallet_unlinked:active_window::alert");
+  assert.equal(snapshot.ops_alert_summary.selection_family_band_weight, 3);
+  assert.equal(snapshot.ops_alert_summary.selection_family_band_match_days, 2);
   assert.equal(snapshot.ops_alert_summary.selection_query_strategy_applied_7d, 3);
   assert.equal(snapshot.ops_alert_summary.selection_latest_query_strategy_reason, "query_strategy_locale_and_segment");
   assert.equal(snapshot.ops_alert_summary.selection_latest_query_strategy_family, "locale_and_segment");
@@ -1160,6 +1173,9 @@ test("live ops chat campaign service snapshot includes approval summary schedule
   assert.equal(snapshot.ops_alert_summary.selection_query_adjustment_escalation_score, 11);
   assert.equal(snapshot.ops_alert_summary.selection_query_adjustment_field_family, "activity_window");
   assert.equal(snapshot.ops_alert_summary.selection_query_adjustment_field_family_weight, 3);
+  assert.equal(snapshot.ops_alert_summary.selection_query_adjustment_band_signal, "field_family_band:activity_window::alert");
+  assert.equal(snapshot.ops_alert_summary.selection_query_adjustment_band_weight, 3);
+  assert.equal(snapshot.ops_alert_summary.selection_query_adjustment_band_match_days, 2);
   assert.equal(snapshot.ops_alert_trend_summary.raised_24h, 1);
   assert.equal(snapshot.ops_alert_trend_summary.raised_7d, 3);
   assert.equal(snapshot.ops_alert_trend_summary.experiment_key, "webapp_react_v1");
