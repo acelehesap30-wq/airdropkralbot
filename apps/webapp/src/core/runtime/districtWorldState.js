@@ -707,6 +707,16 @@ function buildInteractionClusters(actors, hotspots, activeHotspotKey) {
         }
         return toText(left.label_key || left.label, "").localeCompare(toText(right.label_key || right.label, ""));
       });
+    const intentSlots = actionItems.map((item, slotIndex) => ({
+      ...item,
+      slot_key: `${cluster.cluster_key}:${item.key}`,
+      slot_index: slotIndex,
+      slot_count: actionItems.length,
+      band_key: item.is_secondary ? "outer" : "inner",
+      orbit_scale: item.is_secondary ? 1.22 : 1,
+      size_scalar: item.is_secondary ? 0.82 : 1,
+      angle_offset_scalar: (Math.PI * 2 * slotIndex) / Math.max(1, actionItems.length)
+    }));
     return {
       ...cluster,
       x: toNum(actor?.x, cluster.x),
@@ -714,7 +724,8 @@ function buildInteractionClusters(actors, hotspots, activeHotspotKey) {
       z: toNum(actor?.z, cluster.z),
       orbit_radius: clamp(0.56 + cluster.hotspot_count * 0.18, 0.52, 1.28),
       is_active: cluster.active_hotspot_key !== "",
-      action_items: actionItems
+      action_items: actionItems,
+      intent_slots: intentSlots
     };
   });
 }
@@ -1981,6 +1992,7 @@ export function buildDistrictWorldState(input = {}) {
     active_cluster_primary_hint_key: toText(activeCluster?.primary_hint_label_key, ""),
     active_cluster_secondary_count: toNum(activeCluster?.secondary_count, 0),
     active_cluster_actions: asList(activeCluster?.action_items),
+    active_cluster_slot_count: toNum(activeCluster?.intent_slots?.length, 0),
     theme: districtTheme,
     actors,
     interaction_cluster_count: interactionClusters.length,

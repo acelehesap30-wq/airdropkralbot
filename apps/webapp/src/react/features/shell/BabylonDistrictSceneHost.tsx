@@ -202,6 +202,12 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
             key: item.key,
             intent_profile_key: item.intent_profile_key,
             rail_class_key: String(item.intent_profile?.rail_class_key || "")
+          })),
+          intent_slots: cluster.intent_slots.map((slot: any) => ({
+            slot_key: slot.slot_key,
+            band_key: slot.band_key,
+            orbit_scale: slot.orbit_scale,
+            size_scalar: slot.size_scalar
           }))
         })),
         nodes: worldState.nodes.map((node) => ({
@@ -469,56 +475,133 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           );
           ring.material = ringMaterial;
 
-          const satellites = cluster.hotspot_keys
-            .map((hotspotKey, hotspotIndex) => {
-              const hotspot = hotspotMap.get(hotspotKey) as Record<string, any> | undefined;
-              if (!hotspot) {
+          const slots = cluster.intent_slots
+            .map((slot: any, slotIndex: number) => {
+              const hotspot = hotspotMap.get(slot.key) as Record<string, any> | undefined;
+              if (!hotspot || !slot.action_key) {
                 return null;
               }
-              const orb = CreateSphere(
-                `akrDistrictClusterOrb-${cluster.cluster_key}-${hotspot.key}`,
+              const ring = CreateTorus(
+                `akrDistrictClusterSlotRing-${cluster.cluster_key}-${slot.slot_key}`,
                 {
-                  diameter: hotspot.is_secondary ? 0.12 : 0.16,
+                  diameter: (hotspot.is_secondary ? 0.2 : 0.26) * slot.size_scalar,
+                  thickness: hotspot.is_secondary ? 0.022 : 0.03,
+                  tessellation: worldState.low_end_mode ? 16 : 24
+                },
+                scene
+              );
+              ring.rotation.x = Math.PI / 2;
+              const ringMaterial = new StandardMaterial(
+                `akrDistrictClusterSlotRingMaterial-${cluster.cluster_key}-${slot.slot_key}`,
+                scene
+              );
+              ringMaterial.diffuseColor = Color3.FromHexString(hotspot.accent_hex);
+              ringMaterial.emissiveColor = Color3.FromHexString(hotspot.is_active ? theme.core_hex : hotspot.accent_hex);
+              ring.material = ringMaterial;
+
+              const pad = CreateDisc(
+                `akrDistrictClusterSlotPad-${cluster.cluster_key}-${slot.slot_key}`,
+                {
+                  radius: (hotspot.is_secondary ? 0.1 : 0.14) * slot.size_scalar,
+                  tessellation: worldState.low_end_mode ? 18 : 28
+                },
+                scene
+              );
+              pad.rotation.x = Math.PI / 2;
+              const padMaterial = new StandardMaterial(
+                `akrDistrictClusterSlotPadMaterial-${cluster.cluster_key}-${slot.slot_key}`,
+                scene
+              );
+              padMaterial.alpha = hotspot.is_secondary ? 0.16 : 0.24;
+              padMaterial.diffuseColor = Color3.FromHexString(hotspot.accent_hex);
+              padMaterial.emissiveColor = Color3.FromHexString(hotspot.is_active ? theme.ring_secondary_hex : hotspot.accent_hex);
+              pad.material = padMaterial;
+
+              const orb = CreateSphere(
+                `akrDistrictClusterSlotOrb-${cluster.cluster_key}-${slot.slot_key}`,
+                {
+                  diameter: (hotspot.is_secondary ? 0.09 : 0.13) * slot.size_scalar,
                   segments: worldState.low_end_mode ? 5 : 8
                 },
                 scene
               );
-              const material = new StandardMaterial(`akrDistrictClusterOrbMaterial-${cluster.cluster_key}-${hotspot.key}`, scene);
-              material.diffuseColor = Color3.FromHexString(hotspot.accent_hex);
-              material.emissiveColor = Color3.FromHexString(hotspot.is_active ? theme.core_hex : hotspot.accent_hex);
-              orb.material = material;
-              return { orb, hotspot, hotspotIndex };
+              const orbMaterial = new StandardMaterial(
+                `akrDistrictClusterSlotOrbMaterial-${cluster.cluster_key}-${slot.slot_key}`,
+                scene
+              );
+              orbMaterial.diffuseColor = Color3.FromHexString(theme.ground_glow_hex);
+              orbMaterial.emissiveColor = Color3.FromHexString(hotspot.is_active ? theme.core_hex : hotspot.accent_hex);
+              orb.material = orbMaterial;
+
+              const metadata = {
+                actionKey: slot.action_key,
+                nodeKey: slot.key,
+                laneKey: cluster.actor_key,
+                label: slot.label,
+                labelKey: slot.label_key,
+                hintLabelKey: slot.hint_label_key,
+                intentLabelKey: String(slot.intent_profile?.intent_label_key || "world_intent_open"),
+                intentToneKey: String(slot.intent_profile?.intent_tone_key || "world_intent_tone_open"),
+                sourceType: "district_scene_cluster_slot",
+                actorKey: slot.actor_key,
+                interactionKind: slot.interaction_kind,
+                clusterKey: slot.cluster_key,
+                isSecondary: slot.is_secondary
+              };
+              [ring, pad, orb].forEach((mesh) => {
+                mesh.isPickable = true;
+                mesh.metadata = metadata;
+              });
+
+              return { ring, pad, orb, slot, hotspot, slotIndex };
             })
-            .filter(Boolean) as Array<{ orb: any; hotspot: Record<string, any>; hotspotIndex: number }>;
+            .filter(Boolean) as Array<{
+              ring: any;
+              pad: any;
+              orb: any;
+              slot: any;
+              hotspot: Record<string, any>;
+              slotIndex: number;
+            }>;
 
           return {
             cluster,
             ring,
-            satellites,
+            slots,
             animate: (now: number, motionScalar: number) => {
               const focusClusterKey = hoveredClusterKey || worldState.active_cluster_key;
               const isFocused = focusClusterKey === cluster.cluster_key;
               ring.rotation.z = now * (0.18 + index * 0.03) * motionScalar * directorProfile.cluster_spin_scalar;
               const ringScale = isFocused ? 1.06 : cluster.is_active ? 1.03 : 1;
               ring.scaling.setAll(ringScale);
-              satellites.forEach((entry) => {
+              slots.forEach((entry) => {
                 const angle =
-                  (Math.PI * 2 * entry.hotspotIndex) / Math.max(1, satellites.length) +
-                  now * (0.4 + entry.hotspotIndex * 0.06) * motionScalar * directorProfile.cluster_spin_scalar;
-                const radius = cluster.orbit_radius * (entry.hotspot.is_secondary ? 0.84 : 1);
-                entry.orb.position.x = cluster.x + Math.cos(angle) * radius;
-                entry.orb.position.z = cluster.z + Math.sin(angle) * radius;
+                  entry.slot.angle_offset_scalar +
+                  now * (0.4 + entry.slotIndex * 0.06) * motionScalar * directorProfile.cluster_spin_scalar;
+                const radius = cluster.orbit_radius * Number(entry.slot.orbit_scale || 1);
+                const x = cluster.x + Math.cos(angle) * radius;
+                const z = cluster.z + Math.sin(angle) * radius;
+                entry.ring.position.x = x;
+                entry.ring.position.z = z;
+                entry.ring.position.y = cluster.y + 0.18 + (isFocused ? 0.02 : 0);
+                entry.pad.position.x = x;
+                entry.pad.position.z = z;
+                entry.pad.position.y = cluster.y + 0.2 + (isFocused ? 0.02 : 0);
+                entry.orb.position.x = x;
+                entry.orb.position.z = z;
                 entry.orb.position.y =
                   cluster.y +
-                  0.18 +
-                  Math.sin(now * (1 + entry.hotspotIndex * 0.12)) * 0.04 * motionScalar +
+                  0.32 +
+                  Math.sin(now * (1 + entry.slotIndex * 0.12)) * 0.04 * motionScalar +
                   (isFocused ? 0.06 : 0);
                 const scale =
                   1 +
-                  Math.sin(now * (1.2 + entry.hotspotIndex * 0.14)) * 0.06 * motionScalar +
+                  Math.sin(now * (1.2 + entry.slotIndex * 0.14)) * 0.06 * motionScalar * Number(entry.slot.size_scalar || 1) +
                   (entry.hotspot.is_active ? 0.14 : 0) +
                   (isFocused ? 0.08 : 0);
                 entry.orb.scaling.setAll(scale);
+                entry.ring.scaling.setAll(1 + (isFocused ? 0.08 : 0));
+                entry.pad.scaling.setAll(1 + (isFocused ? 0.06 : 0));
               });
             }
           };

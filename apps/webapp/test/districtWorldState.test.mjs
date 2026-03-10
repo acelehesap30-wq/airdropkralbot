@@ -46,6 +46,7 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
   assert.equal(state.active_hotspot_intent_label_key, "world_intent_travel");
   assert.equal(state.active_cluster_key, "hub_gate_north");
   assert.equal(state.interaction_cluster_count, 3);
+  assert.equal(state.active_cluster_slot_count, 2);
   assert.equal(state.actors.length, 3);
   assert.deepEqual(
     state.actors.map((actor) => actor.kind),
@@ -63,6 +64,9 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
   assert.equal(state.active_cluster_actions[0].action_key, SHELL_ACTION_KEY.PLAYER_SEASON_HALL);
   assert.equal(state.active_cluster_actions[0].intent_profile.intent_label_key, "world_intent_travel");
   assert.equal(state.active_cluster_actions[1].is_secondary, true);
+  assert.equal(state.interaction_clusters.find((cluster) => cluster.cluster_key === "hub_gate_north")?.intent_slots.length, 2);
+  assert.equal(state.interaction_clusters.find((cluster) => cluster.cluster_key === "hub_gate_north")?.intent_slots[0].band_key, "inner");
+  assert.equal(state.interaction_clusters.find((cluster) => cluster.cluster_key === "hub_gate_north")?.intent_slots[1].band_key, "outer");
 });
 
 test("buildDistrictWorldState trims pvp nodes on low-end profile", () => {
