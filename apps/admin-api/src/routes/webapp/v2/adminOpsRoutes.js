@@ -427,6 +427,8 @@ function buildLiveOpsCampaignKpiSummary(snapshot) {
       latest_family_risk_dimension: String(selectionTrend.latest_family_risk_dimension || ""),
       latest_family_risk_bucket: String(selectionTrend.latest_family_risk_bucket || ""),
       latest_family_risk_score: Math.max(0, Number(selectionTrend.latest_family_risk_score || 0)),
+      latest_family_risk_query_segment_path: String(selectionTrend.latest_family_risk_query_segment_path || ""),
+      latest_family_risk_adjustment_segment_path: String(selectionTrend.latest_family_risk_adjustment_segment_path || ""),
       daily_breakdown: normalizeSelectionTrendDailyRows(selectionTrend.daily_breakdown),
       query_adjustment_daily_breakdown: Array.isArray(selectionTrend.query_adjustment_daily_breakdown)
         ? selectionTrend.query_adjustment_daily_breakdown
@@ -458,6 +460,8 @@ function buildLiveOpsCampaignKpiSummary(snapshot) {
               query_family: String(row?.query_family || ""),
               segment_family: String(row?.segment_family || ""),
               field_family: String(row?.field_family || ""),
+              query_segment_path: String(row?.query_segment_path || ""),
+              adjustment_segment_path: String(row?.adjustment_segment_path || ""),
               query_match_days: Math.max(0, Number(row?.query_match_days || 0)),
               segment_match_days: Math.max(0, Number(row?.segment_match_days || 0)),
               field_match_days: Math.max(0, Number(row?.field_match_days || 0)),
@@ -482,6 +486,11 @@ function buildLiveOpsCampaignKpiSummary(snapshot) {
       family_risk_band_breakdown: normalizeBreakdownRows(selectionTrend.family_risk_band_breakdown),
       family_risk_dimension_breakdown: normalizeBreakdownRows(selectionTrend.family_risk_dimension_breakdown),
       family_risk_field_family_breakdown: normalizeBreakdownRows(selectionTrend.family_risk_field_family_breakdown),
+      family_risk_query_segment_path_breakdown: normalizeBreakdownRows(selectionTrend.family_risk_query_segment_path_breakdown),
+      family_risk_adjustment_segment_path_breakdown: normalizeBreakdownRows(selectionTrend.family_risk_adjustment_segment_path_breakdown),
+      family_risk_field_family_band_breakdown: normalizeBreakdownRows(selectionTrend.family_risk_field_family_band_breakdown),
+      family_risk_query_segment_path_band_breakdown: normalizeBreakdownRows(selectionTrend.family_risk_query_segment_path_band_breakdown),
+      family_risk_adjustment_segment_path_band_breakdown: normalizeBreakdownRows(selectionTrend.family_risk_adjustment_segment_path_band_breakdown),
       prefilter_reason_breakdown: normalizeBreakdownRows(selectionTrend.prefilter_reason_breakdown)
     },
     scene_runtime: sceneRuntime
@@ -746,6 +755,8 @@ async function getLiveOpsCampaignKpiSummary(service, logger) {
         latest_family_risk_dimension: "",
         latest_family_risk_bucket: "",
         latest_family_risk_score: 0,
+        latest_family_risk_query_segment_path: "",
+        latest_family_risk_adjustment_segment_path: "",
         daily_breakdown: [],
         query_adjustment_daily_breakdown: [],
         query_strategy_family_daily_breakdown: [],
@@ -770,6 +781,11 @@ async function getLiveOpsCampaignKpiSummary(service, logger) {
         family_risk_band_breakdown: [],
         family_risk_dimension_breakdown: [],
         family_risk_field_family_breakdown: [],
+        family_risk_query_segment_path_breakdown: [],
+        family_risk_adjustment_segment_path_breakdown: [],
+        family_risk_field_family_band_breakdown: [],
+        family_risk_query_segment_path_band_breakdown: [],
+        family_risk_adjustment_segment_path_band_breakdown: [],
         prefilter_reason_breakdown: []
       },
       scene_runtime: {}

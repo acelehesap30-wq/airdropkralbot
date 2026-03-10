@@ -219,6 +219,8 @@ const LiveOpsCampaignSelectionFamilyRiskDailyTrendPointSchema = z.object({
   query_family: z.string().default(""),
   segment_family: z.string().default(""),
   field_family: z.string().default(""),
+  query_segment_path: z.string().default(""),
+  adjustment_segment_path: z.string().default(""),
   query_match_days: z.number().int().nonnegative().default(0),
   segment_match_days: z.number().int().nonnegative().default(0),
   field_match_days: z.number().int().nonnegative().default(0),
@@ -524,6 +526,8 @@ const LiveOpsCampaignSelectionTrendSummarySchema = z.object({
   latest_family_risk_dimension: z.string().default(""),
   latest_family_risk_bucket: z.string().default(""),
   latest_family_risk_score: z.number().int().nonnegative().default(0),
+  latest_family_risk_query_segment_path: z.string().default(""),
+  latest_family_risk_adjustment_segment_path: z.string().default(""),
   daily_breakdown: z.array(LiveOpsCampaignSelectionDailyTrendPointSchema).default([]),
   query_adjustment_daily_breakdown: z.array(LiveOpsCampaignSelectionAdjustmentDailyTrendPointSchema).default([]),
   query_strategy_family_daily_breakdown: z.array(LiveOpsCampaignSelectionFamilyDailyTrendPointSchema).default([]),
@@ -548,6 +552,11 @@ const LiveOpsCampaignSelectionTrendSummarySchema = z.object({
   family_risk_band_breakdown: z.array(KpiLiveOpsCampaignBreakdownSchema).default([]),
   family_risk_dimension_breakdown: z.array(KpiLiveOpsCampaignBreakdownSchema).default([]),
   family_risk_field_family_breakdown: z.array(KpiLiveOpsCampaignBreakdownSchema).default([]),
+  family_risk_query_segment_path_breakdown: z.array(KpiLiveOpsCampaignBreakdownSchema).default([]),
+  family_risk_adjustment_segment_path_breakdown: z.array(KpiLiveOpsCampaignBreakdownSchema).default([]),
+  family_risk_field_family_band_breakdown: z.array(KpiLiveOpsCampaignBreakdownSchema).default([]),
+  family_risk_query_segment_path_band_breakdown: z.array(KpiLiveOpsCampaignBreakdownSchema).default([]),
+  family_risk_adjustment_segment_path_band_breakdown: z.array(KpiLiveOpsCampaignBreakdownSchema).default([]),
   prefilter_reason_breakdown: z.array(KpiLiveOpsCampaignBreakdownSchema).default([])
 });
 
