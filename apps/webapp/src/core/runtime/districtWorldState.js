@@ -67,6 +67,91 @@ function resolveDistrictLabelKey(districtKey) {
   }
 }
 
+function resolveDistrictTheme(districtKey) {
+  switch (districtKey) {
+    case "arena_prime":
+      return {
+        theme_key: "arena_prime",
+        ground_hex: "#2f1320",
+        ground_glow_hex: "#5a1f34",
+        ring_hex: "#ff6f91",
+        ring_secondary_hex: "#ffb45d",
+        core_hex: "#ffd1df",
+        light_hex: "#ff7c8d",
+        satellite_hex: "#ff9f6e",
+        satellite_count: 5,
+        satellite_radius: 1.6,
+        satellite_height: 1.5,
+        orbit_radius: 3.4,
+        camera_radius: 9.2
+      };
+    case "mission_quarter":
+      return {
+        theme_key: "mission_quarter",
+        ground_hex: "#2e260f",
+        ground_glow_hex: "#544522",
+        ring_hex: "#ffd36f",
+        ring_secondary_hex: "#ffb45d",
+        core_hex: "#fff3c7",
+        light_hex: "#ffd36f",
+        satellite_hex: "#ffe39a",
+        satellite_count: 4,
+        satellite_radius: 1.9,
+        satellite_height: 1.35,
+        orbit_radius: 3.15,
+        camera_radius: 10.4
+      };
+    case "exchange_district":
+      return {
+        theme_key: "exchange_district",
+        ground_hex: "#0c2a24",
+        ground_glow_hex: "#15483d",
+        ring_hex: "#2fffb5",
+        ring_secondary_hex: "#6cf6e8",
+        core_hex: "#caffef",
+        light_hex: "#35f1c9",
+        satellite_hex: "#6cf6e8",
+        satellite_count: 6,
+        satellite_radius: 1.95,
+        satellite_height: 1.45,
+        orbit_radius: 3.3,
+        camera_radius: 10.5
+      };
+    case "ops_citadel":
+      return {
+        theme_key: "ops_citadel",
+        ground_hex: "#10263b",
+        ground_glow_hex: "#1a4259",
+        ring_hex: "#45ffca",
+        ring_secondary_hex: "#8ef4ff",
+        core_hex: "#d5fff4",
+        light_hex: "#45ffca",
+        satellite_hex: "#8ef4ff",
+        satellite_count: 4,
+        satellite_radius: 2.1,
+        satellite_height: 1.8,
+        orbit_radius: 3.7,
+        camera_radius: 10.2
+      };
+    default:
+      return {
+        theme_key: "central_hub",
+        ground_hex: "#0e2a44",
+        ground_glow_hex: "#103254",
+        ring_hex: "#00d6ff",
+        ring_secondary_hex: "#7be6ff",
+        core_hex: "#d6f6ff",
+        light_hex: "#5ad7ff",
+        satellite_hex: "#7be6ff",
+        satellite_count: 3,
+        satellite_radius: 1.75,
+        satellite_height: 1.4,
+        orbit_radius: 3.25,
+        camera_radius: 10.8
+      };
+  }
+}
+
 function resolveModeKey(sceneProfile, lowEndMode) {
   if (lowEndMode || sceneProfile === "lite") {
     return "world_scene_mode_lite";
@@ -132,12 +217,50 @@ function buildNode(input) {
     key: toText(input.key, "node"),
     laneKey: toText(input.laneKey, "lane"),
     label: toText(input.label, "Node"),
+    label_key: toText(input.labelKey, ""),
     metric: toText(input.metric, "--"),
     action_key: toText(input.actionKey, ""),
     energy,
     status_key: statusKey,
     accent_hex: statusColor(statusKey)
   };
+}
+
+function resolveFallbackActiveNodeKey(workspace, tab) {
+  if (workspace === "admin") {
+    return "queue_bastion";
+  }
+  if (tab === "pvp") {
+    return "duel_core";
+  }
+  if (tab === "tasks") {
+    return "offers_terminal";
+  }
+  if (tab === "vault") {
+    return "wallet_gate";
+  }
+  return "season_arc";
+}
+
+function resolveActiveNodeKey(nodes, navigationContext, workspace, tab) {
+  const context = asRecord(navigationContext);
+  const actionKey = toText(context.shell_action_key || context.action_key || "");
+  if (actionKey) {
+    const byAction = nodes.find((node) => node.action_key === actionKey);
+    if (byAction) {
+      return byAction.key;
+    }
+  }
+
+  const panelKey = toText(context.panel_key || "");
+  if (panelKey) {
+    const byPanel = nodes.find((node) => panelKey.includes(String(node.laneKey || "")) || String(node.laneKey || "").includes(panelKey));
+    if (byPanel) {
+      return byPanel.key;
+    }
+  }
+
+  return resolveFallbackActiveNodeKey(workspace, tab);
 }
 
 function buildPlayerHomeNodes(input) {
@@ -182,6 +305,7 @@ function buildPlayerHomeNodes(input) {
       key: "season_arc",
       laneKey: "season",
       label: "Season Arc",
+      labelKey: "world_node_season_arc",
       metric: `${Math.round(seasonEnergy * 100)}%`,
       actionKey: SHELL_ACTION_KEY.PLAYER_SEASON_HALL,
       energy: seasonEnergy
@@ -190,6 +314,7 @@ function buildPlayerHomeNodes(input) {
       key: "mission_lane",
       laneKey: "tasks",
       label: "Mission Lane",
+      labelKey: "world_node_mission_lane",
       metric: `${Math.round(missionEnergy * 100)}%`,
       actionKey: SHELL_ACTION_KEY.PLAYER_TASKS_BOARD,
       energy: missionEnergy
@@ -198,6 +323,7 @@ function buildPlayerHomeNodes(input) {
       key: "wallet_lane",
       laneKey: "vault",
       label: "Wallet Lane",
+      labelKey: "world_node_wallet_lane",
       metric: pickTruthy(walletQuick, ["linked", "wallet_linked", "active"]) ? "LIVE" : "LOCKED",
       actionKey: SHELL_ACTION_KEY.PLAYER_WALLET_CONNECT,
       energy: walletEnergy
@@ -206,6 +332,7 @@ function buildPlayerHomeNodes(input) {
       key: "risk_lane",
       laneKey: "risk",
       label: "Risk Pulse",
+      labelKey: "world_node_risk_lane",
       metric: toText(risk.band || risk.state || "stable").toUpperCase(),
       actionKey: SHELL_ACTION_KEY.PLAYER_SUPPORT_STATUS,
       energy: riskEnergy,
@@ -228,6 +355,7 @@ function buildPlayerPvpNodes(input) {
       key: "duel_core",
       laneKey: "pvp_daily_duel",
       label: "Daily Duel",
+      labelKey: "world_node_duel_core",
       metric: toText(session.phase || dailyDuel.phase || "idle").toUpperCase(),
       actionKey: SHELL_ACTION_KEY.PLAYER_PVP_DAILY_DUEL,
       energy: clamp(Math.max(pickNumber(session, ["tempo_pct", "pressure_pct"], 0) / 100, 0.44), 0.18, 1)
@@ -236,6 +364,7 @@ function buildPlayerPvpNodes(input) {
       key: "ladder_spire",
       laneKey: "pvp_weekly_ladder",
       label: "Weekly Ladder",
+      labelKey: "world_node_ladder_spire",
       metric: `${Math.round(clamp(pickNumber(weeklyLadder, ["completion_pct", "rank_progress_pct"], 36) / 100, 0.18, 1) * 100)}%`,
       actionKey: SHELL_ACTION_KEY.PLAYER_PVP_WEEKLY_LADDER,
       energy: clamp(Math.max(pickNumber(weeklyLadder, ["completion_pct", "rank_progress_pct"], 0) / 100, 0.36), 0.18, 1)
@@ -244,6 +373,7 @@ function buildPlayerPvpNodes(input) {
       key: "diagnostic_array",
       laneKey: "pvp_diagnostics",
       label: "Diagnostics",
+      labelKey: "world_node_diagnostic_array",
       metric: toText(diagnostics.category || diagnostics.state || "clean").toUpperCase(),
       actionKey: SHELL_ACTION_KEY.PLAYER_PVP_LEADERBOARD,
       energy: clamp(Math.max(pickNumber(diagnostics, ["risk_pct", "reject_pct"], 0) / 100, 0.24), 0.12, 1),
@@ -253,6 +383,7 @@ function buildPlayerPvpNodes(input) {
       key: "tick_theater",
       laneKey: "pvp_tick",
       label: "Tick Theater",
+      labelKey: "world_node_tick_theater",
       metric: `${Math.max(0, Math.round(pickNumber(tick, ["tempo_ms", "tick_ms"], 0)))}ms`,
       actionKey: SHELL_ACTION_KEY.PLAYER_PVP_DAILY_DUEL,
       energy: clamp(Math.max(1 - pickNumber(tick, ["tempo_ms", "tick_ms"], 1000) / 1400, 0.22), 0.12, 1)
@@ -271,6 +402,7 @@ function buildPlayerTasksNodes(input) {
       key: "offers_terminal",
       laneKey: "tasks_offers",
       label: "Offer Grid",
+      labelKey: "world_node_offers_terminal",
       metric: String(Math.max(0, pickNumber(taskResult, ["offer_count", "offers_count"], pickNumber(mission, ["offer_count", "active_count"], 0)))),
       actionKey: SHELL_ACTION_KEY.PLAYER_TASKS_BOARD,
       energy: clamp(Math.max(pickNumber(taskResult, ["offer_count", "offers_count"], pickNumber(mission, ["offer_count", "active_count"], 0)) / 4, 0.24), 0.12, 1)
@@ -279,6 +411,7 @@ function buildPlayerTasksNodes(input) {
       key: "streak_tower",
       laneKey: "daily_streak",
       label: "Streak Tower",
+      labelKey: "world_node_streak_tower",
       metric: `${Math.max(0, Math.round(pickNumber(daily, ["streak_days", "streak"], 0)))}d`,
       actionKey: SHELL_ACTION_KEY.PLAYER_TASKS_BOARD,
       energy: clamp(Math.max(pickNumber(daily, ["streak_days", "streak"], 0) / 7, 0.18), 0.12, 1)
@@ -287,6 +420,7 @@ function buildPlayerTasksNodes(input) {
       key: "claim_bridge",
       laneKey: "mission_claim",
       label: "Claim Bridge",
+      labelKey: "world_node_claim_bridge",
       metric: String(Math.max(0, pickNumber(taskResult, ["claimable_count"], pickNumber(mission, ["claimable_count"], 0)))),
       actionKey: SHELL_ACTION_KEY.PLAYER_TASKS_CLAIMS,
       energy: clamp(Math.max(pickNumber(taskResult, ["claimable_count"], pickNumber(mission, ["claimable_count"], 0)) / 3, 0.18), 0.12, 1)
@@ -295,6 +429,7 @@ function buildPlayerTasksNodes(input) {
       key: "contract_spire",
       laneKey: "contract",
       label: "Contract Pulse",
+      labelKey: "world_node_contract_spire",
       metric: toText(contract.band || contract.state || "open").toUpperCase(),
       actionKey: SHELL_ACTION_KEY.PLAYER_TASKS_CLAIMS,
       energy: clamp(Math.max(pickNumber(contract, ["completion_pct", "heat_pct"], 0) / 100, 0.28), 0.12, 1)
@@ -313,6 +448,7 @@ function buildPlayerVaultNodes(input) {
       key: "wallet_gate",
       laneKey: "wallet",
       label: "Wallet Gate",
+      labelKey: "world_node_wallet_gate",
       metric: pickTruthy(walletSession, ["active", "linked"]) ? "LIVE" : "OPEN",
       actionKey: SHELL_ACTION_KEY.PLAYER_WALLET_CONNECT,
       energy: pickTruthy(walletSession, ["active", "linked"]) ? 0.78 : 0.32
@@ -321,6 +457,7 @@ function buildPlayerVaultNodes(input) {
       key: "payout_lift",
       laneKey: "payout",
       label: "Payout Lift",
+      labelKey: "world_node_payout_lift",
       metric: toText(payoutStatus.state || payoutStatus.status || "idle").toUpperCase(),
       actionKey: SHELL_ACTION_KEY.PLAYER_PAYOUT_REQUEST,
       energy: clamp(Math.max(pickNumber(payoutStatus, ["readiness_pct", "eligible_pct"], 0) / 100, 0.24), 0.12, 1)
@@ -329,6 +466,7 @@ function buildPlayerVaultNodes(input) {
       key: "premium_arcade",
       laneKey: "premium",
       label: "Premium Pass",
+      labelKey: "world_node_premium_arcade",
       metric: pickTruthy(monetization, ["pass_active", "active", "premium_active"]) ? "ACTIVE" : "READY",
       actionKey: SHELL_ACTION_KEY.PLAYER_REWARDS_PANEL,
       energy: pickTruthy(monetization, ["pass_active", "active", "premium_active"]) ? 0.7 : 0.3
@@ -337,6 +475,7 @@ function buildPlayerVaultNodes(input) {
       key: "route_engine",
       laneKey: "route",
       label: "Route Engine",
+      labelKey: "world_node_route_engine",
       metric: toText(routeStatus.state || routeStatus.health || "ready").toUpperCase(),
       actionKey: SHELL_ACTION_KEY.PLAYER_REWARDS_PANEL,
       energy: clamp(Math.max(pickNumber(routeStatus, ["coverage_pct", "completion_pct"], 0) / 100, 0.26), 0.12, 1)
@@ -356,6 +495,7 @@ function buildAdminNodes(input) {
       key: "queue_bastion",
       laneKey: "admin_queue",
       label: "Queue Bastion",
+      labelKey: "world_node_queue_bastion",
       metric: String(queueCount),
       actionKey: SHELL_ACTION_KEY.ADMIN_QUEUE_PANEL,
       energy: clamp(Math.max(queueCount / 8, 0.22), 0.12, 1),
@@ -365,6 +505,7 @@ function buildAdminNodes(input) {
       key: "runtime_core",
       laneKey: "admin_runtime",
       label: "Runtime Core",
+      labelKey: "world_node_runtime_core",
       metric: sceneHealth.toUpperCase(),
       actionKey: SHELL_ACTION_KEY.ADMIN_RUNTIME_META,
       energy: clamp(Math.max(pickNumber(summary, ["scene_runtime_ready_rate_24h"], 0) / 100, 0.34), 0.12, 1),
@@ -374,6 +515,7 @@ function buildAdminNodes(input) {
       key: "liveops_spine",
       laneKey: "admin_liveops",
       label: "LiveOps Spine",
+      labelKey: "world_node_liveops_spine",
       metric: schedulerState.toUpperCase(),
       actionKey: SHELL_ACTION_KEY.ADMIN_LIVE_OPS_PANEL,
       energy: clamp(Math.max(pickNumber(summary, ["live_ops_sent_24h", "sent_24h"], 0) / 20, 0.24), 0.12, 1)
@@ -382,6 +524,7 @@ function buildAdminNodes(input) {
       key: "audit_orbit",
       laneKey: "admin_audit",
       label: "Audit Orbit",
+      labelKey: "world_node_audit_orbit",
       metric: String(Math.max(0, pickNumber(summary, ["ops_alert_raised_24h", "alerts_24h"], 0))),
       actionKey: SHELL_ACTION_KEY.ADMIN_RUNTIME_META,
       energy: clamp(Math.max(pickNumber(summary, ["ops_alert_raised_24h", "alerts_24h"], 0) / 5, 0.18), 0.12, 1),
@@ -401,6 +544,7 @@ export function buildDistrictWorldState(input = {}) {
   const reducedMotion = Boolean(scene.reducedMotion || capabilityProfile.effective_reduced_motion);
   const districtKey = toText(sceneRuntime.districtKey || resolveDistrictKey(workspace, tab), resolveDistrictKey(workspace, tab));
   const districtLabelKey = resolveDistrictLabelKey(districtKey);
+  const districtTheme = resolveDistrictTheme(districtKey);
   const sceneProfile = toText(capabilityProfile.scene_profile || (lowEndMode ? "lite" : effectiveQuality === "high" ? "cinematic" : "balanced"));
   const modeLabelKey = resolveModeKey(sceneProfile, lowEndMode);
 
@@ -416,10 +560,15 @@ export function buildDistrictWorldState(input = {}) {
             : buildPlayerHomeNodes(input);
 
   const nodeLimit = lowEndMode ? 3 : rawNodes.length;
-  const nodes = rawNodes.slice(0, nodeLimit);
+  const activeNodeKey = resolveActiveNodeKey(rawNodes.slice(0, nodeLimit), input.navigationContext, workspace, tab);
+  const nodes = rawNodes.slice(0, nodeLimit).map((node) => ({
+    ...node,
+    is_active: node.key === activeNodeKey
+  }));
   const ambientEnergy = clamp(nodes.reduce((sum, node) => sum + node.energy, 0) / Math.max(1, nodes.length), 0.18, 1);
   const hotNodes = nodes.filter((node) => node.status_key === "hot").length;
   const warnNodes = nodes.filter((node) => node.status_key === "warn").length;
+  const activeNode = nodes.find((node) => node.key === activeNodeKey) || null;
 
   return {
     world_key: `${workspace}:${tab}:${districtKey}`,
@@ -427,6 +576,7 @@ export function buildDistrictWorldState(input = {}) {
     tab,
     district_key: districtKey,
     district_label_key: districtLabelKey,
+    district_theme_key: districtTheme.theme_key,
     mode_label_key: modeLabelKey,
     scene_profile: sceneProfile,
     effective_quality: effectiveQuality,
@@ -437,8 +587,13 @@ export function buildDistrictWorldState(input = {}) {
     hot_nodes: hotNodes,
     warn_nodes: warnNodes,
     orbit_speed: lowEndMode || reducedMotion ? 0.00004 : effectiveQuality === "high" ? 0.00014 : 0.00009,
-    camera_radius: workspace === "admin" ? 10.2 : tab === "pvp" ? 9.4 : 10.8,
+    camera_radius: districtTheme.camera_radius,
     hardware_scaling: lowEndMode ? 1.9 : effectiveQuality === "high" ? 1 : effectiveQuality === "medium" ? 1.25 : 1.6,
+    active_node_key: activeNodeKey,
+    active_node_label: toText(activeNode?.label, ""),
+    active_node_label_key: toText(activeNode?.label_key, ""),
+    active_action_key: toText(activeNode?.action_key, ""),
+    theme: districtTheme,
     nodes
   };
 }

@@ -130,6 +130,16 @@ body {
   font-size: 0.7rem;
 }
 
+.akrSceneWorldFocus {
+  color: #fff3c7;
+  border: 1px solid rgba(255, 211, 111, 0.32);
+  background: rgba(255, 211, 111, 0.12);
+  padding: 4px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
 .akrGlass {
   border: 1px solid var(--akr-line);
   background: linear-gradient(135deg, rgba(10, 23, 49, 0.92), rgba(10, 37, 67, 0.8));

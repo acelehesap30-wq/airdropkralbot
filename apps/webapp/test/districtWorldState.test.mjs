@@ -30,6 +30,8 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
   assert.equal(state.nodes[1].key, "mission_lane");
   assert.equal(state.nodes[2].metric, "LIVE");
   assert.equal(state.nodes[2].action_key, SHELL_ACTION_KEY.PLAYER_WALLET_CONNECT);
+  assert.equal(state.district_theme_key, "central_hub");
+  assert.equal(state.active_node_key, "season_arc");
 });
 
 test("buildDistrictWorldState trims pvp nodes on low-end profile", () => {
@@ -64,6 +66,7 @@ test("buildDistrictWorldState trims pvp nodes on low-end profile", () => {
   assert.equal(state.mode_label_key, "world_scene_mode_lite");
   assert.equal(state.nodes[0].key, "duel_core");
   assert.equal(state.nodes[0].action_key, SHELL_ACTION_KEY.PLAYER_PVP_DAILY_DUEL);
+  assert.equal(state.district_theme_key, "arena_prime");
 });
 
 test("buildDistrictWorldState maps admin runtime into ops citadel", () => {
@@ -91,4 +94,32 @@ test("buildDistrictWorldState maps admin runtime into ops citadel", () => {
   assert.equal(state.nodes[0].metric, "3");
   assert.equal(state.nodes[0].action_key, SHELL_ACTION_KEY.ADMIN_QUEUE_PANEL);
   assert.equal(state.nodes[1].status_key, "warn");
+  assert.equal(state.district_theme_key, "ops_citadel");
+});
+
+test("buildDistrictWorldState marks active node from navigation context shell action", () => {
+  const state = buildDistrictWorldState({
+    workspace: "player",
+    tab: "vault",
+    scene: {
+      effectiveQuality: "medium",
+      capabilityProfile: {
+        scene_profile: "balanced"
+      }
+    },
+    navigationContext: {
+      shell_action_key: SHELL_ACTION_KEY.PLAYER_PAYOUT_REQUEST
+    },
+    vaultData: {
+      wallet_session: { active: true },
+      payout_status: { state: "ready", readiness_pct: 82 },
+      monetization_status: { premium_active: false },
+      route_status: { state: "ready", coverage_pct: 61 }
+    }
+  });
+
+  assert.equal(state.active_node_key, "payout_lift");
+  assert.equal(state.active_action_key, SHELL_ACTION_KEY.PLAYER_PAYOUT_REQUEST);
+  assert.equal(state.active_node_label_key, "world_node_payout_lift");
+  assert.equal(state.nodes.find((node) => node.key === "payout_lift")?.is_active, true);
 });

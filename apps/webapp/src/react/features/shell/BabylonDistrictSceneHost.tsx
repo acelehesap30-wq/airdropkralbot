@@ -6,6 +6,7 @@ type BabylonDistrictSceneHostProps = {
   lang: Lang;
   workspace: "player" | "admin";
   tab: "home" | "pvp" | "tasks" | "vault";
+  navigationContext: Record<string, unknown> | null;
   scene: Record<string, unknown>;
   sceneRuntime: Record<string, unknown>;
   data: Record<string, unknown> | null;
@@ -96,6 +97,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
         tab: props.tab,
         scene: props.scene,
         sceneRuntime: props.sceneRuntime,
+        navigationContext: props.navigationContext,
         data: props.data,
         homeFeed: props.homeFeed,
         taskResult: props.taskResult,
@@ -110,6 +112,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
       props.data,
       props.homeFeed,
       props.leagueOverview,
+      props.navigationContext,
       props.pvpLive,
       props.pvpRuntime,
       props.scene,
@@ -127,10 +130,13 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
         effective_quality: worldState.effective_quality,
         low_end_mode: worldState.low_end_mode,
         reduced_motion: worldState.reduced_motion,
+        district_theme_key: worldState.district_theme_key,
+        active_node_key: worldState.active_node_key,
         ambient_energy: worldState.ambient_energy,
         nodes: worldState.nodes.map((node) => ({
           key: node.key,
           action_key: node.action_key,
+          is_active: node.is_active,
           energy: node.energy,
           status_key: node.status_key,
           metric: node.metric
@@ -185,6 +191,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
 
         const scene = new Scene(engine);
         scene.clearColor = new Color4(0, 0, 0, 0);
+        const theme = worldState.theme;
 
         const camera = new ArcRotateCamera(
           "akrDistrictCamera",
@@ -204,7 +211,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
 
         const point = new PointLight("akrDistrictPoint", new Vector3(0, 3.2, 0), scene);
         point.intensity = 1.2 + worldState.ambient_energy * 0.6;
-        point.diffuse = Color3.FromHexString("#5ad7ff");
+        point.diffuse = Color3.FromHexString(theme.light_hex);
 
         if (!worldState.low_end_mode) {
           const glow = new GlowLayer("akrDistrictGlow", scene, {
@@ -225,14 +232,14 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
         ground.rotation.x = Math.PI / 2;
         const groundMaterial = new StandardMaterial("akrDistrictGroundMaterial", scene);
         groundMaterial.alpha = 0.86;
-        groundMaterial.diffuseColor = Color3.FromHexString(worldState.workspace === "admin" ? "#11294c" : "#0e2a44");
-        groundMaterial.emissiveColor = Color3.FromHexString(worldState.workspace === "admin" ? "#153f63" : "#103254");
+        groundMaterial.diffuseColor = Color3.FromHexString(theme.ground_hex);
+        groundMaterial.emissiveColor = Color3.FromHexString(theme.ground_glow_hex);
         ground.material = groundMaterial;
 
         const ring = CreateTorus(
           "akrDistrictRing",
           {
-            diameter: worldState.workspace === "admin" ? 9.2 : 8.4,
+            diameter: theme.orbit_radius * 2.45,
             thickness: 0.08,
             tessellation: worldState.low_end_mode ? 44 : 72
           },
@@ -240,19 +247,38 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
         );
         ring.rotation.x = Math.PI / 2;
         const ringMaterial = new StandardMaterial("akrDistrictRingMaterial", scene);
-        ringMaterial.diffuseColor = Color3.FromHexString("#0f2440");
-        ringMaterial.emissiveColor = Color3.FromHexString(worldState.workspace === "admin" ? "#2fffb5" : "#00d6ff");
+        ringMaterial.diffuseColor = Color3.FromHexString(theme.ground_glow_hex);
+        ringMaterial.emissiveColor = Color3.FromHexString(theme.ring_hex);
         ring.material = ringMaterial;
+
+        let outerRing: any = null;
+        if (!worldState.low_end_mode) {
+          outerRing = CreateTorus(
+            "akrDistrictOuterRing",
+            {
+              diameter: theme.orbit_radius * 2.9,
+              thickness: 0.05,
+              tessellation: 48
+            },
+            scene
+          );
+          outerRing.rotation.x = Math.PI / 2.4;
+          outerRing.rotation.z = districtTilt(theme.theme_key);
+          const outerRingMaterial = new StandardMaterial("akrDistrictOuterRingMaterial", scene);
+          outerRingMaterial.diffuseColor = Color3.FromHexString(theme.ring_secondary_hex);
+          outerRingMaterial.emissiveColor = Color3.FromHexString(theme.ring_secondary_hex);
+          outerRing.material = outerRingMaterial;
+        }
 
         const coreColumn = CreateCylinder(
           "akrDistrictCoreColumn",
-          { height: 1.2, diameter: 0.5, tessellation: worldState.low_end_mode ? 8 : 16 },
+          { height: worldState.workspace === "admin" ? 1.45 : 1.2, diameter: 0.5, tessellation: worldState.low_end_mode ? 8 : 16 },
           scene
         );
         coreColumn.position.y = 0.52;
         const coreColumnMaterial = new StandardMaterial("akrDistrictCoreColumnMaterial", scene);
-        coreColumnMaterial.diffuseColor = Color3.FromHexString("#16304f");
-        coreColumnMaterial.emissiveColor = Color3.FromHexString("#1e4166");
+        coreColumnMaterial.diffuseColor = Color3.FromHexString(theme.ground_glow_hex);
+        coreColumnMaterial.emissiveColor = Color3.FromHexString(theme.ring_secondary_hex);
         coreColumn.material = coreColumnMaterial;
 
         const coreOrb = CreateSphere(
@@ -265,52 +291,79 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
         );
         coreOrb.position.y = 1.35;
         const coreOrbMaterial = new StandardMaterial("akrDistrictCoreOrbMaterial", scene);
-        coreOrbMaterial.diffuseColor = Color3.FromHexString("#1b3858");
-        coreOrbMaterial.emissiveColor = Color3.FromHexString(worldState.workspace === "admin" ? "#45ffca" : "#7be6ff");
+        coreOrbMaterial.diffuseColor = Color3.FromHexString(theme.ground_glow_hex);
+        coreOrbMaterial.emissiveColor = Color3.FromHexString(theme.core_hex);
         coreOrb.material = coreOrbMaterial;
+
+        const satellites = Array.from({ length: theme.satellite_count }, (_, index) => {
+          const angle = (Math.PI * 2 * index) / Math.max(1, theme.satellite_count);
+          const orb = CreateSphere(
+            `akrDistrictSatellite-${index}`,
+            {
+              diameter: worldState.low_end_mode ? 0.12 : 0.16,
+              segments: worldState.low_end_mode ? 6 : 12
+            },
+            scene
+          );
+          orb.position = new Vector3(
+            Math.cos(angle) * theme.satellite_radius,
+            theme.satellite_height,
+            Math.sin(angle) * theme.satellite_radius
+          );
+          const material = new StandardMaterial(`akrDistrictSatelliteMaterial-${index}`, scene);
+          material.diffuseColor = Color3.FromHexString(theme.satellite_hex);
+          material.emissiveColor = Color3.FromHexString(theme.satellite_hex);
+          orb.material = material;
+          return { orb, baseAngle: angle };
+        });
 
         const nodeHandles = worldState.nodes.map((node, index) => {
           const angle = (Math.PI * 2 * index) / Math.max(1, worldState.nodes.length);
-          const radius = worldState.workspace === "admin" ? 3.6 : 3.25;
+          const radius = theme.orbit_radius;
           const x = Math.cos(angle) * radius;
           const z = Math.sin(angle) * radius;
+          const isActive = Boolean(node.is_active);
 
           const pillar = CreateCylinder(
             `akrDistrictNodePillar-${node.key}`,
-            { height: 1 + node.energy * 1.7, diameter: 0.24, tessellation: worldState.low_end_mode ? 8 : 14 },
+            {
+              height: 1 + node.energy * 1.7 + (isActive ? 0.3 : 0),
+              diameter: isActive ? 0.3 : 0.24,
+              tessellation: worldState.low_end_mode ? 8 : 14
+            },
             scene
           );
           pillar.position = new Vector3(x, 0.48 + pillar.scaling.y * 0.12, z);
 
           const orb = CreateSphere(
             `akrDistrictNodeOrb-${node.key}`,
-            { diameter: 0.38 + node.energy * 0.5, segments: worldState.low_end_mode ? 8 : 16 },
+            { diameter: 0.38 + node.energy * 0.5 + (isActive ? 0.14 : 0), segments: worldState.low_end_mode ? 8 : 16 },
             scene
           );
           orb.position = new Vector3(x, 1.25 + node.energy * 0.8, z);
 
           const pillarMaterial = new StandardMaterial(`akrDistrictNodePillarMaterial-${node.key}`, scene);
-          pillarMaterial.diffuseColor = Color3.FromHexString("#122946");
-          pillarMaterial.emissiveColor = Color3.FromHexString(node.accent_hex);
+          pillarMaterial.diffuseColor = Color3.FromHexString(isActive ? theme.ring_secondary_hex : theme.ground_hex);
+          pillarMaterial.emissiveColor = Color3.FromHexString(isActive ? theme.core_hex : node.accent_hex);
           pillar.material = pillarMaterial;
 
           const orbMaterial = new StandardMaterial(`akrDistrictNodeOrbMaterial-${node.key}`, scene);
-          orbMaterial.diffuseColor = Color3.FromHexString(node.accent_hex);
-          orbMaterial.emissiveColor = Color3.FromHexString(node.accent_hex);
+          orbMaterial.diffuseColor = Color3.FromHexString(isActive ? theme.core_hex : node.accent_hex);
+          orbMaterial.emissiveColor = Color3.FromHexString(isActive ? theme.ring_hex : node.accent_hex);
           orb.material = orbMaterial;
 
           let halo: any = null;
           if (!worldState.low_end_mode) {
             halo = CreateTorus(
               `akrDistrictNodeHalo-${node.key}`,
-              { diameter: 0.7 + node.energy * 0.46, thickness: 0.04, tessellation: 24 },
+              { diameter: 0.7 + node.energy * 0.46 + (isActive ? 0.12 : 0), thickness: isActive ? 0.06 : 0.04, tessellation: 24 },
               scene
             );
             halo.rotation.x = Math.PI / 2;
             halo.position = new Vector3(x, 0.12 + node.energy * 0.18, z);
             const haloMaterial = new StandardMaterial(`akrDistrictNodeHaloMaterial-${node.key}`, scene);
-            haloMaterial.diffuseColor = Color3.FromHexString(node.accent_hex);
-            haloMaterial.emissiveColor = Color3.FromHexString(node.accent_hex);
+            haloMaterial.diffuseColor = Color3.FromHexString(isActive ? theme.ring_secondary_hex : node.accent_hex);
+            haloMaterial.emissiveColor = Color3.FromHexString(isActive ? theme.ring_secondary_hex : node.accent_hex);
             halo.material = haloMaterial;
           }
 
@@ -326,7 +379,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
             mesh.metadata = metadata;
           });
 
-          return { node, pillar, orb, halo, angle };
+          return { node, pillar, orb, halo, angle, isActive };
         });
 
         scene.hoverCursor = "pointer";
@@ -358,16 +411,28 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           const now = performance.now() * 0.001;
           const motionScalar = worldState.reduced_motion ? 0.22 : 1;
           ring.rotation.z = now * worldState.orbit_speed * 22;
+          if (outerRing) {
+            outerRing.rotation.y = now * worldState.orbit_speed * 14;
+          }
           coreOrb.position.y = 1.2 + Math.sin(now * 1.4) * 0.12 * motionScalar;
           const orbScale = 1 + worldState.ambient_energy * 0.16 + Math.sin(now * 1.7) * 0.04 * motionScalar;
           coreOrb.scaling.setAll(orbScale);
           point.intensity = 1.1 + worldState.ambient_energy * 0.6 + Math.sin(now) * 0.08 * motionScalar;
           camera.alpha = -Math.PI / 2.1 + now * worldState.orbit_speed * 18;
+          satellites.forEach((entry, index) => {
+            const radiusPulse = theme.satellite_radius + Math.sin(now * (0.8 + index * 0.07)) * 0.06 * motionScalar;
+            entry.orb.position.x = Math.cos(entry.baseAngle + now * worldState.orbit_speed * 10) * radiusPulse;
+            entry.orb.position.z = Math.sin(entry.baseAngle + now * worldState.orbit_speed * 10) * radiusPulse;
+            entry.orb.position.y = theme.satellite_height + Math.sin(now * (1 + index * 0.09)) * 0.06 * motionScalar;
+          });
           nodeHandles.forEach((entry, index) => {
-            entry.orb.position.y = 1.15 + entry.node.energy * 0.95 + Math.sin(now * (1.2 + index * 0.17)) * 0.18 * motionScalar;
+            const activePulse = entry.isActive ? 0.16 : 0.04;
+            entry.orb.position.y =
+              1.15 + entry.node.energy * 0.95 + Math.sin(now * (1.2 + index * 0.17)) * (0.18 + activePulse) * motionScalar;
             entry.pillar.scaling.y = 1 + entry.node.energy * 0.65 + Math.sin(now * (0.8 + index * 0.11)) * 0.04 * motionScalar;
+            entry.orb.scaling.setAll(1 + Math.sin(now * (1.4 + index * 0.12)) * activePulse * motionScalar + (entry.isActive ? 0.12 : 0));
             if (entry.halo) {
-              entry.halo.rotation.z = now * (0.42 + index * 0.06) * motionScalar;
+              entry.halo.rotation.z = now * (0.42 + index * 0.06 + (entry.isActive ? 0.18 : 0)) * motionScalar;
             }
           });
           scene.render();
@@ -402,7 +467,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
 
   return (
     <div className="akrSceneWorldLayer" data-status={status} data-district={worldState.district_key}>
-        <canvas
+      <canvas
         ref={canvasRef}
         className="akrSceneWorldCanvas"
         aria-label={`${t(props.lang, "world_scene_title")} ${t(props.lang, worldState.district_label_key as never)}`}
@@ -414,7 +479,27 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
         <span>
           {worldState.beacon_count} / {worldState.hot_nodes + worldState.warn_nodes}
         </span>
+        {worldState.active_node_label ? (
+          <span className="akrSceneWorldFocus">
+            {worldState.active_node_label_key ? t(props.lang, worldState.active_node_label_key as never) : worldState.active_node_label}
+          </span>
+        ) : null}
       </div>
     </div>
   );
+}
+
+function districtTilt(themeKey: string) {
+  switch (themeKey) {
+    case "arena_prime":
+      return Math.PI / 4.4;
+    case "mission_quarter":
+      return Math.PI / 6;
+    case "exchange_district":
+      return Math.PI / 3.6;
+    case "ops_citadel":
+      return Math.PI / 5.2;
+    default:
+      return Math.PI / 7;
+  }
 }

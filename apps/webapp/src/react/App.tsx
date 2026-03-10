@@ -759,6 +759,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
           lang={lang}
           workspace={workspace}
           tab={tab}
+          navigationContext={(navigationContext as Record<string, unknown> | null) || null}
           scene={(scene as Record<string, unknown>) || {}}
           sceneRuntime={(sceneRuntime as Record<string, unknown>) || {}}
           data={(data as Record<string, unknown> | null) || null}
