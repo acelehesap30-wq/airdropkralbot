@@ -1403,6 +1403,58 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
               </div>
             </div>
           ) : null}
+          {worldState.interaction_modal.protocol_cards?.length ? (
+            <div className="akrSceneInteractionModalDecks">
+              <div className="akrSceneInteractionModalSectionHeader">
+                <span>{t(props.lang, "world_modal_section_protocol_decks" as never)}</span>
+                <strong>{worldState.interaction_modal.protocol_cards.length}</strong>
+              </div>
+              <div className="akrSceneInteractionModalDeckGrid">
+                {worldState.interaction_modal.protocol_cards.map(
+                  (card: {
+                    card_key: string;
+                    label_key: string;
+                    value: string;
+                    status_key: string;
+                    tone_key?: string;
+                    action_key?: string;
+                    action_label_key?: string;
+                    is_actionable?: boolean;
+                  }) => (
+                    <button
+                      key={`${worldState.interaction_modal.modal_key}:${card.card_key}`}
+                      type="button"
+                      className={`akrSceneInteractionModalDeck is-${card.status_key} ${card.is_actionable ? "is-actionable" : "is-passive"}`}
+                      onClick={() =>
+                        card.action_key
+                          ? triggerSceneAction({
+                              actionKey: card.action_key,
+                              nodeKey: card.card_key,
+                              laneKey: "modal_protocol_deck",
+                              label: card.value,
+                              labelKey: card.label_key,
+                              sourceType: "district_scene_protocol_deck",
+                              actorKey: worldState.active_hotspot_key,
+                              interactionKind: "protocol",
+                              clusterKey: worldState.active_cluster_key,
+                              workspace: props.workspace,
+                              tab: props.tab,
+                              districtKey: worldState.district_key
+                            })
+                          : undefined
+                      }
+                      disabled={!card.action_key}
+                    >
+                      <span>{t(props.lang, card.label_key as never)}</span>
+                      <strong>{card.value}</strong>
+                      {card.tone_key ? <em>{t(props.lang, card.tone_key as never)}</em> : null}
+                      {card.action_label_key ? <b>{t(props.lang, card.action_label_key as never)}</b> : null}
+                    </button>
+                  )
+                )}
+              </div>
+            </div>
+          ) : null}
           <div className="akrSceneInteractionModalFlow">
             <div className="akrSceneInteractionModalSectionHeader">
               <span>{t(props.lang, "world_modal_section_flow" as never)}</span>

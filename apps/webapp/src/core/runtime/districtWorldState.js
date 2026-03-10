@@ -2541,6 +2541,24 @@ function buildModalCard(labelKey, value, statusKey = "ready", toneKey = "") {
   };
 }
 
+function buildModalProtocolCard(labelKey, value, statusKey = "ready", toneKey = "", actionKey = "", actionLabelKey = "") {
+  const text = toText(value, "");
+  const normalizedActionKey = toText(actionKey, "");
+  if (!text) {
+    return null;
+  }
+  return {
+    card_key: `${labelKey}:${statusKey}:${normalizedActionKey || "passive"}`,
+    label_key: labelKey,
+    value: text,
+    status_key: statusKey,
+    tone_key: toneKey,
+    action_key: normalizedActionKey,
+    action_label_key: toText(actionLabelKey, ""),
+    is_actionable: Boolean(normalizedActionKey)
+  };
+}
+
 function buildDistrictInteractionModalCards(input, districtKey, activeHotspot) {
   if (!activeHotspot) {
     return [];
@@ -2652,6 +2670,202 @@ function buildDistrictInteractionModalCards(input, districtKey, activeHotspot) {
   }
 }
 
+function buildDistrictInteractionProtocolCards(input, districtKey, activeHotspot) {
+  if (!activeHotspot) {
+    return [];
+  }
+
+  const homeFeed = asRecord(input.homeFeed);
+  const season = asRecord(homeFeed.season);
+  const mission = asRecord(homeFeed.mission);
+  const walletQuick = asRecord(homeFeed.wallet_quick);
+  const risk = asRecord(homeFeed.risk);
+  const daily = asRecord(homeFeed.daily);
+  const contract = asRecord(homeFeed.contract);
+  const taskResult = asRecord(input.taskResult);
+  const pvpRuntime = asRecord(input.pvpRuntime);
+  const leagueOverview = asRecord(input.leagueOverview);
+  const dailyDuel = asRecord(leagueOverview.daily_duel);
+  const weeklyLadder = asRecord(leagueOverview.weekly_ladder);
+  const pvpLive = asRecord(input.pvpLive);
+  const diagnostics = asRecord(pvpLive.diagnostics);
+  const tick = asRecord(pvpLive.tick);
+  const vaultData = asRecord(input.vaultData);
+  const walletSession = asRecord(vaultData.wallet_session);
+  const payoutStatus = asRecord(vaultData.payout_status);
+  const monetization = asRecord(vaultData.monetization_status);
+  const routeStatus = asRecord(vaultData.route_status);
+  const adminRuntime = asRecord(input.adminRuntime);
+  const summary = asRecord(adminRuntime.summary);
+  const queue = asList(adminRuntime.queue);
+  const hotspotKey = toText(activeHotspot.key, "");
+
+  switch (districtKey) {
+    case "arena_prime": {
+      const duelPhase = upperText(pvpRuntime.phase || dailyDuel.phase || "idle");
+      const ladderCharge = percentText(weeklyLadder.completion_pct || weeklyLadder.rank_progress_pct || weeklyLadder.progress_pct);
+      const diagnosticsBand = upperText(diagnostics.category || diagnostics.state || diagnostics.band || "clean");
+      const tickTempo = toNum(tick.tempo_ms || tick.tick_ms, Number.NaN);
+      return [
+        buildModalProtocolCard(
+          "world_modal_protocol_duel_boot",
+          duelPhase,
+          resolveFlowStatusKey(duelPhase, "live"),
+          "world_intent_tone_compete",
+          SHELL_ACTION_KEY.PLAYER_PVP_DAILY_DUEL,
+          "world_modal_protocol_action_enter"
+        ),
+        buildModalProtocolCard(
+          "world_modal_protocol_ladder_seed",
+          ladderCharge,
+          resolveFlowStatusKey(ladderCharge, "ready"),
+          "world_intent_tone_climb",
+          SHELL_ACTION_KEY.PLAYER_PVP_WEEKLY_LADDER,
+          "world_modal_protocol_action_route"
+        ),
+        buildModalProtocolCard(
+          hotspotKey === "diagnostics_rail" || hotspotKey === "tick_chamber"
+            ? "world_modal_protocol_telemetry_mesh"
+            : "world_modal_protocol_tick_mesh",
+          Number.isFinite(tickTempo) ? `${Math.round(tickTempo)}ms` : diagnosticsBand,
+          resolveFlowStatusKey(diagnosticsBand || tickTempo, "ready"),
+          "world_intent_tone_track",
+          SHELL_ACTION_KEY.PLAYER_PVP_LEADERBOARD,
+          "world_modal_protocol_action_scan"
+        )
+      ].filter(Boolean);
+    }
+    case "mission_quarter": {
+      const offerCount = countText(taskResult.offer_count || taskResult.offers_count || mission.offer_count || mission.active_count);
+      const claimableCount = countText(taskResult.claimable_count || mission.claimable_count);
+      const contractBand = upperText(contract.band || contract.state || "open");
+      const streakValue = countText(daily.streak_days || daily.streak);
+      return [
+        buildModalProtocolCard(
+          "world_modal_protocol_offer_grid",
+          offerCount || "0",
+          toNum(offerCount, 0) > 0 ? "live" : "idle",
+          "world_intent_tone_launch",
+          SHELL_ACTION_KEY.PLAYER_TASKS_BOARD,
+          "world_modal_protocol_action_open"
+        ),
+        buildModalProtocolCard(
+          hotspotKey === "claim_dais" ? "world_modal_protocol_claim_sync" : "world_modal_protocol_contract_sync",
+          claimableCount || contractBand,
+          claimableCount ? "ready" : resolveFlowStatusKey(contractBand, "watch"),
+          hotspotKey === "claim_dais" ? "world_intent_tone_claim" : "world_intent_tone_launch",
+          SHELL_ACTION_KEY.PLAYER_TASKS_CLAIMS,
+          hotspotKey === "claim_dais" ? "world_modal_protocol_action_claim" : "world_modal_protocol_action_route"
+        ),
+        buildModalProtocolCard(
+          "world_modal_protocol_streak_guard",
+          streakValue ? `${streakValue}d` : "0d",
+          toNum(streakValue, 0) > 0 ? "live" : "idle",
+          "world_intent_tone_claim",
+          SHELL_ACTION_KEY.PLAYER_TASKS_BOARD,
+          "world_modal_protocol_action_sync"
+        )
+      ].filter(Boolean);
+    }
+    case "exchange_district": {
+      const walletLive = pickTruthy(walletSession, ["active", "linked"]);
+      const walletQuickLive = pickTruthy(walletQuick, ["linked", "wallet_linked", "active"]);
+      const payoutState = upperText(payoutStatus.state || payoutStatus.status || "ready");
+      const routeState = upperText(routeStatus.state || routeStatus.health || "ready");
+      const premiumState = pickTruthy(monetization, ["pass_active", "active", "premium_active"]) ? "ACTIVE" : "READY";
+      return [
+        buildModalProtocolCard(
+          "world_modal_protocol_wallet_auth",
+          walletLive || walletQuickLive ? "LIVE" : "OPEN",
+          walletLive || walletQuickLive ? "ready" : "watch",
+          "world_intent_tone_connect",
+          SHELL_ACTION_KEY.PLAYER_WALLET_CONNECT,
+          "world_modal_protocol_action_link"
+        ),
+        buildModalProtocolCard(
+          hotspotKey === "premium_lane" ? "world_modal_protocol_premium_unlock" : "world_modal_protocol_payout_route",
+          hotspotKey === "premium_lane" ? premiumState : payoutState,
+          resolveFlowStatusKey(hotspotKey === "premium_lane" ? premiumState : payoutState, "ready"),
+          hotspotKey === "premium_lane" ? "world_intent_tone_upgrade" : "world_intent_tone_payout",
+          hotspotKey === "premium_lane" ? SHELL_ACTION_KEY.PLAYER_REWARDS_PANEL : SHELL_ACTION_KEY.PLAYER_PAYOUT_REQUEST,
+          hotspotKey === "premium_lane" ? "world_modal_protocol_action_upgrade" : "world_modal_protocol_action_route"
+        ),
+        buildModalProtocolCard(
+          "world_modal_protocol_route_matrix",
+          routeState,
+          resolveFlowStatusKey(routeState, "ready"),
+          "world_intent_tone_track",
+          SHELL_ACTION_KEY.PLAYER_REWARDS_PANEL,
+          "world_modal_protocol_action_scan"
+        )
+      ].filter(Boolean);
+    }
+    case "ops_citadel": {
+      const queueDepth = countText(queue.length);
+      const sceneHealth = upperText(summary.scene_runtime_health_band_24h || summary.scene_health_band || "clear");
+      const dispatchState = upperText(summary.live_ops_scheduler_state || summary.scheduler_state || "ready");
+      return [
+        buildModalProtocolCard(
+          "world_modal_protocol_queue_audit",
+          queueDepth || "0",
+          toNum(queueDepth, 0) > 0 ? "live" : "ready",
+          "world_intent_tone_review",
+          SHELL_ACTION_KEY.ADMIN_QUEUE_PANEL,
+          "world_modal_protocol_action_review"
+        ),
+        buildModalProtocolCard(
+          "world_modal_protocol_runtime_shield",
+          sceneHealth,
+          resolveFlowStatusKey(sceneHealth, "watch"),
+          "world_intent_tone_monitor",
+          SHELL_ACTION_KEY.ADMIN_RUNTIME_META,
+          "world_modal_protocol_action_monitor"
+        ),
+        buildModalProtocolCard(
+          "world_modal_protocol_dispatch_guard",
+          dispatchState,
+          resolveFlowStatusKey(dispatchState, "ready"),
+          "world_intent_tone_dispatch",
+          SHELL_ACTION_KEY.ADMIN_LIVE_OPS_PANEL,
+          "world_modal_protocol_action_dispatch"
+        )
+      ].filter(Boolean);
+    }
+    default: {
+      const missionCount = countText(mission.active_count || mission.offer_count);
+      const progress = percentText(season.progress_pct || season.progress || season.completion_pct);
+      const riskBand = upperText(risk.band || risk.state || "stable");
+      const walletState = pickTruthy(walletQuick, ["linked", "wallet_linked", "active"]) ? "LIVE" : "OPEN";
+      return [
+        buildModalProtocolCard(
+          "world_modal_protocol_travel_vector",
+          progress || "0%",
+          progress ? "live" : "ready",
+          "world_intent_tone_travel",
+          SHELL_ACTION_KEY.PLAYER_SEASON_HALL,
+          "world_modal_protocol_action_route"
+        ),
+        buildModalProtocolCard(
+          hotspotKey === "wallet_port" ? "world_modal_protocol_wallet_auth" : "world_modal_protocol_mission_sync",
+          hotspotKey === "wallet_port" ? walletState : missionCount || "0",
+          hotspotKey === "wallet_port" ? resolveFlowStatusKey(walletState, "watch") : toNum(missionCount, 0) > 0 ? "live" : "idle",
+          hotspotKey === "wallet_port" ? "world_intent_tone_connect" : "world_intent_tone_launch",
+          hotspotKey === "wallet_port" ? SHELL_ACTION_KEY.PLAYER_WALLET_CONNECT : SHELL_ACTION_KEY.PLAYER_TASKS_BOARD,
+          hotspotKey === "wallet_port" ? "world_modal_protocol_action_link" : "world_modal_protocol_action_open"
+        ),
+        buildModalProtocolCard(
+          "world_modal_protocol_risk_watch",
+          riskBand,
+          resolveFlowStatusKey(riskBand, "ready"),
+          "world_intent_tone_track",
+          SHELL_ACTION_KEY.PLAYER_STATUS_PANEL,
+          "world_modal_protocol_action_scan"
+        )
+      ].filter(Boolean);
+    }
+  }
+}
+
 function buildDistrictInteractionModal(input, districtKey, activeHotspot, interactionTerminal) {
   if (!activeHotspot || !interactionTerminal) {
     return null;
@@ -2728,6 +2942,7 @@ function buildDistrictInteractionModal(input, districtKey, activeHotspot, intera
   }
 
   const modalCards = buildDistrictInteractionModalCards(input, districtKey, activeHotspot);
+  const protocolCards = buildDistrictInteractionProtocolCards(input, districtKey, activeHotspot);
 
   return {
     modal_key: `${districtKey}:${hotspotKey || "modal"}`,
@@ -2750,6 +2965,7 @@ function buildDistrictInteractionModal(input, districtKey, activeHotspot, intera
     flow_rows: asList(interactionTerminal.flow_rows).slice(0, 3),
     signal_rows: asList(interactionTerminal.signal_rows).slice(0, 4),
     modal_cards: modalCards,
+    protocol_cards: protocolCards,
     action_items: asList(interactionTerminal.action_items).slice(0, 3),
     action_count: toNum(interactionTerminal.action_count, 0)
   };
