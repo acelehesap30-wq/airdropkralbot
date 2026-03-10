@@ -470,6 +470,111 @@ body {
   border-color: rgba(255, 180, 93, 0.24);
 }
 
+.akrSceneEntryFlow {
+  position: fixed;
+  left: max(16px, calc((100vw - 1180px) / 2 + 16px));
+  top: 482px;
+  width: min(320px, calc(100vw - 32px));
+  padding: 12px;
+  border-radius: 16px;
+  display: grid;
+  gap: 10px;
+  pointer-events: auto;
+}
+
+.akrSceneEntryFlowHeader,
+.akrSceneEntryFlowMeta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  font-family: "IBM Plex Mono", monospace;
+}
+
+.akrSceneEntryFlowHeader {
+  font-size: 0.68rem;
+  color: #9fc7df;
+}
+
+.akrSceneEntryFlowHeader strong {
+  color: #fff3c7;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.akrSceneEntryFlowMeta {
+  gap: 8px;
+}
+
+.akrSceneEntryFlowChip {
+  flex: 1 1 0;
+  display: grid;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(120, 181, 225, 0.2);
+  background: rgba(6, 20, 41, 0.38);
+}
+
+.akrSceneEntryFlowChip span,
+.akrSceneEntryFlowStep span {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.66rem;
+  color: #9fc7df;
+}
+
+.akrSceneEntryFlowChip strong,
+.akrSceneEntryFlowStep strong {
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  font-size: 0.9rem;
+  color: #f2fbff;
+}
+
+.akrSceneEntryFlowChip.is-live,
+.akrSceneEntryFlowStep.is-live {
+  border-color: rgba(47, 255, 181, 0.26);
+}
+
+.akrSceneEntryFlowChip.is-ready,
+.akrSceneEntryFlowStep.is-ready {
+  border-color: rgba(123, 230, 255, 0.26);
+}
+
+.akrSceneEntryFlowChip.is-watch,
+.akrSceneEntryFlowStep.is-watch {
+  border-color: rgba(255, 180, 93, 0.28);
+}
+
+.akrSceneEntryFlowChip.is-alert,
+.akrSceneEntryFlowStep.is-alert {
+  border-color: rgba(255, 111, 145, 0.3);
+}
+
+.akrSceneEntryFlowChip.is-locked,
+.akrSceneEntryFlowStep.is-locked {
+  border-color: rgba(158, 178, 196, 0.24);
+}
+
+.akrSceneEntryFlowChip.is-tempo {
+  max-width: 122px;
+}
+
+.akrSceneEntryFlowSteps {
+  display: grid;
+  gap: 8px;
+}
+
+.akrSceneEntryFlowStep {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(120, 181, 225, 0.2);
+  background: rgba(6, 20, 41, 0.38);
+}
+
 .akrSceneWorldFocus {
   color: #fff3c7;
   border: 1px solid rgba(255, 211, 111, 0.32);
@@ -1471,6 +1576,14 @@ body {
     width: auto;
   }
 
+  .akrSceneEntryFlow {
+    left: 14px;
+    right: 14px;
+    top: auto;
+    bottom: 150px;
+    width: auto;
+  }
+
   .akrTopbar {
     flex-direction: column;
     align-items: flex-start;
@@ -1519,6 +1632,11 @@ body {
 
   .akrSceneEntrySurface {
     bottom: 352px;
+    padding: 10px;
+  }
+
+  .akrSceneEntryFlow {
+    bottom: 164px;
     padding: 10px;
   }
 

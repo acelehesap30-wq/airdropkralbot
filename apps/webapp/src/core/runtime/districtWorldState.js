@@ -2116,6 +2116,207 @@ function buildDistrictInteractionSurface(districtKey, activeHotspot, activeClust
   };
 }
 
+function resolveFlowStatusKey(value, fallback = "idle") {
+  const key = toText(value, "").toLowerCase();
+  if (!key) {
+    return fallback;
+  }
+  if (key.includes("alert") || key.includes("hot") || key.includes("blocked") || key.includes("reject")) {
+    return "alert";
+  }
+  if (key.includes("watch") || key.includes("warn") || key.includes("review") || key.includes("hold")) {
+    return "watch";
+  }
+  if (key.includes("lock") || key.includes("expired") || key.includes("off")) {
+    return "locked";
+  }
+  if (key.includes("live") || key.includes("claim") || key.includes("active") || key.includes("dispatch") || key.includes("strike")) {
+    return "live";
+  }
+  if (key.includes("ready") || key.includes("clear") || key.includes("clean") || key.includes("open") || key.includes("stable")) {
+    return "ready";
+  }
+  return fallback;
+}
+
+function flowStatusLabelKey(statusKey) {
+  switch (statusKey) {
+    case "alert":
+      return "world_flow_state_alert";
+    case "watch":
+      return "world_flow_state_watch";
+    case "locked":
+      return "world_flow_state_locked";
+    case "live":
+      return "world_flow_state_live";
+    case "ready":
+      return "world_flow_state_ready";
+    default:
+      return "world_flow_state_idle";
+  }
+}
+
+function buildFlowStep(labelKey, value, statusKey = "ready") {
+  const text = toText(value, "");
+  if (!text) {
+    return null;
+  }
+  return {
+    label_key: labelKey,
+    value: text,
+    status_key: statusKey
+  };
+}
+
+function buildDistrictInteractionFlow(input, districtKey, activeHotspot, interactionSheet) {
+  if (!activeHotspot || !interactionSheet?.rows?.length) {
+    return null;
+  }
+
+  const homeFeed = asRecord(input.homeFeed);
+  const season = asRecord(homeFeed.season);
+  const mission = asRecord(homeFeed.mission);
+  const walletQuick = asRecord(homeFeed.wallet_quick);
+  const risk = asRecord(homeFeed.risk);
+  const daily = asRecord(homeFeed.daily);
+  const contract = asRecord(homeFeed.contract);
+  const taskResult = asRecord(input.taskResult);
+  const pvpRuntime = asRecord(input.pvpRuntime);
+  const leagueOverview = asRecord(input.leagueOverview);
+  const dailyDuel = asRecord(leagueOverview.daily_duel);
+  const weeklyLadder = asRecord(leagueOverview.weekly_ladder);
+  const pvpLive = asRecord(input.pvpLive);
+  const diagnostics = asRecord(pvpLive.diagnostics);
+  const tick = asRecord(pvpLive.tick);
+  const vaultData = asRecord(input.vaultData);
+  const walletSession = asRecord(vaultData.wallet_session);
+  const payoutStatus = asRecord(vaultData.payout_status);
+  const monetization = asRecord(vaultData.monetization_status);
+  const routeStatus = asRecord(vaultData.route_status);
+  const adminRuntime = asRecord(input.adminRuntime);
+  const summary = asRecord(adminRuntime.summary);
+  const queue = asList(adminRuntime.queue);
+  const hotspotKey = toText(activeHotspot.key, "");
+
+  let flowKindKey = "world_flow_kind_travel";
+  let stageStatusKey = "idle";
+  let readinessStatusKey = "ready";
+  let tempoLabelKey = "world_flow_tempo_label";
+  let tempoValue = "";
+  let steps = [];
+
+  switch (districtKey) {
+    case "arena_prime": {
+      const duelPhase = toText(pvpRuntime.phase || dailyDuel.phase, "");
+      const diagnosticsBand = toText(diagnostics.category || diagnostics.state, "");
+      const tickTempo = toNum(tick.tempo_ms || tick.tick_ms, Number.NaN);
+      flowKindKey = "world_flow_kind_arena_loop";
+      stageStatusKey = resolveFlowStatusKey(duelPhase || diagnosticsBand, "live");
+      readinessStatusKey = resolveFlowStatusKey(diagnosticsBand, "ready");
+      tempoValue = Number.isFinite(tickTempo) ? `${Math.round(tickTempo)}ms` : percentText(weeklyLadder.completion_pct || weeklyLadder.rank_progress_pct);
+      steps = [
+        buildFlowStep("world_sheet_metric_duel_phase", upperText(duelPhase || "live"), stageStatusKey),
+        buildFlowStep(
+          "world_sheet_metric_ladder_charge",
+          percentText(weeklyLadder.completion_pct || weeklyLadder.rank_progress_pct),
+          resolveFlowStatusKey(weeklyLadder.phase || "live", "live")
+        ),
+        buildFlowStep("world_sheet_metric_diag_band", upperText(diagnosticsBand), readinessStatusKey)
+      ].filter(Boolean);
+      break;
+    }
+    case "mission_quarter": {
+      const offerCount = toNum(taskResult.offer_count || taskResult.offers_count || mission.offer_count || mission.active_count, 0);
+      const claimableCount = toNum(taskResult.claimable_count || mission.claimable_count, 0);
+      const contractBand = toText(contract.band || contract.state, "");
+      flowKindKey = hotspotKey === "claim_dais" ? "world_flow_kind_loot_reveal" : "world_flow_kind_contract_loop";
+      stageStatusKey = claimableCount > 0 ? "ready" : offerCount > 0 ? "live" : "idle";
+      readinessStatusKey = resolveFlowStatusKey(contractBand, claimableCount > 0 ? "ready" : "watch");
+      tempoValue = claimableCount > 0 ? `${claimableCount} ready` : offerCount > 0 ? `${offerCount} live` : "idle";
+      steps = [
+        buildFlowStep("world_sheet_metric_offer_count", countText(offerCount), offerCount > 0 ? "live" : "idle"),
+        buildFlowStep(
+          "world_sheet_metric_streak",
+          countText(daily.streak_days || daily.streak) ? `${countText(daily.streak_days || daily.streak)}d` : "",
+          toNum(daily.streak_days || daily.streak, 0) > 0 ? "live" : "idle"
+        ),
+        buildFlowStep("world_sheet_metric_claimable", countText(claimableCount), claimableCount > 0 ? "ready" : "idle")
+      ].filter(Boolean);
+      break;
+    }
+    case "exchange_district": {
+      const walletState = pickTruthy(walletSession, ["active", "linked"]) ? "live" : "watch";
+      const payoutState = toText(payoutStatus.state || payoutStatus.status, "");
+      const routeState = toText(routeStatus.state || routeStatus.health, "");
+      const premiumActive = pickTruthy(monetization, ["pass_active", "active", "premium_active"]);
+      flowKindKey =
+        hotspotKey === "premium_lane"
+          ? "world_flow_kind_premium_loop"
+          : hotspotKey === "rewards_vault"
+            ? "world_flow_kind_loot_reveal"
+            : "world_flow_kind_vault_loop";
+      stageStatusKey =
+        hotspotKey === "premium_lane"
+          ? premiumActive
+            ? "live"
+            : "ready"
+          : resolveFlowStatusKey(payoutState || routeState, walletState);
+      readinessStatusKey = resolveFlowStatusKey(routeState || payoutState, premiumActive ? "ready" : walletState);
+      tempoValue = upperText(routeState || payoutState || (premiumActive ? "active" : "ready"));
+      steps = [
+        buildFlowStep("world_sheet_metric_wallet_state", pickTruthy(walletSession, ["active", "linked"]) ? "LIVE" : "OPEN", walletState),
+        buildFlowStep("world_sheet_metric_payout_state", upperText(payoutState), resolveFlowStatusKey(payoutState, "watch")),
+        buildFlowStep("world_sheet_metric_route_state", upperText(routeState), readinessStatusKey)
+      ].filter(Boolean);
+      break;
+    }
+    case "ops_citadel": {
+      const schedulerState = toText(summary.live_ops_scheduler_state || summary.scheduler_state, "");
+      const sceneHealth = toText(summary.scene_runtime_health_band_24h || summary.scene_health_band, "");
+      const alertCount = toNum(summary.ops_alert_raised_24h || summary.alerts_24h, 0);
+      flowKindKey = hotspotKey === "liveops_table" ? "world_flow_kind_dispatch_loop" : "world_flow_kind_ops_loop";
+      stageStatusKey = resolveFlowStatusKey(schedulerState || sceneHealth, sceneHealth ? "watch" : "idle");
+      readinessStatusKey = resolveFlowStatusKey(sceneHealth, "watch");
+      tempoValue = upperText(schedulerState || sceneHealth || "ready");
+      steps = [
+        buildFlowStep("world_sheet_metric_queue_depth", countText(queue.length), queue.length > 0 ? "live" : "ready"),
+        buildFlowStep("world_sheet_metric_scene_health", upperText(sceneHealth), readinessStatusKey),
+        buildFlowStep("world_sheet_metric_alerts", countText(alertCount), alertCount > 0 ? "watch" : "ready")
+      ].filter(Boolean);
+      break;
+    }
+    default: {
+      const missionCount = toNum(mission.active_count || mission.offer_count, 0);
+      const progress = percentText(season.progress_pct || season.progress || season.completion_pct);
+      const walletLinked = pickTruthy(walletQuick, ["linked", "wallet_linked", "active"]);
+      flowKindKey = hotspotKey === "rewards_cache" ? "world_flow_kind_loot_reveal" : "world_flow_kind_travel";
+      stageStatusKey = missionCount > 0 ? "live" : "ready";
+      readinessStatusKey = resolveFlowStatusKey(risk.band || risk.state, walletLinked ? "ready" : "watch");
+      tempoValue = progress || (walletLinked ? "LIVE" : "OPEN");
+      steps = [
+        buildFlowStep("world_sheet_metric_progress", progress, missionCount > 0 ? "live" : "ready"),
+        buildFlowStep("world_sheet_metric_active_missions", countText(missionCount), missionCount > 0 ? "live" : "idle"),
+        buildFlowStep("world_sheet_metric_wallet_state", walletLinked ? "LIVE" : "OPEN", walletLinked ? "ready" : "watch")
+      ].filter(Boolean);
+      break;
+    }
+  }
+
+  return {
+    flow_key: `${districtKey}:${hotspotKey || "flow"}`,
+    flow_kind_key: flowKindKey,
+    stage_label_key: "world_flow_stage_label",
+    stage_value_key: flowStatusLabelKey(stageStatusKey),
+    stage_status_key: stageStatusKey,
+    readiness_label_key: "world_flow_readiness_label",
+    readiness_value_key: flowStatusLabelKey(readinessStatusKey),
+    readiness_status_key: readinessStatusKey,
+    tempo_label_key: tempoLabelKey,
+    tempo_value: toText(tempoValue, ""),
+    step_rows: steps.slice(0, 3)
+  };
+}
+
 export function buildDistrictWorldState(input = {}) {
   const workspace = normalizeWorkspace(input.workspace);
   const tab = normalizeTab(input.tab);
@@ -2166,6 +2367,7 @@ export function buildDistrictWorldState(input = {}) {
   const railProfile = resolveDistrictRailProfile(districtKey, hudDensity, lowEndMode, sceneProfile);
   const interactionSheet = buildDistrictInteractionSheet(input, districtKey, activeHotspot, activeCluster);
   const interactionSurface = buildDistrictInteractionSurface(districtKey, activeHotspot, activeCluster, interactionSheet);
+  const interactionFlow = buildDistrictInteractionFlow(input, districtKey, activeHotspot, interactionSheet);
 
   return {
     world_key: `${workspace}:${tab}:${districtKey}`,
@@ -2219,6 +2421,7 @@ export function buildDistrictWorldState(input = {}) {
     active_cluster_slot_count: toNum(activeCluster?.intent_slots?.length, 0),
     interaction_sheet: interactionSheet,
     interaction_surface: interactionSurface,
+    interaction_flow: interactionFlow,
     theme: districtTheme,
     actors,
     interaction_cluster_count: interactionClusters.length,

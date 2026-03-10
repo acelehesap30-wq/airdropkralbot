@@ -1153,6 +1153,34 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           </div>
         </div>
       ) : null}
+      {worldState.interaction_flow?.step_rows?.length ? (
+        <div className={`akrSceneEntryFlow akrGlass is-${worldState.interaction_flow.readiness_status_key}`}>
+          <div className="akrSceneEntryFlowHeader">
+            <span>{t(props.lang, worldState.interaction_flow.flow_kind_key as never)}</span>
+            <strong>{t(props.lang, worldState.interaction_flow.stage_value_key as never)}</strong>
+          </div>
+          <div className="akrSceneEntryFlowMeta">
+            <div className={`akrSceneEntryFlowChip is-${worldState.interaction_flow.readiness_status_key}`}>
+              <span>{t(props.lang, worldState.interaction_flow.readiness_label_key as never)}</span>
+              <strong>{t(props.lang, worldState.interaction_flow.readiness_value_key as never)}</strong>
+            </div>
+            {worldState.interaction_flow.tempo_value ? (
+              <div className="akrSceneEntryFlowChip is-tempo">
+                <span>{t(props.lang, worldState.interaction_flow.tempo_label_key as never)}</span>
+                <strong>{worldState.interaction_flow.tempo_value}</strong>
+              </div>
+            ) : null}
+          </div>
+          <div className="akrSceneEntryFlowSteps">
+            {worldState.interaction_flow.step_rows.map((row: { label_key: string; value: string; status_key: string }) => (
+              <div key={`${worldState.interaction_flow.flow_key}:${row.label_key}`} className={`akrSceneEntryFlowStep is-${row.status_key}`}>
+                <span>{t(props.lang, row.label_key as never)}</span>
+                <strong>{row.value}</strong>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
