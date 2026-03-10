@@ -485,6 +485,47 @@ body {
   gap: 8px;
 }
 
+.akrSceneEntrySurfaceConsoleBar {
+  display: flex;
+}
+
+.akrSceneEntrySurfaceConsoleToggle {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(120, 181, 225, 0.24);
+  background: rgba(6, 20, 41, 0.42);
+  color: #e8f8ff;
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    transform 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.akrSceneEntrySurfaceConsoleToggle:hover,
+.akrSceneEntrySurfaceConsoleToggle.isOpen {
+  transform: translateY(-1px);
+  border-color: rgba(0, 214, 255, 0.38);
+  box-shadow: 0 12px 28px rgba(2, 12, 27, 0.26);
+}
+
+.akrSceneEntrySurfaceConsoleToggle span {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.68rem;
+  color: #9fc7df;
+}
+
+.akrSceneEntrySurfaceConsoleToggle strong {
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  font-size: 0.88rem;
+  color: #f2fbff;
+}
+
 .akrSceneEntrySurfaceAction {
   display: grid;
   gap: 4px;
@@ -546,6 +587,212 @@ body {
 .akrSceneEntrySurface.is-ops_console,
 .akrSceneEntrySurface.is-dispatch_console {
   border-color: rgba(255, 180, 93, 0.24);
+}
+
+.akrSceneTerminalConsole {
+  position: fixed;
+  right: max(16px, calc((100vw - 1180px) / 2 + 16px));
+  top: 252px;
+  width: min(360px, calc(100vw - 32px));
+  padding: 12px;
+  border-radius: 16px;
+  display: grid;
+  gap: 10px;
+  pointer-events: auto;
+}
+
+.akrSceneTerminalConsoleHeader,
+.akrSceneTerminalConsoleMeta,
+.akrSceneTerminalConsoleSectionHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  font-family: "IBM Plex Mono", monospace;
+}
+
+.akrSceneTerminalConsoleHeader,
+.akrSceneTerminalConsoleMeta {
+  font-size: 0.68rem;
+  color: #9fc7df;
+}
+
+.akrSceneTerminalConsoleTitle {
+  display: grid;
+  gap: 4px;
+}
+
+.akrSceneTerminalConsoleTitle strong,
+.akrSceneTerminalConsoleSectionHeader strong,
+.akrSceneTerminalConsoleMeta strong {
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  color: #f2fbff;
+  letter-spacing: 0.02em;
+}
+
+.akrSceneTerminalConsoleClose {
+  min-width: 92px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(120, 181, 225, 0.24);
+  background: rgba(6, 20, 41, 0.42);
+  color: #e8f8ff;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.68rem;
+  cursor: pointer;
+}
+
+.akrSceneTerminalConsoleGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.akrSceneTerminalConsoleSection,
+.akrSceneTerminalConsoleFlow,
+.akrSceneTerminalConsoleActions {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(120, 181, 225, 0.2);
+  background: rgba(6, 20, 41, 0.38);
+}
+
+.akrSceneTerminalConsoleSectionHeader {
+  font-size: 0.68rem;
+  color: #9fc7df;
+}
+
+.akrSceneTerminalConsoleRows {
+  display: grid;
+  gap: 6px;
+}
+
+.akrSceneTerminalConsoleRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(120, 181, 225, 0.18);
+  background: rgba(8, 22, 44, 0.5);
+}
+
+.akrSceneTerminalConsoleRow span,
+.akrSceneTerminalConsoleChip span,
+.akrSceneTerminalConsoleAction span {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.66rem;
+  color: #9fc7df;
+}
+
+.akrSceneTerminalConsoleRow strong,
+.akrSceneTerminalConsoleChip strong,
+.akrSceneTerminalConsoleAction strong {
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  font-size: 0.9rem;
+  color: #f2fbff;
+}
+
+.akrSceneTerminalConsoleChips {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.akrSceneTerminalConsoleChip {
+  display: grid;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(120, 181, 225, 0.2);
+  background: rgba(8, 22, 44, 0.5);
+}
+
+.akrSceneTerminalConsoleChip.is-tempo {
+  max-width: 132px;
+}
+
+.akrSceneTerminalConsoleActionGrid {
+  display: grid;
+  gap: 8px;
+}
+
+.akrSceneTerminalConsoleAction {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(120, 181, 225, 0.24);
+  background: linear-gradient(135deg, rgba(8, 22, 44, 0.84), rgba(9, 30, 54, 0.72));
+  color: #e8f8ff;
+  cursor: pointer;
+  transition:
+    transform 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.akrSceneTerminalConsoleAction:hover {
+  transform: translateY(-1px);
+  border-color: rgba(0, 214, 255, 0.42);
+  box-shadow: 0 12px 28px rgba(2, 12, 27, 0.28);
+}
+
+.akrSceneTerminalConsoleAction.isSecondary {
+  border-style: dashed;
+}
+
+.akrSceneTerminalConsole.is-travel_portal,
+.akrSceneTerminalConsole.is-loot_reveal {
+  border-color: rgba(123, 230, 255, 0.24);
+}
+
+.akrSceneTerminalConsole.is-arena_console,
+.akrSceneTerminalConsole.is-telemetry_console {
+  border-color: rgba(255, 111, 145, 0.24);
+}
+
+.akrSceneTerminalConsole.is-contract_terminal,
+.akrSceneTerminalConsole.is-vault_terminal,
+.akrSceneTerminalConsole.is-premium_terminal,
+.akrSceneTerminalConsole.is-payout_terminal {
+  border-color: rgba(47, 255, 181, 0.22);
+}
+
+.akrSceneTerminalConsole.is-ops_console,
+.akrSceneTerminalConsole.is-runtime_console,
+.akrSceneTerminalConsole.is-dispatch_console,
+.akrSceneTerminalConsole.is-queue_console {
+  border-color: rgba(255, 180, 93, 0.24);
+}
+
+.akrSceneTerminalConsoleRow.is-live,
+.akrSceneTerminalConsoleChip.is-live {
+  border-color: rgba(47, 255, 181, 0.26);
+}
+
+.akrSceneTerminalConsoleRow.is-ready,
+.akrSceneTerminalConsoleChip.is-ready {
+  border-color: rgba(123, 230, 255, 0.26);
+}
+
+.akrSceneTerminalConsoleRow.is-watch,
+.akrSceneTerminalConsoleChip.is-watch {
+  border-color: rgba(255, 180, 93, 0.28);
+}
+
+.akrSceneTerminalConsoleRow.is-alert,
+.akrSceneTerminalConsoleChip.is-alert {
+  border-color: rgba(255, 111, 145, 0.3);
+}
+
+.akrSceneTerminalConsoleRow.is-locked,
+.akrSceneTerminalConsoleChip.is-locked {
+  border-color: rgba(158, 178, 196, 0.24);
 }
 
 .akrSceneEntryFlow {
@@ -1654,6 +1901,14 @@ body {
     width: auto;
   }
 
+  .akrSceneTerminalConsole {
+    left: 14px;
+    right: 14px;
+    top: auto;
+    bottom: 494px;
+    width: auto;
+  }
+
   .akrSceneEntryFlow {
     left: 14px;
     right: 14px;
@@ -1713,9 +1968,19 @@ body {
     padding: 10px;
   }
 
+  .akrSceneTerminalConsole {
+    bottom: 526px;
+    padding: 10px;
+  }
+
   .akrSceneEntryFlow {
     bottom: 164px;
     padding: 10px;
+  }
+
+  .akrSceneTerminalConsoleGrid,
+  .akrSceneTerminalConsoleChips {
+    grid-template-columns: 1fr;
   }
 
   .akrBtn,

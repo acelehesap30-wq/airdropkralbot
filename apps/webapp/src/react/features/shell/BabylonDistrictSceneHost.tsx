@@ -132,6 +132,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
   const [status, setStatus] = useState<"idle" | "ready" | "failed">("idle");
   const [hoverPreview, setHoverPreview] = useState<HoverPreview | null>(null);
   const [hoveredClusterKeyState, setHoveredClusterKeyState] = useState("");
+  const [terminalOpen, setTerminalOpen] = useState(false);
   const worldState = useMemo(
     () =>
       buildDistrictWorldState({
@@ -234,6 +235,10 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
     () => ((focusedCluster?.action_items as Array<ClusterActionItem> | undefined) || []).filter((item) => item.action_key),
     [focusedCluster]
   );
+
+  useEffect(() => {
+    setTerminalOpen(false);
+  }, [worldState.interaction_terminal?.terminal_key]);
 
   const triggerSceneAction = useCallback(
     (payload: {
@@ -1136,6 +1141,18 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
               </div>
             </div>
           ) : null}
+          {worldState.interaction_terminal ? (
+            <div className="akrSceneEntrySurfaceConsoleBar">
+              <button
+                type="button"
+                className={`akrSceneEntrySurfaceConsoleToggle ${terminalOpen ? "isOpen" : ""}`}
+                onClick={() => setTerminalOpen((current) => !current)}
+              >
+                <span>{t(props.lang, terminalOpen ? ("world_terminal_close" as never) : ("world_terminal_open" as never))}</span>
+                <strong>{t(props.lang, worldState.interaction_terminal.terminal_kind_key as never)}</strong>
+              </button>
+            </div>
+          ) : null}
           <div className="akrSceneEntrySurfaceActions">
             {worldState.interaction_surface.action_items.map((action: ClusterActionItem) => (
               <button
@@ -1166,6 +1183,135 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                 <strong>{action.label_key ? t(props.lang, action.label_key as never) : action.label}</strong>
               </button>
             ))}
+          </div>
+        </div>
+      ) : null}
+      {terminalOpen && worldState.interaction_terminal ? (
+        <div className={`akrSceneTerminalConsole akrGlass is-${worldState.interaction_terminal.terminal_class_key}`}>
+          <div className="akrSceneTerminalConsoleHeader">
+            <div className="akrSceneTerminalConsoleTitle">
+              <span>{t(props.lang, worldState.interaction_terminal.terminal_kind_key as never)}</span>
+              <strong>
+                {worldState.interaction_terminal.terminal_title_key
+                  ? t(props.lang, worldState.interaction_terminal.terminal_title_key as never)
+                  : worldState.interaction_terminal.terminal_title}
+              </strong>
+            </div>
+            <button type="button" className="akrSceneTerminalConsoleClose" onClick={() => setTerminalOpen(false)}>
+              {t(props.lang, "world_terminal_close" as never)}
+            </button>
+          </div>
+          <div className="akrSceneTerminalConsoleMeta">
+            <span>{t(props.lang, worldState.interaction_terminal.status_label_key as never)}</span>
+            {worldState.interaction_terminal.cluster_label_key ? (
+              <strong>{t(props.lang, worldState.interaction_terminal.cluster_label_key as never)}</strong>
+            ) : worldState.interaction_terminal.cluster_label ? (
+              <strong>{worldState.interaction_terminal.cluster_label}</strong>
+            ) : null}
+            {worldState.interaction_terminal.intent_label_key ? (
+              <span>{t(props.lang, worldState.interaction_terminal.intent_label_key as never)}</span>
+            ) : null}
+            {worldState.interaction_terminal.intent_tone_key ? (
+              <span>{t(props.lang, worldState.interaction_terminal.intent_tone_key as never)}</span>
+            ) : null}
+          </div>
+          <div className="akrSceneTerminalConsoleGrid">
+            <section className="akrSceneTerminalConsoleSection">
+              <div className="akrSceneTerminalConsoleSectionHeader">
+                <span>{t(props.lang, "world_terminal_section_signals" as never)}</span>
+                <strong>{worldState.interaction_terminal.action_count}</strong>
+              </div>
+              <div className="akrSceneTerminalConsoleRows">
+                {worldState.interaction_terminal.signal_rows.map((row: { label_key: string; value: string; status_key: string }) => (
+                  <div key={`${worldState.interaction_terminal.terminal_key}:signal:${row.label_key}`} className={`akrSceneTerminalConsoleRow is-${row.status_key}`}>
+                    <span>{t(props.lang, row.label_key as never)}</span>
+                    <strong>{row.value}</strong>
+                  </div>
+                ))}
+              </div>
+            </section>
+            <section className="akrSceneTerminalConsoleSection">
+              <div className="akrSceneTerminalConsoleSectionHeader">
+                <span>{t(props.lang, "world_terminal_section_preview" as never)}</span>
+                <strong>{t(props.lang, worldState.interaction_terminal.status_label_key as never)}</strong>
+              </div>
+              <div className="akrSceneTerminalConsoleRows">
+                {worldState.interaction_terminal.preview_rows.map((row: { label_key: string; value: string; status_key: string }) => (
+                  <div key={`${worldState.interaction_terminal.terminal_key}:preview:${row.label_key}`} className={`akrSceneTerminalConsoleRow is-${row.status_key}`}>
+                    <span>{t(props.lang, row.label_key as never)}</span>
+                    <strong>{row.value}</strong>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
+          <div className="akrSceneTerminalConsoleFlow">
+            <div className="akrSceneTerminalConsoleSectionHeader">
+              <span>{t(props.lang, "world_terminal_section_flow" as never)}</span>
+              <strong>{t(props.lang, worldState.interaction_terminal.stage_value_key as never)}</strong>
+            </div>
+            <div className="akrSceneTerminalConsoleChips">
+              <div className={`akrSceneTerminalConsoleChip is-${worldState.interaction_terminal.status_key}`}>
+                <span>{t(props.lang, worldState.interaction_terminal.stage_label_key as never)}</span>
+                <strong>{t(props.lang, worldState.interaction_terminal.stage_value_key as never)}</strong>
+              </div>
+              <div className={`akrSceneTerminalConsoleChip is-${worldState.interaction_terminal.status_key}`}>
+                <span>{t(props.lang, worldState.interaction_terminal.readiness_label_key as never)}</span>
+                <strong>{t(props.lang, worldState.interaction_terminal.readiness_value_key as never)}</strong>
+              </div>
+              <div className="akrSceneTerminalConsoleChip is-tempo">
+                <span>{t(props.lang, worldState.interaction_terminal.tempo_label_key as never)}</span>
+                <strong>{worldState.interaction_terminal.tempo_value}</strong>
+              </div>
+            </div>
+            <div className="akrSceneTerminalConsoleRows">
+              {worldState.interaction_terminal.flow_rows.map((row: { label_key: string; value: string; status_key: string }) => (
+                <div key={`${worldState.interaction_terminal.terminal_key}:flow:${row.label_key}`} className={`akrSceneTerminalConsoleRow is-${row.status_key}`}>
+                  <span>{t(props.lang, row.label_key as never)}</span>
+                  <strong>{row.value}</strong>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="akrSceneTerminalConsoleActions">
+            <div className="akrSceneTerminalConsoleSectionHeader">
+              <span>{t(props.lang, "world_terminal_section_actions" as never)}</span>
+              {worldState.interaction_terminal.hint_label_key ? (
+                <strong>{t(props.lang, worldState.interaction_terminal.hint_label_key as never)}</strong>
+              ) : null}
+            </div>
+            <div className="akrSceneTerminalConsoleActionGrid">
+              {worldState.interaction_terminal.action_items.map((action: ClusterActionItem) => (
+                <button
+                  key={`${worldState.interaction_terminal.terminal_key}:${action.surface_slot_key || action.key}`}
+                  type="button"
+                  className={`akrSceneTerminalConsoleAction ${action.is_primary_surface_action ? "isPrimary" : "isSecondary"} is-${
+                    action.intent_profile_key || "open"
+                  }`}
+                  onClick={() =>
+                    triggerSceneAction({
+                      actionKey: action.action_key,
+                      nodeKey: action.key,
+                      laneKey: action.cluster_key,
+                      label: action.label,
+                      labelKey: action.label_key,
+                      sourceType: "district_scene_terminal_console",
+                      actorKey: action.actor_key,
+                      interactionKind: action.interaction_kind,
+                      clusterKey: action.cluster_key,
+                      isSecondary: action.is_secondary,
+                      workspace: props.workspace,
+                      tab: props.tab,
+                      districtKey: worldState.district_key
+                    })
+                  }
+                >
+                  <span>{t(props.lang, (action.intent_profile?.intent_label_key || "world_intent_open") as never)}</span>
+                  <strong>{action.label_key ? t(props.lang, action.label_key as never) : action.label}</strong>
+                  <span>{t(props.lang, action.hint_label_key as never)}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       ) : null}

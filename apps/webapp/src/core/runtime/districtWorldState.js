@@ -2419,6 +2419,114 @@ function buildDistrictInteractionEntry(districtKey, activeHotspot, interactionSu
   };
 }
 
+function buildTerminalSignalRow(labelKey, value, statusKey = "ready") {
+  const text = toText(value, "");
+  if (!text) {
+    return null;
+  }
+  return {
+    label_key: labelKey,
+    value: text,
+    status_key: statusKey
+  };
+}
+
+function buildDistrictInteractionTerminal(
+  districtKey,
+  activeHotspot,
+  activeCluster,
+  interactionSheet,
+  interactionSurface,
+  interactionFlow,
+  interactionEntry
+) {
+  if (!activeHotspot || !interactionSheet?.rows?.length || !interactionSurface || !interactionFlow || !interactionEntry) {
+    return null;
+  }
+
+  const hotspotKey = toText(activeHotspot.key, "");
+  const surfaceClassKey = toText(interactionSurface.surface_class_key, "travel_portal");
+  const previewRows = asList(interactionEntry.preview_rows).slice(0, 3);
+  const flowRows = asList(interactionFlow.step_rows).slice(0, 3);
+  const actionItems = asList(interactionSurface.action_items).slice(0, 3);
+  const actionCount = actionItems.length;
+  const routeCount = Math.max(1, toNum(activeCluster?.hotspot_count, 0));
+  const secondaryCount = toNum(activeCluster?.secondary_count, 0);
+  const clusterLabelKey = toText(activeCluster?.label_key, "");
+  const clusterLabel = toText(activeCluster?.label, "");
+
+  let terminalKindKey = interactionEntry.entry_kind_key || "world_entry_kind_hub_portal";
+  let terminalClassKey = surfaceClassKey;
+
+  switch (districtKey) {
+    case "arena_prime":
+      terminalClassKey = hotspotKey === "diagnostics_rail" || hotspotKey === "tick_chamber" ? "telemetry_console" : surfaceClassKey;
+      break;
+    case "mission_quarter":
+      terminalClassKey = hotspotKey === "claim_dais" ? "loot_reveal" : surfaceClassKey;
+      break;
+    case "exchange_district":
+      terminalClassKey =
+        hotspotKey === "rewards_vault"
+          ? "loot_reveal"
+          : hotspotKey === "premium_lane"
+            ? "premium_terminal"
+            : hotspotKey === "payout_bay" || hotspotKey === "support_bay"
+              ? "payout_terminal"
+              : surfaceClassKey;
+      break;
+    case "ops_citadel":
+      terminalClassKey = hotspotKey === "liveops_table" ? "dispatch_console" : surfaceClassKey;
+      break;
+    default:
+      terminalKindKey = interactionEntry.entry_kind_key || "world_entry_kind_hub_portal";
+      terminalClassKey = surfaceClassKey;
+      break;
+  }
+
+  const signalRows = [
+    buildTerminalSignalRow(
+      toText(interactionEntry.summary_label_key, ""),
+      toText(interactionEntry.summary_value, ""),
+      toText(interactionEntry.status_key, "ready")
+    ),
+    buildTerminalSignalRow(
+      toText(interactionEntry.support_label_key, ""),
+      toText(interactionEntry.support_value, ""),
+      toText(interactionFlow.stage_status_key, "ready")
+    ),
+    buildTerminalSignalRow("world_terminal_signal_actions", countText(actionCount), actionCount > 1 ? "live" : "ready"),
+    buildTerminalSignalRow("world_terminal_signal_routes", countText(routeCount), secondaryCount > 0 ? "live" : "ready")
+  ].filter(Boolean);
+
+  return {
+    terminal_key: `${districtKey}:${hotspotKey || "terminal"}`,
+    terminal_kind_key: terminalKindKey,
+    terminal_class_key: terminalClassKey,
+    terminal_title_key: toText(activeHotspot.label_key, ""),
+    terminal_title: toText(activeHotspot.label, ""),
+    status_key: toText(interactionEntry.status_key, "ready"),
+    status_label_key: toText(interactionEntry.status_label_key, "world_flow_state_ready"),
+    intent_label_key: toText(interactionSurface.intent_label_key, ""),
+    intent_tone_key: toText(interactionSurface.intent_tone_key, ""),
+    hint_label_key: toText(interactionSurface.hint_label_key, ""),
+    cluster_label_key: clusterLabelKey,
+    cluster_label: clusterLabel,
+    stage_label_key: toText(interactionFlow.stage_label_key, ""),
+    stage_value_key: toText(interactionFlow.stage_value_key, ""),
+    readiness_label_key: toText(interactionFlow.readiness_label_key, ""),
+    readiness_value_key: toText(interactionFlow.readiness_value_key, ""),
+    tempo_label_key: toText(interactionFlow.tempo_label_key, ""),
+    tempo_value: toText(interactionFlow.tempo_value, ""),
+    preview_rows: previewRows,
+    flow_rows: flowRows,
+    signal_rows: signalRows,
+    action_items: actionItems,
+    action_count: actionCount,
+    route_count: routeCount
+  };
+}
+
 export function buildDistrictWorldState(input = {}) {
   const workspace = normalizeWorkspace(input.workspace);
   const tab = normalizeTab(input.tab);
@@ -2471,6 +2579,15 @@ export function buildDistrictWorldState(input = {}) {
   const interactionSurface = buildDistrictInteractionSurface(districtKey, activeHotspot, activeCluster, interactionSheet);
   const interactionFlow = buildDistrictInteractionFlow(input, districtKey, activeHotspot, interactionSheet);
   const interactionEntry = buildDistrictInteractionEntry(districtKey, activeHotspot, interactionSurface, interactionFlow, interactionSheet);
+  const interactionTerminal = buildDistrictInteractionTerminal(
+    districtKey,
+    activeHotspot,
+    activeCluster,
+    interactionSheet,
+    interactionSurface,
+    interactionFlow,
+    interactionEntry
+  );
 
   return {
     world_key: `${workspace}:${tab}:${districtKey}`,
@@ -2526,6 +2643,7 @@ export function buildDistrictWorldState(input = {}) {
     interaction_surface: interactionSurface,
     interaction_flow: interactionFlow,
     interaction_entry: interactionEntry,
+    interaction_terminal: interactionTerminal,
     theme: districtTheme,
     actors,
     interaction_cluster_count: interactionClusters.length,
