@@ -2560,6 +2560,8 @@ test("live ops chat campaign service applies field-family risk to mission-idle s
   assert.equal(result.data.selection_summary.query_strategy_summary.family_risk_reason, "query_adjustment_field_family_streak_alert");
   assert.equal(result.data.selection_summary.query_strategy_summary.family_risk_dimension, "field_family");
   assert.equal(result.data.selection_summary.query_strategy_summary.family_risk_bucket, "activity_window");
+  assert.equal(result.data.selection_summary.query_strategy_summary.strategy_segment_path_key, "mission_idle:offer_window");
+  assert.equal(result.data.selection_summary.query_strategy_summary.adjustment_segment_path_key, "mission_idle:activity_window");
   assert.equal(result.data.selection_summary.query_strategy_summary.pool_limit_multiplier, 1);
   assert.equal(result.data.selection_summary.query_strategy_summary.active_within_days_cap, 3);
   assert.equal(result.data.selection_summary.query_strategy_summary.offer_age_days_cap, 1);
