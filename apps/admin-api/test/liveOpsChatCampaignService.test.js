@@ -1055,8 +1055,13 @@ test("live ops chat campaign service snapshot includes approval summary schedule
   assert.equal(snapshot.selection_trend_summary.query_adjustment_segment_family_daily_breakdown[0].bucket_key, "active_window");
   assert.equal(snapshot.selection_trend_summary.family_risk_daily_breakdown[0].risk_state, "watch");
   assert.equal(snapshot.selection_trend_summary.family_risk_daily_breakdown[0].risk_score, 4);
+  assert.equal(snapshot.selection_trend_summary.family_risk_daily_breakdown[0].field_family, "activity_window");
+  assert.equal(snapshot.selection_trend_summary.family_risk_daily_breakdown[0].field_match_days, 1);
+  assert.equal(snapshot.selection_trend_summary.family_risk_daily_breakdown[0].field_weight, 3);
   assert.equal(snapshot.selection_trend_summary.family_risk_band_breakdown[0].bucket_key, "watch");
   assert.equal(snapshot.selection_trend_summary.family_risk_band_breakdown[0].item_count, 3);
+  assert.equal(snapshot.selection_trend_summary.family_risk_dimension_breakdown[0].bucket_key, "query_family");
+  assert.equal(snapshot.selection_trend_summary.family_risk_field_family_breakdown[0].bucket_key, "activity_window");
   assert.equal(snapshot.selection_trend_summary.prefilter_reason_breakdown[0].bucket_key, "prefilter_applied");
   assert.equal(snapshot.ops_alert_summary.artifact_found, true);
   assert.equal(snapshot.ops_alert_summary.alarm_state, "alert");

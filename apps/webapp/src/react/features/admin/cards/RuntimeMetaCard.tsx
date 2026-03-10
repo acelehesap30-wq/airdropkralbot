@@ -232,7 +232,10 @@ function SelectionFamilyRiskDailyTrendList(props: { title: string; rows: Array<R
         {props.rows.slice(0, 7).map((row, index) => (
           <p className="akrMutedLine" key={`${props.title}_${String(row.day || index)}_${String(row.risk_bucket || "")}`}>
             {String(row.day || "-")} | {String(row.risk_state || "-")} | {String(row.risk_dimension || "-")} / {String(row.risk_bucket || "-")} |{" "}
-            {Math.floor(Number(row.risk_score || 0))} | {String(row.query_family || "-")} / {String(row.segment_family || "-")}
+            {Math.floor(Number(row.risk_score || 0))} | {String(row.query_family || "-")} / {String(row.segment_family || "-")} /{" "}
+            {String(row.field_family || "-")} | D {Math.floor(Number(row.query_match_days || 0))} / {Math.floor(Number(row.segment_match_days || 0))} /{" "}
+            {Math.floor(Number(row.field_match_days || 0))} | W {Math.floor(Number(row.query_weight || 0))} / {Math.floor(Number(row.segment_weight || 0))} /{" "}
+            {Math.floor(Number(row.field_weight || 0))}
           </p>
         ))}
       </div>
@@ -342,6 +345,8 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
   const selectionTrendAdjustmentFieldFamilyDaily = asRows(selectionTrend?.query_adjustment_field_family_daily_breakdown);
   const selectionTrendFamilyRiskDaily = asRows(selectionTrend?.family_risk_daily_breakdown);
   const selectionTrendFamilyRiskBands = asRows(selectionTrend?.family_risk_band_breakdown);
+  const selectionTrendFamilyRiskDimensions = asRows(selectionTrend?.family_risk_dimension_breakdown);
+  const selectionTrendFamilyRiskFieldFamilies = asRows(selectionTrend?.family_risk_field_family_breakdown);
   const selectionTrendReasons = asRows(selectionTrend?.prefilter_reason_breakdown);
 
   return (
@@ -817,6 +822,8 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
         <BreakdownList title={t(props.lang, "admin_runtime_live_ops_selection_adjustment_segment_family_breakdown_title")} rows={selectionTrendAdjustmentSegmentFamilies} />
         <BreakdownList title={t(props.lang, "admin_runtime_live_ops_selection_segment_family_breakdown_title")} rows={selectionTrendSegmentFamilies} />
         <BreakdownList title={t(props.lang, "admin_runtime_live_ops_selection_family_risk_band_title")} rows={selectionTrendFamilyRiskBands} />
+        <BreakdownList title={t(props.lang, "admin_runtime_live_ops_selection_family_risk_dimension_title")} rows={selectionTrendFamilyRiskDimensions} />
+        <BreakdownList title={t(props.lang, "admin_runtime_live_ops_selection_family_risk_field_title")} rows={selectionTrendFamilyRiskFieldFamilies} />
         <BreakdownList title={t(props.lang, "admin_runtime_live_ops_selection_reason_breakdown_title")} rows={selectionTrendReasons} />
         <SkipDailyTrendList title={t(props.lang, "admin_runtime_live_ops_skip_daily_title")} rows={schedulerSkipDaily} />
         <BreakdownList title={t(props.lang, "admin_runtime_live_ops_skip_reason_title")} rows={schedulerSkipReasons} />

@@ -483,8 +483,8 @@ function buildLiveOpsSnapshot() {
         { day: "2026-03-07", bucket_key: "pool_limit", item_count: 7 }
       ],
       family_risk_daily_breakdown: [
-        { day: "2026-03-08", risk_state: "watch", risk_reason: "query_strategy_family_streak_watch", risk_dimension: "query_family", risk_bucket: "locale_and_segment", risk_score: 4, query_family: "locale_and_segment", segment_family: "active_window", query_match_days: 2, segment_match_days: 2, query_weight: 4, segment_weight: 3 },
-        { day: "2026-03-07", risk_state: "watch", risk_reason: "query_strategy_family_streak_watch", risk_dimension: "query_family", risk_bucket: "locale_and_segment", risk_score: 3, query_family: "locale_and_segment", segment_family: "active_window", query_match_days: 1, segment_match_days: 1, query_weight: 3, segment_weight: 2 }
+        { day: "2026-03-08", risk_state: "watch", risk_reason: "query_strategy_family_streak_watch", risk_dimension: "query_family", risk_bucket: "locale_and_segment", risk_score: 4, query_family: "locale_and_segment", segment_family: "active_window", field_family: "activity_window", query_match_days: 2, segment_match_days: 2, field_match_days: 1, query_weight: 4, segment_weight: 3, field_weight: 3 },
+        { day: "2026-03-07", risk_state: "watch", risk_reason: "query_strategy_family_streak_watch", risk_dimension: "query_family", risk_bucket: "locale_and_segment", risk_score: 3, query_family: "locale_and_segment", segment_family: "active_window", field_family: "pool_limit", query_match_days: 1, segment_match_days: 1, field_match_days: 1, query_weight: 3, segment_weight: 2, field_weight: 1 }
       ],
       query_strategy_reason_breakdown: [{ bucket_key: "query_strategy_locale_and_segment", item_count: 5 }],
       query_strategy_family_breakdown: [{ bucket_key: "locale_and_segment", item_count: 5 }],
@@ -502,6 +502,8 @@ function buildLiveOpsSnapshot() {
       segment_strategy_family_breakdown: [{ bucket_key: "active_window", item_count: 4 }],
       query_adjustment_segment_family_breakdown: [{ bucket_key: "active_window", item_count: 19 }],
       family_risk_band_breakdown: [{ bucket_key: "watch", item_count: 2 }],
+      family_risk_dimension_breakdown: [{ bucket_key: "query_family", item_count: 2 }],
+      family_risk_field_family_breakdown: [{ bucket_key: "activity_window", item_count: 1 }, { bucket_key: "pool_limit", item_count: 1 }],
       prefilter_reason_breakdown: [{ bucket_key: "prefilter_applied", item_count: 4 }]
     },
     latest_dispatch: {
@@ -782,7 +784,12 @@ test("v2 admin ops kpi run includes live ops campaign summary", async () => {
   assert.equal(body.data.live_ops_campaign.selection_trend.query_adjustment_segment_family_daily_breakdown[0].bucket_key, "active_window");
   assert.equal(body.data.live_ops_campaign.selection_trend.family_risk_daily_breakdown[0].risk_state, "watch");
   assert.equal(body.data.live_ops_campaign.selection_trend.family_risk_daily_breakdown[0].risk_score, 4);
+  assert.equal(body.data.live_ops_campaign.selection_trend.family_risk_daily_breakdown[0].field_family, "activity_window");
+  assert.equal(body.data.live_ops_campaign.selection_trend.family_risk_daily_breakdown[0].field_match_days, 1);
+  assert.equal(body.data.live_ops_campaign.selection_trend.family_risk_daily_breakdown[0].field_weight, 3);
   assert.equal(body.data.live_ops_campaign.selection_trend.family_risk_band_breakdown[0].bucket_key, "watch");
+  assert.equal(body.data.live_ops_campaign.selection_trend.family_risk_dimension_breakdown[0].bucket_key, "query_family");
+  assert.equal(body.data.live_ops_campaign.selection_trend.family_risk_field_family_breakdown[0].bucket_key, "activity_window");
   assert.equal(body.data.live_ops_campaign.selection_summary.prefilter_summary.reason, "prefilter_applied");
   assert.equal(body.data.live_ops_campaign.selection_trend.latest_prefilter_reason, "prefilter_applied");
   assert.equal(body.data.live_ops_campaign.selection_trend.latest_focus_bucket, "tr");

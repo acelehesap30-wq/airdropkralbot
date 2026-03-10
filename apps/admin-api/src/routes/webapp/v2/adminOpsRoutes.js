@@ -451,10 +451,13 @@ function buildLiveOpsCampaignKpiSummary(snapshot) {
               risk_score: Math.max(0, Number(row?.risk_score || 0)),
               query_family: String(row?.query_family || ""),
               segment_family: String(row?.segment_family || ""),
+              field_family: String(row?.field_family || ""),
               query_match_days: Math.max(0, Number(row?.query_match_days || 0)),
               segment_match_days: Math.max(0, Number(row?.segment_match_days || 0)),
+              field_match_days: Math.max(0, Number(row?.field_match_days || 0)),
               query_weight: Math.max(0, Number(row?.query_weight || 0)),
-              segment_weight: Math.max(0, Number(row?.segment_weight || 0))
+              segment_weight: Math.max(0, Number(row?.segment_weight || 0)),
+              field_weight: Math.max(0, Number(row?.field_weight || 0))
             }))
             .filter((row) => row.day)
             .slice(0, 7)
@@ -469,6 +472,8 @@ function buildLiveOpsCampaignKpiSummary(snapshot) {
       query_adjustment_segment_family_breakdown: normalizeBreakdownRows(selectionTrend.query_adjustment_segment_family_breakdown),
       segment_strategy_family_breakdown: normalizeBreakdownRows(selectionTrend.segment_strategy_family_breakdown),
       family_risk_band_breakdown: normalizeBreakdownRows(selectionTrend.family_risk_band_breakdown),
+      family_risk_dimension_breakdown: normalizeBreakdownRows(selectionTrend.family_risk_dimension_breakdown),
+      family_risk_field_family_breakdown: normalizeBreakdownRows(selectionTrend.family_risk_field_family_breakdown),
       prefilter_reason_breakdown: normalizeBreakdownRows(selectionTrend.prefilter_reason_breakdown)
     },
     scene_runtime: sceneRuntime
@@ -720,6 +725,7 @@ async function getLiveOpsCampaignKpiSummary(service, logger) {
         latest_segment_strategy_reason: "",
         latest_segment_strategy_family: "",
         latest_query_adjustment_field: "",
+        latest_query_adjustment_field_family: "",
         latest_query_adjustment_reason: "",
         latest_query_adjustment_total_delta: 0,
         latest_prefilter_reason: "",
@@ -734,8 +740,10 @@ async function getLiveOpsCampaignKpiSummary(service, logger) {
         query_adjustment_query_family_daily_breakdown: [],
         segment_strategy_family_daily_breakdown: [],
         query_adjustment_segment_family_daily_breakdown: [],
+        query_adjustment_field_family_daily_breakdown: [],
         family_risk_daily_breakdown: [],
         query_adjustment_field_breakdown: [],
+        query_adjustment_field_family_breakdown: [],
         query_adjustment_reason_breakdown: [],
         query_strategy_reason_breakdown: [],
         query_strategy_family_breakdown: [],
@@ -744,6 +752,8 @@ async function getLiveOpsCampaignKpiSummary(service, logger) {
         query_adjustment_segment_family_breakdown: [],
         segment_strategy_family_breakdown: [],
         family_risk_band_breakdown: [],
+        family_risk_dimension_breakdown: [],
+        family_risk_field_family_breakdown: [],
         prefilter_reason_breakdown: []
       },
       scene_runtime: {}

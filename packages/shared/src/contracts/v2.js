@@ -218,10 +218,13 @@ const LiveOpsCampaignSelectionFamilyRiskDailyTrendPointSchema = z.object({
   risk_score: z.number().int().nonnegative().default(0),
   query_family: z.string().default(""),
   segment_family: z.string().default(""),
+  field_family: z.string().default(""),
   query_match_days: z.number().int().nonnegative().default(0),
   segment_match_days: z.number().int().nonnegative().default(0),
+  field_match_days: z.number().int().nonnegative().default(0),
   query_weight: z.number().int().nonnegative().default(0),
-  segment_weight: z.number().int().nonnegative().default(0)
+  segment_weight: z.number().int().nonnegative().default(0),
+  field_weight: z.number().int().nonnegative().default(0)
 });
 
 const LiveOpsCampaignSelectionAdjustmentDailyTrendPointSchema = z.object({
@@ -535,6 +538,8 @@ const LiveOpsCampaignSelectionTrendSummarySchema = z.object({
   query_adjustment_segment_family_breakdown: z.array(KpiLiveOpsCampaignBreakdownSchema).default([]),
   segment_strategy_family_breakdown: z.array(KpiLiveOpsCampaignBreakdownSchema).default([]),
   family_risk_band_breakdown: z.array(KpiLiveOpsCampaignBreakdownSchema).default([]),
+  family_risk_dimension_breakdown: z.array(KpiLiveOpsCampaignBreakdownSchema).default([]),
+  family_risk_field_family_breakdown: z.array(KpiLiveOpsCampaignBreakdownSchema).default([]),
   prefilter_reason_breakdown: z.array(KpiLiveOpsCampaignBreakdownSchema).default([])
 });
 
