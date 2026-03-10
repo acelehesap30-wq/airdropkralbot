@@ -135,11 +135,19 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
         reduced_motion: worldState.reduced_motion,
         district_theme_key: worldState.district_theme_key,
         active_node_key: worldState.active_node_key,
+        camera_profile_key: worldState.camera_profile_key,
+        active_hotspot_key: worldState.active_hotspot_key,
         ambient_energy: worldState.ambient_energy,
         actors: worldState.actors.map((actor) => ({
           key: actor.key,
           kind: actor.kind,
           energy: actor.energy
+        })),
+        hotspots: worldState.hotspots.map((hotspot) => ({
+          key: hotspot.key,
+          action_key: hotspot.action_key,
+          is_active: hotspot.is_active,
+          energy: hotspot.energy
         })),
         nodes: worldState.nodes.map((node) => ({
           key: node.key,
@@ -201,17 +209,18 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
         const scene = new Scene(engine);
         scene.clearColor = new Color4(0, 0, 0, 0);
         const theme = worldState.theme;
+        const cameraProfile = worldState.camera_profile;
 
         const camera = new ArcRotateCamera(
           "akrDistrictCamera",
-          -Math.PI / 2.1,
-          Math.PI / 3.1,
-          worldState.camera_radius,
-          new Vector3(0, 0.8, 0),
+          cameraProfile.alpha_base,
+          cameraProfile.beta_base,
+          cameraProfile.radius,
+          new Vector3(0, cameraProfile.target_y, 0),
           scene
         );
-        camera.lowerRadiusLimit = worldState.camera_radius - 1.1;
-        camera.upperRadiusLimit = worldState.camera_radius + 1.1;
+        camera.lowerRadiusLimit = cameraProfile.radius - cameraProfile.lower_radius_delta;
+        camera.upperRadiusLimit = cameraProfile.radius + cameraProfile.upper_radius_delta;
         camera.wheelDeltaPercentage = 0.01;
         camera.panningSensibility = 0;
 
@@ -342,6 +351,75 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           })
         );
 
+        const hotspotHandles = worldState.hotspots.map((hotspot, index) => {
+          const ring = CreateTorus(
+            `akrDistrictHotspotRing-${hotspot.key}`,
+            {
+              diameter: hotspot.ring_radius * 2,
+              thickness: hotspot.is_active ? 0.08 : 0.05,
+              tessellation: worldState.low_end_mode ? 22 : 34
+            },
+            scene
+          );
+          ring.rotation.x = Math.PI / 2;
+          ring.position = new Vector3(hotspot.x, hotspot.y, hotspot.z);
+          const ringMaterial = new StandardMaterial(`akrDistrictHotspotRingMaterial-${hotspot.key}`, scene);
+          ringMaterial.diffuseColor = Color3.FromHexString(hotspot.accent_hex);
+          ringMaterial.emissiveColor = Color3.FromHexString(hotspot.is_active ? theme.core_hex : hotspot.accent_hex);
+          ring.material = ringMaterial;
+
+          const pad = CreateDisc(
+            `akrDistrictHotspotPad-${hotspot.key}`,
+            {
+              radius: hotspot.radius,
+              tessellation: worldState.low_end_mode ? 24 : 40
+            },
+            scene
+          );
+          pad.rotation.x = Math.PI / 2;
+          pad.position = new Vector3(hotspot.x, hotspot.y + 0.02, hotspot.z);
+          const padMaterial = new StandardMaterial(`akrDistrictHotspotPadMaterial-${hotspot.key}`, scene);
+          padMaterial.alpha = hotspot.is_active ? 0.42 : 0.22;
+          padMaterial.diffuseColor = Color3.FromHexString(hotspot.accent_hex);
+          padMaterial.emissiveColor = Color3.FromHexString(hotspot.is_active ? theme.ring_secondary_hex : hotspot.accent_hex);
+          pad.material = padMaterial;
+
+          const beacon = CreateSphere(
+            `akrDistrictHotspotBeacon-${hotspot.key}`,
+            {
+              diameter: hotspot.is_active ? 0.24 : 0.18,
+              segments: worldState.low_end_mode ? 6 : 10
+            },
+            scene
+          );
+          beacon.position = new Vector3(hotspot.x, hotspot.y + 0.28, hotspot.z);
+          const beaconMaterial = new StandardMaterial(`akrDistrictHotspotBeaconMaterial-${hotspot.key}`, scene);
+          beaconMaterial.diffuseColor = Color3.FromHexString(theme.ground_glow_hex);
+          beaconMaterial.emissiveColor = Color3.FromHexString(hotspot.is_active ? theme.core_hex : hotspot.accent_hex);
+          beacon.material = beaconMaterial;
+
+          const metadata = {
+            actionKey: hotspot.action_key,
+            nodeKey: hotspot.key,
+            laneKey: hotspot.actor_key,
+            label: hotspot.label
+          };
+          [ring, pad, beacon].forEach((mesh) => {
+            mesh.isPickable = Boolean(hotspot.action_key);
+            mesh.metadata = metadata;
+          });
+
+          return {
+            animate: (now: number, motionScalar: number) => {
+              ring.rotation.z = now * (0.25 + index * 0.03) * motionScalar;
+              beacon.position.y = hotspot.y + 0.28 + Math.sin(now * (1.1 + index * 0.17)) * 0.06 * motionScalar;
+              const pulse = 1 + Math.sin(now * (1.3 + index * 0.14)) * 0.08 * motionScalar + (hotspot.is_active ? 0.12 : 0);
+              beacon.scaling.setAll(pulse);
+              pad.scaling.setAll(1 + Math.sin(now * (0.9 + index * 0.13)) * 0.04 * motionScalar);
+            }
+          };
+        });
+
         const nodeHandles = worldState.nodes.map((node, index) => {
           const angle = (Math.PI * 2 * index) / Math.max(1, worldState.nodes.length);
           const radius = theme.orbit_radius;
@@ -443,7 +521,8 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           const orbScale = 1 + worldState.ambient_energy * 0.16 + Math.sin(now * 1.7) * 0.04 * motionScalar;
           coreOrb.scaling.setAll(orbScale);
           point.intensity = 1.1 + worldState.ambient_energy * 0.6 + Math.sin(now) * 0.08 * motionScalar;
-          camera.alpha = -Math.PI / 2.1 + now * worldState.orbit_speed * 18;
+          camera.alpha = cameraProfile.alpha_base + now * worldState.orbit_speed * cameraProfile.orbit_scalar;
+          camera.beta = cameraProfile.beta_base + Math.sin(now * 0.32) * 0.03 * cameraProfile.sway_scalar * motionScalar;
           satellites.forEach((entry, index) => {
             const radiusPulse = theme.satellite_radius + Math.sin(now * (0.8 + index * 0.07)) * 0.06 * motionScalar;
             entry.orb.position.x = Math.cos(entry.baseAngle + now * worldState.orbit_speed * 10) * radiusPulse;
@@ -452,6 +531,9 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           });
           actorHandles.forEach((entry, index) => {
             entry.animate?.(now, motionScalar, index);
+          });
+          hotspotHandles.forEach((entry) => {
+            entry.animate(now, motionScalar);
           });
           nodeHandles.forEach((entry, index) => {
             const activePulse = entry.isActive ? 0.16 : 0.04;
@@ -507,6 +589,13 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
         <span>
           {worldState.beacon_count} / {worldState.hot_nodes + worldState.warn_nodes}
         </span>
+        {worldState.active_hotspot_label ? (
+          <span className="akrSceneWorldFocus">
+            {worldState.active_hotspot_label_key
+              ? t(props.lang, worldState.active_hotspot_label_key as never)
+              : worldState.active_hotspot_label}
+          </span>
+        ) : null}
         {worldState.active_node_label ? (
           <span className="akrSceneWorldFocus">
             {worldState.active_node_label_key ? t(props.lang, worldState.active_node_label_key as never) : worldState.active_node_label}

@@ -152,6 +152,72 @@ function resolveDistrictTheme(districtKey) {
   }
 }
 
+function resolveDistrictCameraProfile(districtKey, lowEndMode, effectiveQuality) {
+  const compact = lowEndMode || effectiveQuality === "low";
+  switch (districtKey) {
+    case "arena_prime":
+      return {
+        camera_profile_key: "arena_focus",
+        alpha_base: -Math.PI / 2.45,
+        beta_base: compact ? Math.PI / 3.3 : Math.PI / 3.55,
+        radius: compact ? 8.8 : 9.4,
+        target_y: 1,
+        lower_radius_delta: 0.9,
+        upper_radius_delta: 1.25,
+        orbit_scalar: compact ? 14 : 22,
+        sway_scalar: compact ? 0.7 : 1.05
+      };
+    case "mission_quarter":
+      return {
+        camera_profile_key: "mission_sweep",
+        alpha_base: -Math.PI / 1.95,
+        beta_base: compact ? Math.PI / 3.15 : Math.PI / 3.35,
+        radius: compact ? 9.7 : 10.4,
+        target_y: 0.9,
+        lower_radius_delta: 1,
+        upper_radius_delta: 1.3,
+        orbit_scalar: compact ? 10 : 16,
+        sway_scalar: compact ? 0.55 : 0.82
+      };
+    case "exchange_district":
+      return {
+        camera_profile_key: "exchange_orbit",
+        alpha_base: -Math.PI / 2.05,
+        beta_base: compact ? Math.PI / 3.2 : Math.PI / 3.42,
+        radius: compact ? 9.8 : 10.6,
+        target_y: 0.85,
+        lower_radius_delta: 1,
+        upper_radius_delta: 1.35,
+        orbit_scalar: compact ? 12 : 18,
+        sway_scalar: compact ? 0.6 : 0.9
+      };
+    case "ops_citadel":
+      return {
+        camera_profile_key: "ops_overwatch",
+        alpha_base: -Math.PI / 1.82,
+        beta_base: compact ? Math.PI / 3.05 : Math.PI / 3.18,
+        radius: compact ? 9.4 : 10.1,
+        target_y: 1.15,
+        lower_radius_delta: 0.95,
+        upper_radius_delta: 1.2,
+        orbit_scalar: compact ? 8 : 12,
+        sway_scalar: compact ? 0.42 : 0.66
+      };
+    default:
+      return {
+        camera_profile_key: "hub_glide",
+        alpha_base: -Math.PI / 2.08,
+        beta_base: compact ? Math.PI / 3.05 : Math.PI / 3.15,
+        radius: compact ? 10 : 10.8,
+        target_y: 0.8,
+        lower_radius_delta: 1.05,
+        upper_radius_delta: 1.2,
+        orbit_scalar: compact ? 12 : 18,
+        sway_scalar: compact ? 0.5 : 0.74
+      };
+  }
+}
+
 function resolveModeKey(sceneProfile, lowEndMode) {
   if (lowEndMode || sceneProfile === "lite") {
     return "world_scene_mode_lite";
@@ -240,6 +306,23 @@ function buildActor(input) {
     depth: clamp(toNum(input.depth, 0.5), 0.08, 8),
     energy: clamp(toNum(input.energy, 0.3), 0.08, 1),
     rotation_y: toNum(input.rotationY, 0)
+  };
+}
+
+function buildHotspot(input) {
+  return {
+    key: toText(input.key, "hotspot"),
+    label: toText(input.label, "Hotspot"),
+    label_key: toText(input.labelKey, ""),
+    action_key: toText(input.actionKey, ""),
+    actor_key: toText(input.actorKey, ""),
+    x: toNum(input.x, 0),
+    y: toNum(input.y, 0),
+    z: toNum(input.z, 0),
+    radius: clamp(toNum(input.radius, 0.42), 0.12, 4),
+    ring_radius: clamp(toNum(input.ringRadius, toNum(input.radius, 0.42) * 1.55), 0.18, 6),
+    accent_hex: toText(input.accentHex, "#52bfff"),
+    energy: clamp(toNum(input.energy, 0.3), 0.08, 1)
   };
 }
 
@@ -507,6 +590,222 @@ function buildDistrictActors(districtKey, nodes, theme, ambientEnergy, lowEndMod
   }
 }
 
+function buildDistrictHotspots(districtKey, nodes, theme, ambientEnergy, lowEndMode) {
+  const compactRadius = lowEndMode ? 0.34 : 0.42;
+  switch (districtKey) {
+    case "arena_prime":
+      return [
+        buildHotspot({
+          key: "duel_pit",
+          label: "Duel Pit",
+          labelKey: "world_hotspot_duel_pit",
+          actionKey: nodes[0]?.action_key,
+          actorKey: "arena_hazard_arc",
+          x: 0,
+          y: 0.2,
+          z: 0.1,
+          radius: compactRadius + 0.06,
+          accentHex: theme.ring_hex,
+          energy: actorEnergy(nodes, 0, ambientEnergy)
+        }),
+        buildHotspot({
+          key: "ladder_bridge",
+          label: "Ladder Bridge",
+          labelKey: "world_hotspot_ladder_bridge",
+          actionKey: nodes[1]?.action_key,
+          actorKey: "arena_crown_east",
+          x: 4.25,
+          y: 0.18,
+          z: 0.9,
+          radius: compactRadius,
+          accentHex: theme.ring_secondary_hex,
+          energy: actorEnergy(nodes, 1, ambientEnergy)
+        }),
+        buildHotspot({
+          key: "diagnostics_rail",
+          label: "Diagnostics Rail",
+          labelKey: "world_hotspot_diagnostics_rail",
+          actionKey: nodes[2]?.action_key,
+          actorKey: "arena_spine",
+          x: 0,
+          y: 0.14,
+          z: -3.35,
+          radius: compactRadius - 0.04,
+          accentHex: theme.light_hex,
+          energy: actorEnergy(nodes, 2, ambientEnergy)
+        })
+      ];
+    case "mission_quarter":
+      return [
+        buildHotspot({
+          key: "offer_desk",
+          label: "Offer Desk",
+          labelKey: "world_hotspot_offer_desk",
+          actionKey: nodes[0]?.action_key,
+          actorKey: "mission_terminal_alpha",
+          x: -3.7,
+          y: 0.12,
+          z: -1.4,
+          radius: compactRadius,
+          accentHex: theme.ring_hex,
+          energy: actorEnergy(nodes, 0, ambientEnergy)
+        }),
+        buildHotspot({
+          key: "streak_pulse",
+          label: "Streak Pulse",
+          labelKey: "world_hotspot_streak_pulse",
+          actionKey: nodes[1]?.action_key,
+          actorKey: "mission_terminal_beta",
+          x: 3.7,
+          y: 0.12,
+          z: -1.1,
+          radius: compactRadius - 0.02,
+          accentHex: theme.ring_secondary_hex,
+          energy: actorEnergy(nodes, 1, ambientEnergy)
+        }),
+        buildHotspot({
+          key: "claim_dais",
+          label: "Claim Dais",
+          labelKey: "world_hotspot_claim_dais",
+          actionKey: nodes[2]?.action_key,
+          actorKey: "mission_contract_spine",
+          x: 0,
+          y: 0.14,
+          z: 3.45,
+          radius: compactRadius,
+          accentHex: theme.light_hex,
+          energy: actorEnergy(nodes, 2, ambientEnergy)
+        })
+      ];
+    case "exchange_district":
+      return [
+        buildHotspot({
+          key: "wallet_dock",
+          label: "Wallet Dock",
+          labelKey: "world_hotspot_wallet_dock",
+          actionKey: nodes[0]?.action_key,
+          actorKey: "exchange_vault_west",
+          x: -4.05,
+          y: 0.14,
+          z: 0.9,
+          radius: compactRadius,
+          accentHex: theme.ring_hex,
+          energy: actorEnergy(nodes, 0, ambientEnergy)
+        }),
+        buildHotspot({
+          key: "payout_bay",
+          label: "Payout Bay",
+          labelKey: "world_hotspot_payout_bay",
+          actionKey: nodes[1]?.action_key,
+          actorKey: "exchange_vault_east",
+          x: 4.05,
+          y: 0.14,
+          z: -0.9,
+          radius: compactRadius,
+          accentHex: theme.ring_secondary_hex,
+          energy: actorEnergy(nodes, 1, ambientEnergy)
+        }),
+        buildHotspot({
+          key: "premium_lane",
+          label: "Premium Lane",
+          labelKey: "world_hotspot_premium_lane",
+          actionKey: nodes[2]?.action_key,
+          actorKey: "exchange_pass_arc",
+          x: 0,
+          y: 0.16,
+          z: -3.1,
+          radius: compactRadius - 0.02,
+          accentHex: theme.light_hex,
+          energy: actorEnergy(nodes, 2, ambientEnergy)
+        })
+      ];
+    case "ops_citadel":
+      return [
+        buildHotspot({
+          key: "queue_gate",
+          label: "Queue Gate",
+          labelKey: "world_hotspot_queue_gate",
+          actionKey: nodes[0]?.action_key,
+          actorKey: "ops_watchtower_west",
+          x: -4.15,
+          y: 0.16,
+          z: -0.2,
+          radius: compactRadius,
+          accentHex: theme.ring_hex,
+          energy: actorEnergy(nodes, 0, ambientEnergy)
+        }),
+        buildHotspot({
+          key: "runtime_dais",
+          label: "Runtime Dais",
+          labelKey: "world_hotspot_runtime_dais",
+          actionKey: nodes[1]?.action_key,
+          actorKey: "ops_watchtower_east",
+          x: 4.15,
+          y: 0.16,
+          z: 0.2,
+          radius: compactRadius,
+          accentHex: theme.ring_secondary_hex,
+          energy: actorEnergy(nodes, 1, ambientEnergy)
+        }),
+        buildHotspot({
+          key: "liveops_table",
+          label: "LiveOps Table",
+          labelKey: "world_hotspot_liveops_table",
+          actionKey: nodes[2]?.action_key,
+          actorKey: "ops_signal_array",
+          x: 0,
+          y: 0.16,
+          z: -3.45,
+          radius: compactRadius - 0.02,
+          accentHex: theme.light_hex,
+          energy: actorEnergy(nodes, 2, ambientEnergy)
+        })
+      ];
+    default:
+      return [
+        buildHotspot({
+          key: "season_gate",
+          label: "Season Gate",
+          labelKey: "world_hotspot_season_gate",
+          actionKey: nodes[0]?.action_key,
+          actorKey: "hub_gate_north",
+          x: 0,
+          y: 0.16,
+          z: -3.45,
+          radius: compactRadius,
+          accentHex: theme.ring_hex,
+          energy: actorEnergy(nodes, 0, ambientEnergy)
+        }),
+        buildHotspot({
+          key: "mission_desk",
+          label: "Mission Desk",
+          labelKey: "world_hotspot_mission_desk",
+          actionKey: nodes[1]?.action_key,
+          actorKey: "hub_guidance_arch",
+          x: -2.35,
+          y: 0.16,
+          z: 1.55,
+          radius: compactRadius - 0.02,
+          accentHex: theme.ring_secondary_hex,
+          energy: actorEnergy(nodes, 1, ambientEnergy)
+        }),
+        buildHotspot({
+          key: "wallet_port",
+          label: "Wallet Port",
+          labelKey: "world_hotspot_wallet_port",
+          actionKey: nodes[2]?.action_key,
+          actorKey: "hub_gate_south",
+          x: 2.35,
+          y: 0.16,
+          z: 1.55,
+          radius: compactRadius - 0.02,
+          accentHex: theme.light_hex,
+          energy: actorEnergy(nodes, 2, ambientEnergy)
+        })
+      ];
+  }
+}
+
 function resolveFallbackActiveNodeKey(workspace, tab) {
   if (workspace === "admin") {
     return "queue_bastion";
@@ -542,6 +841,18 @@ function resolveActiveNodeKey(nodes, navigationContext, workspace, tab) {
   }
 
   return resolveFallbackActiveNodeKey(workspace, tab);
+}
+
+function resolveActiveHotspotKey(hotspots, navigationContext, activeNode) {
+  const context = asRecord(navigationContext);
+  const actionKey = toText(context.shell_action_key || context.action_key || activeNode?.action_key || "");
+  if (actionKey) {
+    const byAction = hotspots.find((hotspot) => hotspot.action_key === actionKey);
+    if (byAction) {
+      return byAction.key;
+    }
+  }
+  return toText(hotspots[0]?.key, "");
 }
 
 function buildPlayerHomeNodes(input) {
@@ -851,6 +1162,10 @@ export function buildDistrictWorldState(input = {}) {
   const warnNodes = nodes.filter((node) => node.status_key === "warn").length;
   const activeNode = nodes.find((node) => node.key === activeNodeKey) || null;
   const actors = buildDistrictActors(districtKey, nodes, districtTheme, ambientEnergy, lowEndMode);
+  const hotspots = buildDistrictHotspots(districtKey, nodes, districtTheme, ambientEnergy, lowEndMode);
+  const activeHotspotKey = resolveActiveHotspotKey(hotspots, input.navigationContext, activeNode);
+  const activeHotspot = hotspots.find((hotspot) => hotspot.key === activeHotspotKey) || null;
+  const cameraProfile = resolveDistrictCameraProfile(districtKey, lowEndMode, effectiveQuality);
 
   return {
     world_key: `${workspace}:${tab}:${districtKey}`,
@@ -869,14 +1184,23 @@ export function buildDistrictWorldState(input = {}) {
     hot_nodes: hotNodes,
     warn_nodes: warnNodes,
     orbit_speed: lowEndMode || reducedMotion ? 0.00004 : effectiveQuality === "high" ? 0.00014 : 0.00009,
-    camera_radius: districtTheme.camera_radius,
+    camera_radius: cameraProfile.radius,
     hardware_scaling: lowEndMode ? 1.9 : effectiveQuality === "high" ? 1 : effectiveQuality === "medium" ? 1.25 : 1.6,
     active_node_key: activeNodeKey,
     active_node_label: toText(activeNode?.label, ""),
     active_node_label_key: toText(activeNode?.label_key, ""),
     active_action_key: toText(activeNode?.action_key, ""),
+    camera_profile_key: cameraProfile.camera_profile_key,
+    camera_profile: cameraProfile,
+    active_hotspot_key: activeHotspotKey,
+    active_hotspot_label: toText(activeHotspot?.label, ""),
+    active_hotspot_label_key: toText(activeHotspot?.label_key, ""),
     theme: districtTheme,
     actors,
+    hotspots: hotspots.map((hotspot) => ({
+      ...hotspot,
+      is_active: hotspot.key === activeHotspotKey
+    })),
     nodes
   };
 }
