@@ -727,6 +727,16 @@ function resolveSelectionAdjustmentFieldFamilyRiskWeight(familyKey) {
   }
 }
 
+function tightenByDelta(currentValue, minValue, delta) {
+  const safeCurrent = Math.max(0, Number(currentValue || 0) || 0);
+  if (safeCurrent <= 0) {
+    return safeCurrent;
+  }
+  const safeMin = Math.max(0, Number(minValue || 0) || 0);
+  const safeDelta = Math.max(0, Number(delta || 0) || 0);
+  return Math.max(safeMin, safeCurrent - safeDelta);
+}
+
 function countSelectionFamilyMatchDays(rows, familyKey) {
   const safeFamilyKey = String(familyKey || "").trim().toLowerCase();
   if (!safeFamilyKey) {
@@ -863,28 +873,57 @@ function applySelectionFamilyRiskToQueryStrategy(strategySummary, campaign) {
       poolLimitMultiplier = 1;
       tightened = true;
       if (activeWithinDaysCap > 0) {
-        activeWithinDaysCap = Math.max(3, activeWithinDaysCap - (strategy.family_risk_state === "alert" ? 3 : 2));
+        const tightenDelta =
+          strategy.family_risk_state === "alert"
+            ? segmentKey === LIVE_OPS_SEGMENT_KEY.MISSION_IDLE
+              ? 4
+              : 3
+            : segmentKey === LIVE_OPS_SEGMENT_KEY.MISSION_IDLE
+              ? 3
+              : 2;
+        activeWithinDaysCap = tightenByDelta(activeWithinDaysCap, 3, tightenDelta);
       }
-      if (inactiveHoursFloor > 0) {
+      if (segmentKey === LIVE_OPS_SEGMENT_KEY.MISSION_IDLE && offerAgeDaysCap > 0) {
+        offerAgeDaysCap = tightenByDelta(offerAgeDaysCap, 1, strategy.family_risk_state === "alert" ? 2 : 1);
+      }
+      if (segmentKey === LIVE_OPS_SEGMENT_KEY.INACTIVE_RETURNING) {
+        if (inactiveHoursFloor > 0) {
+          inactiveHoursFloor += strategy.family_risk_state === "alert" ? 48 : 24;
+        }
+        if (maxAgeDaysCap > 0) {
+          maxAgeDaysCap = tightenByDelta(maxAgeDaysCap, 7, strategy.family_risk_state === "alert" ? 10 : 5);
+        }
+      } else if (inactiveHoursFloor > 0) {
         inactiveHoursFloor += strategy.family_risk_state === "alert" ? 24 : 12;
       }
     } else if (strategy.family_risk_bucket === "pool_limit") {
       poolLimitMultiplier = 1;
       tightened = true;
+      if (segmentKey === LIVE_OPS_SEGMENT_KEY.MISSION_IDLE) {
+        if (offerAgeDaysCap > 0) {
+          offerAgeDaysCap = tightenByDelta(offerAgeDaysCap, 1, 1);
+        }
+        if (activeWithinDaysCap > 0) {
+          activeWithinDaysCap = tightenByDelta(activeWithinDaysCap, 3, 1);
+        }
+      }
     } else if (strategy.family_risk_bucket === "recency_window") {
       poolLimitMultiplier = 1;
       tightened = true;
       if (maxAgeDaysCap > 0) {
-        maxAgeDaysCap = Math.max(7, maxAgeDaysCap - (strategy.family_risk_state === "alert" ? 7 : 3));
+        maxAgeDaysCap = tightenByDelta(maxAgeDaysCap, 7, strategy.family_risk_state === "alert" ? 10 : 5);
+      }
+      if (segmentKey === LIVE_OPS_SEGMENT_KEY.INACTIVE_RETURNING && inactiveHoursFloor > 0) {
+        inactiveHoursFloor += strategy.family_risk_state === "alert" ? 24 : 12;
       }
     } else if (strategy.family_risk_bucket === "offer_window") {
       poolLimitMultiplier = 1;
       tightened = true;
       if (offerAgeDaysCap > 0) {
-        offerAgeDaysCap = Math.max(1, offerAgeDaysCap - 1);
+        offerAgeDaysCap = tightenByDelta(offerAgeDaysCap, 1, strategy.family_risk_state === "alert" ? 2 : 1);
       }
       if (activeWithinDaysCap > 0) {
-        activeWithinDaysCap = Math.max(3, activeWithinDaysCap - 1);
+        activeWithinDaysCap = tightenByDelta(activeWithinDaysCap, 3, strategy.family_risk_state === "alert" ? 2 : 1);
       }
     }
   }
