@@ -160,6 +160,22 @@ body {
   letter-spacing: 0.08em;
 }
 
+.akrSceneWorldRailCaption {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.68rem;
+  color: #9fc7df;
+}
+
+.akrSceneWorldRailCaption strong {
+  color: #fff3c7;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .akrSceneWorldRailActions {
   display: grid;
   gap: 8px;
@@ -212,6 +228,29 @@ body {
 .akrSceneWorldAction.isSecondary {
   border-style: dashed;
   opacity: 0.94;
+}
+
+.akrSceneWorldAction.is-travel_primary,
+.akrSceneWorldAction.is-travel_secondary {
+  border-color: rgba(123, 230, 255, 0.34);
+}
+
+.akrSceneWorldAction.is-compete_primary,
+.akrSceneWorldAction.is-climb_primary {
+  border-color: rgba(255, 111, 145, 0.34);
+}
+
+.akrSceneWorldAction.is-connect_primary,
+.akrSceneWorldAction.is-payout_primary,
+.akrSceneWorldAction.is-upgrade_primary {
+  border-color: rgba(47, 255, 181, 0.34);
+}
+
+.akrSceneWorldAction.is-review_primary,
+.akrSceneWorldAction.is-track_primary,
+.akrSceneWorldAction.is-monitor_primary,
+.akrSceneWorldAction.is-dispatch_primary {
+  border-color: rgba(255, 180, 93, 0.34);
 }
 
 .akrSceneWorldFocus {

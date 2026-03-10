@@ -342,6 +342,163 @@ function resolveDistrictDirectorProfile(districtKey, hudDensity, lowEndMode, sce
   }
 }
 
+function resolveDistrictRailProfile(districtKey, hudDensity, lowEndMode, sceneProfile) {
+  const compact = lowEndMode || hudDensity === "compact" || sceneProfile === "lite";
+  const shared = {
+    compact,
+    rail_layout_key: compact ? "compact_stack" : "stack",
+    show_caption: !compact
+  };
+  switch (districtKey) {
+    case "arena_prime":
+      return {
+        ...shared,
+        rail_profile_key: "arena_prime",
+        rail_label_key: "world_rail_label_arena_prime",
+        rail_caption_key: "world_rail_caption_arena_prime"
+      };
+    case "mission_quarter":
+      return {
+        ...shared,
+        rail_profile_key: "mission_quarter",
+        rail_label_key: "world_rail_label_mission_quarter",
+        rail_caption_key: "world_rail_caption_mission_quarter"
+      };
+    case "exchange_district":
+      return {
+        ...shared,
+        rail_profile_key: "exchange_district",
+        rail_label_key: "world_rail_label_exchange_district",
+        rail_caption_key: "world_rail_caption_exchange_district"
+      };
+    case "ops_citadel":
+      return {
+        ...shared,
+        rail_profile_key: "ops_citadel",
+        rail_label_key: "world_rail_label_ops_citadel",
+        rail_caption_key: "world_rail_caption_ops_citadel"
+      };
+    default:
+      return {
+        ...shared,
+        rail_profile_key: "central_hub",
+        rail_label_key: "world_rail_label_central_hub",
+        rail_caption_key: "world_rail_caption_central_hub"
+      };
+  }
+}
+
+function resolveInteractionIntentProfile(interactionKind, isSecondary) {
+  const kind = toText(interactionKind, "open");
+  const secondary = Boolean(isSecondary);
+  switch (kind) {
+    case "travel":
+      return {
+        intent_profile_key: secondary ? "travel_secondary" : "travel_primary",
+        intent_label_key: "world_intent_travel",
+        intent_tone_key: "world_intent_tone_travel",
+        rail_class_key: secondary ? "travel_secondary" : "travel_primary",
+        pulse_scalar: secondary ? 0.9 : 1.12
+      };
+    case "launch":
+      return {
+        intent_profile_key: secondary ? "launch_secondary" : "launch_primary",
+        intent_label_key: "world_intent_launch",
+        intent_tone_key: "world_intent_tone_launch",
+        rail_class_key: secondary ? "launch_secondary" : "launch_primary",
+        pulse_scalar: secondary ? 0.94 : 1.08
+      };
+    case "connect":
+      return {
+        intent_profile_key: secondary ? "connect_secondary" : "connect_primary",
+        intent_label_key: "world_intent_connect",
+        intent_tone_key: "world_intent_tone_connect",
+        rail_class_key: secondary ? "connect_secondary" : "connect_primary",
+        pulse_scalar: secondary ? 0.9 : 1
+      };
+    case "payout":
+      return {
+        intent_profile_key: secondary ? "payout_secondary" : "payout_primary",
+        intent_label_key: "world_intent_payout",
+        intent_tone_key: "world_intent_tone_payout",
+        rail_class_key: secondary ? "payout_secondary" : "payout_primary",
+        pulse_scalar: secondary ? 0.9 : 1.02
+      };
+    case "upgrade":
+      return {
+        intent_profile_key: secondary ? "upgrade_secondary" : "upgrade_primary",
+        intent_label_key: "world_intent_upgrade",
+        intent_tone_key: "world_intent_tone_upgrade",
+        rail_class_key: secondary ? "upgrade_secondary" : "upgrade_primary",
+        pulse_scalar: secondary ? 0.92 : 1.04
+      };
+    case "compete":
+      return {
+        intent_profile_key: secondary ? "compete_secondary" : "compete_primary",
+        intent_label_key: "world_intent_compete",
+        intent_tone_key: "world_intent_tone_compete",
+        rail_class_key: secondary ? "compete_secondary" : "compete_primary",
+        pulse_scalar: secondary ? 0.94 : 1.16
+      };
+    case "climb":
+      return {
+        intent_profile_key: secondary ? "climb_secondary" : "climb_primary",
+        intent_label_key: "world_intent_climb",
+        intent_tone_key: "world_intent_tone_climb",
+        rail_class_key: secondary ? "climb_secondary" : "climb_primary",
+        pulse_scalar: secondary ? 0.9 : 1.06
+      };
+    case "review":
+      return {
+        intent_profile_key: secondary ? "review_secondary" : "review_primary",
+        intent_label_key: "world_intent_review",
+        intent_tone_key: "world_intent_tone_review",
+        rail_class_key: secondary ? "review_secondary" : "review_primary",
+        pulse_scalar: secondary ? 0.84 : 0.94
+      };
+    case "track":
+      return {
+        intent_profile_key: secondary ? "track_secondary" : "track_primary",
+        intent_label_key: "world_intent_track",
+        intent_tone_key: "world_intent_tone_track",
+        rail_class_key: secondary ? "track_secondary" : "track_primary",
+        pulse_scalar: secondary ? 0.86 : 0.98
+      };
+    case "claim":
+      return {
+        intent_profile_key: secondary ? "claim_secondary" : "claim_primary",
+        intent_label_key: "world_intent_claim",
+        intent_tone_key: "world_intent_tone_claim",
+        rail_class_key: secondary ? "claim_secondary" : "claim_primary",
+        pulse_scalar: secondary ? 0.9 : 1.02
+      };
+    case "monitor":
+      return {
+        intent_profile_key: secondary ? "monitor_secondary" : "monitor_primary",
+        intent_label_key: "world_intent_monitor",
+        intent_tone_key: "world_intent_tone_monitor",
+        rail_class_key: secondary ? "monitor_secondary" : "monitor_primary",
+        pulse_scalar: secondary ? 0.84 : 0.92
+      };
+    case "dispatch":
+      return {
+        intent_profile_key: secondary ? "dispatch_secondary" : "dispatch_primary",
+        intent_label_key: "world_intent_dispatch",
+        intent_tone_key: "world_intent_tone_dispatch",
+        rail_class_key: secondary ? "dispatch_secondary" : "dispatch_primary",
+        pulse_scalar: secondary ? 0.9 : 1.04
+      };
+    default:
+      return {
+        intent_profile_key: secondary ? "open_secondary" : "open_primary",
+        intent_label_key: "world_intent_open",
+        intent_tone_key: "world_intent_tone_open",
+        rail_class_key: secondary ? "open_secondary" : "open_primary",
+        pulse_scalar: secondary ? 0.84 : 0.94
+      };
+  }
+}
+
 function resolveModeKey(sceneProfile, lowEndMode) {
   if (lowEndMode || sceneProfile === "lite") {
     return "world_scene_mode_lite";
@@ -434,6 +591,7 @@ function buildActor(input) {
 }
 
 function buildHotspot(input) {
+  const intentProfile = resolveInteractionIntentProfile(input.interactionKind, input.isSecondary);
   return {
     key: toText(input.key, "hotspot"),
     label: toText(input.label, "Hotspot"),
@@ -443,6 +601,8 @@ function buildHotspot(input) {
     actor_key: toText(input.actorKey, ""),
     cluster_key: toText(input.clusterKey || input.actorKey, toText(input.actorKey, "")),
     interaction_kind: toText(input.interactionKind, "open"),
+    intent_profile_key: intentProfile.intent_profile_key,
+    intent_profile: intentProfile,
     hint_label_key: toText(input.hintLabelKey, "world_hotspot_hint_open"),
     is_secondary: Boolean(input.isSecondary),
     x: toNum(input.x, 0),
@@ -513,6 +673,8 @@ function buildInteractionClusters(actors, hotspots, activeHotspotKey) {
       cluster_key: clusterKey,
       hint_label_key: toText(hotspot.hint_label_key, "world_hotspot_hint_open"),
       interaction_kind: toText(hotspot.interaction_kind, "open"),
+      intent_profile_key: toText(hotspot.intent_profile_key, ""),
+      intent_profile: asRecord(hotspot.intent_profile),
       is_secondary: Boolean(hotspot.is_secondary)
     });
     current.hotspot_count += 1;
@@ -1768,6 +1930,7 @@ export function buildDistrictWorldState(input = {}) {
   const cameraProfile = resolveDistrictCameraProfile(districtKey, lowEndMode, effectiveQuality, hudDensity, sceneProfile);
   const hudProfile = resolveDistrictHudProfile(districtKey, hudDensity, lowEndMode, sceneProfile);
   const directorProfile = resolveDistrictDirectorProfile(districtKey, hudDensity, lowEndMode, sceneProfile);
+  const railProfile = resolveDistrictRailProfile(districtKey, hudDensity, lowEndMode, sceneProfile);
 
   return {
     world_key: `${workspace}:${tab}:${districtKey}`,
@@ -1799,11 +1962,16 @@ export function buildDistrictWorldState(input = {}) {
     hud_profile: hudProfile,
     director_profile_key: directorProfile.director_profile_key,
     director_profile: directorProfile,
+    rail_profile_key: railProfile.rail_profile_key,
+    rail_profile: railProfile,
     active_hotspot_key: activeHotspotKey,
     active_hotspot_label: toText(activeHotspot?.label, ""),
     active_hotspot_label_key: toText(activeHotspot?.label_key, ""),
     active_hotspot_hint_key: toText(activeHotspot?.hint_label_key, ""),
     active_hotspot_interaction_kind: toText(activeHotspot?.interaction_kind, ""),
+    active_hotspot_intent_profile_key: toText(activeHotspot?.intent_profile_key, ""),
+    active_hotspot_intent_label_key: toText(activeHotspot?.intent_profile?.intent_label_key, ""),
+    active_hotspot_intent_tone_key: toText(activeHotspot?.intent_profile?.intent_tone_key, ""),
     active_hotspot_cluster_key: toText(activeHotspot?.cluster_key, ""),
     active_hotspot_is_secondary: Boolean(activeHotspot?.is_secondary),
     active_cluster_key: toText(activeCluster?.cluster_key, ""),

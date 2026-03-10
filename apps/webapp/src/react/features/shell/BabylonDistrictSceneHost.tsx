@@ -50,6 +50,8 @@ type HoverPreview = {
   label: string;
   labelKey: string;
   hintLabelKey: string;
+  intentLabelKey: string;
+  intentToneKey: string;
   interactionKind: string;
   sourceType: string;
 };
@@ -63,6 +65,12 @@ type ClusterActionItem = {
   cluster_key: string;
   hint_label_key: string;
   interaction_kind: string;
+  intent_profile_key: string;
+  intent_profile: {
+    intent_label_key?: string;
+    intent_tone_key?: string;
+    rail_class_key?: string;
+  };
   is_secondary: boolean;
 };
 
@@ -189,7 +197,12 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           hotspot_count: cluster.hotspot_count,
           secondary_count: cluster.secondary_count,
           is_active: cluster.is_active,
-          energy: cluster.energy
+          energy: cluster.energy,
+          action_items: cluster.action_items.map((item: ClusterActionItem) => ({
+            key: item.key,
+            intent_profile_key: item.intent_profile_key,
+            rail_class_key: String(item.intent_profile?.rail_class_key || "")
+          }))
         })),
         nodes: worldState.nodes.map((node) => ({
           key: node.key,
@@ -565,6 +578,8 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
             label: hotspot.label,
             labelKey: hotspot.label_key,
             hintLabelKey: hotspot.hint_label_key,
+            intentLabelKey: String(hotspot.intent_profile?.intent_label_key || "world_intent_open"),
+            intentToneKey: String(hotspot.intent_profile?.intent_tone_key || "world_intent_tone_open"),
             sourceType: hotspot.source_type,
             actorKey: hotspot.actor_key,
             interactionKind: hotspot.interaction_kind,
@@ -583,7 +598,10 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
               const isHovered = hoveredHotspotKey === hotspot.key;
               const pulse =
                 1 +
-                Math.sin(now * (1.3 + index * 0.14)) * (hotspot.is_secondary ? 0.05 : 0.08) * motionScalar +
+                Math.sin(now * (1.3 + index * 0.14)) *
+                  (hotspot.is_secondary ? 0.05 : 0.08) *
+                  motionScalar *
+                  Number(hotspot.intent_profile?.pulse_scalar || 1) +
                 (hotspot.is_active ? 0.12 : 0) +
                 (isHovered ? 0.08 : 0);
               beacon.scaling.setAll(pulse);
@@ -650,6 +668,8 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
             label: node.label,
             labelKey: node.label_key,
             hintLabelKey: "world_hotspot_hint_open",
+            intentLabelKey: "world_intent_open",
+            intentToneKey: "world_intent_tone_open",
             sourceType: "district_scene_node",
             actorKey: "",
             interactionKind: "open",
@@ -696,6 +716,8 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
               label: String(metadata?.label || ""),
               labelKey: String(metadata?.labelKey || ""),
               hintLabelKey: String(metadata?.hintLabelKey || "world_hotspot_hint_open"),
+              intentLabelKey: String(metadata?.intentLabelKey || "world_intent_open"),
+              intentToneKey: String(metadata?.intentToneKey || "world_intent_tone_open"),
               interactionKind: String(metadata?.interactionKind || "open"),
               sourceType: String(metadata?.sourceType || "district_scene_node")
             };
@@ -869,6 +891,16 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
             {t(props.lang, (hoverPreview?.hintLabelKey || worldState.active_hotspot_hint_key) as never)}
           </span>
         ) : null}
+        {worldState.active_hotspot_intent_label_key || hoverPreview?.intentLabelKey ? (
+          <span className="akrSceneWorldFocus">
+            {t(props.lang, (hoverPreview?.intentLabelKey || worldState.active_hotspot_intent_label_key) as never)}
+          </span>
+        ) : null}
+        {worldState.active_hotspot_intent_tone_key || hoverPreview?.intentToneKey ? (
+          <span className="akrSceneWorldFocus">
+            {t(props.lang, (hoverPreview?.intentToneKey || worldState.active_hotspot_intent_tone_key) as never)}
+          </span>
+        ) : null}
         {worldState.hud_profile.show_node_label && worldState.active_node_label ? (
           <span className="akrSceneWorldFocus">
             {worldState.active_node_label_key ? t(props.lang, worldState.active_node_label_key as never) : worldState.active_node_label}
@@ -876,21 +908,31 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
         ) : null}
       </div>
       {focusedClusterActions.length ? (
-        <div className="akrSceneWorldRail akrGlass">
+        <div
+          className={`akrSceneWorldRail akrGlass is-${worldState.rail_profile.rail_profile_key} is-${worldState.rail_profile.rail_layout_key}`}
+        >
           <div className="akrSceneWorldRailHeader">
             <strong>
-              {focusedCluster?.label_key ? t(props.lang, focusedCluster.label_key as never) : focusedCluster?.label || ""}
+              {t(props.lang, worldState.rail_profile.rail_label_key as never)}
             </strong>
             <span>
               {focusedCluster?.hotspot_count} {t(props.lang, "world_interaction_routes" as never)}
             </span>
           </div>
+          {worldState.rail_profile.show_caption ? (
+            <div className="akrSceneWorldRailCaption">
+              <span>{t(props.lang, worldState.rail_profile.rail_caption_key as never)}</span>
+              {focusedCluster?.label_key ? <strong>{t(props.lang, focusedCluster.label_key as never)}</strong> : null}
+            </div>
+          ) : null}
           <div className="akrSceneWorldRailActions">
             {focusedClusterActions.map((action) => (
               <button
                 key={action.key}
                 type="button"
-                className={`akrSceneWorldAction ${action.is_secondary ? "isSecondary" : "isPrimary"}`}
+                className={`akrSceneWorldAction ${action.is_secondary ? "isSecondary" : "isPrimary"} is-${
+                  action.intent_profile?.rail_class_key || action.intent_profile_key || "open_primary"
+                }`}
                 onClick={() =>
                   triggerSceneAction({
                     actionKey: action.action_key,
@@ -913,6 +955,8 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                   {t(props.lang, (action.is_secondary ? "world_interaction_secondary" : "world_interaction_primary") as never)}
                 </span>
                 <strong>{action.label_key ? t(props.lang, action.label_key as never) : action.label}</strong>
+                <span>{t(props.lang, (action.intent_profile?.intent_label_key || "world_intent_open") as never)}</span>
+                <span>{t(props.lang, (action.intent_profile?.intent_tone_key || "world_intent_tone_open") as never)}</span>
                 <span>{t(props.lang, action.hint_label_key as never)}</span>
               </button>
             ))}
