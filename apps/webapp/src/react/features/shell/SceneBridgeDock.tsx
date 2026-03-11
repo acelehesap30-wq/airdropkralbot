@@ -599,6 +599,12 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
                 <p id="combatLoopDuel" className="akrBridgeHint">
                   DUEL | WAIT
                 </p>
+                <p id="combatLoopDuelFocus" className="akrBridgeHint">
+                  ENTRY WAIT | FOCUS WAIT | PERSONA --
+                </p>
+                <p id="combatLoopDuelStage" className="akrBridgeHint">
+                  STAGE -- | STATUS -- | FLOW WAIT
+                </p>
                 <p id="combatLoopDuelState" className="akrBridgeHint">
                   FLOW WAIT | ENTRY WAIT | PHASE --
                 </p>
@@ -614,6 +620,12 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
                 <p id="combatLoopLadder" className="akrBridgeHint">
                   LADDER | WAIT
                 </p>
+                <p id="combatLoopLadderFocus" className="akrBridgeHint">
+                  SEQ WAIT | FOCUS WAIT | FLOW WAIT
+                </p>
+                <p id="combatLoopLadderStage" className="akrBridgeHint">
+                  STAGE -- | STATUS -- | FLOW WAIT
+                </p>
                 <p id="combatLoopLadderState" className="akrBridgeHint">
                   FLOW WAIT | SEQ WAIT | STAGE --
                 </p>
@@ -628,6 +640,12 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
                 </p>
                 <p id="combatLoopTelemetry" className="akrBridgeHint">
                   TELEMETRY | WAIT
+                </p>
+                <p id="combatLoopTelemetryFocus" className="akrBridgeHint">
+                  PERSONA WAIT | FOCUS -- | FLOW WAIT
+                </p>
+                <p id="combatLoopTelemetryStage" className="akrBridgeHint">
+                  STAGE -- | STATUS -- | SEQ WAIT
                 </p>
                 <p id="combatLoopTelemetryState" className="akrBridgeHint">
                   FLOW WAIT | PERSONA WAIT | SEQ --
@@ -770,6 +788,12 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
               <p className="akrBridgeHint" id="tokenLoopWallet">
                 -
               </p>
+              <p className="akrBridgeHint" id="tokenLoopWalletFocus">
+                -
+              </p>
+              <p className="akrBridgeHint" id="tokenLoopWalletStage">
+                -
+              </p>
               <p className="akrBridgeHint" id="tokenLoopWalletState">
                 -
               </p>
@@ -783,6 +807,12 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
                 -
               </p>
               <p className="akrBridgeHint" id="tokenLoopPayout">
+                -
+              </p>
+              <p className="akrBridgeHint" id="tokenLoopPayoutFocus">
+                -
+              </p>
+              <p className="akrBridgeHint" id="tokenLoopPayoutStage">
                 -
               </p>
               <p className="akrBridgeHint" id="tokenLoopPayoutState">
@@ -800,6 +830,12 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
               <p className="akrBridgeHint" id="tokenLoopRoute">
                 -
               </p>
+              <p className="akrBridgeHint" id="tokenLoopRouteFocus">
+                -
+              </p>
+              <p className="akrBridgeHint" id="tokenLoopRouteStage">
+                -
+              </p>
               <p className="akrBridgeHint" id="tokenLoopRouteState">
                 -
               </p>
@@ -813,6 +849,12 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
                 -
               </p>
               <p className="akrBridgeHint" id="tokenLoopPremium">
+                -
+              </p>
+              <p className="akrBridgeHint" id="tokenLoopPremiumFocus">
+                -
+              </p>
+              <p className="akrBridgeHint" id="tokenLoopPremiumStage">
                 -
               </p>
               <p className="akrBridgeHint" id="tokenLoopPremiumState">
@@ -985,6 +1027,12 @@ function AdminBridgeCards(props: { lang: Lang }) {
           <p id="adminRuntimeLoopQueue" className="akrBridgeHint">
             -
           </p>
+          <p id="adminRuntimeLoopQueueFocus" className="akrBridgeHint">
+            -
+          </p>
+          <p id="adminRuntimeLoopQueueStage" className="akrBridgeHint">
+            -
+          </p>
           <p id="adminRuntimeLoopQueueState" className="akrBridgeHint">
             -
           </p>
@@ -1000,6 +1048,12 @@ function AdminBridgeCards(props: { lang: Lang }) {
           <p id="adminRuntimeLoopRuntime" className="akrBridgeHint">
             -
           </p>
+          <p id="adminRuntimeLoopRuntimeFocus" className="akrBridgeHint">
+            -
+          </p>
+          <p id="adminRuntimeLoopRuntimeStage" className="akrBridgeHint">
+            -
+          </p>
           <p id="adminRuntimeLoopRuntimeState" className="akrBridgeHint">
             -
           </p>
@@ -1013,6 +1067,12 @@ function AdminBridgeCards(props: { lang: Lang }) {
             -
           </p>
           <p id="adminRuntimeLoopDispatch" className="akrBridgeHint">
+            -
+          </p>
+          <p id="adminRuntimeLoopDispatchFocus" className="akrBridgeHint">
+            -
+          </p>
+          <p id="adminRuntimeLoopDispatchStage" className="akrBridgeHint">
             -
           </p>
           <p id="adminRuntimeLoopDispatchState" className="akrBridgeHint">

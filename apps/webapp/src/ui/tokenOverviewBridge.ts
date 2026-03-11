@@ -35,6 +35,14 @@ export type TokenOverviewBridgePayload = {
   loopPayoutText?: string;
   loopRouteText?: string;
   loopPremiumText?: string;
+  loopWalletFocusText?: string;
+  loopPayoutFocusText?: string;
+  loopRouteFocusText?: string;
+  loopPremiumFocusText?: string;
+  loopWalletStageText?: string;
+  loopPayoutStageText?: string;
+  loopRouteStageText?: string;
+  loopPremiumStageText?: string;
   loopWalletOpsText?: string;
   loopPayoutOpsText?: string;
   loopRouteOpsText?: string;
@@ -95,9 +103,17 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   const loopDetail = byId<HTMLElement>("tokenLoopDetail");
   const loopSignal = byId<HTMLElement>("tokenLoopSignal");
   const loopWallet = byId<HTMLElement>("tokenLoopWallet");
+  const loopWalletFocus = byId<HTMLElement>("tokenLoopWalletFocus");
+  const loopWalletStage = byId<HTMLElement>("tokenLoopWalletStage");
   const loopPayout = byId<HTMLElement>("tokenLoopPayout");
+  const loopPayoutFocus = byId<HTMLElement>("tokenLoopPayoutFocus");
+  const loopPayoutStage = byId<HTMLElement>("tokenLoopPayoutStage");
   const loopRoute = byId<HTMLElement>("tokenLoopRoute");
+  const loopRouteFocus = byId<HTMLElement>("tokenLoopRouteFocus");
+  const loopRouteStage = byId<HTMLElement>("tokenLoopRouteStage");
   const loopPremium = byId<HTMLElement>("tokenLoopPremium");
+  const loopPremiumFocus = byId<HTMLElement>("tokenLoopPremiumFocus");
+  const loopPremiumStage = byId<HTMLElement>("tokenLoopPremiumStage");
   const loopWalletState = byId<HTMLElement>("tokenLoopWalletState");
   const loopPayoutState = byId<HTMLElement>("tokenLoopPayoutState");
   const loopRouteState = byId<HTMLElement>("tokenLoopRouteState");
@@ -140,14 +156,38 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   if (loopWallet) {
     loopWallet.textContent = safeText(payload.loopWalletText, "WALLET | WAIT");
   }
+  if (loopWalletFocus) {
+    loopWalletFocus.textContent = safeText(payload.loopWalletFocusText, "ENTRY WAIT | FOCUS WAIT | FLOW WAIT");
+  }
+  if (loopWalletStage) {
+    loopWalletStage.textContent = safeText(payload.loopWalletStageText, "STAGE -- | STATUS -- | ENTRY WAIT");
+  }
   if (loopPayout) {
     loopPayout.textContent = safeText(payload.loopPayoutText, "PAYOUT | WAIT");
+  }
+  if (loopPayoutFocus) {
+    loopPayoutFocus.textContent = safeText(payload.loopPayoutFocusText, "SEQ WAIT | FOCUS WAIT | ROUTE --");
+  }
+  if (loopPayoutStage) {
+    loopPayoutStage.textContent = safeText(payload.loopPayoutStageText, "STAGE -- | STATUS -- | SEQ WAIT");
   }
   if (loopRoute) {
     loopRoute.textContent = safeText(payload.loopRouteText, "ROUTE | WAIT");
   }
+  if (loopRouteFocus) {
+    loopRouteFocus.textContent = safeText(payload.loopRouteFocusText, "PERSONA WAIT | FOCUS -- | FLOW WAIT");
+  }
+  if (loopRouteStage) {
+    loopRouteStage.textContent = safeText(payload.loopRouteStageText, "STAGE -- | STATUS -- | PERSONA WAIT");
+  }
   if (loopPremium) {
     loopPremium.textContent = safeText(payload.loopPremiumText, "PREMIUM | WAIT");
+  }
+  if (loopPremiumFocus) {
+    loopPremiumFocus.textContent = safeText(payload.loopPremiumFocusText, "ENTRY WAIT | FOCUS WAIT | FLOW WAIT");
+  }
+  if (loopPremiumStage) {
+    loopPremiumStage.textContent = safeText(payload.loopPremiumStageText, "STAGE -- | STATUS -- | PASS --");
   }
   if (loopWalletState) {
     loopWalletState.textContent = safeText(payload.loopWalletStateText, "FLOW WAIT | ENTRY WAIT | STATE --");

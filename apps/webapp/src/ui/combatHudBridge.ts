@@ -97,6 +97,12 @@ type CombatHudPayload = {
   loopDuelText?: string;
   loopLadderText?: string;
   loopTelemetryText?: string;
+  loopDuelFocusText?: string;
+  loopLadderFocusText?: string;
+  loopTelemetryFocusText?: string;
+  loopDuelStageText?: string;
+  loopLadderStageText?: string;
+  loopTelemetryStageText?: string;
   loopDuelOpsText?: string;
   loopLadderOpsText?: string;
   loopTelemetryOpsText?: string;
@@ -256,8 +262,14 @@ function render(payload: CombatHudPayload): boolean {
   const loopDetail = byId("combatLoopDetail");
   const loopSignal = byId("combatLoopSignal");
   const loopDuel = byId("combatLoopDuel");
+  const loopDuelFocus = byId("combatLoopDuelFocus");
+  const loopDuelStage = byId("combatLoopDuelStage");
   const loopLadder = byId("combatLoopLadder");
+  const loopLadderFocus = byId("combatLoopLadderFocus");
+  const loopLadderStage = byId("combatLoopLadderStage");
   const loopTelemetry = byId("combatLoopTelemetry");
+  const loopTelemetryFocus = byId("combatLoopTelemetryFocus");
+  const loopTelemetryStage = byId("combatLoopTelemetryStage");
   const loopDuelState = byId("combatLoopDuelState");
   const loopLadderState = byId("combatLoopLadderState");
   const loopTelemetryState = byId("combatLoopTelemetryState");
@@ -445,11 +457,29 @@ function render(payload: CombatHudPayload): boolean {
   if (loopDuel) {
     loopDuel.textContent = String(payload.loopDuelText || "DUEL | WAIT");
   }
+  if (loopDuelFocus) {
+    loopDuelFocus.textContent = String(payload.loopDuelFocusText || "ENTRY WAIT | FOCUS WAIT | PERSONA --");
+  }
+  if (loopDuelStage) {
+    loopDuelStage.textContent = String(payload.loopDuelStageText || "STAGE -- | STATUS -- | FLOW WAIT");
+  }
   if (loopLadder) {
     loopLadder.textContent = String(payload.loopLadderText || "LADDER | WAIT");
   }
+  if (loopLadderFocus) {
+    loopLadderFocus.textContent = String(payload.loopLadderFocusText || "SEQ WAIT | FOCUS WAIT | FLOW WAIT");
+  }
+  if (loopLadderStage) {
+    loopLadderStage.textContent = String(payload.loopLadderStageText || "STAGE -- | STATUS -- | FLOW WAIT");
+  }
   if (loopTelemetry) {
     loopTelemetry.textContent = String(payload.loopTelemetryText || "TELEMETRY | WAIT");
+  }
+  if (loopTelemetryFocus) {
+    loopTelemetryFocus.textContent = String(payload.loopTelemetryFocusText || "PERSONA WAIT | FOCUS -- | FLOW WAIT");
+  }
+  if (loopTelemetryStage) {
+    loopTelemetryStage.textContent = String(payload.loopTelemetryStageText || "STAGE -- | STATUS -- | SEQ WAIT");
   }
   if (loopDuelState) {
     loopDuelState.textContent = String(payload.loopDuelStateText || "FLOW WAIT | ENTRY WAIT | PHASE --");

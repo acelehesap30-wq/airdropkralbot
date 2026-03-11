@@ -13,6 +13,12 @@ type RuntimeBridgePayload = {
   loopQueueText?: string;
   loopRuntimeText?: string;
   loopDispatchText?: string;
+  loopQueueFocusText?: string;
+  loopRuntimeFocusText?: string;
+  loopDispatchFocusText?: string;
+  loopQueueStageText?: string;
+  loopRuntimeStageText?: string;
+  loopDispatchStageText?: string;
   loopQueueOpsText?: string;
   loopRuntimeOpsText?: string;
   loopDispatchOpsText?: string;
@@ -72,8 +78,14 @@ function render(payload: RuntimeBridgePayload): boolean {
   const loopDetail = byId<HTMLElement>("adminRuntimeLoopDetail");
   const loopSignal = byId<HTMLElement>("adminRuntimeLoopSignal");
   const loopQueue = byId<HTMLElement>("adminRuntimeLoopQueue");
+  const loopQueueFocus = byId<HTMLElement>("adminRuntimeLoopQueueFocus");
+  const loopQueueStage = byId<HTMLElement>("adminRuntimeLoopQueueStage");
   const loopRuntime = byId<HTMLElement>("adminRuntimeLoopRuntime");
+  const loopRuntimeFocus = byId<HTMLElement>("adminRuntimeLoopRuntimeFocus");
+  const loopRuntimeStage = byId<HTMLElement>("adminRuntimeLoopRuntimeStage");
   const loopDispatch = byId<HTMLElement>("adminRuntimeLoopDispatch");
+  const loopDispatchFocus = byId<HTMLElement>("adminRuntimeLoopDispatchFocus");
+  const loopDispatchStage = byId<HTMLElement>("adminRuntimeLoopDispatchStage");
   const loopQueueState = byId<HTMLElement>("adminRuntimeLoopQueueState");
   const loopRuntimeState = byId<HTMLElement>("adminRuntimeLoopRuntimeState");
   const loopDispatchState = byId<HTMLElement>("adminRuntimeLoopDispatchState");
@@ -103,11 +115,29 @@ function render(payload: RuntimeBridgePayload): boolean {
   if (loopQueue) {
     loopQueue.textContent = String(payload.loopQueueText || "QUEUE | WAIT");
   }
+  if (loopQueueFocus) {
+    loopQueueFocus.textContent = String(payload.loopQueueFocusText || "ENTRY WAIT | FOCUS WAIT | FLOW WAIT");
+  }
+  if (loopQueueStage) {
+    loopQueueStage.textContent = String(payload.loopQueueStageText || "STAGE -- | STATUS -- | ENTRY WAIT");
+  }
   if (loopRuntime) {
     loopRuntime.textContent = String(payload.loopRuntimeText || "RUNTIME | WAIT");
   }
+  if (loopRuntimeFocus) {
+    loopRuntimeFocus.textContent = String(payload.loopRuntimeFocusText || "SEQ WAIT | FOCUS WAIT | ALERT --");
+  }
+  if (loopRuntimeStage) {
+    loopRuntimeStage.textContent = String(payload.loopRuntimeStageText || "STAGE -- | STATUS -- | SEQ WAIT");
+  }
   if (loopDispatch) {
     loopDispatch.textContent = String(payload.loopDispatchText || "DISPATCH | WAIT");
+  }
+  if (loopDispatchFocus) {
+    loopDispatchFocus.textContent = String(payload.loopDispatchFocusText || "ENTRY WAIT | FOCUS WAIT | STAGE --");
+  }
+  if (loopDispatchStage) {
+    loopDispatchStage.textContent = String(payload.loopDispatchStageText || "STAGE -- | STATUS -- | SENT --");
   }
   if (loopQueueState) {
     loopQueueState.textContent = String(payload.loopQueueStateText || "FLOW WAIT | ENTRY WAIT | QUEUE --");
@@ -157,8 +187,14 @@ function render(payload: RuntimeBridgePayload): boolean {
   pulseOnce(loopDetail);
   pulseOnce(loopSignal);
   pulseOnce(loopQueue);
+  pulseOnce(loopQueueFocus);
+  pulseOnce(loopQueueStage);
   pulseOnce(loopRuntime);
+  pulseOnce(loopRuntimeFocus);
+  pulseOnce(loopRuntimeStage);
   pulseOnce(loopDispatch);
+  pulseOnce(loopDispatchFocus);
+  pulseOnce(loopDispatchStage);
   pulseOnce(loopQueueDetail);
   pulseOnce(loopRuntimeDetail);
   pulseOnce(loopDispatchDetail);
