@@ -100,6 +100,9 @@ type CombatHudPayload = {
   loopDuelStateText?: string;
   loopLadderStateText?: string;
   loopTelemetryStateText?: string;
+  loopDuelSignalText?: string;
+  loopLadderSignalText?: string;
+  loopTelemetrySignalText?: string;
   loopDuelDetailText?: string;
   loopLadderDetailText?: string;
   loopTelemetryDetailText?: string;
@@ -255,6 +258,9 @@ function render(payload: CombatHudPayload): boolean {
   const loopDuelState = byId("combatLoopDuelState");
   const loopLadderState = byId("combatLoopLadderState");
   const loopTelemetryState = byId("combatLoopTelemetryState");
+  const loopDuelSignal = byId("combatLoopDuelSignal");
+  const loopLadderSignal = byId("combatLoopLadderSignal");
+  const loopTelemetrySignal = byId("combatLoopTelemetrySignal");
   const loopDuelDetail = byId("combatLoopDuelDetail");
   const loopLadderDetail = byId("combatLoopLadderDetail");
   const loopTelemetryDetail = byId("combatLoopTelemetryDetail");
@@ -447,6 +453,15 @@ function render(payload: CombatHudPayload): boolean {
   }
   if (loopTelemetryState) {
     loopTelemetryState.textContent = String(payload.loopTelemetryStateText || "FLOW WAIT | PERSONA WAIT | SEQ --");
+  }
+  if (loopDuelSignal) {
+    loopDuelSignal.textContent = String(payload.loopDuelSignalText || "QUEUE -- | FLOW WAIT | RISK --");
+  }
+  if (loopLadderSignal) {
+    loopLadderSignal.textContent = String(payload.loopLadderSignalText || "CHARGE -- | TICK -- | FLOW WAIT");
+  }
+  if (loopTelemetrySignal) {
+    loopTelemetrySignal.textContent = String(payload.loopTelemetrySignalText || "DIAG -- | RISK -- | FLOW WAIT");
   }
   if (loopDuelDetail) {
     loopDuelDetail.textContent = String(payload.loopDuelDetailText || "Queue ve sync detay bekleniyor.");

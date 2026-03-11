@@ -39,6 +39,10 @@ export type TokenOverviewBridgePayload = {
   loopPayoutStateText?: string;
   loopRouteStateText?: string;
   loopPremiumStateText?: string;
+  loopWalletSignalText?: string;
+  loopPayoutSignalText?: string;
+  loopRouteSignalText?: string;
+  loopPremiumSignalText?: string;
   loopWalletDetailText?: string;
   loopPayoutDetailText?: string;
   loopRouteDetailText?: string;
@@ -94,6 +98,10 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   const loopPayoutState = byId<HTMLElement>("tokenLoopPayoutState");
   const loopRouteState = byId<HTMLElement>("tokenLoopRouteState");
   const loopPremiumState = byId<HTMLElement>("tokenLoopPremiumState");
+  const loopWalletSignal = byId<HTMLElement>("tokenLoopWalletSignal");
+  const loopPayoutSignal = byId<HTMLElement>("tokenLoopPayoutSignal");
+  const loopRouteSignal = byId<HTMLElement>("tokenLoopRouteSignal");
+  const loopPremiumSignal = byId<HTMLElement>("tokenLoopPremiumSignal");
   const loopWalletDetail = byId<HTMLElement>("tokenLoopWalletDetail");
   const loopPayoutDetail = byId<HTMLElement>("tokenLoopPayoutDetail");
   const loopRouteDetail = byId<HTMLElement>("tokenLoopRouteDetail");
@@ -144,6 +152,18 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   }
   if (loopPremiumState) {
     loopPremiumState.textContent = safeText(payload.loopPremiumStateText, "FLOW WAIT | STAGE -- | PASS --");
+  }
+  if (loopWalletSignal) {
+    loopWalletSignal.textContent = safeText(payload.loopWalletSignalText, "STATE -- | FLOW WAIT | ENTRY WAIT");
+  }
+  if (loopPayoutSignal) {
+    loopPayoutSignal.textContent = safeText(payload.loopPayoutSignalText, "PAYOUT -- | ROUTE -- | FLOW WAIT");
+  }
+  if (loopRouteSignal) {
+    loopRouteSignal.textContent = safeText(payload.loopRouteSignalText, "ROUTE -- | PERSONA WAIT | FLOW WAIT");
+  }
+  if (loopPremiumSignal) {
+    loopPremiumSignal.textContent = safeText(payload.loopPremiumSignalText, "PASS -- | STAGE -- | FLOW WAIT");
   }
   if (loopWalletDetail) {
     loopWalletDetail.textContent = safeText(payload.loopWalletDetailText, "Wallet verification detay bekleniyor.");

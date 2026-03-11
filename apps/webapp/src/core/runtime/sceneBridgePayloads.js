@@ -325,6 +325,9 @@ function buildPvpLoopMicroPanels(loopDeck, active) {
       duelStateText: "FLOW WAIT | ENTRY WAIT | PHASE --",
       ladderStateText: "FLOW WAIT | SEQ WAIT | STAGE --",
       telemetryStateText: "FLOW WAIT | PERSONA WAIT | SEQ --",
+      duelSignalText: "QUEUE -- | FLOW WAIT | RISK --",
+      ladderSignalText: "CHARGE -- | TICK -- | FLOW WAIT",
+      telemetrySignalText: "DIAG -- | RISK -- | FLOW WAIT",
       duelDetailText: "Queue ve sync detay bekleniyor.",
       ladderDetailText: "Ladder snapshot bekleniyor.",
       telemetryDetailText: "Reject ve asset telemetry bekleniyor."
@@ -368,6 +371,13 @@ function buildPvpLoopMicroPanels(loopDeck, active) {
       `PERSONA ${personalityLabel || "SYNC"}`,
       `SEQ ${sequenceLabel}`
     ),
+    duelSignalText: buildLoopMicroDetail(
+      `QUEUE ${readLoopRowValue(sharedRows, ["queue_depth"], "--")}`,
+      `FLOW ${statusLabel}`,
+      `RISK ${riskBand}`
+    ),
+    ladderSignalText: buildLoopMicroDetail(`CHARGE ${ladderCharge}`, `TICK ${tickTempo}`, `FLOW ${microflowLabel}`),
+    telemetrySignalText: buildLoopMicroDetail(`DIAG ${diagBand}`, `RISK ${riskBand}`, `FLOW ${microflowLabel}`),
     duelDetailText: buildLoopMicroDetail(
       `QUEUE ${readLoopRowValue(sharedRows, ["queue_depth"], "--")}`,
       `RISK ${riskBand}`,
@@ -389,6 +399,10 @@ function buildVaultLoopMicroPanels(loopDeck, active) {
       payoutStateText: "FLOW WAIT | SEQ WAIT | PAYOUT --",
       routeStateText: "FLOW WAIT | PERSONA WAIT | ROUTE --",
       premiumStateText: "FLOW WAIT | STAGE -- | PASS --",
+      walletSignalText: "STATE -- | FLOW WAIT | ENTRY WAIT",
+      payoutSignalText: "PAYOUT -- | ROUTE -- | FLOW WAIT",
+      routeSignalText: "ROUTE -- | PERSONA WAIT | FLOW WAIT",
+      premiumSignalText: "PASS -- | STAGE -- | FLOW WAIT",
       walletDetailText: "Wallet verification detay bekleniyor.",
       payoutDetailText: "Payout route detay bekleniyor.",
       routeDetailText: "Route quorum detay bekleniyor.",
@@ -421,6 +435,18 @@ function buildVaultLoopMicroPanels(loopDeck, active) {
       `STAGE ${loopDeck.stageValue || loopDeck.loopStatusLabel || "--"}`,
       `PASS ${premiumState}`
     ),
+    walletSignalText: buildLoopMicroDetail(`STATE ${walletState}`, `FLOW ${loopDeck.loopStatusLabel || "IDLE"}`, `ENTRY ${entryLabel}`),
+    payoutSignalText: buildLoopMicroDetail(`PAYOUT ${payoutState}`, `ROUTE ${routeState}`, `FLOW ${microflowLabel}`),
+    routeSignalText: buildLoopMicroDetail(
+      `ROUTE ${routeState}`,
+      `PERSONA ${personalityCaption || "SYNC"}`,
+      `FLOW ${microflowLabel}`
+    ),
+    premiumSignalText: buildLoopMicroDetail(
+      `PASS ${premiumState}`,
+      `STAGE ${loopDeck.stageValue || loopDeck.loopStatusLabel || "--"}`,
+      `FLOW ${microflowLabel}`
+    ),
     walletDetailText: buildLoopMicroDetail(`STATE ${walletState}`, `FLOW ${loopDeck.loopStatusLabel || "IDLE"}`, entryLabel),
     payoutDetailText: buildLoopMicroDetail(`PAYOUT ${payoutState}`, `ROUTE ${routeState}`, sequenceLabel),
     routeDetailText: buildLoopMicroDetail(`ROUTE ${routeState}`, `WALLET ${walletState}`, personalityCaption),
@@ -441,6 +467,9 @@ function buildAdminLoopMicroPanels(loopDeck, active) {
       queueStateText: "FLOW WAIT | ENTRY WAIT | QUEUE --",
       runtimeStateText: "FLOW WAIT | SEQ WAIT | HEALTH --",
       dispatchStateText: "FLOW WAIT | STAGE -- | SENT --",
+      queueSignalText: "QUEUE -- | FLOW WAIT | ENTRY WAIT",
+      runtimeSignalText: "HEALTH -- | ALERT -- | FLOW WAIT",
+      dispatchSignalText: "SENT -- | STAGE -- | FLOW WAIT",
       queueDetailText: "Queue action detay bekleniyor.",
       runtimeDetailText: "Runtime diagnostics bekleniyor.",
       dispatchDetailText: "Dispatch gate detay bekleniyor."
@@ -476,6 +505,13 @@ function buildAdminLoopMicroPanels(loopDeck, active) {
       `FLOW ${microflowLabel}`,
       `STAGE ${loopDeck.stageValue || loopDeck.loopStatusLabel || "--"}`,
       `SENT ${liveOpsSent}`
+    ),
+    queueSignalText: buildLoopMicroDetail(`QUEUE ${queueDepth}`, `FLOW ${microflowLabel}`, `ENTRY ${entryLabel}`),
+    runtimeSignalText: buildLoopMicroDetail(`HEALTH ${sceneHealth}`, `ALERT ${alertCount}`, `FLOW ${microflowLabel}`),
+    dispatchSignalText: buildLoopMicroDetail(
+      `SENT ${liveOpsSent}`,
+      `STAGE ${loopDeck.stageValue || loopDeck.loopStatusLabel || "--"}`,
+      `FLOW ${microflowLabel}`
     ),
     queueDetailText: buildLoopMicroDetail(`DEPTH ${queueDepth}`, `FLOW ${loopDeck.loopStatusLabel || "IDLE"}`, microflowLabel),
     runtimeDetailText: buildLoopMicroDetail(`HEALTH ${sceneHealth}`, `ALERT ${alertCount}`, sequenceLabel),
@@ -1236,6 +1272,9 @@ function buildPvpRuntimePayload(rawRuntime, rawLive, pvpView, scene, assetMetric
       loopDuelStateText: loopMicro.duelStateText,
       loopLadderStateText: loopMicro.ladderStateText,
       loopTelemetryStateText: loopMicro.telemetryStateText,
+      loopDuelSignalText: loopMicro.duelSignalText,
+      loopLadderSignalText: loopMicro.ladderSignalText,
+      loopTelemetrySignalText: loopMicro.telemetrySignalText,
       loopDuelDetailText: loopMicro.duelDetailText,
       loopLadderDetailText: loopMicro.ladderDetailText,
       loopTelemetryDetailText: loopMicro.telemetryDetailText
@@ -1502,6 +1541,10 @@ function buildTokenOverviewPayload(vaultRoot, vaultView, scene) {
     loopPayoutStateText: loopMicro.payoutStateText,
     loopRouteStateText: loopMicro.routeStateText,
     loopPremiumStateText: loopMicro.premiumStateText,
+    loopWalletSignalText: loopMicro.walletSignalText,
+    loopPayoutSignalText: loopMicro.payoutSignalText,
+    loopRouteSignalText: loopMicro.routeSignalText,
+    loopPremiumSignalText: loopMicro.premiumSignalText,
     loopWalletDetailText: loopMicro.walletDetailText,
     loopPayoutDetailText: loopMicro.payoutDetailText,
     loopRouteDetailText: loopMicro.routeDetailText,
@@ -1822,6 +1865,9 @@ function buildAdminRuntimePayload(adminRuntime, adminPanels, scene) {
     loopQueueStateText: loopMicro.queueStateText,
     loopRuntimeStateText: loopMicro.runtimeStateText,
     loopDispatchStateText: loopMicro.dispatchStateText,
+    loopQueueSignalText: loopMicro.queueSignalText,
+    loopRuntimeSignalText: loopMicro.runtimeSignalText,
+    loopDispatchSignalText: loopMicro.dispatchSignalText,
     loopQueueDetailText: loopMicro.queueDetailText,
     loopRuntimeDetailText: loopMicro.runtimeDetailText,
     loopDispatchDetailText: loopMicro.dispatchDetailText
