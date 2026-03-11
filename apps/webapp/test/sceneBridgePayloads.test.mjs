@@ -338,6 +338,9 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
   assert.match(payloads.combatHud.loopDuelText, /DUEL ENGAGE \| ACTIVE/i);
   assert.match(payloads.combatHud.loopLadderText, /LADDER -- \| --/i);
   assert.match(payloads.combatHud.loopTelemetryText, /TELEMETRY HOT \| WATCH/i);
+  assert.match(payloads.combatHud.loopDuelDetailText, /QUEUE 3 \| RISK WATCH/i);
+  assert.match(payloads.combatHud.loopLadderDetailText, /CHARGE -- \| TICK --/i);
+  assert.match(payloads.combatHud.loopTelemetryDetailText, /DIAG HOT \| RISK WATCH/i);
   assert.equal(payloads.cameraDirector.mode.key, "broadcast");
   assert.match(payloads.cameraDirector.focus.text, /ACTIVE/);
   assert.equal(payloads.pvpRoundDirector.heat.phase, "engage");
@@ -364,6 +367,10 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
   assert.equal(payloads.tokenOverview.loopPayoutText, "PAYOUT | WAIT");
   assert.equal(payloads.tokenOverview.loopRouteText, "ROUTE | WAIT");
   assert.equal(payloads.tokenOverview.loopPremiumText, "PREMIUM | WAIT");
+  assert.equal(payloads.tokenOverview.loopWalletDetailText, "Wallet verification detay bekleniyor.");
+  assert.equal(payloads.tokenOverview.loopPayoutDetailText, "Payout route detay bekleniyor.");
+  assert.equal(payloads.tokenOverview.loopRouteDetailText, "Route quorum detay bekleniyor.");
+  assert.equal(payloads.tokenOverview.loopPremiumDetailText, "Premium lane detay bekleniyor.");
   assert.equal(payloads.tokenOverview.statusChips[1].text, "PAY OPEN");
   assert.equal(payloads.tokenTreasury.route.badgeText, "ROUTE 2/3");
   assert.equal(payloads.tokenTreasury.actionDirector.badgeText, "SUBMIT");
@@ -439,6 +446,9 @@ test("buildAdminBridgePayloads produces runtime, asset and audit cards from admi
   assert.match(payloads.runtime.loopQueueText, /QUEUE 2 \| WATCH/i);
   assert.match(payloads.runtime.loopRuntimeText, /RUNTIME WATCH \| ALERT 3/i);
   assert.match(payloads.runtime.loopDispatchText, /DISPATCH 12 \| ALERT/i);
+  assert.match(payloads.runtime.loopQueueDetailText, /DEPTH 2 \| FLOW WATCH/i);
+  assert.match(payloads.runtime.loopRuntimeDetailText, /HEALTH WATCH \| ALERT 3/i);
+  assert.match(payloads.runtime.loopDispatchDetailText, /SENT 12 \| STAGE ALERT/i);
   assert.equal(payloads.assetStatus.rows.length, 2);
   assert.equal(payloads.assetRuntime.signalLineText, "Ready 75% | Integrity 75% | Missing 1");
   assert.equal(payloads.auditRuntime.phaseChipText, "PHASE PARTIAL");

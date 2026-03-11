@@ -97,6 +97,9 @@ type CombatHudPayload = {
   loopDuelText?: string;
   loopLadderText?: string;
   loopTelemetryText?: string;
+  loopDuelDetailText?: string;
+  loopLadderDetailText?: string;
+  loopTelemetryDetailText?: string;
   rejectCategory?: string;
   rejectTone?: string;
   ladderTone?: string;
@@ -246,6 +249,9 @@ function render(payload: CombatHudPayload): boolean {
   const loopDuel = byId("combatLoopDuel");
   const loopLadder = byId("combatLoopLadder");
   const loopTelemetry = byId("combatLoopTelemetry");
+  const loopDuelDetail = byId("combatLoopDuelDetail");
+  const loopLadderDetail = byId("combatLoopLadderDetail");
+  const loopTelemetryDetail = byId("combatLoopTelemetryDetail");
 
   if (!panelRoot || !chainLine || !chainTrail || !timelineLine || !timelineBadge || !timelineMeter) {
     return false;
@@ -426,6 +432,15 @@ function render(payload: CombatHudPayload): boolean {
   }
   if (loopTelemetry) {
     loopTelemetry.textContent = String(payload.loopTelemetryText || "TELEMETRY | WAIT");
+  }
+  if (loopDuelDetail) {
+    loopDuelDetail.textContent = String(payload.loopDuelDetailText || "Queue ve sync detay bekleniyor.");
+  }
+  if (loopLadderDetail) {
+    loopLadderDetail.textContent = String(payload.loopLadderDetailText || "Ladder snapshot bekleniyor.");
+  }
+  if (loopTelemetryDetail) {
+    loopTelemetryDetail.textContent = String(payload.loopTelemetryDetailText || "Reject ve asset telemetry bekleniyor.");
   }
 
   const nodeMap: Record<string, HTMLElement | null> = {

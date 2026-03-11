@@ -35,6 +35,10 @@ export type TokenOverviewBridgePayload = {
   loopPayoutText?: string;
   loopRouteText?: string;
   loopPremiumText?: string;
+  loopWalletDetailText?: string;
+  loopPayoutDetailText?: string;
+  loopRouteDetailText?: string;
+  loopPremiumDetailText?: string;
 };
 
 type TokenOverviewBridge = {
@@ -82,6 +86,10 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   const loopPayout = byId<HTMLElement>("tokenLoopPayout");
   const loopRoute = byId<HTMLElement>("tokenLoopRoute");
   const loopPremium = byId<HTMLElement>("tokenLoopPremium");
+  const loopWalletDetail = byId<HTMLElement>("tokenLoopWalletDetail");
+  const loopPayoutDetail = byId<HTMLElement>("tokenLoopPayoutDetail");
+  const loopRouteDetail = byId<HTMLElement>("tokenLoopRouteDetail");
+  const loopPremiumDetail = byId<HTMLElement>("tokenLoopPremiumDetail");
   const chainSelect = byId<HTMLSelectElement>("tokenChainSelect");
   const buyBtn = byId<HTMLButtonElement>("tokenBuyBtn");
 
@@ -116,6 +124,18 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   }
   if (loopPremium) {
     loopPremium.textContent = safeText(payload.loopPremiumText, "PREMIUM | WAIT");
+  }
+  if (loopWalletDetail) {
+    loopWalletDetail.textContent = safeText(payload.loopWalletDetailText, "Wallet verification detay bekleniyor.");
+  }
+  if (loopPayoutDetail) {
+    loopPayoutDetail.textContent = safeText(payload.loopPayoutDetailText, "Payout route detay bekleniyor.");
+  }
+  if (loopRouteDetail) {
+    loopRouteDetail.textContent = safeText(payload.loopRouteDetailText, "Route quorum detay bekleniyor.");
+  }
+  if (loopPremiumDetail) {
+    loopPremiumDetail.textContent = safeText(payload.loopPremiumDetailText, "Premium lane detay bekleniyor.");
   }
 
   const options = Array.isArray(payload.chainOptions) ? payload.chainOptions : [];

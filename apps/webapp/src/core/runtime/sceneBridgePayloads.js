@@ -305,12 +305,19 @@ function buildPvpLoopMicroPanels(loopDeck, active) {
     return {
       duelText: "DUEL | WAIT",
       ladderText: "LADDER | WAIT",
-      telemetryText: "TELEMETRY | WAIT"
+      telemetryText: "TELEMETRY | WAIT",
+      duelDetailText: "Queue ve sync detay bekleniyor.",
+      ladderDetailText: "Ladder snapshot bekleniyor.",
+      telemetryDetailText: "Reject ve asset telemetry bekleniyor."
     };
   }
   const sharedRows = [...loopDeck.loopRows, ...loopDeck.loopSignalRows];
   const stageValue = toText(loopDeck.stageValue, "--");
   const statusLabel = toText(loopDeck.loopStatusLabel, "IDLE");
+  const tickTempo = readLoopRowValue(sharedRows, ["tick_tempo"], "--");
+  const diagBand = readLoopRowValue(sharedRows, ["diag_band"], "--");
+  const riskBand = readLoopRowValue(sharedRows, ["risk_band"], "--");
+  const ladderCharge = readLoopRowValue(sharedRows, ["ladder_charge"], "--");
   return {
     duelText: buildLoopMicroLine(
       "DUEL",
@@ -319,14 +326,17 @@ function buildPvpLoopMicroPanels(loopDeck, active) {
     ),
     ladderText: buildLoopMicroLine(
       "LADDER",
-      readLoopRowValue(sharedRows, ["ladder_charge"], "--"),
-      readLoopRowValue(sharedRows, ["tick_tempo"], "--")
+      ladderCharge,
+      tickTempo
     ),
     telemetryText: buildLoopMicroLine(
       "TELEMETRY",
-      readLoopRowValue(sharedRows, ["diag_band"], "--"),
+      diagBand,
       readLoopRowValue(sharedRows, ["risk_band", "tick_tempo"], "--")
-    )
+    ),
+    duelDetailText: `QUEUE ${readLoopRowValue(sharedRows, ["queue_depth"], "--")} | RISK ${riskBand}`,
+    ladderDetailText: `CHARGE ${ladderCharge} | TICK ${tickTempo}`,
+    telemetryDetailText: `DIAG ${diagBand} | RISK ${riskBand}`
   };
 }
 
@@ -336,7 +346,11 @@ function buildVaultLoopMicroPanels(loopDeck, active) {
       walletText: "WALLET | WAIT",
       payoutText: "PAYOUT | WAIT",
       routeText: "ROUTE | WAIT",
-      premiumText: "PREMIUM | WAIT"
+      premiumText: "PREMIUM | WAIT",
+      walletDetailText: "Wallet verification detay bekleniyor.",
+      payoutDetailText: "Payout route detay bekleniyor.",
+      routeDetailText: "Route quorum detay bekleniyor.",
+      premiumDetailText: "Premium lane detay bekleniyor."
     };
   }
   const sharedRows = [...loopDeck.loopRows, ...loopDeck.loopSignalRows];
@@ -348,7 +362,11 @@ function buildVaultLoopMicroPanels(loopDeck, active) {
     walletText: buildLoopMicroLine("WALLET", walletState, loopDeck.loopStatusLabel || "IDLE"),
     payoutText: buildLoopMicroLine("PAYOUT", payoutState, routeState),
     routeText: buildLoopMicroLine("ROUTE", routeState, walletState),
-    premiumText: buildLoopMicroLine("PREMIUM", premiumState, loopDeck.stageValue || loopDeck.loopStatusLabel || "--")
+    premiumText: buildLoopMicroLine("PREMIUM", premiumState, loopDeck.stageValue || loopDeck.loopStatusLabel || "--"),
+    walletDetailText: `STATE ${walletState} | FLOW ${loopDeck.loopStatusLabel || "IDLE"}`,
+    payoutDetailText: `PAYOUT ${payoutState} | ROUTE ${routeState}`,
+    routeDetailText: `ROUTE ${routeState} | WALLET ${walletState}`,
+    premiumDetailText: `PASS ${premiumState} | STAGE ${loopDeck.stageValue || loopDeck.loopStatusLabel || "--"}`
   };
 }
 
@@ -357,26 +375,36 @@ function buildAdminLoopMicroPanels(loopDeck, active) {
     return {
       queueText: "QUEUE | WAIT",
       runtimeText: "RUNTIME | WAIT",
-      dispatchText: "DISPATCH | WAIT"
+      dispatchText: "DISPATCH | WAIT",
+      queueDetailText: "Queue action detay bekleniyor.",
+      runtimeDetailText: "Runtime diagnostics bekleniyor.",
+      dispatchDetailText: "Dispatch gate detay bekleniyor."
     };
   }
   const sharedRows = [...loopDeck.loopRows, ...loopDeck.loopSignalRows];
+  const queueDepth = readLoopRowValue(sharedRows, ["queue_depth"], "0");
+  const sceneHealth = readLoopRowValue(sharedRows, ["scene_health"], "--");
+  const alertCount = readLoopRowValue(sharedRows, ["alerts"], "0");
+  const liveOpsSent = readLoopRowValue(sharedRows, ["liveops_sent"], "0");
   return {
     queueText: buildLoopMicroLine(
       "QUEUE",
-      readLoopRowValue(sharedRows, ["queue_depth"], "0"),
+      queueDepth,
       loopDeck.loopStatusLabel || "IDLE"
     ),
     runtimeText: buildLoopMicroLine(
       "RUNTIME",
-      readLoopRowValue(sharedRows, ["scene_health"], "--"),
-      `ALERT ${readLoopRowValue(sharedRows, ["alerts"], "0")}`
+      sceneHealth,
+      `ALERT ${alertCount}`
     ),
     dispatchText: buildLoopMicroLine(
       "DISPATCH",
-      readLoopRowValue(sharedRows, ["liveops_sent"], "0"),
+      liveOpsSent,
       loopDeck.stageValue || loopDeck.loopStatusLabel || "--"
-    )
+    ),
+    queueDetailText: `DEPTH ${queueDepth} | FLOW ${loopDeck.loopStatusLabel || "IDLE"}`,
+    runtimeDetailText: `HEALTH ${sceneHealth} | ALERT ${alertCount}`,
+    dispatchDetailText: `SENT ${liveOpsSent} | STAGE ${loopDeck.stageValue || loopDeck.loopStatusLabel || "--"}`
   };
 }
 
@@ -1125,7 +1153,10 @@ function buildPvpRuntimePayload(rawRuntime, rawLive, pvpView, scene, assetMetric
       loopSignalText: loopPanel.signalLineText,
       loopDuelText: loopMicro.duelText,
       loopLadderText: loopMicro.ladderText,
-      loopTelemetryText: loopMicro.telemetryText
+      loopTelemetryText: loopMicro.telemetryText,
+      loopDuelDetailText: loopMicro.duelDetailText,
+      loopLadderDetailText: loopMicro.ladderDetailText,
+      loopTelemetryDetailText: loopMicro.telemetryDetailText
     },
     camera: {
       mode: {
@@ -1385,6 +1416,10 @@ function buildTokenOverviewPayload(vaultRoot, vaultView, scene) {
     loopPayoutText: loopMicro.payoutText,
     loopRouteText: loopMicro.routeText,
     loopPremiumText: loopMicro.premiumText,
+    loopWalletDetailText: loopMicro.walletDetailText,
+    loopPayoutDetailText: loopMicro.payoutDetailText,
+    loopRouteDetailText: loopMicro.routeDetailText,
+    loopPremiumDetailText: loopMicro.premiumDetailText,
     statusChips: [
       {
         id: "tokenWalletChip",
@@ -1697,7 +1732,10 @@ function buildAdminRuntimePayload(adminRuntime, adminPanels, scene) {
     loopSignalText: loopPanel.signalLineText,
     loopQueueText: loopMicro.queueText,
     loopRuntimeText: loopMicro.runtimeText,
-    loopDispatchText: loopMicro.dispatchText
+    loopDispatchText: loopMicro.dispatchText,
+    loopQueueDetailText: loopMicro.queueDetailText,
+    loopRuntimeDetailText: loopMicro.runtimeDetailText,
+    loopDispatchDetailText: loopMicro.dispatchDetailText
   };
 }
 
