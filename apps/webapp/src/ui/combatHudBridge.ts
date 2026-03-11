@@ -97,6 +97,9 @@ type CombatHudPayload = {
   loopDuelText?: string;
   loopLadderText?: string;
   loopTelemetryText?: string;
+  loopDuelOpsText?: string;
+  loopLadderOpsText?: string;
+  loopTelemetryOpsText?: string;
   loopDuelStateText?: string;
   loopLadderStateText?: string;
   loopTelemetryStateText?: string;
@@ -258,6 +261,9 @@ function render(payload: CombatHudPayload): boolean {
   const loopDuelState = byId("combatLoopDuelState");
   const loopLadderState = byId("combatLoopLadderState");
   const loopTelemetryState = byId("combatLoopTelemetryState");
+  const loopDuelOps = byId("combatLoopDuelOps");
+  const loopLadderOps = byId("combatLoopLadderOps");
+  const loopTelemetryOps = byId("combatLoopTelemetryOps");
   const loopDuelSignal = byId("combatLoopDuelSignal");
   const loopLadderSignal = byId("combatLoopLadderSignal");
   const loopTelemetrySignal = byId("combatLoopTelemetrySignal");
@@ -453,6 +459,15 @@ function render(payload: CombatHudPayload): boolean {
   }
   if (loopTelemetryState) {
     loopTelemetryState.textContent = String(payload.loopTelemetryStateText || "FLOW WAIT | PERSONA WAIT | SEQ --");
+  }
+  if (loopDuelOps) {
+    loopDuelOps.textContent = String(payload.loopDuelOpsText || "ENTRY WAIT | STATUS -- | QUEUE --");
+  }
+  if (loopLadderOps) {
+    loopLadderOps.textContent = String(payload.loopLadderOpsText || "SEQ WAIT | CHARGE -- | TICK --");
+  }
+  if (loopTelemetryOps) {
+    loopTelemetryOps.textContent = String(payload.loopTelemetryOpsText || "PERSONA WAIT | DIAG -- | RISK --");
   }
   if (loopDuelSignal) {
     loopDuelSignal.textContent = String(payload.loopDuelSignalText || "QUEUE -- | FLOW WAIT | RISK --");

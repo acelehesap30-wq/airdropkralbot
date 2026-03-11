@@ -35,6 +35,10 @@ export type TokenOverviewBridgePayload = {
   loopPayoutText?: string;
   loopRouteText?: string;
   loopPremiumText?: string;
+  loopWalletOpsText?: string;
+  loopPayoutOpsText?: string;
+  loopRouteOpsText?: string;
+  loopPremiumOpsText?: string;
   loopWalletStateText?: string;
   loopPayoutStateText?: string;
   loopRouteStateText?: string;
@@ -98,6 +102,10 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   const loopPayoutState = byId<HTMLElement>("tokenLoopPayoutState");
   const loopRouteState = byId<HTMLElement>("tokenLoopRouteState");
   const loopPremiumState = byId<HTMLElement>("tokenLoopPremiumState");
+  const loopWalletOps = byId<HTMLElement>("tokenLoopWalletOps");
+  const loopPayoutOps = byId<HTMLElement>("tokenLoopPayoutOps");
+  const loopRouteOps = byId<HTMLElement>("tokenLoopRouteOps");
+  const loopPremiumOps = byId<HTMLElement>("tokenLoopPremiumOps");
   const loopWalletSignal = byId<HTMLElement>("tokenLoopWalletSignal");
   const loopPayoutSignal = byId<HTMLElement>("tokenLoopPayoutSignal");
   const loopRouteSignal = byId<HTMLElement>("tokenLoopRouteSignal");
@@ -152,6 +160,18 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   }
   if (loopPremiumState) {
     loopPremiumState.textContent = safeText(payload.loopPremiumStateText, "FLOW WAIT | STAGE -- | PASS --");
+  }
+  if (loopWalletOps) {
+    loopWalletOps.textContent = safeText(payload.loopWalletOpsText, "ENTRY WAIT | STATE -- | FLOW WAIT");
+  }
+  if (loopPayoutOps) {
+    loopPayoutOps.textContent = safeText(payload.loopPayoutOpsText, "SEQ WAIT | PAYOUT -- | ROUTE --");
+  }
+  if (loopRouteOps) {
+    loopRouteOps.textContent = safeText(payload.loopRouteOpsText, "PERSONA WAIT | ROUTE -- | FLOW WAIT");
+  }
+  if (loopPremiumOps) {
+    loopPremiumOps.textContent = safeText(payload.loopPremiumOpsText, "ENTRY WAIT | PASS -- | STAGE --");
   }
   if (loopWalletSignal) {
     loopWalletSignal.textContent = safeText(payload.loopWalletSignalText, "STATE -- | FLOW WAIT | ENTRY WAIT");

@@ -349,6 +349,9 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
     payloads.combatHud.loopTelemetryStateText,
     /FLOW DUEL FLOW \| PERSONA (WORLD )?PERSONALITY ASSAULT \| SEQ DUEL SEQUENCE/i
   );
+  assert.match(payloads.combatHud.loopDuelOpsText, /ENTRY DUEL CONSOLE \| STATUS ACTIVE \| QUEUE 3/i);
+  assert.match(payloads.combatHud.loopLadderOpsText, /SEQ DUEL SEQUENCE \| CHARGE -- \| TICK --/i);
+  assert.match(payloads.combatHud.loopTelemetryOpsText, /PERSONA (WORLD )?PERSONALITY ASSAULT \| DIAG HOT \| RISK WATCH/i);
   assert.match(payloads.combatHud.loopDuelSignalText, /QUEUE 3 \| FLOW ACTIVE \| RISK WATCH/i);
   assert.match(payloads.combatHud.loopLadderSignalText, /CHARGE -- \| TICK -- \| FLOW DUEL FLOW/i);
   assert.match(payloads.combatHud.loopTelemetrySignalText, /DIAG HOT \| RISK WATCH \| FLOW DUEL FLOW/i);
@@ -381,6 +384,10 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
   assert.equal(payloads.tokenOverview.loopPayoutText, "PAYOUT | WAIT");
   assert.equal(payloads.tokenOverview.loopRouteText, "ROUTE | WAIT");
   assert.equal(payloads.tokenOverview.loopPremiumText, "PREMIUM | WAIT");
+  assert.equal(payloads.tokenOverview.loopWalletOpsText, "ENTRY WAIT | STATE -- | FLOW WAIT");
+  assert.equal(payloads.tokenOverview.loopPayoutOpsText, "SEQ WAIT | PAYOUT -- | ROUTE --");
+  assert.equal(payloads.tokenOverview.loopRouteOpsText, "PERSONA WAIT | ROUTE -- | FLOW WAIT");
+  assert.equal(payloads.tokenOverview.loopPremiumOpsText, "ENTRY WAIT | PASS -- | STAGE --");
   assert.equal(payloads.tokenOverview.loopWalletDetailText, "Wallet verification detay bekleniyor.");
   assert.equal(payloads.tokenOverview.loopPayoutDetailText, "Payout route detay bekleniyor.");
   assert.equal(payloads.tokenOverview.loopRouteDetailText, "Route quorum detay bekleniyor.");
@@ -458,6 +465,10 @@ test("buildPlayerBridgePayloads surfaces active vault loop micro panels from sel
   assert.match(payloads.tokenOverview.loopPayoutStateText, /FLOW PAYOUT FLOW \| SEQ PAYOUT ROUTE \| PAYOUT OPEN/i);
   assert.match(payloads.tokenOverview.loopRouteStateText, /FLOW PAYOUT FLOW \| PERSONA STABLE ROUTE \| ROUTE 2\/3/i);
   assert.match(payloads.tokenOverview.loopPremiumStateText, /FLOW PAYOUT FLOW \| STAGE SUBMIT \| PASS ACTIVE/i);
+  assert.match(payloads.tokenOverview.loopWalletOpsText, /ENTRY PAYOUT TERMINAL \| STATE APPROVED \| FLOW LIVE/i);
+  assert.match(payloads.tokenOverview.loopPayoutOpsText, /SEQ PAYOUT ROUTE \| PAYOUT OPEN \| ROUTE 2\/3/i);
+  assert.match(payloads.tokenOverview.loopRouteOpsText, /PERSONA STABLE ROUTE \| ROUTE 2\/3 \| FLOW PAYOUT FLOW/i);
+  assert.match(payloads.tokenOverview.loopPremiumOpsText, /ENTRY PAYOUT TERMINAL \| PASS ACTIVE \| STAGE SUBMIT/i);
   assert.match(payloads.tokenOverview.loopWalletSignalText, /STATE APPROVED \| FLOW LIVE \| ENTRY PAYOUT TERMINAL/i);
   assert.match(payloads.tokenOverview.loopPayoutSignalText, /PAYOUT OPEN \| ROUTE 2\/3 \| FLOW PAYOUT FLOW/i);
   assert.match(payloads.tokenOverview.loopRouteSignalText, /ROUTE 2\/3 \| PERSONA STABLE ROUTE \| FLOW PAYOUT FLOW/i);
@@ -539,6 +550,9 @@ test("buildAdminBridgePayloads produces runtime, asset and audit cards from admi
   assert.match(payloads.runtime.loopQueueStateText, /FLOW DISPATCH FLOW \| ENTRY DISPATCH CONSOLE \| QUEUE 2/i);
   assert.match(payloads.runtime.loopRuntimeStateText, /FLOW DISPATCH FLOW \| SEQ DISPATCH SEQUENCE \| HEALTH WATCH/i);
   assert.match(payloads.runtime.loopDispatchStateText, /FLOW DISPATCH FLOW \| STAGE ALERT \| SENT 12/i);
+  assert.match(payloads.runtime.loopQueueOpsText, /ENTRY DISPATCH CONSOLE \| QUEUE 2 \| FLOW WATCH/i);
+  assert.match(payloads.runtime.loopRuntimeOpsText, /SEQ DISPATCH SEQUENCE \| HEALTH WATCH \| ALERT 3/i);
+  assert.match(payloads.runtime.loopDispatchOpsText, /ENTRY DISPATCH CONSOLE \| SENT 12 \| STAGE ALERT/i);
   assert.match(payloads.runtime.loopQueueSignalText, /QUEUE 2 \| FLOW DISPATCH FLOW \| ENTRY DISPATCH CONSOLE/i);
   assert.match(payloads.runtime.loopRuntimeSignalText, /HEALTH WATCH \| ALERT 3 \| FLOW DISPATCH FLOW/i);
   assert.match(payloads.runtime.loopDispatchSignalText, /SENT 12 \| STAGE ALERT \| FLOW DISPATCH FLOW/i);
