@@ -38,6 +38,8 @@ type LoopFamilyPanel = {
   opsText: string;
   signalText: string;
   detailText: string;
+  attentionText?: string;
+  cadenceText?: string;
 };
 
 type LoopPayload = {
@@ -333,6 +335,8 @@ function renderLoopFamily(prefix: string, payload: LoopFamilyPanel): void {
   setNodeText(`${prefix}Ops`, payload.opsText, "OPS --");
   setNodeText(`${prefix}Signal`, payload.signalText, "SIGNAL --");
   setNodeText(`${prefix}Detail`, payload.detailText, "Detay bekleniyor.");
+  setNodeText(`${prefix}Attention`, payload.attentionText, "ATTN --");
+  setNodeText(`${prefix}Cadence`, payload.cadenceText, "CADENCE --");
 }
 
 function renderLoop(payload: NonNullable<OperationsDeckBridgePayload["loop"]>): boolean {

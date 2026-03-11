@@ -118,6 +118,8 @@ type CombatHudPayload = {
   loopDuelDetailText?: string;
   loopLadderDetailText?: string;
   loopTelemetryDetailText?: string;
+  loopDuelAttentionText?: string;
+  loopDuelCadenceText?: string;
   rejectCategory?: string;
   rejectTone?: string;
   ladderTone?: string;
@@ -296,6 +298,8 @@ function render(payload: CombatHudPayload): boolean {
   const loopDuelDetail = byId("combatLoopDuelDetail");
   const loopLadderDetail = byId("combatLoopLadderDetail");
   const loopTelemetryDetail = byId("combatLoopTelemetryDetail");
+  const loopDuelAttention = byId("combatLoopDuelAttention");
+  const loopDuelCadence = byId("combatLoopDuelCadence");
 
   if (!panelRoot || !chainLine || !chainTrail || !timelineLine || !timelineBadge || !timelineMeter) {
     return false;
@@ -527,6 +531,12 @@ function render(payload: CombatHudPayload): boolean {
   }
   if (loopDuelDetail) {
     loopDuelDetail.textContent = String(payload.loopDuelDetailText || "Queue ve sync detay bekleniyor.");
+  }
+  if (loopDuelAttention) {
+    loopDuelAttention.textContent = String(payload.loopDuelAttentionText || "ATTN --");
+  }
+  if (loopDuelCadence) {
+    loopDuelCadence.textContent = String(payload.loopDuelCadenceText || "CADENCE --");
   }
   if (loopLadderDetail) {
     loopLadderDetail.textContent = String(payload.loopLadderDetailText || "Ladder snapshot bekleniyor.");

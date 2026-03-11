@@ -63,6 +63,8 @@ export type TokenOverviewBridgePayload = {
   loopPayoutDetailText?: string;
   loopRouteDetailText?: string;
   loopPremiumDetailText?: string;
+  loopWalletAttentionText?: string;
+  loopWalletCadenceText?: string;
 };
 
 type TokenOverviewBridge = {
@@ -145,6 +147,8 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   const loopPayoutDetail = byId<HTMLElement>("tokenLoopPayoutDetail");
   const loopRouteDetail = byId<HTMLElement>("tokenLoopRouteDetail");
   const loopPremiumDetail = byId<HTMLElement>("tokenLoopPremiumDetail");
+  const loopWalletAttention = byId<HTMLElement>("tokenLoopWalletAttention");
+  const loopWalletCadence = byId<HTMLElement>("tokenLoopWalletCadence");
   const chainSelect = byId<HTMLSelectElement>("tokenChainSelect");
   const buyBtn = byId<HTMLButtonElement>("tokenBuyBtn");
 
@@ -246,6 +250,12 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   }
   if (loopWalletDetail) {
     loopWalletDetail.textContent = safeText(payload.loopWalletDetailText, "Wallet verification detay bekleniyor.");
+  }
+  if (loopWalletAttention) {
+    loopWalletAttention.textContent = safeText(payload.loopWalletAttentionText, "ATTN --");
+  }
+  if (loopWalletCadence) {
+    loopWalletCadence.textContent = safeText(payload.loopWalletCadenceText, "CADENCE --");
   }
   if (loopPayoutDetail) {
     loopPayoutDetail.textContent = safeText(payload.loopPayoutDetailText, "Payout route detay bekleniyor.");

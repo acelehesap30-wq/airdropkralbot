@@ -34,6 +34,8 @@ type RuntimeBridgePayload = {
   loopQueueDetailText?: string;
   loopRuntimeDetailText?: string;
   loopDispatchDetailText?: string;
+  loopDispatchAttentionText?: string;
+  loopDispatchCadenceText?: string;
 };
 
 type AdminRuntimeBridge = {
@@ -111,6 +113,8 @@ function render(payload: RuntimeBridgePayload): boolean {
   const loopQueueDetail = byId<HTMLElement>("adminRuntimeLoopQueueDetail");
   const loopRuntimeDetail = byId<HTMLElement>("adminRuntimeLoopRuntimeDetail");
   const loopDispatchDetail = byId<HTMLElement>("adminRuntimeLoopDispatchDetail");
+  const loopDispatchAttention = byId<HTMLElement>("adminRuntimeLoopDispatchAttention");
+  const loopDispatchCadence = byId<HTMLElement>("adminRuntimeLoopDispatchCadence");
   if (!line || !eventsLine || !loopLine || !loopHint || !loopFocus || !loopOpsLine || !loopOpsHint || !loopSequence || !loopState || !loopDetail || !loopSignal) {
     return false;
   }
@@ -191,6 +195,12 @@ function render(payload: RuntimeBridgePayload): boolean {
   if (loopDispatchDetail) {
     loopDispatchDetail.textContent = String(payload.loopDispatchDetailText || "Dispatch gate detay bekleniyor.");
   }
+  if (loopDispatchAttention) {
+    loopDispatchAttention.textContent = String(payload.loopDispatchAttentionText || "ATTN --");
+  }
+  if (loopDispatchCadence) {
+    loopDispatchCadence.textContent = String(payload.loopDispatchCadenceText || "CADENCE --");
+  }
   pulseOnce(line);
   pulseOnce(eventsLine);
   pulseOnce(loopLine);
@@ -214,6 +224,8 @@ function render(payload: RuntimeBridgePayload): boolean {
   pulseOnce(loopQueueDetail);
   pulseOnce(loopRuntimeDetail);
   pulseOnce(loopDispatchDetail);
+  pulseOnce(loopDispatchAttention);
+  pulseOnce(loopDispatchCadence);
   return true;
 }
 

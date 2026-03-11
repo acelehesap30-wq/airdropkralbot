@@ -618,6 +618,12 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
                   <p id="combatLoopDuelDetail" className="akrBridgeHint">
                     Queue ve sync detay bekleniyor.
                   </p>
+                  <p id="combatLoopDuelAttention" className="akrBridgeHint">
+                    ATTN -- 
+                  </p>
+                  <p id="combatLoopDuelCadence" className="akrBridgeHint">
+                    CADENCE --
+                  </p>
                 </div>
                 <div id="combatLoopLadderPanel" className="akrBridgeFamilyPanel" data-tone="neutral">
                   <p id="combatLoopLadder" className="akrBridgeHint">
@@ -850,6 +856,12 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
               <p id="tasksLoopLootDetail" className="akrBridgeHint">
                 Loot reveal detay bekleniyor.
               </p>
+              <p id="tasksLoopLootAttention" className="akrBridgeHint">
+                ATTN --
+              </p>
+              <p id="tasksLoopLootCadence" className="akrBridgeHint">
+                CADENCE --
+              </p>
             </div>
           </div>
         </BridgeCard>
@@ -929,6 +941,12 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
                   -
                 </p>
                 <p className="akrBridgeHint" id="tokenLoopWalletDetail">
+                  -
+                </p>
+                <p className="akrBridgeHint" id="tokenLoopWalletAttention">
+                  -
+                </p>
+                <p className="akrBridgeHint" id="tokenLoopWalletCadence">
                   -
                 </p>
               </div>
@@ -1222,6 +1240,12 @@ function AdminBridgeCards(props: { lang: Lang }) {
               -
             </p>
             <p id="adminRuntimeLoopDispatchDetail" className="akrBridgeHint">
+              -
+            </p>
+            <p id="adminRuntimeLoopDispatchAttention" className="akrBridgeHint">
+              -
+            </p>
+            <p id="adminRuntimeLoopDispatchCadence" className="akrBridgeHint">
               -
             </p>
           </div>
