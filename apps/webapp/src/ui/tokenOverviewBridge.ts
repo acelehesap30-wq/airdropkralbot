@@ -35,6 +35,10 @@ export type TokenOverviewBridgePayload = {
   loopPayoutText?: string;
   loopRouteText?: string;
   loopPremiumText?: string;
+  loopWalletTone?: string;
+  loopPayoutTone?: string;
+  loopRouteTone?: string;
+  loopPremiumTone?: string;
   loopWalletFocusText?: string;
   loopPayoutFocusText?: string;
   loopRouteFocusText?: string;
@@ -85,6 +89,13 @@ function asNum(value: unknown): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function setTone(node: HTMLElement | null, tone: unknown): void {
+  if (!node) {
+    return;
+  }
+  node.dataset.tone = safeText(tone, "neutral").toLowerCase() || "neutral";
+}
+
 function render(payload: TokenOverviewBridgePayload): boolean {
   const badge = byId<HTMLElement>("tokenBadge");
   const balance = byId<HTMLElement>("balToken");
@@ -103,15 +114,19 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   const loopDetail = byId<HTMLElement>("tokenLoopDetail");
   const loopSignal = byId<HTMLElement>("tokenLoopSignal");
   const loopWallet = byId<HTMLElement>("tokenLoopWallet");
+  const loopWalletPanel = byId<HTMLElement>("tokenLoopWalletPanel");
   const loopWalletFocus = byId<HTMLElement>("tokenLoopWalletFocus");
   const loopWalletStage = byId<HTMLElement>("tokenLoopWalletStage");
   const loopPayout = byId<HTMLElement>("tokenLoopPayout");
+  const loopPayoutPanel = byId<HTMLElement>("tokenLoopPayoutPanel");
   const loopPayoutFocus = byId<HTMLElement>("tokenLoopPayoutFocus");
   const loopPayoutStage = byId<HTMLElement>("tokenLoopPayoutStage");
   const loopRoute = byId<HTMLElement>("tokenLoopRoute");
+  const loopRoutePanel = byId<HTMLElement>("tokenLoopRoutePanel");
   const loopRouteFocus = byId<HTMLElement>("tokenLoopRouteFocus");
   const loopRouteStage = byId<HTMLElement>("tokenLoopRouteStage");
   const loopPremium = byId<HTMLElement>("tokenLoopPremium");
+  const loopPremiumPanel = byId<HTMLElement>("tokenLoopPremiumPanel");
   const loopPremiumFocus = byId<HTMLElement>("tokenLoopPremiumFocus");
   const loopPremiumStage = byId<HTMLElement>("tokenLoopPremiumStage");
   const loopWalletState = byId<HTMLElement>("tokenLoopWalletState");
@@ -156,6 +171,7 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   if (loopWallet) {
     loopWallet.textContent = safeText(payload.loopWalletText, "WALLET | WAIT");
   }
+  setTone(loopWalletPanel, payload.loopWalletTone);
   if (loopWalletFocus) {
     loopWalletFocus.textContent = safeText(payload.loopWalletFocusText, "ENTRY WAIT | FOCUS WAIT | FLOW WAIT");
   }
@@ -165,6 +181,7 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   if (loopPayout) {
     loopPayout.textContent = safeText(payload.loopPayoutText, "PAYOUT | WAIT");
   }
+  setTone(loopPayoutPanel, payload.loopPayoutTone);
   if (loopPayoutFocus) {
     loopPayoutFocus.textContent = safeText(payload.loopPayoutFocusText, "SEQ WAIT | FOCUS WAIT | ROUTE --");
   }
@@ -174,6 +191,7 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   if (loopRoute) {
     loopRoute.textContent = safeText(payload.loopRouteText, "ROUTE | WAIT");
   }
+  setTone(loopRoutePanel, payload.loopRouteTone);
   if (loopRouteFocus) {
     loopRouteFocus.textContent = safeText(payload.loopRouteFocusText, "PERSONA WAIT | FOCUS -- | FLOW WAIT");
   }
@@ -183,6 +201,7 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   if (loopPremium) {
     loopPremium.textContent = safeText(payload.loopPremiumText, "PREMIUM | WAIT");
   }
+  setTone(loopPremiumPanel, payload.loopPremiumTone);
   if (loopPremiumFocus) {
     loopPremiumFocus.textContent = safeText(payload.loopPremiumFocusText, "ENTRY WAIT | FOCUS WAIT | FLOW WAIT");
   }

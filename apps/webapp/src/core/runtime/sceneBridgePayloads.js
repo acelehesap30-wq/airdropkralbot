@@ -316,12 +316,60 @@ function buildLoopMicroDetail(...segments) {
     .join(" | ");
 }
 
+function resolveLoopFamilyTone(...values) {
+  const text = values
+    .map((value) => toText(value, ""))
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  if (!text) {
+    return "neutral";
+  }
+  if (
+    text.includes("critical") ||
+    text.includes("blocked") ||
+    text.includes("reject") ||
+    text.includes("error") ||
+    text.includes("manual") ||
+    text.includes("degraded")
+  ) {
+    return "critical";
+  }
+  if (
+    text.includes("watch") ||
+    text.includes("partial") ||
+    text.includes("mixed") ||
+    text.includes("review") ||
+    text.includes("open") ||
+    text.includes("submit") ||
+    text.includes("hot") ||
+    text.includes("alert")
+  ) {
+    return "pressure";
+  }
+  if (
+    text.includes("active") ||
+    text.includes("live") ||
+    text.includes("approved") ||
+    text.includes("ready") ||
+    text.includes("pass") ||
+    text.includes("stable") ||
+    text.includes("ok")
+  ) {
+    return "advantage";
+  }
+  return "balanced";
+}
+
 function buildPvpLoopMicroPanels(loopDeck, active) {
   if (!active) {
     return {
       duelText: "DUEL | WAIT",
       ladderText: "LADDER | WAIT",
       telemetryText: "TELEMETRY | WAIT",
+      duelTone: "neutral",
+      ladderTone: "neutral",
+      telemetryTone: "neutral",
       duelFocusText: "ENTRY WAIT | FOCUS WAIT | PERSONA --",
       ladderFocusText: "SEQ WAIT | FOCUS WAIT | FLOW WAIT",
       telemetryFocusText: "PERSONA WAIT | FOCUS -- | FLOW WAIT",
@@ -370,6 +418,9 @@ function buildPvpLoopMicroPanels(loopDeck, active) {
       diagBand,
       readLoopRowValue(sharedRows, ["risk_band", "tick_tempo"], "--")
     ),
+    duelTone: resolveLoopFamilyTone(statusLabel, riskBand, duelPhase),
+    ladderTone: resolveLoopFamilyTone(ladderCharge, tickTempo, statusLabel, stageValue),
+    telemetryTone: resolveLoopFamilyTone(diagBand, riskBand, personalityLabel),
     duelFocusText: buildLoopMicroDetail(
       `ENTRY ${entryLabel}`,
       `FOCUS ${microflowLabel}`,
@@ -426,6 +477,10 @@ function buildVaultLoopMicroPanels(loopDeck, active) {
       payoutText: "PAYOUT | WAIT",
       routeText: "ROUTE | WAIT",
       premiumText: "PREMIUM | WAIT",
+      walletTone: "neutral",
+      payoutTone: "neutral",
+      routeTone: "neutral",
+      premiumTone: "neutral",
       walletFocusText: "ENTRY WAIT | FOCUS WAIT | FLOW WAIT",
       payoutFocusText: "SEQ WAIT | FOCUS WAIT | ROUTE --",
       routeFocusText: "PERSONA WAIT | FOCUS -- | FLOW WAIT",
@@ -468,6 +523,10 @@ function buildVaultLoopMicroPanels(loopDeck, active) {
     payoutText: buildLoopMicroLine("PAYOUT", payoutState, routeState),
     routeText: buildLoopMicroLine("ROUTE", routeState, walletState),
     premiumText: buildLoopMicroLine("PREMIUM", premiumState, stageValue),
+    walletTone: resolveLoopFamilyTone(walletState, loopStatusLabel),
+    payoutTone: resolveLoopFamilyTone(payoutState, routeState, stageValue),
+    routeTone: resolveLoopFamilyTone(routeState, personalityCaption, loopStatusLabel),
+    premiumTone: resolveLoopFamilyTone(premiumState, stageValue, loopStatusLabel),
     walletFocusText: buildLoopMicroDetail(`ENTRY ${entryLabel}`, `FOCUS ${walletState}`, `FLOW ${microflowLabel}`),
     payoutFocusText: buildLoopMicroDetail(`SEQ ${sequenceLabel}`, `FOCUS ${payoutState}`, `ROUTE ${routeState}`),
     routeFocusText: buildLoopMicroDetail(
@@ -537,6 +596,9 @@ function buildAdminLoopMicroPanels(loopDeck, active) {
       queueText: "QUEUE | WAIT",
       runtimeText: "RUNTIME | WAIT",
       dispatchText: "DISPATCH | WAIT",
+      queueTone: "neutral",
+      runtimeTone: "neutral",
+      dispatchTone: "neutral",
       queueFocusText: "ENTRY WAIT | FOCUS WAIT | FLOW WAIT",
       runtimeFocusText: "SEQ WAIT | FOCUS WAIT | ALERT --",
       dispatchFocusText: "ENTRY WAIT | FOCUS WAIT | STAGE --",
@@ -583,6 +645,9 @@ function buildAdminLoopMicroPanels(loopDeck, active) {
       liveOpsSent,
       stageValue
     ),
+    queueTone: resolveLoopFamilyTone(queueDepth, loopStatusLabel),
+    runtimeTone: resolveLoopFamilyTone(sceneHealth, alertCount, loopStatusLabel),
+    dispatchTone: resolveLoopFamilyTone(liveOpsSent, stageValue, loopStatusLabel),
     queueFocusText: buildLoopMicroDetail(`ENTRY ${entryLabel}`, `FOCUS ${queueDepth}`, `FLOW ${microflowLabel}`),
     runtimeFocusText: buildLoopMicroDetail(`SEQ ${sequenceLabel}`, `FOCUS ${sceneHealth}`, `ALERT ${alertCount}`),
     dispatchFocusText: buildLoopMicroDetail(`ENTRY ${entryLabel}`, `FOCUS ${liveOpsSent}`, `STAGE ${stageValue}`),
@@ -1366,6 +1431,9 @@ function buildPvpRuntimePayload(rawRuntime, rawLive, pvpView, scene, assetMetric
       loopDuelText: loopMicro.duelText,
       loopLadderText: loopMicro.ladderText,
       loopTelemetryText: loopMicro.telemetryText,
+      loopDuelTone: loopMicro.duelTone,
+      loopLadderTone: loopMicro.ladderTone,
+      loopTelemetryTone: loopMicro.telemetryTone,
       loopDuelFocusText: loopMicro.duelFocusText,
       loopLadderFocusText: loopMicro.ladderFocusText,
       loopTelemetryFocusText: loopMicro.telemetryFocusText,
@@ -1643,6 +1711,10 @@ function buildTokenOverviewPayload(vaultRoot, vaultView, scene) {
     loopPayoutText: loopMicro.payoutText,
     loopRouteText: loopMicro.routeText,
     loopPremiumText: loopMicro.premiumText,
+    loopWalletTone: loopMicro.walletTone,
+    loopPayoutTone: loopMicro.payoutTone,
+    loopRouteTone: loopMicro.routeTone,
+    loopPremiumTone: loopMicro.premiumTone,
     loopWalletFocusText: loopMicro.walletFocusText,
     loopPayoutFocusText: loopMicro.payoutFocusText,
     loopRouteFocusText: loopMicro.routeFocusText,
@@ -1980,6 +2052,9 @@ function buildAdminRuntimePayload(adminRuntime, adminPanels, scene) {
     loopQueueText: loopMicro.queueText,
     loopRuntimeText: loopMicro.runtimeText,
     loopDispatchText: loopMicro.dispatchText,
+    loopQueueTone: loopMicro.queueTone,
+    loopRuntimeTone: loopMicro.runtimeTone,
+    loopDispatchTone: loopMicro.dispatchTone,
     loopQueueFocusText: loopMicro.queueFocusText,
     loopRuntimeFocusText: loopMicro.runtimeFocusText,
     loopDispatchFocusText: loopMicro.dispatchFocusText,

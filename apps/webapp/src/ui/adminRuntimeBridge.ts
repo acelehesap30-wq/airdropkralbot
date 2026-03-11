@@ -13,6 +13,9 @@ type RuntimeBridgePayload = {
   loopQueueText?: string;
   loopRuntimeText?: string;
   loopDispatchText?: string;
+  loopQueueTone?: string;
+  loopRuntimeTone?: string;
+  loopDispatchTone?: string;
   loopQueueFocusText?: string;
   loopRuntimeFocusText?: string;
   loopDispatchFocusText?: string;
@@ -65,6 +68,13 @@ function pulseOnce(node: HTMLElement | null, className = "enter"): void {
   }, 280);
 }
 
+function setTone(node: HTMLElement | null, tone: unknown): void {
+  if (!node) {
+    return;
+  }
+  node.dataset.tone = String(tone || "neutral").toLowerCase() || "neutral";
+}
+
 function render(payload: RuntimeBridgePayload): boolean {
   const line = byId<HTMLElement>("adminRuntimeLine");
   const eventsLine = byId<HTMLElement>("adminRuntimeEvents");
@@ -78,12 +88,15 @@ function render(payload: RuntimeBridgePayload): boolean {
   const loopDetail = byId<HTMLElement>("adminRuntimeLoopDetail");
   const loopSignal = byId<HTMLElement>("adminRuntimeLoopSignal");
   const loopQueue = byId<HTMLElement>("adminRuntimeLoopQueue");
+  const loopQueuePanel = byId<HTMLElement>("adminRuntimeLoopQueuePanel");
   const loopQueueFocus = byId<HTMLElement>("adminRuntimeLoopQueueFocus");
   const loopQueueStage = byId<HTMLElement>("adminRuntimeLoopQueueStage");
   const loopRuntime = byId<HTMLElement>("adminRuntimeLoopRuntime");
+  const loopRuntimePanel = byId<HTMLElement>("adminRuntimeLoopRuntimePanel");
   const loopRuntimeFocus = byId<HTMLElement>("adminRuntimeLoopRuntimeFocus");
   const loopRuntimeStage = byId<HTMLElement>("adminRuntimeLoopRuntimeStage");
   const loopDispatch = byId<HTMLElement>("adminRuntimeLoopDispatch");
+  const loopDispatchPanel = byId<HTMLElement>("adminRuntimeLoopDispatchPanel");
   const loopDispatchFocus = byId<HTMLElement>("adminRuntimeLoopDispatchFocus");
   const loopDispatchStage = byId<HTMLElement>("adminRuntimeLoopDispatchStage");
   const loopQueueState = byId<HTMLElement>("adminRuntimeLoopQueueState");
@@ -115,6 +128,7 @@ function render(payload: RuntimeBridgePayload): boolean {
   if (loopQueue) {
     loopQueue.textContent = String(payload.loopQueueText || "QUEUE | WAIT");
   }
+  setTone(loopQueuePanel, payload.loopQueueTone);
   if (loopQueueFocus) {
     loopQueueFocus.textContent = String(payload.loopQueueFocusText || "ENTRY WAIT | FOCUS WAIT | FLOW WAIT");
   }
@@ -124,6 +138,7 @@ function render(payload: RuntimeBridgePayload): boolean {
   if (loopRuntime) {
     loopRuntime.textContent = String(payload.loopRuntimeText || "RUNTIME | WAIT");
   }
+  setTone(loopRuntimePanel, payload.loopRuntimeTone);
   if (loopRuntimeFocus) {
     loopRuntimeFocus.textContent = String(payload.loopRuntimeFocusText || "SEQ WAIT | FOCUS WAIT | ALERT --");
   }
@@ -133,6 +148,7 @@ function render(payload: RuntimeBridgePayload): boolean {
   if (loopDispatch) {
     loopDispatch.textContent = String(payload.loopDispatchText || "DISPATCH | WAIT");
   }
+  setTone(loopDispatchPanel, payload.loopDispatchTone);
   if (loopDispatchFocus) {
     loopDispatchFocus.textContent = String(payload.loopDispatchFocusText || "ENTRY WAIT | FOCUS WAIT | STAGE --");
   }

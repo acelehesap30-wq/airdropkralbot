@@ -1996,6 +1996,35 @@ body {
   line-height: 1.45;
 }
 
+.akrBridgeFamilyPanel {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(90, 176, 255, 0.14);
+  background: rgba(8, 17, 40, 0.56);
+}
+
+.akrBridgeFamilyPanel[data-tone="critical"] {
+  border-color: rgba(255, 95, 127, 0.34);
+  background: rgba(57, 13, 28, 0.5);
+}
+
+.akrBridgeFamilyPanel[data-tone="pressure"] {
+  border-color: rgba(255, 188, 92, 0.3);
+  background: rgba(43, 26, 6, 0.52);
+}
+
+.akrBridgeFamilyPanel[data-tone="advantage"] {
+  border-color: rgba(74, 236, 176, 0.26);
+  background: rgba(8, 34, 27, 0.5);
+}
+
+.akrBridgeFamilyPanel[data-tone="balanced"] {
+  border-color: rgba(90, 176, 255, 0.18);
+}
+
 .akrBridgeHint,
 .muted,
 .micro,

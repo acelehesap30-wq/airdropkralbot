@@ -97,6 +97,9 @@ type CombatHudPayload = {
   loopDuelText?: string;
   loopLadderText?: string;
   loopTelemetryText?: string;
+  loopDuelTone?: string;
+  loopLadderTone?: string;
+  loopTelemetryTone?: string;
   loopDuelFocusText?: string;
   loopLadderFocusText?: string;
   loopTelemetryFocusText?: string;
@@ -209,6 +212,14 @@ function setNodeFlash(node: HTMLElement): void {
   }, 260);
 }
 
+function setTone(node: HTMLElement | null, tone: unknown): void {
+  if (!node) {
+    return;
+  }
+  const key = String(tone || "neutral").toLowerCase();
+  node.dataset.tone = key || "neutral";
+}
+
 function render(payload: CombatHudPayload): boolean {
   const panelRoot = byId("combatHudPanel") || document.querySelector<HTMLElement>(".combatHudPanel");
   const chainLine = byId("combatChainLine");
@@ -262,12 +273,15 @@ function render(payload: CombatHudPayload): boolean {
   const loopDetail = byId("combatLoopDetail");
   const loopSignal = byId("combatLoopSignal");
   const loopDuel = byId("combatLoopDuel");
+  const loopDuelPanel = byId("combatLoopDuelPanel");
   const loopDuelFocus = byId("combatLoopDuelFocus");
   const loopDuelStage = byId("combatLoopDuelStage");
   const loopLadder = byId("combatLoopLadder");
+  const loopLadderPanel = byId("combatLoopLadderPanel");
   const loopLadderFocus = byId("combatLoopLadderFocus");
   const loopLadderStage = byId("combatLoopLadderStage");
   const loopTelemetry = byId("combatLoopTelemetry");
+  const loopTelemetryPanel = byId("combatLoopTelemetryPanel");
   const loopTelemetryFocus = byId("combatLoopTelemetryFocus");
   const loopTelemetryStage = byId("combatLoopTelemetryStage");
   const loopDuelState = byId("combatLoopDuelState");
@@ -457,6 +471,7 @@ function render(payload: CombatHudPayload): boolean {
   if (loopDuel) {
     loopDuel.textContent = String(payload.loopDuelText || "DUEL | WAIT");
   }
+  setTone(loopDuelPanel, payload.loopDuelTone);
   if (loopDuelFocus) {
     loopDuelFocus.textContent = String(payload.loopDuelFocusText || "ENTRY WAIT | FOCUS WAIT | PERSONA --");
   }
@@ -466,6 +481,7 @@ function render(payload: CombatHudPayload): boolean {
   if (loopLadder) {
     loopLadder.textContent = String(payload.loopLadderText || "LADDER | WAIT");
   }
+  setTone(loopLadderPanel, payload.loopLadderTone);
   if (loopLadderFocus) {
     loopLadderFocus.textContent = String(payload.loopLadderFocusText || "SEQ WAIT | FOCUS WAIT | FLOW WAIT");
   }
@@ -475,6 +491,7 @@ function render(payload: CombatHudPayload): boolean {
   if (loopTelemetry) {
     loopTelemetry.textContent = String(payload.loopTelemetryText || "TELEMETRY | WAIT");
   }
+  setTone(loopTelemetryPanel, payload.loopTelemetryTone);
   if (loopTelemetryFocus) {
     loopTelemetryFocus.textContent = String(payload.loopTelemetryFocusText || "PERSONA WAIT | FOCUS -- | FLOW WAIT");
   }

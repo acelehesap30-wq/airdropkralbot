@@ -343,6 +343,8 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
   assert.match(payloads.combatHud.loopDuelText, /DUEL ENGAGE \| ACTIVE/i);
   assert.match(payloads.combatHud.loopLadderText, /LADDER -- \| --/i);
   assert.match(payloads.combatHud.loopTelemetryText, /TELEMETRY HOT \| WATCH/i);
+  assert.equal(payloads.combatHud.loopDuelTone, "pressure");
+  assert.equal(payloads.combatHud.loopTelemetryTone, "pressure");
   assert.match(payloads.combatHud.loopDuelFocusText, /ENTRY DUEL CONSOLE \| FOCUS DUEL FLOW \| PERSONA (WORLD )?PERSONALITY ASSAULT/i);
   assert.match(payloads.combatHud.loopDuelStageText, /STAGE ENGAGE \| STATUS ACTIVE \| FLOW DUEL FLOW/i);
   assert.match(payloads.combatHud.loopTelemetryFocusText, /PERSONA (WORLD )?PERSONALITY ASSAULT \| FOCUS HOT \| FLOW DUEL FLOW/i);
@@ -467,6 +469,8 @@ test("buildPlayerBridgePayloads surfaces active vault loop micro panels from sel
   assert.match(payloads.tokenOverview.loopPayoutText, /PAYOUT OPEN \| 2\/3/i);
   assert.match(payloads.tokenOverview.loopRouteText, /ROUTE 2\/3 \| APPROVED/i);
   assert.match(payloads.tokenOverview.loopPremiumText, /PREMIUM ACTIVE \| SUBMIT/i);
+  assert.equal(payloads.tokenOverview.loopWalletTone, "advantage");
+  assert.equal(payloads.tokenOverview.loopPayoutTone, "pressure");
   assert.match(payloads.tokenOverview.loopWalletFocusText, /ENTRY PAYOUT TERMINAL \| FOCUS APPROVED \| FLOW PAYOUT FLOW/i);
   assert.match(payloads.tokenOverview.loopPayoutFocusText, /SEQ PAYOUT ROUTE \| FOCUS OPEN \| ROUTE 2\/3/i);
   assert.match(payloads.tokenOverview.loopRouteFocusText, /PERSONA STABLE ROUTE \| FOCUS 2\/3 \| FLOW PAYOUT FLOW/i);
@@ -557,6 +561,8 @@ test("buildAdminBridgePayloads produces runtime, asset and audit cards from admi
   assert.match(payloads.runtime.loopQueueText, /QUEUE 2 \| WATCH/i);
   assert.match(payloads.runtime.loopRuntimeText, /RUNTIME WATCH \| ALERT 3/i);
   assert.match(payloads.runtime.loopDispatchText, /DISPATCH 12 \| ALERT/i);
+  assert.equal(payloads.runtime.loopQueueTone, "pressure");
+  assert.equal(payloads.runtime.loopRuntimeTone, "pressure");
   assert.match(payloads.runtime.loopQueueFocusText, /ENTRY DISPATCH CONSOLE \| FOCUS 2 \| FLOW DISPATCH FLOW/i);
   assert.match(payloads.runtime.loopRuntimeFocusText, /SEQ DISPATCH SEQUENCE \| FOCUS WATCH \| ALERT 3/i);
   assert.match(payloads.runtime.loopDispatchStageText, /STAGE ALERT \| STATUS WATCH \| SENT 12/i);

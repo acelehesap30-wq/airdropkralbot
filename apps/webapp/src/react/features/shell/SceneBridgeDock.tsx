@@ -596,69 +596,75 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
                 <p id="combatLoopSignal" className="akrBridgeHint">
                   Signal detay bekleniyor.
                 </p>
-                <p id="combatLoopDuel" className="akrBridgeHint">
-                  DUEL | WAIT
-                </p>
-                <p id="combatLoopDuelFocus" className="akrBridgeHint">
-                  ENTRY WAIT | FOCUS WAIT | PERSONA --
-                </p>
-                <p id="combatLoopDuelStage" className="akrBridgeHint">
-                  STAGE -- | STATUS -- | FLOW WAIT
-                </p>
-                <p id="combatLoopDuelState" className="akrBridgeHint">
-                  FLOW WAIT | ENTRY WAIT | PHASE --
-                </p>
-                <p id="combatLoopDuelOps" className="akrBridgeHint">
-                  ENTRY WAIT | STATUS -- | QUEUE --
-                </p>
-                <p id="combatLoopDuelSignal" className="akrBridgeHint">
-                  QUEUE -- | FLOW WAIT | RISK --
-                </p>
-                <p id="combatLoopDuelDetail" className="akrBridgeHint">
-                  Queue ve sync detay bekleniyor.
-                </p>
-                <p id="combatLoopLadder" className="akrBridgeHint">
-                  LADDER | WAIT
-                </p>
-                <p id="combatLoopLadderFocus" className="akrBridgeHint">
-                  SEQ WAIT | FOCUS WAIT | FLOW WAIT
-                </p>
-                <p id="combatLoopLadderStage" className="akrBridgeHint">
-                  STAGE -- | STATUS -- | FLOW WAIT
-                </p>
-                <p id="combatLoopLadderState" className="akrBridgeHint">
-                  FLOW WAIT | SEQ WAIT | STAGE --
-                </p>
-                <p id="combatLoopLadderOps" className="akrBridgeHint">
-                  SEQ WAIT | CHARGE -- | TICK --
-                </p>
-                <p id="combatLoopLadderSignal" className="akrBridgeHint">
-                  CHARGE -- | TICK -- | FLOW WAIT
-                </p>
-                <p id="combatLoopLadderDetail" className="akrBridgeHint">
-                  Ladder snapshot bekleniyor.
-                </p>
-                <p id="combatLoopTelemetry" className="akrBridgeHint">
-                  TELEMETRY | WAIT
-                </p>
-                <p id="combatLoopTelemetryFocus" className="akrBridgeHint">
-                  PERSONA WAIT | FOCUS -- | FLOW WAIT
-                </p>
-                <p id="combatLoopTelemetryStage" className="akrBridgeHint">
-                  STAGE -- | STATUS -- | SEQ WAIT
-                </p>
-                <p id="combatLoopTelemetryState" className="akrBridgeHint">
-                  FLOW WAIT | PERSONA WAIT | SEQ --
-                </p>
-                <p id="combatLoopTelemetryOps" className="akrBridgeHint">
-                  PERSONA WAIT | DIAG -- | RISK --
-                </p>
-                <p id="combatLoopTelemetrySignal" className="akrBridgeHint">
-                  DIAG -- | RISK -- | FLOW WAIT
-                </p>
-                <p id="combatLoopTelemetryDetail" className="akrBridgeHint">
-                  Reject ve asset telemetry bekleniyor.
-                </p>
+                <div id="combatLoopDuelPanel" className="akrBridgeFamilyPanel" data-tone="neutral">
+                  <p id="combatLoopDuel" className="akrBridgeHint">
+                    DUEL | WAIT
+                  </p>
+                  <p id="combatLoopDuelFocus" className="akrBridgeHint">
+                    ENTRY WAIT | FOCUS WAIT | PERSONA --
+                  </p>
+                  <p id="combatLoopDuelStage" className="akrBridgeHint">
+                    STAGE -- | STATUS -- | FLOW WAIT
+                  </p>
+                  <p id="combatLoopDuelState" className="akrBridgeHint">
+                    FLOW WAIT | ENTRY WAIT | PHASE --
+                  </p>
+                  <p id="combatLoopDuelOps" className="akrBridgeHint">
+                    ENTRY WAIT | STATUS -- | QUEUE --
+                  </p>
+                  <p id="combatLoopDuelSignal" className="akrBridgeHint">
+                    QUEUE -- | FLOW WAIT | RISK --
+                  </p>
+                  <p id="combatLoopDuelDetail" className="akrBridgeHint">
+                    Queue ve sync detay bekleniyor.
+                  </p>
+                </div>
+                <div id="combatLoopLadderPanel" className="akrBridgeFamilyPanel" data-tone="neutral">
+                  <p id="combatLoopLadder" className="akrBridgeHint">
+                    LADDER | WAIT
+                  </p>
+                  <p id="combatLoopLadderFocus" className="akrBridgeHint">
+                    SEQ WAIT | FOCUS WAIT | FLOW WAIT
+                  </p>
+                  <p id="combatLoopLadderStage" className="akrBridgeHint">
+                    STAGE -- | STATUS -- | FLOW WAIT
+                  </p>
+                  <p id="combatLoopLadderState" className="akrBridgeHint">
+                    FLOW WAIT | SEQ WAIT | STAGE --
+                  </p>
+                  <p id="combatLoopLadderOps" className="akrBridgeHint">
+                    SEQ WAIT | CHARGE -- | TICK --
+                  </p>
+                  <p id="combatLoopLadderSignal" className="akrBridgeHint">
+                    CHARGE -- | TICK -- | FLOW WAIT
+                  </p>
+                  <p id="combatLoopLadderDetail" className="akrBridgeHint">
+                    Ladder snapshot bekleniyor.
+                  </p>
+                </div>
+                <div id="combatLoopTelemetryPanel" className="akrBridgeFamilyPanel" data-tone="neutral">
+                  <p id="combatLoopTelemetry" className="akrBridgeHint">
+                    TELEMETRY | WAIT
+                  </p>
+                  <p id="combatLoopTelemetryFocus" className="akrBridgeHint">
+                    PERSONA WAIT | FOCUS -- | FLOW WAIT
+                  </p>
+                  <p id="combatLoopTelemetryStage" className="akrBridgeHint">
+                    STAGE -- | STATUS -- | SEQ WAIT
+                  </p>
+                  <p id="combatLoopTelemetryState" className="akrBridgeHint">
+                    FLOW WAIT | PERSONA WAIT | SEQ --
+                  </p>
+                  <p id="combatLoopTelemetryOps" className="akrBridgeHint">
+                    PERSONA WAIT | DIAG -- | RISK --
+                  </p>
+                  <p id="combatLoopTelemetrySignal" className="akrBridgeHint">
+                    DIAG -- | RISK -- | FLOW WAIT
+                  </p>
+                  <p id="combatLoopTelemetryDetail" className="akrBridgeHint">
+                    Reject ve asset telemetry bekleniyor.
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -785,90 +791,98 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
               <p className="akrBridgeHint" id="tokenLoopSignal">
                 -
               </p>
-              <p className="akrBridgeHint" id="tokenLoopWallet">
-                -
-              </p>
-              <p className="akrBridgeHint" id="tokenLoopWalletFocus">
-                -
-              </p>
-              <p className="akrBridgeHint" id="tokenLoopWalletStage">
-                -
-              </p>
-              <p className="akrBridgeHint" id="tokenLoopWalletState">
-                -
-              </p>
-              <p className="akrBridgeHint" id="tokenLoopWalletOps">
-                -
-              </p>
-              <p className="akrBridgeHint" id="tokenLoopWalletSignal">
-                -
-              </p>
-              <p className="akrBridgeHint" id="tokenLoopWalletDetail">
-                -
-              </p>
-              <p className="akrBridgeHint" id="tokenLoopPayout">
-                -
-              </p>
-              <p className="akrBridgeHint" id="tokenLoopPayoutFocus">
-                -
-              </p>
-              <p className="akrBridgeHint" id="tokenLoopPayoutStage">
-                -
-              </p>
-              <p className="akrBridgeHint" id="tokenLoopPayoutState">
-                -
-              </p>
-              <p className="akrBridgeHint" id="tokenLoopPayoutOps">
-                -
-              </p>
-              <p className="akrBridgeHint" id="tokenLoopPayoutSignal">
-                -
-              </p>
-              <p className="akrBridgeHint" id="tokenLoopPayoutDetail">
-                -
-              </p>
-              <p className="akrBridgeHint" id="tokenLoopRoute">
-                -
-              </p>
-              <p className="akrBridgeHint" id="tokenLoopRouteFocus">
-                -
-              </p>
-              <p className="akrBridgeHint" id="tokenLoopRouteStage">
-                -
-              </p>
-              <p className="akrBridgeHint" id="tokenLoopRouteState">
-                -
-              </p>
-              <p className="akrBridgeHint" id="tokenLoopRouteOps">
-                -
-              </p>
-              <p className="akrBridgeHint" id="tokenLoopRouteSignal">
-                -
-              </p>
-              <p className="akrBridgeHint" id="tokenLoopRouteDetail">
-                -
-              </p>
-              <p className="akrBridgeHint" id="tokenLoopPremium">
-                -
-              </p>
-              <p className="akrBridgeHint" id="tokenLoopPremiumFocus">
-                -
-              </p>
-              <p className="akrBridgeHint" id="tokenLoopPremiumStage">
-                -
-              </p>
-              <p className="akrBridgeHint" id="tokenLoopPremiumState">
-                -
-              </p>
-              <p className="akrBridgeHint" id="tokenLoopPremiumOps">
-                -
-              </p>
-              <p className="akrBridgeHint" id="tokenLoopPremiumSignal">
-                -
-              </p>
-              <p className="akrBridgeHint" id="tokenLoopPremiumDetail">
-                -
-              </p>
+              <div id="tokenLoopWalletPanel" className="akrBridgeFamilyPanel" data-tone="neutral">
+                <p className="akrBridgeHint" id="tokenLoopWallet">
+                  -
+                </p>
+                <p className="akrBridgeHint" id="tokenLoopWalletFocus">
+                  -
+                </p>
+                <p className="akrBridgeHint" id="tokenLoopWalletStage">
+                  -
+                </p>
+                <p className="akrBridgeHint" id="tokenLoopWalletState">
+                  -
+                </p>
+                <p className="akrBridgeHint" id="tokenLoopWalletOps">
+                  -
+                </p>
+                <p className="akrBridgeHint" id="tokenLoopWalletSignal">
+                  -
+                </p>
+                <p className="akrBridgeHint" id="tokenLoopWalletDetail">
+                  -
+                </p>
+              </div>
+              <div id="tokenLoopPayoutPanel" className="akrBridgeFamilyPanel" data-tone="neutral">
+                <p className="akrBridgeHint" id="tokenLoopPayout">
+                  -
+                </p>
+                <p className="akrBridgeHint" id="tokenLoopPayoutFocus">
+                  -
+                </p>
+                <p className="akrBridgeHint" id="tokenLoopPayoutStage">
+                  -
+                </p>
+                <p className="akrBridgeHint" id="tokenLoopPayoutState">
+                  -
+                </p>
+                <p className="akrBridgeHint" id="tokenLoopPayoutOps">
+                  -
+                </p>
+                <p className="akrBridgeHint" id="tokenLoopPayoutSignal">
+                  -
+                </p>
+                <p className="akrBridgeHint" id="tokenLoopPayoutDetail">
+                  -
+                </p>
+              </div>
+              <div id="tokenLoopRoutePanel" className="akrBridgeFamilyPanel" data-tone="neutral">
+                <p className="akrBridgeHint" id="tokenLoopRoute">
+                  -
+                </p>
+                <p className="akrBridgeHint" id="tokenLoopRouteFocus">
+                  -
+                </p>
+                <p className="akrBridgeHint" id="tokenLoopRouteStage">
+                  -
+                </p>
+                <p className="akrBridgeHint" id="tokenLoopRouteState">
+                  -
+                </p>
+                <p className="akrBridgeHint" id="tokenLoopRouteOps">
+                  -
+                </p>
+                <p className="akrBridgeHint" id="tokenLoopRouteSignal">
+                  -
+                </p>
+                <p className="akrBridgeHint" id="tokenLoopRouteDetail">
+                  -
+                </p>
+              </div>
+              <div id="tokenLoopPremiumPanel" className="akrBridgeFamilyPanel" data-tone="neutral">
+                <p className="akrBridgeHint" id="tokenLoopPremium">
+                  -
+                </p>
+                <p className="akrBridgeHint" id="tokenLoopPremiumFocus">
+                  -
+                </p>
+                <p className="akrBridgeHint" id="tokenLoopPremiumStage">
+                  -
+                </p>
+                <p className="akrBridgeHint" id="tokenLoopPremiumState">
+                  -
+                </p>
+                <p className="akrBridgeHint" id="tokenLoopPremiumOps">
+                  -
+                </p>
+                <p className="akrBridgeHint" id="tokenLoopPremiumSignal">
+                  -
+                </p>
+                <p className="akrBridgeHint" id="tokenLoopPremiumDetail">
+                  -
+                </p>
+              </div>
               <div className="akrChipRow">
                 <BridgeChip id="tokenWalletChip" />
                 <BridgeChip id="tokenPayoutChip" />
@@ -1024,69 +1038,75 @@ function AdminBridgeCards(props: { lang: Lang }) {
           <p id="adminRuntimeLoopSignal" className="akrBridgeHint">
             -
           </p>
-          <p id="adminRuntimeLoopQueue" className="akrBridgeHint">
-            -
-          </p>
-          <p id="adminRuntimeLoopQueueFocus" className="akrBridgeHint">
-            -
-          </p>
-          <p id="adminRuntimeLoopQueueStage" className="akrBridgeHint">
-            -
-          </p>
-          <p id="adminRuntimeLoopQueueState" className="akrBridgeHint">
-            -
-          </p>
-          <p id="adminRuntimeLoopQueueOps" className="akrBridgeHint">
-            -
-          </p>
-          <p id="adminRuntimeLoopQueueSignal" className="akrBridgeHint">
-            -
-          </p>
-          <p id="adminRuntimeLoopQueueDetail" className="akrBridgeHint">
-            -
-          </p>
-          <p id="adminRuntimeLoopRuntime" className="akrBridgeHint">
-            -
-          </p>
-          <p id="adminRuntimeLoopRuntimeFocus" className="akrBridgeHint">
-            -
-          </p>
-          <p id="adminRuntimeLoopRuntimeStage" className="akrBridgeHint">
-            -
-          </p>
-          <p id="adminRuntimeLoopRuntimeState" className="akrBridgeHint">
-            -
-          </p>
-          <p id="adminRuntimeLoopRuntimeOps" className="akrBridgeHint">
-            -
-          </p>
-          <p id="adminRuntimeLoopRuntimeSignal" className="akrBridgeHint">
-            -
-          </p>
-          <p id="adminRuntimeLoopRuntimeDetail" className="akrBridgeHint">
-            -
-          </p>
-          <p id="adminRuntimeLoopDispatch" className="akrBridgeHint">
-            -
-          </p>
-          <p id="adminRuntimeLoopDispatchFocus" className="akrBridgeHint">
-            -
-          </p>
-          <p id="adminRuntimeLoopDispatchStage" className="akrBridgeHint">
-            -
-          </p>
-          <p id="adminRuntimeLoopDispatchState" className="akrBridgeHint">
-            -
-          </p>
-          <p id="adminRuntimeLoopDispatchOps" className="akrBridgeHint">
-            -
-          </p>
-          <p id="adminRuntimeLoopDispatchSignal" className="akrBridgeHint">
-            -
-          </p>
-          <p id="adminRuntimeLoopDispatchDetail" className="akrBridgeHint">
-            -
-          </p>
+          <div id="adminRuntimeLoopQueuePanel" className="akrBridgeFamilyPanel" data-tone="neutral">
+            <p id="adminRuntimeLoopQueue" className="akrBridgeHint">
+              -
+            </p>
+            <p id="adminRuntimeLoopQueueFocus" className="akrBridgeHint">
+              -
+            </p>
+            <p id="adminRuntimeLoopQueueStage" className="akrBridgeHint">
+              -
+            </p>
+            <p id="adminRuntimeLoopQueueState" className="akrBridgeHint">
+              -
+            </p>
+            <p id="adminRuntimeLoopQueueOps" className="akrBridgeHint">
+              -
+            </p>
+            <p id="adminRuntimeLoopQueueSignal" className="akrBridgeHint">
+              -
+            </p>
+            <p id="adminRuntimeLoopQueueDetail" className="akrBridgeHint">
+              -
+            </p>
+          </div>
+          <div id="adminRuntimeLoopRuntimePanel" className="akrBridgeFamilyPanel" data-tone="neutral">
+            <p id="adminRuntimeLoopRuntime" className="akrBridgeHint">
+              -
+            </p>
+            <p id="adminRuntimeLoopRuntimeFocus" className="akrBridgeHint">
+              -
+            </p>
+            <p id="adminRuntimeLoopRuntimeStage" className="akrBridgeHint">
+              -
+            </p>
+            <p id="adminRuntimeLoopRuntimeState" className="akrBridgeHint">
+              -
+            </p>
+            <p id="adminRuntimeLoopRuntimeOps" className="akrBridgeHint">
+              -
+            </p>
+            <p id="adminRuntimeLoopRuntimeSignal" className="akrBridgeHint">
+              -
+            </p>
+            <p id="adminRuntimeLoopRuntimeDetail" className="akrBridgeHint">
+              -
+            </p>
+          </div>
+          <div id="adminRuntimeLoopDispatchPanel" className="akrBridgeFamilyPanel" data-tone="neutral">
+            <p id="adminRuntimeLoopDispatch" className="akrBridgeHint">
+              -
+            </p>
+            <p id="adminRuntimeLoopDispatchFocus" className="akrBridgeHint">
+              -
+            </p>
+            <p id="adminRuntimeLoopDispatchStage" className="akrBridgeHint">
+              -
+            </p>
+            <p id="adminRuntimeLoopDispatchState" className="akrBridgeHint">
+              -
+            </p>
+            <p id="adminRuntimeLoopDispatchOps" className="akrBridgeHint">
+              -
+            </p>
+            <p id="adminRuntimeLoopDispatchSignal" className="akrBridgeHint">
+              -
+            </p>
+            <p id="adminRuntimeLoopDispatchDetail" className="akrBridgeHint">
+              -
+            </p>
+          </div>
         </div>
       </BridgeCard>
 
