@@ -89,6 +89,9 @@ export type TokenOverviewBridgePayload = {
   loopPayoutFlowCards?: LoopBridgeCard[];
   loopPayoutFlowBlocks?: LoopBridgeBlock[];
   loopPayoutFlowPanels?: LoopBridgePanel[];
+  loopPayoutSubflowCards?: LoopBridgeCard[];
+  loopPayoutSubflowBlocks?: LoopBridgeBlock[];
+  loopPayoutSubflowPanels?: LoopBridgePanel[];
   loopPayoutFamilyText?: string;
   loopPayoutFlowText?: string;
   loopPayoutSummaryText?: string;
@@ -114,6 +117,9 @@ export type TokenOverviewBridgePayload = {
   loopRouteFlowCards?: LoopBridgeCard[];
   loopRouteFlowBlocks?: LoopBridgeBlock[];
   loopRouteFlowPanels?: LoopBridgePanel[];
+  loopRouteSubflowCards?: LoopBridgeCard[];
+  loopRouteSubflowBlocks?: LoopBridgeBlock[];
+  loopRouteSubflowPanels?: LoopBridgePanel[];
   loopPremiumFamilyText?: string;
   loopPremiumFlowText?: string;
   loopPremiumSummaryText?: string;
@@ -129,6 +135,9 @@ export type TokenOverviewBridgePayload = {
   loopPremiumFlowCards?: LoopBridgeCard[];
   loopPremiumFlowBlocks?: LoopBridgeBlock[];
   loopPremiumFlowPanels?: LoopBridgePanel[];
+  loopPremiumSubflowCards?: LoopBridgeCard[];
+  loopPremiumSubflowBlocks?: LoopBridgeBlock[];
+  loopPremiumSubflowPanels?: LoopBridgePanel[];
 };
 
 type TokenOverviewBridge = {
@@ -207,6 +216,9 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   const loopPayoutFlowCards = byId<HTMLElement>("tokenLoopPayoutFlowCards");
   const loopPayoutFlowBlocks = byId<HTMLElement>("tokenLoopPayoutFlowBlocks");
   const loopPayoutFlowPanels = byId<HTMLElement>("tokenLoopPayoutFlowPanels");
+  const loopPayoutSubflowCards = byId<HTMLElement>("tokenLoopPayoutSubflowCards");
+  const loopPayoutSubflowBlocks = byId<HTMLElement>("tokenLoopPayoutSubflowBlocks");
+  const loopPayoutSubflowPanels = byId<HTMLElement>("tokenLoopPayoutSubflowPanels");
   const loopPayoutFocus = byId<HTMLElement>("tokenLoopPayoutFocus");
   const loopPayoutStage = byId<HTMLElement>("tokenLoopPayoutStage");
   const loopRoute = byId<HTMLElement>("tokenLoopRoute");
@@ -216,6 +228,9 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   const loopRouteFlowCards = byId<HTMLElement>("tokenLoopRouteFlowCards");
   const loopRouteFlowBlocks = byId<HTMLElement>("tokenLoopRouteFlowBlocks");
   const loopRouteFlowPanels = byId<HTMLElement>("tokenLoopRouteFlowPanels");
+  const loopRouteSubflowCards = byId<HTMLElement>("tokenLoopRouteSubflowCards");
+  const loopRouteSubflowBlocks = byId<HTMLElement>("tokenLoopRouteSubflowBlocks");
+  const loopRouteSubflowPanels = byId<HTMLElement>("tokenLoopRouteSubflowPanels");
   const loopRouteFocus = byId<HTMLElement>("tokenLoopRouteFocus");
   const loopRouteStage = byId<HTMLElement>("tokenLoopRouteStage");
   const loopPremium = byId<HTMLElement>("tokenLoopPremium");
@@ -225,6 +240,9 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   const loopPremiumFlowCards = byId<HTMLElement>("tokenLoopPremiumFlowCards");
   const loopPremiumFlowBlocks = byId<HTMLElement>("tokenLoopPremiumFlowBlocks");
   const loopPremiumFlowPanels = byId<HTMLElement>("tokenLoopPremiumFlowPanels");
+  const loopPremiumSubflowCards = byId<HTMLElement>("tokenLoopPremiumSubflowCards");
+  const loopPremiumSubflowBlocks = byId<HTMLElement>("tokenLoopPremiumSubflowBlocks");
+  const loopPremiumSubflowPanels = byId<HTMLElement>("tokenLoopPremiumSubflowPanels");
   const loopPremiumFocus = byId<HTMLElement>("tokenLoopPremiumFocus");
   const loopPremiumStage = byId<HTMLElement>("tokenLoopPremiumStage");
   const loopWalletState = byId<HTMLElement>("tokenLoopWalletState");
@@ -428,16 +446,25 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   renderLoopBridgeCards(loopPayoutFlowCards, payload.loopPayoutFlowCards);
   renderLoopBridgeBlocks(loopPayoutFlowBlocks, payload.loopPayoutFlowBlocks);
   renderLoopBridgePanels(loopPayoutFlowPanels, payload.loopPayoutFlowPanels);
+  renderLoopBridgeCards(loopPayoutSubflowCards, payload.loopPayoutSubflowCards);
+  renderLoopBridgeBlocks(loopPayoutSubflowBlocks, payload.loopPayoutSubflowBlocks);
+  renderLoopBridgePanels(loopPayoutSubflowPanels, payload.loopPayoutSubflowPanels);
   renderLoopBridgeCards(loopRouteCards, payload.loopRouteCards);
   renderLoopBridgeBlocks(loopRouteBlocks, payload.loopRouteBlocks);
   renderLoopBridgeCards(loopRouteFlowCards, payload.loopRouteFlowCards);
   renderLoopBridgeBlocks(loopRouteFlowBlocks, payload.loopRouteFlowBlocks);
   renderLoopBridgePanels(loopRouteFlowPanels, payload.loopRouteFlowPanels);
+  renderLoopBridgeCards(loopRouteSubflowCards, payload.loopRouteSubflowCards);
+  renderLoopBridgeBlocks(loopRouteSubflowBlocks, payload.loopRouteSubflowBlocks);
+  renderLoopBridgePanels(loopRouteSubflowPanels, payload.loopRouteSubflowPanels);
   renderLoopBridgeCards(loopPremiumCards, payload.loopPremiumCards);
   renderLoopBridgeBlocks(loopPremiumBlocks, payload.loopPremiumBlocks);
   renderLoopBridgeCards(loopPremiumFlowCards, payload.loopPremiumFlowCards);
   renderLoopBridgeBlocks(loopPremiumFlowBlocks, payload.loopPremiumFlowBlocks);
   renderLoopBridgePanels(loopPremiumFlowPanels, payload.loopPremiumFlowPanels);
+  renderLoopBridgeCards(loopPremiumSubflowCards, payload.loopPremiumSubflowCards);
+  renderLoopBridgeBlocks(loopPremiumSubflowBlocks, payload.loopPremiumSubflowBlocks);
+  renderLoopBridgePanels(loopPremiumSubflowPanels, payload.loopPremiumSubflowPanels);
   setChipTone(loopWalletFamily, resolveLoopRailTone(payload.loopWalletTone, "family"));
   setChipTone(loopWalletFlow, resolveLoopRailTone(payload.loopWalletTone, "flow"));
   setChipTone(loopWalletSummary, resolveLoopRailTone(payload.loopWalletTone, "summary"));

@@ -690,6 +690,27 @@ function buildPvpLoopMicroPanels(loopDeck, active) {
       signalText: panels.ladderSignalText,
       detailText: panels.ladderDetailText
     });
+    const ladderSubflowBundle = buildLoopSubflowBundle(panels.ladderTone, {
+      familyText: panels.ladderFamilyText,
+      flowText: panels.ladderFlowText,
+      summaryText: panels.ladderSummaryText,
+      gateText: panels.ladderGateText,
+      leadText: panels.ladderLeadText,
+      windowText: panels.ladderWindowText,
+      pressureText: panels.ladderPressureText,
+      responseText: panels.ladderResponseText,
+      attentionText: panels.ladderAttentionText,
+      cadenceText: panels.ladderCadenceText,
+      focusText: panels.ladderFocusText,
+      stageText: panels.ladderStageText,
+      stateText: panels.ladderStateText,
+      opsText: panels.ladderOpsText,
+      signalText: panels.ladderSignalText,
+      detailText: panels.ladderDetailText
+    });
+    panels.ladderSubflowCards = ladderSubflowBundle.cards;
+    panels.ladderSubflowBlocks = ladderSubflowBundle.blocks;
+    panels.ladderSubflowPanels = ladderSubflowBundle.panels;
     panels.telemetryFlowCards = telemetryFlowBundle.cards;
     panels.telemetryFlowBlocks = telemetryFlowBundle.blocks;
     panels.telemetryFlowPanels = buildLoopFlowFamilyPanels(panels.telemetryTone, {
@@ -709,6 +730,27 @@ function buildPvpLoopMicroPanels(loopDeck, active) {
       signalText: panels.telemetrySignalText,
       detailText: panels.telemetryDetailText
     });
+    const telemetrySubflowBundle = buildLoopSubflowBundle(panels.telemetryTone, {
+      familyText: panels.telemetryFamilyText,
+      flowText: panels.telemetryFlowText,
+      summaryText: panels.telemetrySummaryText,
+      gateText: panels.telemetryGateText,
+      leadText: panels.telemetryLeadText,
+      windowText: panels.telemetryWindowText,
+      pressureText: panels.telemetryPressureText,
+      responseText: panels.telemetryResponseText,
+      attentionText: panels.telemetryAttentionText,
+      cadenceText: panels.telemetryCadenceText,
+      focusText: panels.telemetryFocusText,
+      stageText: panels.telemetryStageText,
+      stateText: panels.telemetryStateText,
+      opsText: panels.telemetryOpsText,
+      signalText: panels.telemetrySignalText,
+      detailText: panels.telemetryDetailText
+    });
+    panels.telemetrySubflowCards = telemetrySubflowBundle.cards;
+    panels.telemetrySubflowBlocks = telemetrySubflowBundle.blocks;
+    panels.telemetrySubflowPanels = telemetrySubflowBundle.panels;
     panels.duelFlowCards = duelFlowBundle.cards;
     panels.duelFlowBlocks = duelFlowBundle.blocks;
     panels.duelFlowPanels = buildLoopFlowFamilyPanels(panels.duelTone, {
@@ -1004,6 +1046,27 @@ function buildPvpLoopMicroPanels(loopDeck, active) {
     signalText: panels.ladderSignalText,
     detailText: panels.ladderDetailText
   });
+  const ladderSubflowBundle = buildLoopSubflowBundle(panels.ladderTone, {
+    familyText: panels.ladderFamilyText,
+    flowText: panels.ladderFlowText,
+    summaryText: panels.ladderSummaryText,
+    gateText: panels.ladderGateText,
+    leadText: panels.ladderLeadText,
+    windowText: panels.ladderWindowText,
+    pressureText: panels.ladderPressureText,
+    responseText: panels.ladderResponseText,
+    attentionText: panels.ladderAttentionText,
+    cadenceText: panels.ladderCadenceText,
+    focusText: panels.ladderFocusText,
+    stageText: panels.ladderStageText,
+    stateText: panels.ladderStateText,
+    opsText: panels.ladderOpsText,
+    signalText: panels.ladderSignalText,
+    detailText: panels.ladderDetailText
+  });
+  panels.ladderSubflowCards = ladderSubflowBundle.cards;
+  panels.ladderSubflowBlocks = ladderSubflowBundle.blocks;
+  panels.ladderSubflowPanels = ladderSubflowBundle.panels;
   panels.telemetryFlowCards = telemetryFlowBundle.cards;
   panels.telemetryFlowBlocks = telemetryFlowBundle.blocks;
   panels.telemetryFlowPanels = buildLoopFlowFamilyPanels(panels.telemetryTone, {
@@ -1023,6 +1086,27 @@ function buildPvpLoopMicroPanels(loopDeck, active) {
     signalText: panels.telemetrySignalText,
     detailText: panels.telemetryDetailText
   });
+  const telemetrySubflowBundle = buildLoopSubflowBundle(panels.telemetryTone, {
+    familyText: panels.telemetryFamilyText,
+    flowText: panels.telemetryFlowText,
+    summaryText: panels.telemetrySummaryText,
+    gateText: panels.telemetryGateText,
+    leadText: panels.telemetryLeadText,
+    windowText: panels.telemetryWindowText,
+    pressureText: panels.telemetryPressureText,
+    responseText: panels.telemetryResponseText,
+    attentionText: panels.telemetryAttentionText,
+    cadenceText: panels.telemetryCadenceText,
+    focusText: panels.telemetryFocusText,
+    stageText: panels.telemetryStageText,
+    stateText: panels.telemetryStateText,
+    opsText: panels.telemetryOpsText,
+    signalText: panels.telemetrySignalText,
+    detailText: panels.telemetryDetailText
+  });
+  panels.telemetrySubflowCards = telemetrySubflowBundle.cards;
+  panels.telemetrySubflowBlocks = telemetrySubflowBundle.blocks;
+  panels.telemetrySubflowPanels = telemetrySubflowBundle.panels;
   panels.duelFlowCards = duelFlowBundle.cards;
   panels.duelFlowBlocks = duelFlowBundle.blocks;
   panels.duelFlowPanels = buildLoopFlowFamilyPanels(panels.duelTone, {
@@ -1282,6 +1366,27 @@ function buildVaultLoopMicroPanels(loopDeck, active) {
       signalText: panels.payoutSignalText,
       detailText: panels.payoutDetailText
     });
+    const payoutSubflowBundle = buildLoopSubflowBundle(panels.payoutTone, {
+      familyText: panels.payoutFamilyText,
+      flowText: panels.payoutFlowText,
+      summaryText: panels.payoutSummaryText,
+      gateText: panels.payoutGateText,
+      leadText: panels.payoutLeadText,
+      windowText: panels.payoutWindowText,
+      pressureText: panels.payoutPressureText,
+      responseText: panels.payoutResponseText,
+      attentionText: panels.payoutAttentionText,
+      cadenceText: panels.payoutCadenceText,
+      focusText: panels.payoutFocusText,
+      stageText: panels.payoutStageText,
+      stateText: panels.payoutStateText,
+      opsText: panels.payoutOpsText,
+      signalText: panels.payoutSignalText,
+      detailText: panels.payoutDetailText
+    });
+    panels.payoutSubflowCards = payoutSubflowBundle.cards;
+    panels.payoutSubflowBlocks = payoutSubflowBundle.blocks;
+    panels.payoutSubflowPanels = payoutSubflowBundle.panels;
     panels.routeFlowCards = routeFlowBundle.cards;
     panels.routeFlowBlocks = routeFlowBundle.blocks;
     panels.routeFlowPanels = buildLoopFlowFamilyPanels(panels.routeTone, {
@@ -1301,6 +1406,27 @@ function buildVaultLoopMicroPanels(loopDeck, active) {
       signalText: panels.routeSignalText,
       detailText: panels.routeDetailText
     });
+    const routeSubflowBundle = buildLoopSubflowBundle(panels.routeTone, {
+      familyText: panels.routeFamilyText,
+      flowText: panels.routeFlowText,
+      summaryText: panels.routeSummaryText,
+      gateText: panels.routeGateText,
+      leadText: panels.routeLeadText,
+      windowText: panels.routeWindowText,
+      pressureText: panels.routePressureText,
+      responseText: panels.routeResponseText,
+      attentionText: panels.routeAttentionText,
+      cadenceText: panels.routeCadenceText,
+      focusText: panels.routeFocusText,
+      stageText: panels.routeStageText,
+      stateText: panels.routeStateText,
+      opsText: panels.routeOpsText,
+      signalText: panels.routeSignalText,
+      detailText: panels.routeDetailText
+    });
+    panels.routeSubflowCards = routeSubflowBundle.cards;
+    panels.routeSubflowBlocks = routeSubflowBundle.blocks;
+    panels.routeSubflowPanels = routeSubflowBundle.panels;
     panels.premiumFlowCards = premiumFlowBundle.cards;
     panels.premiumFlowBlocks = premiumFlowBundle.blocks;
     panels.premiumFlowPanels = buildLoopFlowFamilyPanels(panels.premiumTone, {
@@ -1320,6 +1446,27 @@ function buildVaultLoopMicroPanels(loopDeck, active) {
       signalText: panels.premiumSignalText,
       detailText: panels.premiumDetailText
     });
+    const premiumSubflowBundle = buildLoopSubflowBundle(panels.premiumTone, {
+      familyText: panels.premiumFamilyText,
+      flowText: panels.premiumFlowText,
+      summaryText: panels.premiumSummaryText,
+      gateText: panels.premiumGateText,
+      leadText: panels.premiumLeadText,
+      windowText: panels.premiumWindowText,
+      pressureText: panels.premiumPressureText,
+      responseText: panels.premiumResponseText,
+      attentionText: panels.premiumAttentionText,
+      cadenceText: panels.premiumCadenceText,
+      focusText: panels.premiumFocusText,
+      stageText: panels.premiumStageText,
+      stateText: panels.premiumStateText,
+      opsText: panels.premiumOpsText,
+      signalText: panels.premiumSignalText,
+      detailText: panels.premiumDetailText
+    });
+    panels.premiumSubflowCards = premiumSubflowBundle.cards;
+    panels.premiumSubflowBlocks = premiumSubflowBundle.blocks;
+    panels.premiumSubflowPanels = premiumSubflowBundle.panels;
     panels.walletFlowCards = walletFlowBundle.cards;
     panels.walletFlowBlocks = walletFlowBundle.blocks;
     panels.walletFlowPanels = buildLoopFlowFamilyPanels(panels.walletTone, {
@@ -1645,6 +1792,27 @@ function buildVaultLoopMicroPanels(loopDeck, active) {
     signalText: panels.payoutSignalText,
     detailText: panels.payoutDetailText
   });
+  const payoutSubflowBundle = buildLoopSubflowBundle(panels.payoutTone, {
+    familyText: panels.payoutFamilyText,
+    flowText: panels.payoutFlowText,
+    summaryText: panels.payoutSummaryText,
+    gateText: panels.payoutGateText,
+    leadText: panels.payoutLeadText,
+    windowText: panels.payoutWindowText,
+    pressureText: panels.payoutPressureText,
+    responseText: panels.payoutResponseText,
+    attentionText: panels.payoutAttentionText,
+    cadenceText: panels.payoutCadenceText,
+    focusText: panels.payoutFocusText,
+    stageText: panels.payoutStageText,
+    stateText: panels.payoutStateText,
+    opsText: panels.payoutOpsText,
+    signalText: panels.payoutSignalText,
+    detailText: panels.payoutDetailText
+  });
+  panels.payoutSubflowCards = payoutSubflowBundle.cards;
+  panels.payoutSubflowBlocks = payoutSubflowBundle.blocks;
+  panels.payoutSubflowPanels = payoutSubflowBundle.panels;
   panels.routeFlowCards = routeFlowBundle.cards;
   panels.routeFlowBlocks = routeFlowBundle.blocks;
   panels.routeFlowPanels = buildLoopFlowFamilyPanels(panels.routeTone, {
@@ -1664,6 +1832,27 @@ function buildVaultLoopMicroPanels(loopDeck, active) {
     signalText: panels.routeSignalText,
     detailText: panels.routeDetailText
   });
+  const routeSubflowBundle = buildLoopSubflowBundle(panels.routeTone, {
+    familyText: panels.routeFamilyText,
+    flowText: panels.routeFlowText,
+    summaryText: panels.routeSummaryText,
+    gateText: panels.routeGateText,
+    leadText: panels.routeLeadText,
+    windowText: panels.routeWindowText,
+    pressureText: panels.routePressureText,
+    responseText: panels.routeResponseText,
+    attentionText: panels.routeAttentionText,
+    cadenceText: panels.routeCadenceText,
+    focusText: panels.routeFocusText,
+    stageText: panels.routeStageText,
+    stateText: panels.routeStateText,
+    opsText: panels.routeOpsText,
+    signalText: panels.routeSignalText,
+    detailText: panels.routeDetailText
+  });
+  panels.routeSubflowCards = routeSubflowBundle.cards;
+  panels.routeSubflowBlocks = routeSubflowBundle.blocks;
+  panels.routeSubflowPanels = routeSubflowBundle.panels;
   panels.premiumFlowCards = premiumFlowBundle.cards;
   panels.premiumFlowBlocks = premiumFlowBundle.blocks;
   panels.premiumFlowPanels = buildLoopFlowFamilyPanels(panels.premiumTone, {
@@ -1683,6 +1872,27 @@ function buildVaultLoopMicroPanels(loopDeck, active) {
     signalText: panels.premiumSignalText,
     detailText: panels.premiumDetailText
   });
+  const premiumSubflowBundle = buildLoopSubflowBundle(panels.premiumTone, {
+    familyText: panels.premiumFamilyText,
+    flowText: panels.premiumFlowText,
+    summaryText: panels.premiumSummaryText,
+    gateText: panels.premiumGateText,
+    leadText: panels.premiumLeadText,
+    windowText: panels.premiumWindowText,
+    pressureText: panels.premiumPressureText,
+    responseText: panels.premiumResponseText,
+    attentionText: panels.premiumAttentionText,
+    cadenceText: panels.premiumCadenceText,
+    focusText: panels.premiumFocusText,
+    stageText: panels.premiumStageText,
+    stateText: panels.premiumStateText,
+    opsText: panels.premiumOpsText,
+    signalText: panels.premiumSignalText,
+    detailText: panels.premiumDetailText
+  });
+  panels.premiumSubflowCards = premiumSubflowBundle.cards;
+  panels.premiumSubflowBlocks = premiumSubflowBundle.blocks;
+  panels.premiumSubflowPanels = premiumSubflowBundle.panels;
   panels.walletFlowCards = walletFlowBundle.cards;
   panels.walletFlowBlocks = walletFlowBundle.blocks;
   panels.walletFlowPanels = buildLoopFlowFamilyPanels(panels.walletTone, {
@@ -1893,6 +2103,27 @@ function buildAdminLoopMicroPanels(loopDeck, active) {
       signalText: panels.queueSignalText,
       detailText: panels.queueDetailText
     });
+    const queueSubflowBundle = buildLoopSubflowBundle(panels.queueTone, {
+      familyText: panels.queueFamilyText,
+      flowText: panels.queueFlowText,
+      summaryText: panels.queueSummaryText,
+      gateText: panels.queueGateText,
+      leadText: panels.queueLeadText,
+      windowText: panels.queueWindowText,
+      pressureText: panels.queuePressureText,
+      responseText: panels.queueResponseText,
+      attentionText: panels.queueAttentionText,
+      cadenceText: panels.queueCadenceText,
+      focusText: panels.queueFocusText,
+      stageText: panels.queueStageText,
+      stateText: panels.queueStateText,
+      opsText: panels.queueOpsText,
+      signalText: panels.queueSignalText,
+      detailText: panels.queueDetailText
+    });
+    panels.queueSubflowCards = queueSubflowBundle.cards;
+    panels.queueSubflowBlocks = queueSubflowBundle.blocks;
+    panels.queueSubflowPanels = queueSubflowBundle.panels;
     panels.runtimeFlowCards = runtimeFlowBundle.cards;
     panels.runtimeFlowBlocks = runtimeFlowBundle.blocks;
     panels.runtimeFlowPanels = buildLoopFlowFamilyPanels(panels.runtimeTone, {
@@ -1912,6 +2143,27 @@ function buildAdminLoopMicroPanels(loopDeck, active) {
       signalText: panels.runtimeSignalText,
       detailText: panels.runtimeDetailText
     });
+    const runtimeSubflowBundle = buildLoopSubflowBundle(panels.runtimeTone, {
+      familyText: panels.runtimeFamilyText,
+      flowText: panels.runtimeFlowText,
+      summaryText: panels.runtimeSummaryText,
+      gateText: panels.runtimeGateText,
+      leadText: panels.runtimeLeadText,
+      windowText: panels.runtimeWindowText,
+      pressureText: panels.runtimePressureText,
+      responseText: panels.runtimeResponseText,
+      attentionText: panels.runtimeAttentionText,
+      cadenceText: panels.runtimeCadenceText,
+      focusText: panels.runtimeFocusText,
+      stageText: panels.runtimeStageText,
+      stateText: panels.runtimeStateText,
+      opsText: panels.runtimeOpsText,
+      signalText: panels.runtimeSignalText,
+      detailText: panels.runtimeDetailText
+    });
+    panels.runtimeSubflowCards = runtimeSubflowBundle.cards;
+    panels.runtimeSubflowBlocks = runtimeSubflowBundle.blocks;
+    panels.runtimeSubflowPanels = runtimeSubflowBundle.panels;
     panels.dispatchFlowCards = dispatchFlowBundle.cards;
     panels.dispatchFlowBlocks = dispatchFlowBundle.blocks;
     panels.dispatchFlowPanels = buildLoopFlowFamilyPanels(panels.dispatchTone, {
@@ -2175,6 +2427,27 @@ function buildAdminLoopMicroPanels(loopDeck, active) {
     signalText: panels.queueSignalText,
     detailText: panels.queueDetailText
   });
+  const queueSubflowBundle = buildLoopSubflowBundle(panels.queueTone, {
+    familyText: panels.queueFamilyText,
+    flowText: panels.queueFlowText,
+    summaryText: panels.queueSummaryText,
+    gateText: panels.queueGateText,
+    leadText: panels.queueLeadText,
+    windowText: panels.queueWindowText,
+    pressureText: panels.queuePressureText,
+    responseText: panels.queueResponseText,
+    attentionText: panels.queueAttentionText,
+    cadenceText: panels.queueCadenceText,
+    focusText: panels.queueFocusText,
+    stageText: panels.queueStageText,
+    stateText: panels.queueStateText,
+    opsText: panels.queueOpsText,
+    signalText: panels.queueSignalText,
+    detailText: panels.queueDetailText
+  });
+  panels.queueSubflowCards = queueSubflowBundle.cards;
+  panels.queueSubflowBlocks = queueSubflowBundle.blocks;
+  panels.queueSubflowPanels = queueSubflowBundle.panels;
   panels.runtimeFlowCards = runtimeFlowBundle.cards;
   panels.runtimeFlowBlocks = runtimeFlowBundle.blocks;
   panels.runtimeFlowPanels = buildLoopFlowFamilyPanels(panels.runtimeTone, {
@@ -2194,6 +2467,27 @@ function buildAdminLoopMicroPanels(loopDeck, active) {
     signalText: panels.runtimeSignalText,
     detailText: panels.runtimeDetailText
   });
+  const runtimeSubflowBundle = buildLoopSubflowBundle(panels.runtimeTone, {
+    familyText: panels.runtimeFamilyText,
+    flowText: panels.runtimeFlowText,
+    summaryText: panels.runtimeSummaryText,
+    gateText: panels.runtimeGateText,
+    leadText: panels.runtimeLeadText,
+    windowText: panels.runtimeWindowText,
+    pressureText: panels.runtimePressureText,
+    responseText: panels.runtimeResponseText,
+    attentionText: panels.runtimeAttentionText,
+    cadenceText: panels.runtimeCadenceText,
+    focusText: panels.runtimeFocusText,
+    stageText: panels.runtimeStageText,
+    stateText: panels.runtimeStateText,
+    opsText: panels.runtimeOpsText,
+    signalText: panels.runtimeSignalText,
+    detailText: panels.runtimeDetailText
+  });
+  panels.runtimeSubflowCards = runtimeSubflowBundle.cards;
+  panels.runtimeSubflowBlocks = runtimeSubflowBundle.blocks;
+  panels.runtimeSubflowPanels = runtimeSubflowBundle.panels;
   panels.dispatchFlowCards = dispatchFlowBundle.cards;
   panels.dispatchFlowBlocks = dispatchFlowBundle.blocks;
   panels.dispatchFlowPanels = buildLoopFlowFamilyPanels(panels.dispatchTone, {
@@ -2453,6 +2747,27 @@ function buildOperationsLoopMicroPanels(loopDeck, active) {
       signalText: panels.offerSignalText,
       detailText: panels.offerDetailText
     });
+    const offerSubflowBundle = buildLoopSubflowBundle(panels.offerTone, {
+      familyText: panels.offerFamilyText,
+      flowText: panels.offerFlowText,
+      summaryText: panels.offerSummaryText,
+      gateText: panels.offerGateText,
+      leadText: panels.offerLeadText,
+      windowText: panels.offerWindowText,
+      pressureText: panels.offerPressureText,
+      responseText: panels.offerResponseText,
+      attentionText: panels.offerAttentionText,
+      cadenceText: panels.offerCadenceText,
+      focusText: panels.offerFocusText,
+      stageText: panels.offerStageText,
+      stateText: panels.offerStateText,
+      opsText: panels.offerOpsText,
+      signalText: panels.offerSignalText,
+      detailText: panels.offerDetailText
+    });
+    panels.offerSubflowCards = offerSubflowBundle.cards;
+    panels.offerSubflowBlocks = offerSubflowBundle.blocks;
+    panels.offerSubflowPanels = offerSubflowBundle.panels;
     panels.claimFlowCards = claimFlowBundle.cards;
     panels.claimFlowBlocks = claimFlowBundle.blocks;
     panels.claimFlowPanels = buildLoopFlowFamilyPanels(panels.claimTone, {
@@ -2472,6 +2787,27 @@ function buildOperationsLoopMicroPanels(loopDeck, active) {
       signalText: panels.claimSignalText,
       detailText: panels.claimDetailText
     });
+    const claimSubflowBundle = buildLoopSubflowBundle(panels.claimTone, {
+      familyText: panels.claimFamilyText,
+      flowText: panels.claimFlowText,
+      summaryText: panels.claimSummaryText,
+      gateText: panels.claimGateText,
+      leadText: panels.claimLeadText,
+      windowText: panels.claimWindowText,
+      pressureText: panels.claimPressureText,
+      responseText: panels.claimResponseText,
+      attentionText: panels.claimAttentionText,
+      cadenceText: panels.claimCadenceText,
+      focusText: panels.claimFocusText,
+      stageText: panels.claimStageText,
+      stateText: panels.claimStateText,
+      opsText: panels.claimOpsText,
+      signalText: panels.claimSignalText,
+      detailText: panels.claimDetailText
+    });
+    panels.claimSubflowCards = claimSubflowBundle.cards;
+    panels.claimSubflowBlocks = claimSubflowBundle.blocks;
+    panels.claimSubflowPanels = claimSubflowBundle.panels;
     panels.streakFlowCards = streakFlowBundle.cards;
     panels.streakFlowBlocks = streakFlowBundle.blocks;
     panels.streakFlowPanels = buildLoopFlowFamilyPanels(panels.streakTone, {
@@ -2491,6 +2827,27 @@ function buildOperationsLoopMicroPanels(loopDeck, active) {
       signalText: panels.streakSignalText,
       detailText: panels.streakDetailText
     });
+    const streakSubflowBundle = buildLoopSubflowBundle(panels.streakTone, {
+      familyText: panels.streakFamilyText,
+      flowText: panels.streakFlowText,
+      summaryText: panels.streakSummaryText,
+      gateText: panels.streakGateText,
+      leadText: panels.streakLeadText,
+      windowText: panels.streakWindowText,
+      pressureText: panels.streakPressureText,
+      responseText: panels.streakResponseText,
+      attentionText: panels.streakAttentionText,
+      cadenceText: panels.streakCadenceText,
+      focusText: panels.streakFocusText,
+      stageText: panels.streakStageText,
+      stateText: panels.streakStateText,
+      opsText: panels.streakOpsText,
+      signalText: panels.streakSignalText,
+      detailText: panels.streakDetailText
+    });
+    panels.streakSubflowCards = streakSubflowBundle.cards;
+    panels.streakSubflowBlocks = streakSubflowBundle.blocks;
+    panels.streakSubflowPanels = streakSubflowBundle.panels;
     panels.lootFlowCards = lootFlowBundle.cards;
     panels.lootFlowBlocks = lootFlowBundle.blocks;
     panels.lootFlowPanels = buildLoopFlowFamilyPanels(panels.lootTone, {
@@ -2804,6 +3161,27 @@ function buildOperationsLoopMicroPanels(loopDeck, active) {
     signalText: panels.offerSignalText,
     detailText: panels.offerDetailText
   });
+  const offerSubflowBundle = buildLoopSubflowBundle(panels.offerTone, {
+    familyText: panels.offerFamilyText,
+    flowText: panels.offerFlowText,
+    summaryText: panels.offerSummaryText,
+    gateText: panels.offerGateText,
+    leadText: panels.offerLeadText,
+    windowText: panels.offerWindowText,
+    pressureText: panels.offerPressureText,
+    responseText: panels.offerResponseText,
+    attentionText: panels.offerAttentionText,
+    cadenceText: panels.offerCadenceText,
+    focusText: panels.offerFocusText,
+    stageText: panels.offerStageText,
+    stateText: panels.offerStateText,
+    opsText: panels.offerOpsText,
+    signalText: panels.offerSignalText,
+    detailText: panels.offerDetailText
+  });
+  panels.offerSubflowCards = offerSubflowBundle.cards;
+  panels.offerSubflowBlocks = offerSubflowBundle.blocks;
+  panels.offerSubflowPanels = offerSubflowBundle.panels;
   panels.claimFlowCards = claimFlowBundle.cards;
   panels.claimFlowBlocks = claimFlowBundle.blocks;
   panels.claimFlowPanels = buildLoopFlowFamilyPanels(panels.claimTone, {
@@ -2823,6 +3201,27 @@ function buildOperationsLoopMicroPanels(loopDeck, active) {
     signalText: panels.claimSignalText,
     detailText: panels.claimDetailText
   });
+  const claimSubflowBundle = buildLoopSubflowBundle(panels.claimTone, {
+    familyText: panels.claimFamilyText,
+    flowText: panels.claimFlowText,
+    summaryText: panels.claimSummaryText,
+    gateText: panels.claimGateText,
+    leadText: panels.claimLeadText,
+    windowText: panels.claimWindowText,
+    pressureText: panels.claimPressureText,
+    responseText: panels.claimResponseText,
+    attentionText: panels.claimAttentionText,
+    cadenceText: panels.claimCadenceText,
+    focusText: panels.claimFocusText,
+    stageText: panels.claimStageText,
+    stateText: panels.claimStateText,
+    opsText: panels.claimOpsText,
+    signalText: panels.claimSignalText,
+    detailText: panels.claimDetailText
+  });
+  panels.claimSubflowCards = claimSubflowBundle.cards;
+  panels.claimSubflowBlocks = claimSubflowBundle.blocks;
+  panels.claimSubflowPanels = claimSubflowBundle.panels;
   panels.streakFlowCards = streakFlowBundle.cards;
   panels.streakFlowBlocks = streakFlowBundle.blocks;
   panels.streakFlowPanels = buildLoopFlowFamilyPanels(panels.streakTone, {
@@ -2842,6 +3241,27 @@ function buildOperationsLoopMicroPanels(loopDeck, active) {
     signalText: panels.streakSignalText,
     detailText: panels.streakDetailText
   });
+  const streakSubflowBundle = buildLoopSubflowBundle(panels.streakTone, {
+    familyText: panels.streakFamilyText,
+    flowText: panels.streakFlowText,
+    summaryText: panels.streakSummaryText,
+    gateText: panels.streakGateText,
+    leadText: panels.streakLeadText,
+    windowText: panels.streakWindowText,
+    pressureText: panels.streakPressureText,
+    responseText: panels.streakResponseText,
+    attentionText: panels.streakAttentionText,
+    cadenceText: panels.streakCadenceText,
+    focusText: panels.streakFocusText,
+    stageText: panels.streakStageText,
+    stateText: panels.streakStateText,
+    opsText: panels.streakOpsText,
+    signalText: panels.streakSignalText,
+    detailText: panels.streakDetailText
+  });
+  panels.streakSubflowCards = streakSubflowBundle.cards;
+  panels.streakSubflowBlocks = streakSubflowBundle.blocks;
+  panels.streakSubflowPanels = streakSubflowBundle.panels;
   panels.lootFlowCards = lootFlowBundle.cards;
   panels.lootFlowBlocks = lootFlowBundle.blocks;
   panels.lootFlowPanels = buildLoopFlowFamilyPanels(panels.lootTone, {
@@ -3690,6 +4110,9 @@ function buildPvpRuntimePayload(rawRuntime, rawLive, pvpView, scene, assetMetric
       loopLadderFlowCards: loopMicro.ladderFlowCards,
       loopLadderFlowBlocks: loopMicro.ladderFlowBlocks,
       loopLadderFlowPanels: loopMicro.ladderFlowPanels,
+      loopLadderSubflowCards: loopMicro.ladderSubflowCards,
+      loopLadderSubflowBlocks: loopMicro.ladderSubflowBlocks,
+      loopLadderSubflowPanels: loopMicro.ladderSubflowPanels,
       loopTelemetryFamilyText: loopMicro.telemetryFamilyText,
       loopTelemetryFlowText: loopMicro.telemetryFlowText,
       loopTelemetrySummaryText: loopMicro.telemetrySummaryText,
@@ -3704,7 +4127,10 @@ function buildPvpRuntimePayload(rawRuntime, rawLive, pvpView, scene, assetMetric
       loopTelemetryBlocks: loopMicro.telemetryBlocks,
       loopTelemetryFlowCards: loopMicro.telemetryFlowCards,
       loopTelemetryFlowBlocks: loopMicro.telemetryFlowBlocks,
-      loopTelemetryFlowPanels: loopMicro.telemetryFlowPanels
+      loopTelemetryFlowPanels: loopMicro.telemetryFlowPanels,
+      loopTelemetrySubflowCards: loopMicro.telemetrySubflowCards,
+      loopTelemetrySubflowBlocks: loopMicro.telemetrySubflowBlocks,
+      loopTelemetrySubflowPanels: loopMicro.telemetrySubflowPanels
     },
     camera: {
       mode: {
@@ -3958,6 +4384,9 @@ function buildOperationsDeckPayload(data, taskResult, homeFeed, scene) {
         offerFlowCards: loopMicro.offerFlowCards,
         offerFlowBlocks: loopMicro.offerFlowBlocks,
         offerFlowPanels: loopMicro.offerFlowPanels,
+        offerSubflowCards: loopMicro.offerSubflowCards,
+        offerSubflowBlocks: loopMicro.offerSubflowBlocks,
+        offerSubflowPanels: loopMicro.offerSubflowPanels,
         claimFamilyText: loopMicro.claimFamilyText,
         claimFlowText: loopMicro.claimFlowText,
         claimSummaryText: loopMicro.claimSummaryText,
@@ -3973,6 +4402,9 @@ function buildOperationsDeckPayload(data, taskResult, homeFeed, scene) {
         claimFlowCards: loopMicro.claimFlowCards,
         claimFlowBlocks: loopMicro.claimFlowBlocks,
         claimFlowPanels: loopMicro.claimFlowPanels,
+        claimSubflowCards: loopMicro.claimSubflowCards,
+        claimSubflowBlocks: loopMicro.claimSubflowBlocks,
+        claimSubflowPanels: loopMicro.claimSubflowPanels,
         streakFamilyText: loopMicro.streakFamilyText,
         streakFlowText: loopMicro.streakFlowText,
         streakSummaryText: loopMicro.streakSummaryText,
@@ -3988,6 +4420,9 @@ function buildOperationsDeckPayload(data, taskResult, homeFeed, scene) {
         streakFlowCards: loopMicro.streakFlowCards,
         streakFlowBlocks: loopMicro.streakFlowBlocks,
         streakFlowPanels: loopMicro.streakFlowPanels,
+        streakSubflowCards: loopMicro.streakSubflowCards,
+        streakSubflowBlocks: loopMicro.streakSubflowBlocks,
+        streakSubflowPanels: loopMicro.streakSubflowPanels,
         lootFamilyText: loopMicro.lootFamilyText,
         lootFlowText: loopMicro.lootFlowText,
         lootSummaryText: loopMicro.lootSummaryText,
@@ -4153,12 +4588,21 @@ function buildTokenOverviewPayload(vaultRoot, vaultView, scene) {
     loopPayoutFlowCards: loopMicro.payoutFlowCards,
     loopPayoutFlowBlocks: loopMicro.payoutFlowBlocks,
     loopPayoutFlowPanels: loopMicro.payoutFlowPanels,
+    loopPayoutSubflowCards: loopMicro.payoutSubflowCards,
+    loopPayoutSubflowBlocks: loopMicro.payoutSubflowBlocks,
+    loopPayoutSubflowPanels: loopMicro.payoutSubflowPanels,
     loopRouteFlowCards: loopMicro.routeFlowCards,
     loopRouteFlowBlocks: loopMicro.routeFlowBlocks,
     loopRouteFlowPanels: loopMicro.routeFlowPanels,
+    loopRouteSubflowCards: loopMicro.routeSubflowCards,
+    loopRouteSubflowBlocks: loopMicro.routeSubflowBlocks,
+    loopRouteSubflowPanels: loopMicro.routeSubflowPanels,
     loopPremiumFlowCards: loopMicro.premiumFlowCards,
     loopPremiumFlowBlocks: loopMicro.premiumFlowBlocks,
     loopPremiumFlowPanels: loopMicro.premiumFlowPanels,
+    loopPremiumSubflowCards: loopMicro.premiumSubflowCards,
+    loopPremiumSubflowBlocks: loopMicro.premiumSubflowBlocks,
+    loopPremiumSubflowPanels: loopMicro.premiumSubflowPanels,
     statusChips: [
       {
         id: "tokenWalletChip",
@@ -4508,6 +4952,9 @@ function buildAdminRuntimePayload(adminRuntime, adminPanels, scene) {
     loopQueueFlowCards: loopMicro.queueFlowCards,
     loopQueueFlowBlocks: loopMicro.queueFlowBlocks,
     loopQueueFlowPanels: loopMicro.queueFlowPanels,
+    loopQueueSubflowCards: loopMicro.queueSubflowCards,
+    loopQueueSubflowBlocks: loopMicro.queueSubflowBlocks,
+    loopQueueSubflowPanels: loopMicro.queueSubflowPanels,
     loopRuntimeFamilyText: loopMicro.runtimeFamilyText,
     loopRuntimeFlowText: loopMicro.runtimeFlowText,
     loopRuntimeSummaryText: loopMicro.runtimeSummaryText,
@@ -4523,6 +4970,9 @@ function buildAdminRuntimePayload(adminRuntime, adminPanels, scene) {
     loopRuntimeFlowCards: loopMicro.runtimeFlowCards,
     loopRuntimeFlowBlocks: loopMicro.runtimeFlowBlocks,
     loopRuntimeFlowPanels: loopMicro.runtimeFlowPanels,
+    loopRuntimeSubflowCards: loopMicro.runtimeSubflowCards,
+    loopRuntimeSubflowBlocks: loopMicro.runtimeSubflowBlocks,
+    loopRuntimeSubflowPanels: loopMicro.runtimeSubflowPanels,
     loopDispatchFamilyText: loopMicro.dispatchFamilyText,
     loopDispatchFlowText: loopMicro.dispatchFlowText,
     loopDispatchSummaryText: loopMicro.dispatchSummaryText,
