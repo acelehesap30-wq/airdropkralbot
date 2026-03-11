@@ -357,6 +357,22 @@ function buildLoopBridgeBlocks(...blocks) {
     .slice(0, 3);
 }
 
+function buildLoopFamilyBridgeBundle(tone, rails) {
+  const source = asRecord(rails);
+  return {
+    cards: buildLoopBridgeCards(
+      buildLoopBridgeCard("SUMMARY", source.summaryText, tone, source.familyText),
+      buildLoopBridgeCard("GATE", source.gateText, tone, source.flowText),
+      buildLoopBridgeCard("ATTN", source.attentionText || source.cadenceText, tone, source.pressureText || source.responseText)
+    ),
+    blocks: buildLoopBridgeBlocks(
+      buildLoopBridgeBlock("FLOW", source.familyText, source.flowText, tone, source.summaryText),
+      buildLoopBridgeBlock("GATE", source.summaryText, source.gateText, tone, source.windowText),
+      buildLoopBridgeBlock("PULSE", source.attentionText || "ATTN --", source.cadenceText || "CADENCE --", tone, source.responseText || source.pressureText)
+    )
+  };
+}
+
 function resolveLoopFamilyTone(...values) {
   const text = values
     .map((value) => toText(value, ""))
@@ -404,7 +420,7 @@ function resolveLoopFamilyTone(...values) {
 
 function buildPvpLoopMicroPanels(loopDeck, active) {
   if (!active) {
-    return {
+    const panels = {
       duelText: "DUEL | WAIT",
       ladderText: "LADDER | WAIT",
       telemetryText: "TELEMETRY | WAIT",
@@ -470,6 +486,33 @@ function buildPvpLoopMicroPanels(loopDeck, active) {
       telemetryAttentionText: "DIAG -- | RISK -- | FLOW WAIT",
       telemetryCadenceText: "PERSONA WAIT | FLOW WAIT | SEQ WAIT"
     };
+    const ladderBundle = buildLoopFamilyBridgeBundle(panels.ladderTone, {
+      familyText: panels.ladderFamilyText,
+      flowText: panels.ladderFlowText,
+      summaryText: panels.ladderSummaryText,
+      gateText: panels.ladderGateText,
+      windowText: panels.ladderWindowText,
+      pressureText: panels.ladderPressureText,
+      responseText: panels.ladderResponseText,
+      attentionText: panels.ladderAttentionText,
+      cadenceText: panels.ladderCadenceText
+    });
+    const telemetryBundle = buildLoopFamilyBridgeBundle(panels.telemetryTone, {
+      familyText: panels.telemetryFamilyText,
+      flowText: panels.telemetryFlowText,
+      summaryText: panels.telemetrySummaryText,
+      gateText: panels.telemetryGateText,
+      windowText: panels.telemetryWindowText,
+      pressureText: panels.telemetryPressureText,
+      responseText: panels.telemetryResponseText,
+      attentionText: panels.telemetryAttentionText,
+      cadenceText: panels.telemetryCadenceText
+    });
+    panels.ladderCards = ladderBundle.cards;
+    panels.ladderBlocks = ladderBundle.blocks;
+    panels.telemetryCards = telemetryBundle.cards;
+    panels.telemetryBlocks = telemetryBundle.blocks;
+    return panels;
   }
   const sharedRows = [...loopDeck.loopRows, ...loopDeck.loopSignalRows];
   const stageValue = toText(loopDeck.stageValue, "--");
@@ -484,7 +527,7 @@ function buildPvpLoopMicroPanels(loopDeck, active) {
   const microflowLabel = formatRuntimeKeyLabel(loopDeck.microflowKey, "FLOW");
   const personalityLabel = toText(loopDeck.personalityLabel, "");
   const duelPhase = readLoopRowValue(loopDeck.sequenceRows, ["duel_phase"], stageValue);
-  return {
+  const panels = {
     duelText: buildLoopMicroLine(
       "DUEL",
       duelPhase,
@@ -625,11 +668,38 @@ function buildPvpLoopMicroPanels(loopDeck, active) {
     duelAttentionText: buildLoopAttentionDetail(`RISK ${riskBand}`, `QUEUE ${readLoopRowValue(sharedRows, ["queue_depth"], "--")}`, `PHASE ${duelPhase}`),
     duelCadenceText: buildLoopCadenceDetail(`ENTRY ${entryLabel}`, `FLOW ${microflowLabel}`, `PERSONA ${personalityLabel || "SYNC"}`)
   };
+  const ladderBundle = buildLoopFamilyBridgeBundle(panels.ladderTone, {
+    familyText: panels.ladderFamilyText,
+    flowText: panels.ladderFlowText,
+    summaryText: panels.ladderSummaryText,
+    gateText: panels.ladderGateText,
+    windowText: panels.ladderWindowText,
+    pressureText: panels.ladderPressureText,
+    responseText: panels.ladderResponseText,
+    attentionText: panels.ladderAttentionText,
+    cadenceText: panels.ladderCadenceText
+  });
+  const telemetryBundle = buildLoopFamilyBridgeBundle(panels.telemetryTone, {
+    familyText: panels.telemetryFamilyText,
+    flowText: panels.telemetryFlowText,
+    summaryText: panels.telemetrySummaryText,
+    gateText: panels.telemetryGateText,
+    windowText: panels.telemetryWindowText,
+    pressureText: panels.telemetryPressureText,
+    responseText: panels.telemetryResponseText,
+    attentionText: panels.telemetryAttentionText,
+    cadenceText: panels.telemetryCadenceText
+  });
+  panels.ladderCards = ladderBundle.cards;
+  panels.ladderBlocks = ladderBundle.blocks;
+  panels.telemetryCards = telemetryBundle.cards;
+  panels.telemetryBlocks = telemetryBundle.blocks;
+  return panels;
 }
 
 function buildVaultLoopMicroPanels(loopDeck, active) {
   if (!active) {
-    return {
+    const panels = {
       walletText: "WALLET | WAIT",
       payoutText: "PAYOUT | WAIT",
       routeText: "ROUTE | WAIT",
@@ -713,6 +783,46 @@ function buildVaultLoopMicroPanels(loopDeck, active) {
       premiumAttentionText: "PASS -- | STAGE -- | FLOW WAIT",
       premiumCadenceText: "ENTRY WAIT | FLOW WAIT | PASS --"
     };
+    const payoutBundle = buildLoopFamilyBridgeBundle(panels.payoutTone, {
+      familyText: panels.payoutFamilyText,
+      flowText: panels.payoutFlowText,
+      summaryText: panels.payoutSummaryText,
+      gateText: panels.payoutGateText,
+      windowText: panels.payoutWindowText,
+      pressureText: panels.payoutPressureText,
+      responseText: panels.payoutResponseText,
+      attentionText: panels.payoutAttentionText,
+      cadenceText: panels.payoutCadenceText
+    });
+    const routeBundle = buildLoopFamilyBridgeBundle(panels.routeTone, {
+      familyText: panels.routeFamilyText,
+      flowText: panels.routeFlowText,
+      summaryText: panels.routeSummaryText,
+      gateText: panels.routeGateText,
+      windowText: panels.routeWindowText,
+      pressureText: panels.routePressureText,
+      responseText: panels.routeResponseText,
+      attentionText: panels.routeAttentionText,
+      cadenceText: panels.routeCadenceText
+    });
+    const premiumBundle = buildLoopFamilyBridgeBundle(panels.premiumTone, {
+      familyText: panels.premiumFamilyText,
+      flowText: panels.premiumFlowText,
+      summaryText: panels.premiumSummaryText,
+      gateText: panels.premiumGateText,
+      windowText: panels.premiumWindowText,
+      pressureText: panels.premiumPressureText,
+      responseText: panels.premiumResponseText,
+      attentionText: panels.premiumAttentionText,
+      cadenceText: panels.premiumCadenceText
+    });
+    panels.payoutCards = payoutBundle.cards;
+    panels.payoutBlocks = payoutBundle.blocks;
+    panels.routeCards = routeBundle.cards;
+    panels.routeBlocks = routeBundle.blocks;
+    panels.premiumCards = premiumBundle.cards;
+    panels.premiumBlocks = premiumBundle.blocks;
+    return panels;
   }
   const sharedRows = [...loopDeck.loopRows, ...loopDeck.loopSignalRows];
   const walletState = readLoopRowValue(sharedRows, ["wallet_state"], loopDeck.stageValue || "--");
@@ -725,7 +835,7 @@ function buildVaultLoopMicroPanels(loopDeck, active) {
   const personalityCaption = toText(loopDeck.personalityCaption, "");
   const stageValue = toText(loopDeck.stageValue || loopDeck.loopStatusLabel || "--", "--");
   const loopStatusLabel = toText(loopDeck.loopStatusLabel || "IDLE", "IDLE");
-  return {
+  const panels = {
     walletText: buildLoopMicroLine("WALLET", walletState, loopStatusLabel),
     payoutText: buildLoopMicroLine("PAYOUT", payoutState, routeState),
     routeText: buildLoopMicroLine("ROUTE", routeState, walletState),
@@ -867,11 +977,51 @@ function buildVaultLoopMicroPanels(loopDeck, active) {
     premiumAttentionText: buildLoopAttentionDetail(`PASS ${premiumState}`, `STAGE ${stageValue}`, `FLOW ${microflowLabel}`),
     premiumCadenceText: buildLoopCadenceDetail(`ENTRY ${entryLabel}`, `FLOW ${microflowLabel}`, `PASS ${premiumState}`)
   };
+  const payoutBundle = buildLoopFamilyBridgeBundle(panels.payoutTone, {
+    familyText: panels.payoutFamilyText,
+    flowText: panels.payoutFlowText,
+    summaryText: panels.payoutSummaryText,
+    gateText: panels.payoutGateText,
+    windowText: panels.payoutWindowText,
+    pressureText: panels.payoutPressureText,
+    responseText: panels.payoutResponseText,
+    attentionText: panels.payoutAttentionText,
+    cadenceText: panels.payoutCadenceText
+  });
+  const routeBundle = buildLoopFamilyBridgeBundle(panels.routeTone, {
+    familyText: panels.routeFamilyText,
+    flowText: panels.routeFlowText,
+    summaryText: panels.routeSummaryText,
+    gateText: panels.routeGateText,
+    windowText: panels.routeWindowText,
+    pressureText: panels.routePressureText,
+    responseText: panels.routeResponseText,
+    attentionText: panels.routeAttentionText,
+    cadenceText: panels.routeCadenceText
+  });
+  const premiumBundle = buildLoopFamilyBridgeBundle(panels.premiumTone, {
+    familyText: panels.premiumFamilyText,
+    flowText: panels.premiumFlowText,
+    summaryText: panels.premiumSummaryText,
+    gateText: panels.premiumGateText,
+    windowText: panels.premiumWindowText,
+    pressureText: panels.premiumPressureText,
+    responseText: panels.premiumResponseText,
+    attentionText: panels.premiumAttentionText,
+    cadenceText: panels.premiumCadenceText
+  });
+  panels.payoutCards = payoutBundle.cards;
+  panels.payoutBlocks = payoutBundle.blocks;
+  panels.routeCards = routeBundle.cards;
+  panels.routeBlocks = routeBundle.blocks;
+  panels.premiumCards = premiumBundle.cards;
+  panels.premiumBlocks = premiumBundle.blocks;
+  return panels;
 }
 
 function buildAdminLoopMicroPanels(loopDeck, active) {
   if (!active) {
-    return {
+    const panels = {
       queueText: "QUEUE | WAIT",
       runtimeText: "RUNTIME | WAIT",
       dispatchText: "DISPATCH | WAIT",
@@ -937,6 +1087,33 @@ function buildAdminLoopMicroPanels(loopDeck, active) {
       runtimeAttentionText: "HEALTH -- | ALERT -- | FLOW WAIT",
       runtimeCadenceText: "SEQ WAIT | FLOW WAIT | HEALTH --"
     };
+    const queueBundle = buildLoopFamilyBridgeBundle(panels.queueTone, {
+      familyText: panels.queueFamilyText,
+      flowText: panels.queueFlowText,
+      summaryText: panels.queueSummaryText,
+      gateText: panels.queueGateText,
+      windowText: panels.queueWindowText,
+      pressureText: panels.queuePressureText,
+      responseText: panels.queueResponseText,
+      attentionText: panels.queueAttentionText,
+      cadenceText: panels.queueCadenceText
+    });
+    const runtimeBundle = buildLoopFamilyBridgeBundle(panels.runtimeTone, {
+      familyText: panels.runtimeFamilyText,
+      flowText: panels.runtimeFlowText,
+      summaryText: panels.runtimeSummaryText,
+      gateText: panels.runtimeGateText,
+      windowText: panels.runtimeWindowText,
+      pressureText: panels.runtimePressureText,
+      responseText: panels.runtimeResponseText,
+      attentionText: panels.runtimeAttentionText,
+      cadenceText: panels.runtimeCadenceText
+    });
+    panels.queueCards = queueBundle.cards;
+    panels.queueBlocks = queueBundle.blocks;
+    panels.runtimeCards = runtimeBundle.cards;
+    panels.runtimeBlocks = runtimeBundle.blocks;
+    return panels;
   }
   const sharedRows = [...loopDeck.loopRows, ...loopDeck.loopSignalRows];
   const queueDepth = readLoopRowValue(sharedRows, ["queue_depth"], "0");
@@ -948,7 +1125,7 @@ function buildAdminLoopMicroPanels(loopDeck, active) {
   const microflowLabel = formatRuntimeKeyLabel(loopDeck.microflowKey, "FLOW");
   const stageValue = toText(loopDeck.stageValue || loopDeck.loopStatusLabel || "--", "--");
   const loopStatusLabel = toText(loopDeck.loopStatusLabel || "IDLE", "IDLE");
-  return {
+  const panels = {
     queueText: buildLoopMicroLine(
       "QUEUE",
       queueDepth,
@@ -1060,11 +1237,38 @@ function buildAdminLoopMicroPanels(loopDeck, active) {
     runtimeAttentionText: buildLoopAttentionDetail(`HEALTH ${sceneHealth}`, `ALERT ${alertCount}`, `FLOW ${microflowLabel}`),
     runtimeCadenceText: buildLoopCadenceDetail(`SEQ ${sequenceLabel}`, `FLOW ${microflowLabel}`, `HEALTH ${sceneHealth}`)
   };
+  const queueBundle = buildLoopFamilyBridgeBundle(panels.queueTone, {
+    familyText: panels.queueFamilyText,
+    flowText: panels.queueFlowText,
+    summaryText: panels.queueSummaryText,
+    gateText: panels.queueGateText,
+    windowText: panels.queueWindowText,
+    pressureText: panels.queuePressureText,
+    responseText: panels.queueResponseText,
+    attentionText: panels.queueAttentionText,
+    cadenceText: panels.queueCadenceText
+  });
+  const runtimeBundle = buildLoopFamilyBridgeBundle(panels.runtimeTone, {
+    familyText: panels.runtimeFamilyText,
+    flowText: panels.runtimeFlowText,
+    summaryText: panels.runtimeSummaryText,
+    gateText: panels.runtimeGateText,
+    windowText: panels.runtimeWindowText,
+    pressureText: panels.runtimePressureText,
+    responseText: panels.runtimeResponseText,
+    attentionText: panels.runtimeAttentionText,
+    cadenceText: panels.runtimeCadenceText
+  });
+  panels.queueCards = queueBundle.cards;
+  panels.queueBlocks = queueBundle.blocks;
+  panels.runtimeCards = runtimeBundle.cards;
+  panels.runtimeBlocks = runtimeBundle.blocks;
+  return panels;
 }
 
 function buildOperationsLoopMicroPanels(loopDeck, active) {
   if (!active) {
-    return {
+    const panels = {
       offerText: "OFFER | WAIT",
       claimText: "CLAIM | WAIT",
       streakText: "STREAK | WAIT",
@@ -1148,6 +1352,46 @@ function buildOperationsLoopMicroPanels(loopDeck, active) {
       streakAttentionText: "STREAK -- | OFFER -- | FLOW WAIT",
       streakCadenceText: "PERSONA WAIT | FLOW WAIT | STREAK --"
     };
+    const offerBundle = buildLoopFamilyBridgeBundle(panels.offerTone, {
+      familyText: panels.offerFamilyText,
+      flowText: panels.offerFlowText,
+      summaryText: panels.offerSummaryText,
+      gateText: panels.offerGateText,
+      windowText: panels.offerWindowText,
+      pressureText: panels.offerPressureText,
+      responseText: panels.offerResponseText,
+      attentionText: panels.offerAttentionText,
+      cadenceText: panels.offerCadenceText
+    });
+    const claimBundle = buildLoopFamilyBridgeBundle(panels.claimTone, {
+      familyText: panels.claimFamilyText,
+      flowText: panels.claimFlowText,
+      summaryText: panels.claimSummaryText,
+      gateText: panels.claimGateText,
+      windowText: panels.claimWindowText,
+      pressureText: panels.claimPressureText,
+      responseText: panels.claimResponseText,
+      attentionText: panels.claimAttentionText,
+      cadenceText: panels.claimCadenceText
+    });
+    const streakBundle = buildLoopFamilyBridgeBundle(panels.streakTone, {
+      familyText: panels.streakFamilyText,
+      flowText: panels.streakFlowText,
+      summaryText: panels.streakSummaryText,
+      gateText: panels.streakGateText,
+      windowText: panels.streakWindowText,
+      pressureText: panels.streakPressureText,
+      responseText: panels.streakResponseText,
+      attentionText: panels.streakAttentionText,
+      cadenceText: panels.streakCadenceText
+    });
+    panels.offerCards = offerBundle.cards;
+    panels.offerBlocks = offerBundle.blocks;
+    panels.claimCards = claimBundle.cards;
+    panels.claimBlocks = claimBundle.blocks;
+    panels.streakCards = streakBundle.cards;
+    panels.streakBlocks = streakBundle.blocks;
+    return panels;
   }
   const sharedRows = [...loopDeck.loopRows, ...loopDeck.loopSignalRows];
   const offerCount = readLoopRowValue(sharedRows, ["offer_count", "active_missions"], "0");
@@ -1163,7 +1407,7 @@ function buildOperationsLoopMicroPanels(loopDeck, active) {
   const offerValue = `${Math.max(0, Math.round(toNum(offerCount, 0)))} LIVE`;
   const claimValue = `${Math.max(0, Math.round(toNum(claimableCount, 0)))} READY`;
   const lootValue = toNum(claimableCount, 0) > 0 ? claimValue : contractBand;
-  return {
+  const panels = {
     offerText: buildLoopMicroLine("OFFER", offerValue, contractBand || loopStatusLabel),
     claimText: buildLoopMicroLine("CLAIM", claimValue, stageValue),
     streakText: buildLoopMicroLine("STREAK", streakValue, loopStatusLabel),
@@ -1290,6 +1534,46 @@ function buildOperationsLoopMicroPanels(loopDeck, active) {
     streakAttentionText: buildLoopAttentionDetail(`STREAK ${streakValue}`, `OFFER ${offerValue}`, `FLOW ${microflowLabel}`),
     streakCadenceText: buildLoopCadenceDetail(`PERSONA ${personalityCaption || "SYNC"}`, `FLOW ${microflowLabel}`, `STREAK ${streakValue}`)
   };
+  const offerBundle = buildLoopFamilyBridgeBundle(panels.offerTone, {
+    familyText: panels.offerFamilyText,
+    flowText: panels.offerFlowText,
+    summaryText: panels.offerSummaryText,
+    gateText: panels.offerGateText,
+    windowText: panels.offerWindowText,
+    pressureText: panels.offerPressureText,
+    responseText: panels.offerResponseText,
+    attentionText: panels.offerAttentionText,
+    cadenceText: panels.offerCadenceText
+  });
+  const claimBundle = buildLoopFamilyBridgeBundle(panels.claimTone, {
+    familyText: panels.claimFamilyText,
+    flowText: panels.claimFlowText,
+    summaryText: panels.claimSummaryText,
+    gateText: panels.claimGateText,
+    windowText: panels.claimWindowText,
+    pressureText: panels.claimPressureText,
+    responseText: panels.claimResponseText,
+    attentionText: panels.claimAttentionText,
+    cadenceText: panels.claimCadenceText
+  });
+  const streakBundle = buildLoopFamilyBridgeBundle(panels.streakTone, {
+    familyText: panels.streakFamilyText,
+    flowText: panels.streakFlowText,
+    summaryText: panels.streakSummaryText,
+    gateText: panels.streakGateText,
+    windowText: panels.streakWindowText,
+    pressureText: panels.streakPressureText,
+    responseText: panels.streakResponseText,
+    attentionText: panels.streakAttentionText,
+    cadenceText: panels.streakCadenceText
+  });
+  panels.offerCards = offerBundle.cards;
+  panels.offerBlocks = offerBundle.blocks;
+  panels.claimCards = claimBundle.cards;
+  panels.claimBlocks = claimBundle.blocks;
+  panels.streakCards = streakBundle.cards;
+  panels.streakBlocks = streakBundle.blocks;
+  return panels;
 }
 
 function buildDomainLoopPanelPayload(scene, domainKey) {
@@ -2086,6 +2370,8 @@ function buildPvpRuntimePayload(rawRuntime, rawLive, pvpView, scene, assetMetric
       loopLadderResponseText: loopMicro.ladderResponseText,
       loopLadderAttentionText: loopMicro.ladderAttentionText,
       loopLadderCadenceText: loopMicro.ladderCadenceText,
+      loopLadderCards: loopMicro.ladderCards,
+      loopLadderBlocks: loopMicro.ladderBlocks,
       loopTelemetryFamilyText: loopMicro.telemetryFamilyText,
       loopTelemetryFlowText: loopMicro.telemetryFlowText,
       loopTelemetrySummaryText: loopMicro.telemetrySummaryText,
@@ -2095,7 +2381,9 @@ function buildPvpRuntimePayload(rawRuntime, rawLive, pvpView, scene, assetMetric
       loopTelemetryPressureText: loopMicro.telemetryPressureText,
       loopTelemetryResponseText: loopMicro.telemetryResponseText,
       loopTelemetryAttentionText: loopMicro.telemetryAttentionText,
-      loopTelemetryCadenceText: loopMicro.telemetryCadenceText
+      loopTelemetryCadenceText: loopMicro.telemetryCadenceText,
+      loopTelemetryCards: loopMicro.telemetryCards,
+      loopTelemetryBlocks: loopMicro.telemetryBlocks
     },
     camera: {
       mode: {
@@ -2344,6 +2632,8 @@ function buildOperationsDeckPayload(data, taskResult, homeFeed, scene) {
         offerResponseText: loopMicro.offerResponseText,
         offerAttentionText: loopMicro.offerAttentionText,
         offerCadenceText: loopMicro.offerCadenceText,
+        offerCards: loopMicro.offerCards,
+        offerBlocks: loopMicro.offerBlocks,
         claimFamilyText: loopMicro.claimFamilyText,
         claimFlowText: loopMicro.claimFlowText,
         claimSummaryText: loopMicro.claimSummaryText,
@@ -2354,6 +2644,8 @@ function buildOperationsDeckPayload(data, taskResult, homeFeed, scene) {
         claimResponseText: loopMicro.claimResponseText,
         claimAttentionText: loopMicro.claimAttentionText,
         claimCadenceText: loopMicro.claimCadenceText,
+        claimCards: loopMicro.claimCards,
+        claimBlocks: loopMicro.claimBlocks,
         streakFamilyText: loopMicro.streakFamilyText,
         streakFlowText: loopMicro.streakFlowText,
         streakSummaryText: loopMicro.streakSummaryText,
@@ -2364,6 +2656,8 @@ function buildOperationsDeckPayload(data, taskResult, homeFeed, scene) {
         streakResponseText: loopMicro.streakResponseText,
         streakAttentionText: loopMicro.streakAttentionText,
         streakCadenceText: loopMicro.streakCadenceText,
+        streakCards: loopMicro.streakCards,
+        streakBlocks: loopMicro.streakBlocks,
         lootFamilyText: loopMicro.lootFamilyText,
         lootFlowText: loopMicro.lootFlowText,
         lootSummaryText: loopMicro.lootSummaryText,
@@ -2478,6 +2772,12 @@ function buildTokenOverviewPayload(vaultRoot, vaultView, scene) {
     loopWalletCadenceText: loopMicro.walletCadenceText,
     loopWalletCards: loopMicro.walletCards,
     loopWalletBlocks: loopMicro.walletBlocks,
+    loopPayoutCards: loopMicro.payoutCards,
+    loopPayoutBlocks: loopMicro.payoutBlocks,
+    loopRouteCards: loopMicro.routeCards,
+    loopRouteBlocks: loopMicro.routeBlocks,
+    loopPremiumCards: loopMicro.premiumCards,
+    loopPremiumBlocks: loopMicro.premiumBlocks,
     loopPayoutFamilyText: loopMicro.payoutFamilyText,
     loopPayoutFlowText: loopMicro.payoutFlowText,
     loopPayoutSummaryText: loopMicro.payoutSummaryText,
@@ -2852,6 +3152,8 @@ function buildAdminRuntimePayload(adminRuntime, adminPanels, scene) {
     loopQueueResponseText: loopMicro.queueResponseText,
     loopQueueAttentionText: loopMicro.queueAttentionText,
     loopQueueCadenceText: loopMicro.queueCadenceText,
+    loopQueueCards: loopMicro.queueCards,
+    loopQueueBlocks: loopMicro.queueBlocks,
     loopRuntimeFamilyText: loopMicro.runtimeFamilyText,
     loopRuntimeFlowText: loopMicro.runtimeFlowText,
     loopRuntimeSummaryText: loopMicro.runtimeSummaryText,
@@ -2862,6 +3164,8 @@ function buildAdminRuntimePayload(adminRuntime, adminPanels, scene) {
     loopRuntimeResponseText: loopMicro.runtimeResponseText,
     loopRuntimeAttentionText: loopMicro.runtimeAttentionText,
     loopRuntimeCadenceText: loopMicro.runtimeCadenceText,
+    loopRuntimeCards: loopMicro.runtimeCards,
+    loopRuntimeBlocks: loopMicro.runtimeBlocks,
     loopDispatchFamilyText: loopMicro.dispatchFamilyText,
     loopDispatchFlowText: loopMicro.dispatchFlowText,
     loopDispatchSummaryText: loopMicro.dispatchSummaryText,

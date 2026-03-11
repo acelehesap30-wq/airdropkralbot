@@ -450,6 +450,10 @@ const DICT = {
       "District x Aile Gunluk Risk Satirlari",
     admin_runtime_scene_loop_district_family_health_attention_trend_daily_matrix_title:
       "District x Aile Gunluk Risk Matrisi",
+    admin_runtime_scene_loop_district_family_attention_priority_title:
+      "District x Aile Attention Priority",
+    admin_runtime_scene_loop_district_family_attention_priority_daily_title:
+      "District x Aile Gunluk Attention Priority",
     admin_runtime_scene_loop_alarm_reasons_7d: "Loop Alarm Nedenleri",
     admin_runtime_live_ops_kpi_title: "Live Ops Dispatch KPI",
     admin_runtime_live_ops_campaign_label: "Campaign",
@@ -1393,6 +1397,10 @@ const DICT = {
       "District x Family Daily Risk Rows",
     admin_runtime_scene_loop_district_family_health_attention_trend_daily_matrix_title:
       "District x Family Daily Risk Matrix",
+    admin_runtime_scene_loop_district_family_attention_priority_title:
+      "District x Family Attention Priority",
+    admin_runtime_scene_loop_district_family_attention_priority_daily_title:
+      "District x Family Daily Attention Priority",
     admin_runtime_scene_loop_alarm_reasons_7d: "Loop Alarm Reasons",
     admin_runtime_live_ops_kpi_title: "Live Ops Dispatch KPI",
     admin_runtime_live_ops_campaign_label: "Campaign",

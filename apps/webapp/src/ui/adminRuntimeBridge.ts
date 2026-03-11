@@ -47,6 +47,8 @@ type RuntimeBridgePayload = {
   loopQueueResponseText?: string;
   loopQueueAttentionText?: string;
   loopQueueCadenceText?: string;
+  loopQueueCards?: LoopBridgeCard[];
+  loopQueueBlocks?: LoopBridgeBlock[];
   loopRuntimeFamilyText?: string;
   loopRuntimeFlowText?: string;
   loopRuntimeSummaryText?: string;
@@ -57,6 +59,8 @@ type RuntimeBridgePayload = {
   loopRuntimeResponseText?: string;
   loopRuntimeAttentionText?: string;
   loopRuntimeCadenceText?: string;
+  loopRuntimeCards?: LoopBridgeCard[];
+  loopRuntimeBlocks?: LoopBridgeBlock[];
   loopDispatchFamilyText?: string;
   loopDispatchFlowText?: string;
   loopDispatchSummaryText?: string;
@@ -133,10 +137,14 @@ function render(payload: RuntimeBridgePayload): boolean {
   const loopSignal = byId<HTMLElement>("adminRuntimeLoopSignal");
   const loopQueue = byId<HTMLElement>("adminRuntimeLoopQueue");
   const loopQueuePanel = byId<HTMLElement>("adminRuntimeLoopQueuePanel");
+  const loopQueueCards = byId<HTMLElement>("adminRuntimeLoopQueueCards");
+  const loopQueueBlocks = byId<HTMLElement>("adminRuntimeLoopQueueBlocks");
   const loopQueueFocus = byId<HTMLElement>("adminRuntimeLoopQueueFocus");
   const loopQueueStage = byId<HTMLElement>("adminRuntimeLoopQueueStage");
   const loopRuntime = byId<HTMLElement>("adminRuntimeLoopRuntime");
   const loopRuntimePanel = byId<HTMLElement>("adminRuntimeLoopRuntimePanel");
+  const loopRuntimeCards = byId<HTMLElement>("adminRuntimeLoopRuntimeCards");
+  const loopRuntimeBlocks = byId<HTMLElement>("adminRuntimeLoopRuntimeBlocks");
   const loopRuntimeFocus = byId<HTMLElement>("adminRuntimeLoopRuntimeFocus");
   const loopRuntimeStage = byId<HTMLElement>("adminRuntimeLoopRuntimeStage");
   const loopDispatch = byId<HTMLElement>("adminRuntimeLoopDispatch");
@@ -205,6 +213,8 @@ function render(payload: RuntimeBridgePayload): boolean {
     loopQueue.textContent = String(payload.loopQueueText || "QUEUE | WAIT");
   }
   setTone(loopQueuePanel, payload.loopQueueTone);
+  renderLoopBridgeCards(loopQueueCards, payload.loopQueueCards);
+  renderLoopBridgeBlocks(loopQueueBlocks, payload.loopQueueBlocks);
   if (loopQueueFocus) {
     loopQueueFocus.textContent = String(payload.loopQueueFocusText || "ENTRY WAIT | FOCUS WAIT | FLOW WAIT");
   }
@@ -215,6 +225,8 @@ function render(payload: RuntimeBridgePayload): boolean {
     loopRuntime.textContent = String(payload.loopRuntimeText || "RUNTIME | WAIT");
   }
   setTone(loopRuntimePanel, payload.loopRuntimeTone);
+  renderLoopBridgeCards(loopRuntimeCards, payload.loopRuntimeCards);
+  renderLoopBridgeBlocks(loopRuntimeBlocks, payload.loopRuntimeBlocks);
   if (loopRuntimeFocus) {
     loopRuntimeFocus.textContent = String(payload.loopRuntimeFocusText || "SEQ WAIT | FOCUS WAIT | ALERT --");
   }

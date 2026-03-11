@@ -526,6 +526,15 @@ function rankSceneLoopTrendDirection(value) {
   return 0;
 }
 
+function buildSceneLoopPriorityScore(attentionRank, healthRank, trendRank, totalCount) {
+  return (
+    Math.max(0, Math.floor(toNum(attentionRank, 0))) * 1000 +
+    Math.max(0, Math.floor(toNum(healthRank, 0))) * 100 +
+    Math.max(0, Math.floor(toNum(trendRank, 0))) * 10 +
+    Math.min(9, Math.max(0, Math.floor(toNum(totalCount, 0))))
+  );
+}
+
 function buildSceneLoopDistrictFamilyHealthAttentionTrendMatrix(rows, limit = 12) {
   return (Array.isArray(rows) ? rows : [])
     .map((row) => {
@@ -554,6 +563,44 @@ function buildSceneLoopDistrictFamilyHealthAttentionTrendMatrix(rows, limit = 12
       if (Math.abs(healthGap) > 0.0001) return healthGap;
       const trendGap = toNum(right.trend_rank, 0) - toNum(left.trend_rank, 0);
       if (Math.abs(trendGap) > 0.0001) return trendGap;
+      const totalGap = toNum(right.total_count, 0) - toNum(left.total_count, 0);
+      if (Math.abs(totalGap) > 0.0001) return totalGap;
+      return `${String(left.district_key || "")}:${String(left.loop_family_key || "")}`.localeCompare(
+        `${String(right.district_key || "")}:${String(right.loop_family_key || "")}`
+      );
+    })
+    .slice(0, Math.max(1, Math.floor(toNum(limit, 12))));
+}
+
+function buildSceneLoopDistrictFamilyAttentionPriority(rows, limit = 12) {
+  return (Array.isArray(rows) ? rows : [])
+    .map((row) => {
+      const latestHealthBand = String(row?.latest_health_band || row?.health_band || "no_data");
+      const attentionBand = String(row?.attention_band || "no_data");
+      const trendDirection = String(row?.trend_direction || "no_data");
+      const attentionRank = rankSceneLoopAttentionBand(attentionBand);
+      const healthRank = rankSceneLoopHealthBand(latestHealthBand);
+      const trendRank = rankSceneLoopTrendDirection(trendDirection);
+      const totalCount = Math.max(0, Math.floor(toNum(row?.total_count, 0)));
+      return {
+        district_key: String(row?.district_key || "unknown"),
+        loop_family_key: normalizeSceneLoopFamilyKey(row?.loop_family_key),
+        latest_health_band: latestHealthBand,
+        attention_band: attentionBand,
+        trend_direction: trendDirection,
+        trend_delta: Math.floor(toNum(row?.trend_delta, 0)),
+        total_count: totalCount,
+        live_count: Math.max(0, Math.floor(toNum(row?.live_count, 0))),
+        blocked_count: Math.max(0, Math.floor(toNum(row?.blocked_count, 0))),
+        priority_score: buildSceneLoopPriorityScore(attentionRank, healthRank, trendRank, totalCount),
+        attention_rank: attentionRank,
+        health_rank: healthRank,
+        trend_rank: trendRank
+      };
+    })
+    .sort((left, right) => {
+      const priorityGap = toNum(right.priority_score, 0) - toNum(left.priority_score, 0);
+      if (Math.abs(priorityGap) > 0.0001) return priorityGap;
       const totalGap = toNum(right.total_count, 0) - toNum(left.total_count, 0);
       if (Math.abs(totalGap) > 0.0001) return totalGap;
       return `${String(left.district_key || "")}:${String(left.loop_family_key || "")}`.localeCompare(
@@ -658,6 +705,47 @@ function buildSceneLoopDistrictFamilyHealthAttentionTrendDailyMatrix(rows, limit
       if (Math.abs(healthGap) > 0.0001) return healthGap;
       const trendGap = toNum(right.trend_rank, 0) - toNum(left.trend_rank, 0);
       if (Math.abs(trendGap) > 0.0001) return trendGap;
+      const totalGap = toNum(right.total_count, 0) - toNum(left.total_count, 0);
+      if (Math.abs(totalGap) > 0.0001) return totalGap;
+      return `${String(left.district_key || "")}:${String(left.loop_family_key || "")}`.localeCompare(
+        `${String(right.district_key || "")}:${String(right.loop_family_key || "")}`
+      );
+    })
+    .slice(0, Math.max(1, Math.floor(toNum(limit, 18))));
+}
+
+function buildSceneLoopDistrictFamilyAttentionPriorityDaily(rows, limit = 18) {
+  return (Array.isArray(rows) ? rows : [])
+    .map((row) => {
+      const latestHealthBand = String(row?.latest_health_band || row?.health_band || "no_data");
+      const attentionBand = String(row?.attention_band || "no_data");
+      const trendDirection = String(row?.trend_direction || "no_data");
+      const attentionRank = rankSceneLoopAttentionBand(attentionBand);
+      const healthRank = rankSceneLoopHealthBand(latestHealthBand);
+      const trendRank = rankSceneLoopTrendDirection(trendDirection);
+      const totalCount = Math.max(0, Math.floor(toNum(row?.total_count, 0)));
+      return {
+        day: String(row?.day || ""),
+        district_key: String(row?.district_key || "unknown"),
+        loop_family_key: normalizeSceneLoopFamilyKey(row?.loop_family_key),
+        latest_health_band: latestHealthBand,
+        attention_band: attentionBand,
+        trend_direction: trendDirection,
+        trend_delta: Math.floor(toNum(row?.trend_delta, 0)),
+        total_count: totalCount,
+        live_count: Math.max(0, Math.floor(toNum(row?.live_count, 0))),
+        blocked_count: Math.max(0, Math.floor(toNum(row?.blocked_count, 0))),
+        priority_score: buildSceneLoopPriorityScore(attentionRank, healthRank, trendRank, totalCount),
+        attention_rank: attentionRank,
+        health_rank: healthRank,
+        trend_rank: trendRank
+      };
+    })
+    .sort((left, right) => {
+      const dayOrder = String(right.day || "").localeCompare(String(left.day || ""));
+      if (dayOrder !== 0) return dayOrder;
+      const priorityGap = toNum(right.priority_score, 0) - toNum(left.priority_score, 0);
+      if (Math.abs(priorityGap) > 0.0001) return priorityGap;
       const totalGap = toNum(right.total_count, 0) - toNum(left.total_count, 0);
       if (Math.abs(totalGap) > 0.0001) return totalGap;
       return `${String(left.district_key || "")}:${String(left.loop_family_key || "")}`.localeCompare(
@@ -971,6 +1059,12 @@ function enrichWebappRevenueMetrics(rawMetrics = {}) {
     buildSceneLoopDistrictFamilyHealthAttentionTrendDailyMatrix(
       metrics.scene_loop_district_family_health_attention_trend_daily_breakdown_7d
     );
+  metrics.scene_loop_district_family_attention_priority_7d = buildSceneLoopDistrictFamilyAttentionPriority(
+    metrics.scene_loop_district_family_health_attention_trend_matrix_7d
+  );
+  metrics.scene_loop_district_family_attention_priority_daily_7d = buildSceneLoopDistrictFamilyAttentionPriorityDaily(
+    metrics.scene_loop_district_family_health_attention_trend_daily_matrix_7d
+  );
   metrics.scene_runtime_daily_breakdown_7d = normalizeSceneDailyRows(metrics.scene_runtime_daily_breakdown_7d);
   const sceneDailyRows = metrics.scene_runtime_daily_breakdown_7d;
   const latestSceneDay = sceneDailyRows[0] || null;
@@ -1074,6 +1168,8 @@ module.exports = {
   buildSceneLoopDistrictFamilyHealthAttentionTrendMatrix,
   buildSceneLoopDistrictFamilyHealthAttentionTrendDailyBreakdown,
   buildSceneLoopDistrictFamilyHealthAttentionTrendDailyMatrix,
+  buildSceneLoopDistrictFamilyAttentionPriority,
+  buildSceneLoopDistrictFamilyAttentionPriorityDaily,
   resolveSceneLoopTrendDirection,
   buildSceneBandBreakdown,
   buildSceneLoopBandBreakdown,

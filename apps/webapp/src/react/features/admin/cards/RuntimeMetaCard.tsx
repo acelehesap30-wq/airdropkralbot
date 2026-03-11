@@ -234,6 +234,36 @@ function SceneLoopDistrictFamilyDailyMatrixList(props: { title: string; rows: Ar
   );
 }
 
+function SceneLoopDistrictFamilyPriorityList(props: { title: string; rows: Array<Record<string, unknown>> }) {
+  if (!props.rows.length) {
+    return (
+      <div>
+        <strong>{props.title}</strong>
+        <p className="akrMutedLine">-</p>
+      </div>
+    );
+  }
+  return (
+    <div>
+      <strong>{props.title}</strong>
+      <div className="akrStack">
+        {props.rows.slice(0, 12).map((row, index) => (
+          <p
+            className="akrMutedLine"
+            key={`${props.title}_${String(row.day || "latest")}_${String(row.district_key || index)}_${String(row.loop_family_key || "family")}`}
+          >
+            {row.day ? `${String(row.day)} | ` : ""}
+            {String(row.district_key || "-")} / {String(row.loop_family_key || "-")} | priority{" "}
+            {Math.floor(Number(row.priority_score || 0))} | latest {String(row.latest_health_band || row.health_band || "no_data")} |
+            {" "}attn {String(row.attention_band || "no_data")} | trend {String(row.trend_direction || "no_data")} (
+            {Math.floor(Number(row.trend_delta || 0))}) | loops {Math.floor(Number(row.total_count || 0))}
+          </p>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function SkipDailyTrendList(props: { title: string; rows: Array<Record<string, unknown>> }) {
   if (!props.rows.length) {
     return (
@@ -465,6 +495,12 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
   );
   const sceneLoopDistrictFamilyHealthAttentionTrendDailyMatrix = asRows(
     props.metricsData?.scene_loop_district_family_health_attention_trend_daily_matrix_7d
+  );
+  const sceneLoopDistrictFamilyAttentionPriority = asRows(
+    props.metricsData?.scene_loop_district_family_attention_priority_7d
+  );
+  const sceneLoopDistrictFamilyAttentionPriorityDaily = asRows(
+    props.metricsData?.scene_loop_district_family_attention_priority_daily_7d
   );
   const liveOpsKpi = asRecord((props.opsKpiRunData as Record<string, unknown> | null)?.live_ops_campaign) ||
     asRecord((props.opsKpiData as Record<string, unknown> | null)?.live_ops_campaign);
@@ -745,6 +781,14 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
         <SceneLoopDistrictFamilyDailyMatrixList
           title={t(props.lang, "admin_runtime_scene_loop_district_family_health_attention_trend_daily_matrix_title")}
           rows={sceneLoopDistrictFamilyHealthAttentionTrendDailyMatrix}
+        />
+        <SceneLoopDistrictFamilyPriorityList
+          title={t(props.lang, "admin_runtime_scene_loop_district_family_attention_priority_title")}
+          rows={sceneLoopDistrictFamilyAttentionPriority}
+        />
+        <SceneLoopDistrictFamilyPriorityList
+          title={t(props.lang, "admin_runtime_scene_loop_district_family_attention_priority_daily_title")}
+          rows={sceneLoopDistrictFamilyAttentionPriorityDaily}
         />
         <AlarmReasonList title={t(props.lang, "admin_runtime_scene_loop_alarm_reasons_7d")} rows={sceneLoopAlarmReasons7d} />
       </section>

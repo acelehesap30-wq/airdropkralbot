@@ -64,10 +64,7 @@ type LoopPayload = {
   detailText: string;
   signalText: string;
   sequenceText: string;
-  offer: LoopFamilyPanel;
-  claim: LoopFamilyPanel;
-  streak: LoopFamilyPanel;
-  loot: LoopFamilyPanel;
+  [key: string]: unknown;
 };
 
 export type OperationsDeckBridgePayload = {
@@ -382,6 +379,33 @@ function renderLoopFamily(prefix: string, payload: LoopFamilyPanel): void {
   setChipTone(`${prefix}Cadence`, resolveLoopRailTone(payload.tone, "cadence"));
 }
 
+function readLoopFamily(payload: LoopPayload, familyKey: string): LoopFamilyPanel {
+  const source = payload as Record<string, unknown>;
+  const title = familyKey.charAt(0).toUpperCase() + familyKey.slice(1);
+  return {
+    text: safeText(source[`${familyKey}Text`], `${title.toUpperCase()} | WAIT`),
+    tone: safeText(source[`${familyKey}Tone`], "neutral"),
+    cards: Array.isArray(source[`${familyKey}Cards`]) ? (source[`${familyKey}Cards`] as LoopBridgeCard[]) : undefined,
+    blocks: Array.isArray(source[`${familyKey}Blocks`]) ? (source[`${familyKey}Blocks`] as LoopBridgeBlock[]) : undefined,
+    familyText: safeText(source[`${familyKey}FamilyText`], "FLOW --"),
+    flowText: safeText(source[`${familyKey}FlowText`], "ENTRY --"),
+    summaryText: safeText(source[`${familyKey}SummaryText`], "SUMMARY --"),
+    gateText: safeText(source[`${familyKey}GateText`], "GATE --"),
+    leadText: safeText(source[`${familyKey}LeadText`], "LEAD --"),
+    windowText: safeText(source[`${familyKey}WindowText`], "WINDOW --"),
+    pressureText: safeText(source[`${familyKey}PressureText`], "PRESSURE --"),
+    responseText: safeText(source[`${familyKey}ResponseText`], "RESPONSE --"),
+    focusText: safeText(source[`${familyKey}FocusText`], "FOCUS WAIT"),
+    stageText: safeText(source[`${familyKey}StageText`], "STAGE --"),
+    stateText: safeText(source[`${familyKey}StateText`], "STATE --"),
+    opsText: safeText(source[`${familyKey}OpsText`], "OPS --"),
+    signalText: safeText(source[`${familyKey}SignalText`], "SIGNAL --"),
+    detailText: safeText(source[`${familyKey}DetailText`], "Detay bekleniyor."),
+    attentionText: safeText(source[`${familyKey}AttentionText`], "ATTN --"),
+    cadenceText: safeText(source[`${familyKey}CadenceText`], "CADENCE --")
+  };
+}
+
 function renderLoop(payload: NonNullable<OperationsDeckBridgePayload["loop"]>): boolean {
   const line = byId<HTMLElement>("tasksLoopLine");
   const hint = byId<HTMLElement>("tasksLoopHint");
@@ -402,10 +426,10 @@ function renderLoop(payload: NonNullable<OperationsDeckBridgePayload["loop"]>): 
   detail.textContent = safeText(payload.detailText, "Loop detay bekleniyor.");
   signal.textContent = safeText(payload.signalText, "Signal detay bekleniyor.");
   sequence.textContent = safeText(payload.sequenceText, "Sequence detay bekleniyor.");
-  renderLoopFamily("tasksLoopOffer", payload.offer);
-  renderLoopFamily("tasksLoopClaim", payload.claim);
-  renderLoopFamily("tasksLoopStreak", payload.streak);
-  renderLoopFamily("tasksLoopLoot", payload.loot);
+  renderLoopFamily("tasksLoopOffer", readLoopFamily(payload, "offer"));
+  renderLoopFamily("tasksLoopClaim", readLoopFamily(payload, "claim"));
+  renderLoopFamily("tasksLoopStreak", readLoopFamily(payload, "streak"));
+  renderLoopFamily("tasksLoopLoot", readLoopFamily(payload, "loot"));
   return true;
 }
 

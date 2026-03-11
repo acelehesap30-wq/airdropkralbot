@@ -78,6 +78,8 @@ export type TokenOverviewBridgePayload = {
   loopWalletCadenceText?: string;
   loopWalletCards?: LoopBridgeCard[];
   loopWalletBlocks?: LoopBridgeBlock[];
+  loopPayoutCards?: LoopBridgeCard[];
+  loopPayoutBlocks?: LoopBridgeBlock[];
   loopPayoutFamilyText?: string;
   loopPayoutFlowText?: string;
   loopPayoutSummaryText?: string;
@@ -98,6 +100,8 @@ export type TokenOverviewBridgePayload = {
   loopRouteResponseText?: string;
   loopRouteAttentionText?: string;
   loopRouteCadenceText?: string;
+  loopRouteCards?: LoopBridgeCard[];
+  loopRouteBlocks?: LoopBridgeBlock[];
   loopPremiumFamilyText?: string;
   loopPremiumFlowText?: string;
   loopPremiumSummaryText?: string;
@@ -108,6 +112,8 @@ export type TokenOverviewBridgePayload = {
   loopPremiumResponseText?: string;
   loopPremiumAttentionText?: string;
   loopPremiumCadenceText?: string;
+  loopPremiumCards?: LoopBridgeCard[];
+  loopPremiumBlocks?: LoopBridgeBlock[];
 };
 
 type TokenOverviewBridge = {
@@ -175,14 +181,20 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   const loopWalletStage = byId<HTMLElement>("tokenLoopWalletStage");
   const loopPayout = byId<HTMLElement>("tokenLoopPayout");
   const loopPayoutPanel = byId<HTMLElement>("tokenLoopPayoutPanel");
+  const loopPayoutCards = byId<HTMLElement>("tokenLoopPayoutCards");
+  const loopPayoutBlocks = byId<HTMLElement>("tokenLoopPayoutBlocks");
   const loopPayoutFocus = byId<HTMLElement>("tokenLoopPayoutFocus");
   const loopPayoutStage = byId<HTMLElement>("tokenLoopPayoutStage");
   const loopRoute = byId<HTMLElement>("tokenLoopRoute");
   const loopRoutePanel = byId<HTMLElement>("tokenLoopRoutePanel");
+  const loopRouteCards = byId<HTMLElement>("tokenLoopRouteCards");
+  const loopRouteBlocks = byId<HTMLElement>("tokenLoopRouteBlocks");
   const loopRouteFocus = byId<HTMLElement>("tokenLoopRouteFocus");
   const loopRouteStage = byId<HTMLElement>("tokenLoopRouteStage");
   const loopPremium = byId<HTMLElement>("tokenLoopPremium");
   const loopPremiumPanel = byId<HTMLElement>("tokenLoopPremiumPanel");
+  const loopPremiumCards = byId<HTMLElement>("tokenLoopPremiumCards");
+  const loopPremiumBlocks = byId<HTMLElement>("tokenLoopPremiumBlocks");
   const loopPremiumFocus = byId<HTMLElement>("tokenLoopPremiumFocus");
   const loopPremiumStage = byId<HTMLElement>("tokenLoopPremiumStage");
   const loopWalletState = byId<HTMLElement>("tokenLoopWalletState");
@@ -375,6 +387,12 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   }
   renderLoopBridgeCards(loopWalletCards, payload.loopWalletCards);
   renderLoopBridgeBlocks(loopWalletBlocks, payload.loopWalletBlocks);
+  renderLoopBridgeCards(loopPayoutCards, payload.loopPayoutCards);
+  renderLoopBridgeBlocks(loopPayoutBlocks, payload.loopPayoutBlocks);
+  renderLoopBridgeCards(loopRouteCards, payload.loopRouteCards);
+  renderLoopBridgeBlocks(loopRouteBlocks, payload.loopRouteBlocks);
+  renderLoopBridgeCards(loopPremiumCards, payload.loopPremiumCards);
+  renderLoopBridgeBlocks(loopPremiumBlocks, payload.loopPremiumBlocks);
   setChipTone(loopWalletFamily, resolveLoopRailTone(payload.loopWalletTone, "family"));
   setChipTone(loopWalletFlow, resolveLoopRailTone(payload.loopWalletTone, "flow"));
   setChipTone(loopWalletSummary, resolveLoopRailTone(payload.loopWalletTone, "summary"));

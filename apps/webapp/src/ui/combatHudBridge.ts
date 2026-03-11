@@ -133,6 +133,8 @@ type CombatHudPayload = {
   loopDuelCadenceText?: string;
   loopDuelCards?: LoopBridgeCard[];
   loopDuelBlocks?: LoopBridgeBlock[];
+  loopLadderCards?: LoopBridgeCard[];
+  loopLadderBlocks?: LoopBridgeBlock[];
   loopLadderFamilyText?: string;
   loopLadderFlowText?: string;
   loopLadderSummaryText?: string;
@@ -153,6 +155,8 @@ type CombatHudPayload = {
   loopTelemetryResponseText?: string;
   loopTelemetryAttentionText?: string;
   loopTelemetryCadenceText?: string;
+  loopTelemetryCards?: LoopBridgeCard[];
+  loopTelemetryBlocks?: LoopBridgeBlock[];
   rejectCategory?: string;
   rejectTone?: string;
   ladderTone?: string;
@@ -340,6 +344,10 @@ function render(payload: CombatHudPayload): boolean {
   const loopDuelPanel = byId("combatLoopDuelPanel");
   const loopDuelCards = byId("combatLoopDuelCards");
   const loopDuelBlocks = byId("combatLoopDuelBlocks");
+  const loopLadderCards = byId("combatLoopLadderCards");
+  const loopLadderBlocks = byId("combatLoopLadderBlocks");
+  const loopTelemetryCards = byId("combatLoopTelemetryCards");
+  const loopTelemetryBlocks = byId("combatLoopTelemetryBlocks");
   const loopDuelFocus = byId("combatLoopDuelFocus");
   const loopDuelStage = byId("combatLoopDuelStage");
   const loopLadder = byId("combatLoopLadder");
@@ -636,6 +644,10 @@ function render(payload: CombatHudPayload): boolean {
   }
   renderLoopBridgeCards(loopDuelCards, payload.loopDuelCards);
   renderLoopBridgeBlocks(loopDuelBlocks, payload.loopDuelBlocks);
+  renderLoopBridgeCards(loopLadderCards, payload.loopLadderCards);
+  renderLoopBridgeBlocks(loopLadderBlocks, payload.loopLadderBlocks);
+  renderLoopBridgeCards(loopTelemetryCards, payload.loopTelemetryCards);
+  renderLoopBridgeBlocks(loopTelemetryBlocks, payload.loopTelemetryBlocks);
   setChipTone(loopDuelFamily, resolveLoopRailTone(payload.loopDuelTone, "family"));
   setChipTone(loopDuelFlow, resolveLoopRailTone(payload.loopDuelTone, "flow"));
   setChipTone(loopDuelSummary, resolveLoopRailTone(payload.loopDuelTone, "summary"));
