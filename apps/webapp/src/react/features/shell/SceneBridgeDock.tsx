@@ -734,6 +734,124 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
               <ul id="eventFeed" className="akrList akrBridgeList" />
             </div>
           </div>
+          <div className="akrBridgeStrip">
+            <p id="tasksLoopLine" className="akrBridgeHint">
+              TASK STANDBY | WAIT
+            </p>
+            <p id="tasksLoopHint" className="akrBridgeHint">
+              Scene loop focus bekleniyor.
+            </p>
+            <p id="tasksLoopFocus" className="akrBridgeHint">
+              FLOW | WAIT
+            </p>
+            <p id="tasksLoopOps" className="akrBridgeHint">
+              WAIT | FLOW IDLE
+            </p>
+            <p id="tasksLoopStatus" className="akrBridgeHint">
+              IDLE | FLOW WAIT
+            </p>
+            <p id="tasksLoopSequence" className="akrBridgeHint">
+              Sequence detay bekleniyor.
+            </p>
+            <p id="tasksLoopDetail" className="akrBridgeHint">
+              Loop detay bekleniyor.
+            </p>
+            <p id="tasksLoopSignal" className="akrBridgeHint">
+              Signal detay bekleniyor.
+            </p>
+            <div id="tasksLoopOfferPanel" className="akrBridgeFamilyPanel" data-tone="neutral">
+              <p id="tasksLoopOffer" className="akrBridgeHint">
+                OFFER | WAIT
+              </p>
+              <p id="tasksLoopOfferFocus" className="akrBridgeHint">
+                ENTRY WAIT | FOCUS WAIT | FLOW WAIT
+              </p>
+              <p id="tasksLoopOfferStage" className="akrBridgeHint">
+                STAGE -- | STATUS -- | ENTRY WAIT
+              </p>
+              <p id="tasksLoopOfferState" className="akrBridgeHint">
+                FLOW WAIT | ENTRY WAIT | OFFER --
+              </p>
+              <p id="tasksLoopOfferOps" className="akrBridgeHint">
+                ENTRY WAIT | OFFER -- | BAND --
+              </p>
+              <p id="tasksLoopOfferSignal" className="akrBridgeHint">
+                OFFER -- | BAND -- | FLOW WAIT
+              </p>
+              <p id="tasksLoopOfferDetail" className="akrBridgeHint">
+                Offer grid detay bekleniyor.
+              </p>
+            </div>
+            <div id="tasksLoopClaimPanel" className="akrBridgeFamilyPanel" data-tone="neutral">
+              <p id="tasksLoopClaim" className="akrBridgeHint">
+                CLAIM | WAIT
+              </p>
+              <p id="tasksLoopClaimFocus" className="akrBridgeHint">
+                SEQ WAIT | FOCUS WAIT | STAGE --
+              </p>
+              <p id="tasksLoopClaimStage" className="akrBridgeHint">
+                STAGE -- | STATUS -- | SEQ WAIT
+              </p>
+              <p id="tasksLoopClaimState" className="akrBridgeHint">
+                FLOW WAIT | SEQ WAIT | CLAIM --
+              </p>
+              <p id="tasksLoopClaimOps" className="akrBridgeHint">
+                SEQ WAIT | CLAIM -- | BAND --
+              </p>
+              <p id="tasksLoopClaimSignal" className="akrBridgeHint">
+                CLAIM -- | STAGE -- | FLOW WAIT
+              </p>
+              <p id="tasksLoopClaimDetail" className="akrBridgeHint">
+                Claim lane detay bekleniyor.
+              </p>
+            </div>
+            <div id="tasksLoopStreakPanel" className="akrBridgeFamilyPanel" data-tone="neutral">
+              <p id="tasksLoopStreak" className="akrBridgeHint">
+                STREAK | WAIT
+              </p>
+              <p id="tasksLoopStreakFocus" className="akrBridgeHint">
+                PERSONA WAIT | FOCUS WAIT | FLOW WAIT
+              </p>
+              <p id="tasksLoopStreakStage" className="akrBridgeHint">
+                STAGE -- | STATUS -- | PERSONA WAIT
+              </p>
+              <p id="tasksLoopStreakState" className="akrBridgeHint">
+                FLOW WAIT | PERSONA WAIT | STREAK --
+              </p>
+              <p id="tasksLoopStreakOps" className="akrBridgeHint">
+                PERSONA WAIT | STREAK -- | OFFER --
+              </p>
+              <p id="tasksLoopStreakSignal" className="akrBridgeHint">
+                STREAK -- | OFFER -- | FLOW WAIT
+              </p>
+              <p id="tasksLoopStreakDetail" className="akrBridgeHint">
+                Streak pulse detay bekleniyor.
+              </p>
+            </div>
+            <div id="tasksLoopLootPanel" className="akrBridgeFamilyPanel" data-tone="neutral">
+              <p id="tasksLoopLoot" className="akrBridgeHint">
+                LOOT | WAIT
+              </p>
+              <p id="tasksLoopLootFocus" className="akrBridgeHint">
+                ENTRY WAIT | FOCUS WAIT | FLOW WAIT
+              </p>
+              <p id="tasksLoopLootStage" className="akrBridgeHint">
+                STAGE -- | STATUS -- | CLAIM --
+              </p>
+              <p id="tasksLoopLootState" className="akrBridgeHint">
+                FLOW WAIT | CLAIM -- | BAND --
+              </p>
+              <p id="tasksLoopLootOps" className="akrBridgeHint">
+                ENTRY WAIT | CLAIM -- | BAND --
+              </p>
+              <p id="tasksLoopLootSignal" className="akrBridgeHint">
+                CLAIM -- | BAND -- | FLOW WAIT
+              </p>
+              <p id="tasksLoopLootDetail" className="akrBridgeHint">
+                Loot reveal detay bekleniyor.
+              </p>
+            </div>
+          </div>
         </BridgeCard>
       ) : null}
 

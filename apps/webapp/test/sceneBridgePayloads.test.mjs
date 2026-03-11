@@ -493,6 +493,91 @@ test("buildPlayerBridgePayloads surfaces active vault loop micro panels from sel
   assert.match(payloads.tokenOverview.loopPremiumDetailText, /PASS ACTIVE \| STAGE SUBMIT \| PAYOUT TERMINAL/i);
 });
 
+test("buildPlayerBridgePayloads surfaces active tasks loop micro panels from selected mission flow", async () => {
+  const mod = await loadModule();
+  const payloads = mod.buildPlayerBridgePayloads({
+    mutators: createMutators(),
+    data: {
+      offers: [{ id: 21, task_type: "raid", difficulty: 55, expires_at: "2099-03-10T12:00:00.000Z" }],
+      missions: { list: [{ mission_key: "mission_sigma", title: "Mission Sigma", completed: true, can_claim: true }] },
+      attempts: { active: { task_type: "raid" }, revealable: { task_type: "claim" } }
+    },
+    homeFeed: {
+      mission: { offer_count: 4, claimable_count: 2, active_count: 4 },
+      daily: { streak: 7, tasks_done: 4, daily_cap: 5, sc_earned: 22, rc_earned: 6 },
+      contract: { band: "watch", state: "watch" }
+    },
+    taskResult: { offer_count: 4, claimable_count: 2 },
+    scene: {
+      selectedLoop: {
+        districtKey: "mission_quarter",
+        protocolCardKey: "mission_protocol",
+        protocolPodKey: "claim_pod",
+        microflowKey: "claim_flow",
+        entryKindKey: "world_entry_kind_claim_terminal",
+        sequenceKindKey: "world_modal_kind_contract_sequence",
+        personalityKey: "cadence",
+        personalityLabelKey: "world_personality_cadence",
+        personalityCaptionKey: "world_personality_caption_cadence",
+        densityLabelKey: "world_hud_density_expanded",
+        loopStatusKey: "ready",
+        loopStatusLabelKey: "loop_status_ready",
+        loopStageValue: "2 READY",
+        loopRows: [
+          { label_key: "world_sheet_metric_claimable", value: "2", status_key: "ready" },
+          { label_key: "world_sheet_metric_contract_band", value: "WATCH", status_key: "watch" },
+          { label_key: "world_sheet_metric_streak", value: "7d", status_key: "live" }
+        ],
+        loopSignalRows: [{ label_key: "world_sheet_metric_offer_count", value: "4", status_key: "live" }],
+        sequenceRows: [{ label_key: "world_sheet_metric_claimable", value: "2", status_key: "ready" }]
+      }
+    },
+    sceneRuntime: {
+      lowEndMode: false,
+      effectiveQuality: "high"
+    }
+  });
+
+  assert.match(payloads.operations.loop.lineText, /MISSION LOOP/i);
+  assert.match(payloads.operations.loop.hintText, /CLAIM TERMINAL|CONTRACT SEQUENCE/i);
+  assert.match(payloads.operations.loop.offerText, /OFFER 4 LIVE \| WATCH/i);
+  assert.match(payloads.operations.loop.claimText, /CLAIM 2 READY \| 2 READY/i);
+  assert.match(payloads.operations.loop.streakText, /STREAK 7d \| READY/i);
+  assert.match(payloads.operations.loop.lootText, /LOOT 2 READY \| WATCH/i);
+  assert.equal(payloads.operations.loop.offerTone, "pressure");
+  assert.equal(payloads.operations.loop.claimTone, "pressure");
+  assert.equal(payloads.operations.loop.streakTone, "advantage");
+  assert.equal(payloads.operations.loop.lootTone, "pressure");
+  assert.match(payloads.operations.loop.offerFocusText, /ENTRY CLAIM TERMINAL \| FOCUS 4 LIVE \| FLOW CLAIM FLOW/i);
+  assert.match(payloads.operations.loop.claimFocusText, /SEQ CONTRACT SEQUENCE \| FOCUS 2 READY \| STAGE 2 READY/i);
+  assert.match(
+    payloads.operations.loop.streakFocusText,
+    /PERSONA (WORLD )?PERSONALITY CAPTION CADENCE \| FOCUS 7d \| FLOW CLAIM FLOW/i
+  );
+  assert.match(payloads.operations.loop.lootStageText, /STAGE 2 READY \| STATUS READY \| CLAIM 2 READY/i);
+  assert.match(payloads.operations.loop.offerStateText, /FLOW CLAIM FLOW \| ENTRY CLAIM TERMINAL \| OFFER 4 LIVE/i);
+  assert.match(payloads.operations.loop.claimStateText, /FLOW CLAIM FLOW \| SEQ CONTRACT SEQUENCE \| CLAIM 2 READY/i);
+  assert.match(
+    payloads.operations.loop.streakStateText,
+    /FLOW CLAIM FLOW \| PERSONA (WORLD )?PERSONALITY CAPTION CADENCE \| STREAK 7d/i
+  );
+  assert.match(payloads.operations.loop.lootStateText, /FLOW CLAIM FLOW \| CLAIM 2 READY \| BAND WATCH/i);
+  assert.match(payloads.operations.loop.offerOpsText, /ENTRY CLAIM TERMINAL \| OFFER 4 LIVE \| BAND WATCH/i);
+  assert.match(payloads.operations.loop.claimOpsText, /SEQ CONTRACT SEQUENCE \| CLAIM 2 READY \| BAND WATCH/i);
+  assert.match(
+    payloads.operations.loop.streakOpsText,
+    /PERSONA (WORLD )?PERSONALITY CAPTION CADENCE \| STREAK 7d \| OFFER 4 LIVE/i
+  );
+  assert.match(payloads.operations.loop.lootOpsText, /ENTRY CLAIM TERMINAL \| CLAIM 2 READY \| BAND WATCH/i);
+  assert.match(payloads.operations.loop.offerSignalText, /OFFER 4 LIVE \| BAND WATCH \| FLOW CLAIM FLOW/i);
+  assert.match(payloads.operations.loop.claimSignalText, /CLAIM 2 READY \| STAGE 2 READY \| FLOW CLAIM FLOW/i);
+  assert.match(payloads.operations.loop.streakSignalText, /STREAK 7d \| OFFER 4 LIVE \| FLOW CLAIM FLOW/i);
+  assert.match(payloads.operations.loop.lootSignalText, /CLAIM 2 READY \| BAND WATCH \| FLOW CLAIM FLOW/i);
+  assert.match(payloads.operations.loop.offerDetailText, /OFFER 4 LIVE \| BAND WATCH \| CLAIM TERMINAL/i);
+  assert.match(payloads.operations.loop.claimDetailText, /CLAIM 2 READY \| STAGE 2 READY \| CONTRACT SEQUENCE/i);
+  assert.match(payloads.operations.loop.lootDetailText, /CLAIM 2 READY \| BAND WATCH \| CLAIM TERMINAL/i);
+});
+
 test("buildAdminBridgePayloads produces runtime, asset and audit cards from admin state", async () => {
   const mod = await loadModule();
   const payloads = mod.buildAdminBridgePayloads({

@@ -29,6 +29,32 @@ type PulseChip = {
   level?: number;
 };
 
+type LoopFamilyPanel = {
+  text: string;
+  tone?: string;
+  focusText: string;
+  stageText: string;
+  stateText: string;
+  opsText: string;
+  signalText: string;
+  detailText: string;
+};
+
+type LoopPayload = {
+  lineText: string;
+  hintText: string;
+  focusText: string;
+  opsText: string;
+  statusText: string;
+  detailText: string;
+  signalText: string;
+  sequenceText: string;
+  offer: LoopFamilyPanel;
+  claim: LoopFamilyPanel;
+  streak: LoopFamilyPanel;
+  loot: LoopFamilyPanel;
+};
+
 export type OperationsDeckBridgePayload = {
   offers?: {
     badgeText: string;
@@ -53,6 +79,7 @@ export type OperationsDeckBridgePayload = {
     hintText: string;
     chips: PulseChip[];
   };
+  loop?: LoopPayload;
 };
 
 type OperationsDeckBridge = {
@@ -281,6 +308,60 @@ function renderPulse(payload: NonNullable<OperationsDeckBridgePayload["pulse"]>)
   return true;
 }
 
+function setPanelTone(id: string, tone: unknown): void {
+  const node = byId<HTMLElement>(id);
+  if (!node) {
+    return;
+  }
+  node.dataset.tone = safeText(tone, "neutral").toLowerCase();
+}
+
+function setNodeText(id: string, value: unknown, fallback: string): void {
+  const node = byId<HTMLElement>(id);
+  if (!node) {
+    return;
+  }
+  node.textContent = safeText(value, fallback);
+}
+
+function renderLoopFamily(prefix: string, payload: LoopFamilyPanel): void {
+  setPanelTone(`${prefix}Panel`, payload.tone);
+  setNodeText(prefix, payload.text, "WAIT");
+  setNodeText(`${prefix}Focus`, payload.focusText, "FOCUS WAIT");
+  setNodeText(`${prefix}Stage`, payload.stageText, "STAGE --");
+  setNodeText(`${prefix}State`, payload.stateText, "STATE --");
+  setNodeText(`${prefix}Ops`, payload.opsText, "OPS --");
+  setNodeText(`${prefix}Signal`, payload.signalText, "SIGNAL --");
+  setNodeText(`${prefix}Detail`, payload.detailText, "Detay bekleniyor.");
+}
+
+function renderLoop(payload: NonNullable<OperationsDeckBridgePayload["loop"]>): boolean {
+  const line = byId<HTMLElement>("tasksLoopLine");
+  const hint = byId<HTMLElement>("tasksLoopHint");
+  const focus = byId<HTMLElement>("tasksLoopFocus");
+  const ops = byId<HTMLElement>("tasksLoopOps");
+  const status = byId<HTMLElement>("tasksLoopStatus");
+  const detail = byId<HTMLElement>("tasksLoopDetail");
+  const signal = byId<HTMLElement>("tasksLoopSignal");
+  const sequence = byId<HTMLElement>("tasksLoopSequence");
+  if (!line || !hint || !focus || !ops || !status || !detail || !signal || !sequence) {
+    return false;
+  }
+  line.textContent = safeText(payload.lineText, "TASK STANDBY | WAIT");
+  hint.textContent = safeText(payload.hintText, "Scene loop focus bekleniyor.");
+  focus.textContent = safeText(payload.focusText, "FLOW | WAIT");
+  ops.textContent = safeText(payload.opsText, "WAIT | FLOW IDLE");
+  status.textContent = safeText(payload.statusText, "IDLE | FLOW WAIT");
+  detail.textContent = safeText(payload.detailText, "Loop detay bekleniyor.");
+  signal.textContent = safeText(payload.signalText, "Signal detay bekleniyor.");
+  sequence.textContent = safeText(payload.sequenceText, "Sequence detay bekleniyor.");
+  renderLoopFamily("tasksLoopOffer", payload.offer);
+  renderLoopFamily("tasksLoopClaim", payload.claim);
+  renderLoopFamily("tasksLoopStreak", payload.streak);
+  renderLoopFamily("tasksLoopLoot", payload.loot);
+  return true;
+}
+
 function render(payload: OperationsDeckBridgePayload): boolean {
   let handled = false;
   if (payload?.offers) {
@@ -297,6 +378,9 @@ function render(payload: OperationsDeckBridgePayload): boolean {
   }
   if (payload?.pulse) {
     handled = renderPulse(payload.pulse) || handled;
+  }
+  if (payload?.loop) {
+    handled = renderLoop(payload.loop) || handled;
   }
   return handled;
 }

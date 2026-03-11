@@ -685,6 +685,109 @@ function buildAdminLoopMicroPanels(loopDeck, active) {
   };
 }
 
+function buildOperationsLoopMicroPanels(loopDeck, active) {
+  if (!active) {
+    return {
+      offerText: "OFFER | WAIT",
+      claimText: "CLAIM | WAIT",
+      streakText: "STREAK | WAIT",
+      lootText: "LOOT | WAIT",
+      offerTone: "neutral",
+      claimTone: "neutral",
+      streakTone: "neutral",
+      lootTone: "neutral",
+      offerFocusText: "ENTRY WAIT | FOCUS WAIT | FLOW WAIT",
+      claimFocusText: "SEQ WAIT | FOCUS WAIT | STAGE --",
+      streakFocusText: "PERSONA WAIT | FOCUS WAIT | FLOW WAIT",
+      lootFocusText: "ENTRY WAIT | FOCUS WAIT | FLOW WAIT",
+      offerStageText: "STAGE -- | STATUS -- | ENTRY WAIT",
+      claimStageText: "STAGE -- | STATUS -- | SEQ WAIT",
+      streakStageText: "STAGE -- | STATUS -- | PERSONA WAIT",
+      lootStageText: "STAGE -- | STATUS -- | CLAIM --",
+      offerOpsText: "ENTRY WAIT | OFFER -- | BAND --",
+      claimOpsText: "SEQ WAIT | CLAIM -- | BAND --",
+      streakOpsText: "PERSONA WAIT | STREAK -- | OFFER --",
+      lootOpsText: "ENTRY WAIT | CLAIM -- | BAND --",
+      offerStateText: "FLOW WAIT | ENTRY WAIT | OFFER --",
+      claimStateText: "FLOW WAIT | SEQ WAIT | CLAIM --",
+      streakStateText: "FLOW WAIT | PERSONA WAIT | STREAK --",
+      lootStateText: "FLOW WAIT | CLAIM -- | BAND --",
+      offerSignalText: "OFFER -- | BAND -- | FLOW WAIT",
+      claimSignalText: "CLAIM -- | STAGE -- | FLOW WAIT",
+      streakSignalText: "STREAK -- | OFFER -- | FLOW WAIT",
+      lootSignalText: "CLAIM -- | BAND -- | FLOW WAIT",
+      offerDetailText: "Offer grid detay bekleniyor.",
+      claimDetailText: "Claim lane detay bekleniyor.",
+      streakDetailText: "Streak pulse detay bekleniyor.",
+      lootDetailText: "Loot reveal detay bekleniyor."
+    };
+  }
+  const sharedRows = [...loopDeck.loopRows, ...loopDeck.loopSignalRows];
+  const offerCount = readLoopRowValue(sharedRows, ["offer_count", "active_missions"], "0");
+  const claimableCount = readLoopRowValue(sharedRows, ["claimable"], "0");
+  const streakValue = readLoopRowValue(sharedRows, ["streak"], "0d");
+  const contractBand = readLoopRowValue(sharedRows, ["contract_band"], "--");
+  const entryLabel = formatRuntimeKeyLabel(loopDeck.entryKindKey, "ENTRY");
+  const sequenceLabel = formatRuntimeKeyLabel(loopDeck.sequenceKindKey, "LOOP");
+  const microflowLabel = formatRuntimeKeyLabel(loopDeck.microflowKey, "FLOW");
+  const personalityCaption = toText(loopDeck.personalityCaption, "");
+  const stageValue = toText(loopDeck.stageValue || loopDeck.loopStatusLabel || "--", "--");
+  const loopStatusLabel = toText(loopDeck.loopStatusLabel || "IDLE", "IDLE");
+  const offerValue = `${Math.max(0, Math.round(toNum(offerCount, 0)))} LIVE`;
+  const claimValue = `${Math.max(0, Math.round(toNum(claimableCount, 0)))} READY`;
+  const lootValue = toNum(claimableCount, 0) > 0 ? claimValue : contractBand;
+  return {
+    offerText: buildLoopMicroLine("OFFER", offerValue, contractBand || loopStatusLabel),
+    claimText: buildLoopMicroLine("CLAIM", claimValue, stageValue),
+    streakText: buildLoopMicroLine("STREAK", streakValue, loopStatusLabel),
+    lootText: buildLoopMicroLine("LOOT", lootValue, contractBand || stageValue),
+    offerTone: resolveLoopFamilyTone(offerValue, contractBand, loopStatusLabel),
+    claimTone: resolveLoopFamilyTone(claimValue, stageValue, contractBand),
+    streakTone: resolveLoopFamilyTone(streakValue, loopStatusLabel, personalityCaption),
+    lootTone: resolveLoopFamilyTone(lootValue, contractBand, stageValue, loopStatusLabel),
+    offerFocusText: buildLoopMicroDetail(`ENTRY ${entryLabel}`, `FOCUS ${offerValue}`, `FLOW ${microflowLabel}`),
+    claimFocusText: buildLoopMicroDetail(`SEQ ${sequenceLabel}`, `FOCUS ${claimValue}`, `STAGE ${stageValue}`),
+    streakFocusText: buildLoopMicroDetail(
+      `PERSONA ${personalityCaption || "SYNC"}`,
+      `FOCUS ${streakValue}`,
+      `FLOW ${microflowLabel}`
+    ),
+    lootFocusText: buildLoopMicroDetail(`ENTRY ${entryLabel}`, `FOCUS ${lootValue}`, `FLOW ${microflowLabel}`),
+    offerStageText: buildLoopMicroDetail(`STAGE ${stageValue}`, `STATUS ${loopStatusLabel}`, `ENTRY ${entryLabel}`),
+    claimStageText: buildLoopMicroDetail(`STAGE ${stageValue}`, `STATUS ${loopStatusLabel}`, `SEQ ${sequenceLabel}`),
+    streakStageText: buildLoopMicroDetail(
+      `STAGE ${stageValue}`,
+      `STATUS ${loopStatusLabel}`,
+      `PERSONA ${personalityCaption || "SYNC"}`
+    ),
+    lootStageText: buildLoopMicroDetail(`STAGE ${stageValue}`, `STATUS ${loopStatusLabel}`, `CLAIM ${claimValue}`),
+    offerOpsText: buildLoopMicroDetail(`ENTRY ${entryLabel}`, `OFFER ${offerValue}`, `BAND ${contractBand}`),
+    claimOpsText: buildLoopMicroDetail(`SEQ ${sequenceLabel}`, `CLAIM ${claimValue}`, `BAND ${contractBand}`),
+    streakOpsText: buildLoopMicroDetail(
+      `PERSONA ${personalityCaption || "SYNC"}`,
+      `STREAK ${streakValue}`,
+      `OFFER ${offerValue}`
+    ),
+    lootOpsText: buildLoopMicroDetail(`ENTRY ${entryLabel}`, `CLAIM ${claimValue}`, `BAND ${contractBand}`),
+    offerStateText: buildLoopMicroDetail(`FLOW ${microflowLabel}`, `ENTRY ${entryLabel}`, `OFFER ${offerValue}`),
+    claimStateText: buildLoopMicroDetail(`FLOW ${microflowLabel}`, `SEQ ${sequenceLabel}`, `CLAIM ${claimValue}`),
+    streakStateText: buildLoopMicroDetail(
+      `FLOW ${microflowLabel}`,
+      `PERSONA ${personalityCaption || "SYNC"}`,
+      `STREAK ${streakValue}`
+    ),
+    lootStateText: buildLoopMicroDetail(`FLOW ${microflowLabel}`, `CLAIM ${claimValue}`, `BAND ${contractBand}`),
+    offerSignalText: buildLoopMicroDetail(`OFFER ${offerValue}`, `BAND ${contractBand}`, `FLOW ${microflowLabel}`),
+    claimSignalText: buildLoopMicroDetail(`CLAIM ${claimValue}`, `STAGE ${stageValue}`, `FLOW ${microflowLabel}`),
+    streakSignalText: buildLoopMicroDetail(`STREAK ${streakValue}`, `OFFER ${offerValue}`, `FLOW ${microflowLabel}`),
+    lootSignalText: buildLoopMicroDetail(`CLAIM ${claimValue}`, `BAND ${contractBand}`, `FLOW ${microflowLabel}`),
+    offerDetailText: buildLoopMicroDetail(`OFFER ${offerValue}`, `BAND ${contractBand}`, entryLabel),
+    claimDetailText: buildLoopMicroDetail(`CLAIM ${claimValue}`, `STAGE ${stageValue}`, sequenceLabel),
+    streakDetailText: buildLoopMicroDetail(`STREAK ${streakValue}`, `OFFER ${offerValue}`, personalityCaption),
+    lootDetailText: buildLoopMicroDetail(`CLAIM ${claimValue}`, `BAND ${contractBand}`, entryLabel)
+  };
+}
+
 function buildDomainLoopPanelPayload(scene, domainKey) {
   const loopDeck = buildSceneLoopDeckPayload(scene);
   const domainConfig = {
@@ -697,6 +800,11 @@ function buildDomainLoopPanelPayload(scene, domainKey) {
       districtKey: "exchange_district",
       standbyLabel: "VAULT STANDBY",
       activeLabel: "VAULT LOOP"
+    },
+    tasks: {
+      districtKey: "mission_quarter",
+      standbyLabel: "TASK STANDBY",
+      activeLabel: "MISSION LOOP"
     },
     admin: {
       districtKey: "ops_citadel",
@@ -1559,6 +1667,8 @@ function buildOperationsDeckPayload(data, taskResult, homeFeed, scene) {
   const revealableAttempt = asRecord(asRecord(root.attempts).revealable || contract.revealable_attempt);
   const events = buildOperationsDeckEvents(root, homeView);
   const loopDeck = buildSceneLoopDeckPayload(scene);
+  const loopPanel = buildDomainLoopPanelPayload(scene, "tasks");
+  const loopMicro = buildOperationsLoopMicroPanels(loopDeck, loopPanel.active);
   return {
     offers: {
       badgeText: `${toNum(tasksView.summary.offers_total || contract.offers_total)} aktif`,
@@ -1641,14 +1751,53 @@ function buildOperationsDeckPayload(data, taskResult, homeFeed, scene) {
         ]
       },
       loop: {
-        lineText: loopDeck.lineText,
+        lineText: loopPanel.lineText,
+        hintText: loopPanel.hintText,
+        focusText: loopPanel.focusLineText,
+        opsText: loopPanel.opsLineText,
+        statusText: loopPanel.statusLineText,
+        detailText: loopPanel.detailLineText,
+        signalText: loopPanel.signalLineText,
+        sequenceText: loopPanel.sequenceLineText,
         districtKey: loopDeck.districtKey,
         loopStatusKey: loopDeck.loopStatusKey,
         loopStatusLabel: loopDeck.loopStatusLabel,
         stageValue: loopDeck.stageValue,
         entryKindKey: loopDeck.entryKindKey,
         sequenceKindKey: loopDeck.sequenceKindKey,
-        microflowKey: loopDeck.microflowKey
+        microflowKey: loopDeck.microflowKey,
+        offerText: loopMicro.offerText,
+        claimText: loopMicro.claimText,
+        streakText: loopMicro.streakText,
+        lootText: loopMicro.lootText,
+        offerTone: loopMicro.offerTone,
+        claimTone: loopMicro.claimTone,
+        streakTone: loopMicro.streakTone,
+        lootTone: loopMicro.lootTone,
+        offerFocusText: loopMicro.offerFocusText,
+        claimFocusText: loopMicro.claimFocusText,
+        streakFocusText: loopMicro.streakFocusText,
+        lootFocusText: loopMicro.lootFocusText,
+        offerStageText: loopMicro.offerStageText,
+        claimStageText: loopMicro.claimStageText,
+        streakStageText: loopMicro.streakStageText,
+        lootStageText: loopMicro.lootStageText,
+        offerOpsText: loopMicro.offerOpsText,
+        claimOpsText: loopMicro.claimOpsText,
+        streakOpsText: loopMicro.streakOpsText,
+        lootOpsText: loopMicro.lootOpsText,
+        offerStateText: loopMicro.offerStateText,
+        claimStateText: loopMicro.claimStateText,
+        streakStateText: loopMicro.streakStateText,
+        lootStateText: loopMicro.lootStateText,
+        offerSignalText: loopMicro.offerSignalText,
+        claimSignalText: loopMicro.claimSignalText,
+        streakSignalText: loopMicro.streakSignalText,
+        lootSignalText: loopMicro.lootSignalText,
+        offerDetailText: loopMicro.offerDetailText,
+        claimDetailText: loopMicro.claimDetailText,
+        streakDetailText: loopMicro.streakDetailText,
+        lootDetailText: loopMicro.lootDetailText
       }
     };
   }
