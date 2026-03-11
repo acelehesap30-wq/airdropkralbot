@@ -144,7 +144,14 @@ test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
       { day: "2026-03-08", district_key: "exchange_district", total_count: 3, live_count: 2, blocked_count: 1 },
       { day: "2026-03-07", district_key: "exchange_district", total_count: 2, live_count: 1, blocked_count: 0 }
     ],
+    scene_loop_district_family_daily_breakdown_7d: [
+      { day: "2026-03-08", district_key: "arena_prime", loop_family_key: "duel_flow", total_count: 4, live_count: 3, blocked_count: 1 },
+      { day: "2026-03-07", district_key: "arena_prime", loop_family_key: "duel_flow", total_count: 2, live_count: 1, blocked_count: 1 },
+      { day: "2026-03-08", district_key: "exchange_district", loop_family_key: "payout_flow", total_count: 3, live_count: 2, blocked_count: 1 },
+      { day: "2026-03-07", district_key: "exchange_district", loop_family_key: "wallet_flow", total_count: 2, live_count: 1, blocked_count: 0 }
+    ],
     scene_loop_district_breakdown_24h: [{ bucket_key: "arena_prime", item_count: 6 }],
+    scene_loop_family_breakdown_24h: [{ bucket_key: "duel_flow", item_count: 4 }, { bucket_key: "payout_flow", item_count: 3 }],
     scene_loop_status_breakdown_24h: [{ bucket_key: "active", item_count: 8 }],
     scene_loop_sequence_breakdown_24h: [{ bucket_key: "world_modal_kind_duel_sequence", item_count: 4 }],
     scene_loop_entry_breakdown_24h: [{ bucket_key: "world_entry_kind_duel_console", item_count: 4 }]
@@ -208,7 +215,12 @@ test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
   assert.equal(enriched.scene_loop_district_attention_breakdown_7d[0].bucket_key, "watch");
   assert.equal(enriched.scene_loop_district_attention_breakdown_7d[0].item_count, 2);
   assert.equal(enriched.scene_loop_district_breakdown_24h[0].bucket_key, "arena_prime");
+  assert.equal(enriched.scene_loop_family_breakdown_24h[0].bucket_key, "duel");
   assert.equal(enriched.scene_loop_status_breakdown_24h[0].bucket_key, "active");
   assert.equal(enriched.scene_loop_sequence_breakdown_24h[0].bucket_key, "world_modal_kind_duel_sequence");
   assert.equal(enriched.scene_loop_entry_breakdown_24h[0].bucket_key, "world_entry_kind_duel_console");
+  assert.equal(enriched.scene_loop_district_family_matrix_7d[0].district_key, "arena_prime");
+  assert.equal(enriched.scene_loop_district_family_matrix_7d[0].loop_family_key, "duel");
+  assert.equal(enriched.scene_loop_district_family_matrix_7d[0].latest_health_band, "yellow");
+  assert.equal(enriched.scene_loop_district_family_matrix_7d[0].attention_band, "watch");
 });

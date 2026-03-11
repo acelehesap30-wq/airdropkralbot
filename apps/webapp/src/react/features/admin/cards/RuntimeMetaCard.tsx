@@ -173,6 +173,37 @@ function SceneLoopDistrictMatrixList(props: { title: string; rows: Array<Record<
   );
 }
 
+function SceneLoopDistrictFamilyMatrixList(props: { title: string; rows: Array<Record<string, unknown>> }) {
+  if (!props.rows.length) {
+    return (
+      <div>
+        <strong>{props.title}</strong>
+        <p className="akrMutedLine">-</p>
+      </div>
+    );
+  }
+  return (
+    <div>
+      <strong>{props.title}</strong>
+      <div className="akrStack">
+        {props.rows.slice(0, 12).map((row, index) => (
+          <p
+            className="akrMutedLine"
+            key={`${props.title}_${String(row.district_key || index)}_${String(row.loop_family_key || "family")}`}
+          >
+            {String(row.district_key || "-")} / {String(row.loop_family_key || "-")} | latest{" "}
+            {String(row.latest_health_band || row.health_band || "no_data")} | trend {String(row.trend_direction || "no_data")} (
+            {Math.floor(Number(row.trend_delta || 0))}) | loops {Math.floor(Number(row.total_count || 0))} | live{" "}
+            {Math.floor(Number(row.live_count || 0))} | blocked {Math.floor(Number(row.blocked_count || 0))} | attn{" "}
+            {String(row.attention_band || "no_data")} | G/Y/R {Math.floor(Number(row.green_days || 0))}/
+            {Math.floor(Number(row.yellow_days || 0))}/{Math.floor(Number(row.red_days || 0))}
+          </p>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function SkipDailyTrendList(props: { title: string; rows: Array<Record<string, unknown>> }) {
   if (!props.rows.length) {
     return (
@@ -376,9 +407,11 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
   const sceneLoopDistrictHealthTrendBreakdown = asRows(props.metricsData?.scene_loop_district_health_trend_breakdown_7d);
   const sceneLoopDistrictAttentionBreakdown = asRows(props.metricsData?.scene_loop_district_attention_breakdown_7d);
   const sceneLoopDistrictBreakdown = asRows(props.metricsData?.scene_loop_district_breakdown_24h);
+  const sceneLoopFamilyBreakdown = asRows(props.metricsData?.scene_loop_family_breakdown_24h);
   const sceneLoopStatusBreakdown = asRows(props.metricsData?.scene_loop_status_breakdown_24h);
   const sceneLoopSequenceBreakdown = asRows(props.metricsData?.scene_loop_sequence_breakdown_24h);
   const sceneLoopEntryBreakdown = asRows(props.metricsData?.scene_loop_entry_breakdown_24h);
+  const sceneLoopDistrictFamilyMatrix = asRows(props.metricsData?.scene_loop_district_family_matrix_7d);
   const liveOpsKpi = asRecord((props.opsKpiRunData as Record<string, unknown> | null)?.live_ops_campaign) ||
     asRecord((props.opsKpiData as Record<string, unknown> | null)?.live_ops_campaign);
   const liveOpsSceneRuntime = asRecord(liveOpsKpi?.scene_runtime);
@@ -611,9 +644,14 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
         />
         <BreakdownList title={t(props.lang, "admin_runtime_scene_loop_band_title")} rows={sceneLoopBandBreakdown7d} />
         <BreakdownList title={t(props.lang, "admin_runtime_scene_loop_district_title")} rows={sceneLoopDistrictBreakdown} />
+        <BreakdownList title={t(props.lang, "admin_runtime_scene_loop_family_title")} rows={sceneLoopFamilyBreakdown} />
         <BreakdownList title={t(props.lang, "admin_runtime_scene_loop_status_title")} rows={sceneLoopStatusBreakdown} />
         <BreakdownList title={t(props.lang, "admin_runtime_scene_loop_sequence_title")} rows={sceneLoopSequenceBreakdown} />
         <BreakdownList title={t(props.lang, "admin_runtime_scene_loop_entry_title")} rows={sceneLoopEntryBreakdown} />
+        <SceneLoopDistrictFamilyMatrixList
+          title={t(props.lang, "admin_runtime_scene_loop_district_family_matrix_title")}
+          rows={sceneLoopDistrictFamilyMatrix}
+        />
         <AlarmReasonList title={t(props.lang, "admin_runtime_scene_loop_alarm_reasons_7d")} rows={sceneLoopAlarmReasons7d} />
       </section>
       <section className="akrMiniPanel" data-akr-focus-key="live_ops_kpi">
