@@ -39,6 +39,11 @@ type BabylonDistrictSceneHostProps = {
     loopStageValue: string;
     directorPaceLabelKey?: string;
     hudToneLabelKey?: string;
+    personalityKey?: string;
+    personalityLabelKey?: string;
+    personalityCaptionKey?: string;
+    personalityBandKey?: string;
+    densityLabelKey?: string;
     loopRows?: Array<{ label_key: string; value: string; status_key: string }>;
     loopSignalRows?: Array<{ label_key: string; value: string; status_key: string }>;
     sequenceRows?: Array<{ label_key: string; value: string; status_key: string }>;
@@ -146,6 +151,11 @@ type ProtocolCardFlowPod = {
     camera_profile_label_key?: string;
     director_pace_label_key?: string;
     hud_tone_label_key?: string;
+    personality_key?: string;
+    personality_label_key?: string;
+    personality_caption_key?: string;
+    personality_band_key?: string;
+    density_label_key?: string;
     camera_radius_scale?: number;
     camera_focus_y_offset?: number;
     motion_scalar?: number;
@@ -153,6 +163,11 @@ type ProtocolCardFlowPod = {
     beta_offset?: number;
     focus_lerp_scalar?: number;
     radius_lerp_scalar?: number;
+    orbit_spin_scalar?: number;
+    sway_scalar?: number;
+    alpha_lerp_scalar?: number;
+    beta_lerp_scalar?: number;
+    hud_emphasis_scalar?: number;
     stage_label_key?: string;
     stage_value?: string;
     stage_status_key?: string;
@@ -448,7 +463,12 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
       sequence_kind_key: selectedMicroflow.sequence_kind_key || "",
       entry_kind_key: selectedMicroflow.entry_kind_key || "",
       director_pace_label_key: selectedMicroflow.director_pace_label_key || "",
-      hud_tone_label_key: selectedMicroflow.hud_tone_label_key || ""
+      hud_tone_label_key: selectedMicroflow.hud_tone_label_key || "",
+      personality_key: selectedMicroflow.personality_key || "",
+      personality_label_key: selectedMicroflow.personality_label_key || "",
+      personality_caption_key: selectedMicroflow.personality_caption_key || "",
+      personality_band_key: selectedMicroflow.personality_band_key || "",
+      density_label_key: selectedMicroflow.density_label_key || ""
     });
     if (signature === lastLoopSignatureRef.current) {
       return;
@@ -468,6 +488,11 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
       loopStageValue: String(selectedMicroflow.loop_stage_value || selectedMicroflow.stage_value || ""),
       directorPaceLabelKey: selectedMicroflow.director_pace_label_key || undefined,
       hudToneLabelKey: selectedMicroflow.hud_tone_label_key || undefined,
+      personalityKey: selectedMicroflow.personality_key || undefined,
+      personalityLabelKey: selectedMicroflow.personality_label_key || undefined,
+      personalityCaptionKey: selectedMicroflow.personality_caption_key || undefined,
+      personalityBandKey: selectedMicroflow.personality_band_key || undefined,
+      densityLabelKey: selectedMicroflow.density_label_key || undefined,
       loopRows: Array.isArray(selectedMicroflow.loop_rows) ? selectedMicroflow.loop_rows.slice(0, 3) : [],
       loopSignalRows: Array.isArray(selectedMicroflow.loop_signal_rows) ? selectedMicroflow.loop_signal_rows.slice(0, 2) : [],
       sequenceRows: Array.isArray(selectedMicroflow.sequence_rows) ? selectedMicroflow.sequence_rows.slice(0, 3) : [],
@@ -1122,6 +1147,21 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           const microflowRadiusLerpScalar = Number.isFinite(Number(microflowFocus?.radius_lerp_scalar))
             ? Number(microflowFocus?.radius_lerp_scalar)
             : 1;
+          const microflowOrbitSpinScalar = Number.isFinite(Number(microflowFocus?.orbit_spin_scalar))
+            ? Number(microflowFocus?.orbit_spin_scalar)
+            : 1;
+          const microflowSwayScalar = Number.isFinite(Number(microflowFocus?.sway_scalar))
+            ? Number(microflowFocus?.sway_scalar)
+            : 1;
+          const microflowAlphaLerpScalar = Number.isFinite(Number(microflowFocus?.alpha_lerp_scalar))
+            ? Number(microflowFocus?.alpha_lerp_scalar)
+            : 1;
+          const microflowBetaLerpScalar = Number.isFinite(Number(microflowFocus?.beta_lerp_scalar))
+            ? Number(microflowFocus?.beta_lerp_scalar)
+            : 1;
+          const microflowHudEmphasisScalar = Number.isFinite(Number(microflowFocus?.hud_emphasis_scalar))
+            ? Number(microflowFocus?.hud_emphasis_scalar)
+            : 1;
           const motionScalar =
             (worldState.reduced_motion ? 0.22 : 1) *
             directorProfile.motion_scalar *
@@ -1129,15 +1169,24 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
             microflowMotionScalar;
           const focusHotspot =
             worldState.hotspots.find((hotspot) => hotspot.key === hoveredHotspotKey) || activeHotspot;
-          ring.rotation.z = now * worldState.orbit_speed * 22 * directorProfile.orbit_spin_scalar;
+          ring.rotation.z =
+            now * worldState.orbit_speed * 22 * directorProfile.orbit_spin_scalar * microflowOrbitSpinScalar;
           if (outerRing) {
-            outerRing.rotation.y = now * worldState.orbit_speed * 14 * directorProfile.orbit_spin_scalar;
+            outerRing.rotation.y =
+              now * worldState.orbit_speed * 14 * directorProfile.orbit_spin_scalar * microflowOrbitSpinScalar;
           }
-          coreOrb.position.y = 1.2 + Math.sin(now * 1.4) * 0.12 * motionScalar * directorProfile.node_pulse_scalar;
+          coreOrb.position.y =
+            1.2 +
+            Math.sin(now * 1.4) * 0.12 * motionScalar * directorProfile.node_pulse_scalar * microflowHudEmphasisScalar;
           const orbScale =
-            1 + worldState.ambient_energy * 0.16 + Math.sin(now * 1.7) * 0.04 * motionScalar * directorProfile.node_pulse_scalar;
+            1 +
+            worldState.ambient_energy * 0.16 +
+            Math.sin(now * 1.7) * 0.04 * motionScalar * directorProfile.node_pulse_scalar * microflowHudEmphasisScalar;
           coreOrb.scaling.setAll(orbScale);
-          point.intensity = 1.1 + worldState.ambient_energy * 0.6 + Math.sin(now) * 0.08 * motionScalar;
+          point.intensity =
+            1.1 +
+            worldState.ambient_energy * 0.6 +
+            Math.sin(now) * 0.08 * motionScalar * microflowHudEmphasisScalar;
           const targetAlpha =
             cameraProfile.alpha_base +
             now * worldState.orbit_speed * cameraProfile.orbit_scalar +
@@ -1145,11 +1194,13 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
             microflowAlphaOffset;
           const targetBeta =
             cameraProfile.beta_base +
-            Math.sin(now * 0.32) * 0.03 * cameraProfile.sway_scalar * motionScalar +
+            Math.sin(now * 0.32) * 0.03 * cameraProfile.sway_scalar * motionScalar * microflowSwayScalar +
             (focusHotspot?.camera_beta_offset || 0) +
             microflowBetaOffset;
-          camera.alpha += (targetAlpha - camera.alpha) * cameraProfile.alpha_lerp * microflowFocusLerpScalar;
-          camera.beta += (targetBeta - camera.beta) * cameraProfile.beta_lerp * microflowFocusLerpScalar;
+          camera.alpha +=
+            (targetAlpha - camera.alpha) * cameraProfile.alpha_lerp * microflowFocusLerpScalar * microflowAlphaLerpScalar;
+          camera.beta +=
+            (targetBeta - camera.beta) * cameraProfile.beta_lerp * microflowFocusLerpScalar * microflowBetaLerpScalar;
           if (focusHotspot) {
             camera.target.x += (focusHotspot.x - camera.target.x) * cameraProfile.focus_lerp * microflowFocusLerpScalar;
             camera.target.y +=
@@ -1227,13 +1278,19 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
   }, [props.tab, props.workspace, triggerSceneAction, worldSignature, worldState]);
 
   return (
-    <div className="akrSceneWorldLayer" data-status={status} data-district={worldState.district_key}>
+    <div
+      className="akrSceneWorldLayer"
+      data-status={status}
+      data-district={worldState.district_key}
+      data-personality={selectedMicroflow?.personality_key || ""}
+      data-personality-band={selectedMicroflow?.personality_band_key || ""}
+    >
       <canvas
         ref={canvasRef}
         className="akrSceneWorldCanvas"
         aria-label={`${t(props.lang, "world_scene_title")} ${t(props.lang, worldState.district_label_key as never)}`}
       />
-      <div className="akrSceneWorldHud akrGlass">
+      <div className="akrSceneWorldHud akrGlass" data-tone={selectedMicroflow?.personality_band_key || ""}>
         <strong>{t(props.lang, worldState.district_label_key as never)}</strong>
         <span>{t(props.lang, worldState.mode_label_key as never)}</span>
         {worldState.hud_profile.show_density_chip ? (
@@ -1281,8 +1338,21 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
         {modalOpen && selectedMicroflow?.sequence_kind_key ? (
           <span className="akrSceneWorldFocus">{t(props.lang, selectedMicroflow.sequence_kind_key as never)}</span>
         ) : null}
+        {modalOpen && selectedMicroflow?.personality_label_key ? (
+          <span className={`akrSceneWorldFocus isPersonality is-${selectedMicroflow.personality_band_key || "glide"}`}>
+            {t(props.lang, selectedMicroflow.personality_label_key as never)}
+          </span>
+        ) : null}
         {modalOpen && selectedMicroflow?.tempo_label_key ? (
           <span className="akrSceneWorldFocus">{t(props.lang, selectedMicroflow.tempo_label_key as never)}</span>
+        ) : null}
+        {modalOpen && selectedMicroflow?.density_label_key ? (
+          <span className="akrSceneWorldFocus">{t(props.lang, selectedMicroflow.density_label_key as never)}</span>
+        ) : null}
+        {modalOpen && selectedMicroflow?.personality_caption_key ? (
+          <span className={`akrSceneWorldFocus isCaption is-${selectedMicroflow.personality_band_key || "glide"}`}>
+            {t(props.lang, selectedMicroflow.personality_caption_key as never)}
+          </span>
         ) : null}
         {worldState.hud_profile.show_node_label && worldState.active_node_label ? (
           <span className="akrSceneWorldFocus">
@@ -2012,6 +2082,18 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                               <div className="akrSceneInteractionModalChip is-tempo">
                                 <span>{t(props.lang, "world_modal_chip_hud" as never)}</span>
                                 <strong>{t(props.lang, selectedMicroflow.hud_tone_label_key as never)}</strong>
+                              </div>
+                            ) : null}
+                            {selectedMicroflow.personality_label_key ? (
+                              <div className={`akrSceneInteractionModalChip is-personality is-${selectedMicroflow.personality_band_key || "glide"}`}>
+                                <span>{t(props.lang, "world_modal_chip_personality" as never)}</span>
+                                <strong>{t(props.lang, selectedMicroflow.personality_label_key as never)}</strong>
+                              </div>
+                            ) : null}
+                            {selectedMicroflow.density_label_key ? (
+                              <div className="akrSceneInteractionModalChip is-tempo">
+                                <span>{t(props.lang, "world_modal_chip_density" as never)}</span>
+                                <strong>{t(props.lang, selectedMicroflow.density_label_key as never)}</strong>
                               </div>
                             ) : null}
                             {selectedMicroflow.loop_status_label_key ? (

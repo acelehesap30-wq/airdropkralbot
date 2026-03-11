@@ -298,6 +298,10 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
         microflowKey: "duel_flow",
         entryKindKey: "world_entry_kind_duel_console",
         sequenceKindKey: "world_modal_kind_duel_sequence",
+        personalityKey: "assault",
+        personalityLabelKey: "world_personality_assault",
+        personalityCaptionKey: "world_personality_caption_assault",
+        densityLabelKey: "world_hud_density_expanded",
         loopStatusKey: "active",
         loopStatusLabelKey: "loop_status_active",
         loopStageValue: "engage",
@@ -329,8 +333,9 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
   assert.equal(payloads.combatHud.timelineBadgeText, "ACTIVE");
   assert.equal(payloads.combatHud.chainTrail.length, 3);
   assert.match(payloads.combatHud.loopLineText, /ARENA LOOP/);
+  assert.match(payloads.combatHud.loopLineText, /PERSONALITY ASSAULT|WORLD PERSONALITY ASSAULT/i);
   assert.match(payloads.combatHud.loopOpsLineText, /ACTIVE|ENGAGE|DUEL/);
-  assert.match(payloads.combatHud.loopFocusText, /ARENA PRIME|DUEL|ENTRY/i);
+  assert.match(payloads.combatHud.loopFocusText, /ARENA PRIME|DUEL|ENTRY|PERSONALITY ASSAULT/i);
   assert.match(payloads.combatHud.loopSequenceText, /DUEL PHASE ENGAGE/i);
   assert.match(payloads.combatHud.loopStateText, /ACTIVE|ENGAGE|DUEL/i);
   assert.match(payloads.combatHud.loopDetailText, /QUEUE DEPTH 3|RISK BAND WATCH/i);

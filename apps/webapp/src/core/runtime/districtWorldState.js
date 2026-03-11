@@ -4806,6 +4806,177 @@ function buildProtocolMicroFlowLiveState(sequenceKindKey, input) {
   }
 }
 
+function buildProtocolMicroFlowPersonality(sequenceKindKey, input) {
+  const scene = asRecord(input.scene);
+  const sceneRuntime = asRecord(input.sceneRuntime);
+  const capabilityProfile = asRecord(scene.capabilityProfile);
+  const effectiveQuality = normalizeQuality(scene.effectiveQuality || sceneRuntime.effectiveQuality);
+  const hudDensity = normalizeHudDensity(scene.hudDensity || sceneRuntime.hudDensity || capabilityProfile.effective_hud_density);
+  const lowEndMode = Boolean(sceneRuntime.lowEndMode || capabilityProfile.low_end_mode || effectiveQuality === "low");
+  const sceneProfile = toText(
+    capabilityProfile.scene_profile || (lowEndMode ? "lite" : effectiveQuality === "high" ? "cinematic" : "balanced"),
+    "balanced"
+  );
+  const compactMode = lowEndMode || hudDensity === "compact";
+  const cinematicBoost = sceneProfile === "cinematic" ? 1.06 : sceneProfile === "lite" ? 0.94 : 1;
+  const compactDamp = compactMode ? 0.94 : 1;
+  const personality =
+    {
+      world_modal_kind_duel_sequence: {
+        personality_key: "assault",
+        personality_label_key: "world_personality_assault",
+        personality_caption_key: "world_personality_caption_assault",
+        personality_band_key: "aggressive",
+        orbit_spin_scalar: 1.14,
+        sway_scalar: 0.92,
+        alpha_lerp_scalar: 1.16,
+        beta_lerp_scalar: 1.12,
+        hud_emphasis_scalar: 1.18
+      },
+      world_modal_kind_ladder_sequence: {
+        personality_key: "charge",
+        personality_label_key: "world_personality_charge",
+        personality_caption_key: "world_personality_caption_charge",
+        personality_band_key: "aggressive",
+        orbit_spin_scalar: 1.08,
+        sway_scalar: 0.96,
+        alpha_lerp_scalar: 1.08,
+        beta_lerp_scalar: 1.06,
+        hud_emphasis_scalar: 1.1
+      },
+      world_modal_kind_telemetry_scan: {
+        personality_key: "scan",
+        personality_label_key: "world_personality_scan",
+        personality_caption_key: "world_personality_caption_scan",
+        personality_band_key: "precision",
+        orbit_spin_scalar: 0.96,
+        sway_scalar: 0.84,
+        alpha_lerp_scalar: 0.94,
+        beta_lerp_scalar: 0.92,
+        hud_emphasis_scalar: 0.92
+      },
+      world_modal_kind_mission_terminal: {
+        personality_key: "stack",
+        personality_label_key: "world_personality_stack",
+        personality_caption_key: "world_personality_caption_stack",
+        personality_band_key: "stack",
+        orbit_spin_scalar: 1.02,
+        sway_scalar: 0.9,
+        alpha_lerp_scalar: 1.04,
+        beta_lerp_scalar: 1,
+        hud_emphasis_scalar: 1.04
+      },
+      world_modal_kind_contract_sequence: {
+        personality_key: "claim",
+        personality_label_key: "world_personality_claim",
+        personality_caption_key: "world_personality_caption_claim",
+        personality_band_key: "stack",
+        orbit_spin_scalar: 1.1,
+        sway_scalar: 0.94,
+        alpha_lerp_scalar: 1.12,
+        beta_lerp_scalar: 1.08,
+        hud_emphasis_scalar: 1.12
+      },
+      world_modal_kind_streak_sync: {
+        personality_key: "cadence",
+        personality_label_key: "world_personality_cadence",
+        personality_caption_key: "world_personality_caption_cadence",
+        personality_band_key: "stack",
+        orbit_spin_scalar: 0.94,
+        sway_scalar: 0.88,
+        alpha_lerp_scalar: 0.96,
+        beta_lerp_scalar: 0.94,
+        hud_emphasis_scalar: 0.96
+      },
+      world_modal_kind_wallet_terminal: {
+        personality_key: "route",
+        personality_label_key: "world_personality_route",
+        personality_caption_key: "world_personality_caption_route",
+        personality_band_key: "route",
+        orbit_spin_scalar: 0.98,
+        sway_scalar: 0.9,
+        alpha_lerp_scalar: 1.02,
+        beta_lerp_scalar: 1,
+        hud_emphasis_scalar: 1
+      },
+      world_modal_kind_payout_route: {
+        personality_key: "payout",
+        personality_label_key: "world_personality_payout",
+        personality_caption_key: "world_personality_caption_payout",
+        personality_band_key: "route",
+        orbit_spin_scalar: 1,
+        sway_scalar: 0.92,
+        alpha_lerp_scalar: 1.04,
+        beta_lerp_scalar: 1.02,
+        hud_emphasis_scalar: 1.04
+      },
+      world_modal_kind_premium_unlock: {
+        personality_key: "premium",
+        personality_label_key: "world_personality_premium",
+        personality_caption_key: "world_personality_caption_premium",
+        personality_band_key: "route",
+        orbit_spin_scalar: 0.98,
+        sway_scalar: 0.9,
+        alpha_lerp_scalar: 1,
+        beta_lerp_scalar: 0.98,
+        hud_emphasis_scalar: 1.02
+      },
+      world_modal_kind_queue_review: {
+        personality_key: "watch",
+        personality_label_key: "world_personality_watch",
+        personality_caption_key: "world_personality_caption_watch",
+        personality_band_key: "overwatch",
+        orbit_spin_scalar: 0.92,
+        sway_scalar: 0.82,
+        alpha_lerp_scalar: 0.92,
+        beta_lerp_scalar: 0.9,
+        hud_emphasis_scalar: 0.94
+      },
+      world_modal_kind_runtime_scan: {
+        personality_key: "audit",
+        personality_label_key: "world_personality_audit",
+        personality_caption_key: "world_personality_caption_audit",
+        personality_band_key: "overwatch",
+        orbit_spin_scalar: 0.9,
+        sway_scalar: 0.8,
+        alpha_lerp_scalar: 0.9,
+        beta_lerp_scalar: 0.9,
+        hud_emphasis_scalar: 0.9
+      },
+      world_modal_kind_dispatch_sequence: {
+        personality_key: "dispatch",
+        personality_label_key: "world_personality_dispatch",
+        personality_caption_key: "world_personality_caption_dispatch",
+        personality_band_key: "overwatch",
+        orbit_spin_scalar: 1.06,
+        sway_scalar: 0.94,
+        alpha_lerp_scalar: 1.08,
+        beta_lerp_scalar: 1.04,
+        hud_emphasis_scalar: 1.08
+      }
+    }[sequenceKindKey] || {
+      personality_key: "glide",
+      personality_label_key: "world_personality_glide",
+      personality_caption_key: "world_personality_caption_glide",
+      personality_band_key: "glide",
+      orbit_spin_scalar: 0.98,
+      sway_scalar: 0.86,
+      alpha_lerp_scalar: 0.98,
+      beta_lerp_scalar: 0.96,
+      hud_emphasis_scalar: 0.98
+    };
+
+  return {
+    ...personality,
+    density_label_key: compactMode ? "world_hud_density_compact" : "world_hud_density_expanded",
+    orbit_spin_scalar: clamp(toNum(personality.orbit_spin_scalar, 1) * cinematicBoost * compactDamp, 0.82, 1.24),
+    sway_scalar: clamp(toNum(personality.sway_scalar, 1) * compactDamp, 0.78, 1.12),
+    alpha_lerp_scalar: clamp(toNum(personality.alpha_lerp_scalar, 1) * cinematicBoost, 0.84, 1.22),
+    beta_lerp_scalar: clamp(toNum(personality.beta_lerp_scalar, 1) * cinematicBoost, 0.84, 1.18),
+    hud_emphasis_scalar: clamp(toNum(personality.hud_emphasis_scalar, 1) * compactDamp, 0.88, 1.22)
+  };
+}
+
 function enrichDistrictInteractionModal(interactionModal, input) {
   const modal = asRecord(interactionModal);
   if (!modal.modal_key || !Array.isArray(modal.protocol_cards) || !modal.protocol_cards.length) {
@@ -4832,6 +5003,7 @@ function enrichDistrictInteractionModal(interactionModal, input) {
             microflow_cards: microflows.map((flow) => {
               const microflow = asRecord(flow);
               const loopState = buildProtocolMicroFlowLiveState(toText(microflow.sequence_kind_key, ""), input);
+              const loopPersonality = buildProtocolMicroFlowPersonality(toText(microflow.sequence_kind_key, ""), input);
               if (!loopState) {
                 return flow;
               }
@@ -4850,7 +5022,17 @@ function enrichDistrictInteractionModal(interactionModal, input) {
                 alpha_offset: toNum(microflow.alpha_offset, 0) + toNum(loopState.loop_alpha_offset, 0),
                 beta_offset: toNum(microflow.beta_offset, 0) + toNum(loopState.loop_beta_offset, 0),
                 focus_lerp_scalar: toNum(microflow.focus_lerp_scalar, 1) * toNum(loopState.loop_focus_lerp_scalar, 1),
-                radius_lerp_scalar: toNum(microflow.radius_lerp_scalar, 1) * toNum(loopState.loop_radius_lerp_scalar, 1)
+                radius_lerp_scalar: toNum(microflow.radius_lerp_scalar, 1) * toNum(loopState.loop_radius_lerp_scalar, 1),
+                personality_key: loopPersonality.personality_key,
+                personality_label_key: loopPersonality.personality_label_key,
+                personality_caption_key: loopPersonality.personality_caption_key,
+                personality_band_key: loopPersonality.personality_band_key,
+                density_label_key: loopPersonality.density_label_key,
+                orbit_spin_scalar: loopPersonality.orbit_spin_scalar,
+                sway_scalar: loopPersonality.sway_scalar,
+                alpha_lerp_scalar: loopPersonality.alpha_lerp_scalar,
+                beta_lerp_scalar: loopPersonality.beta_lerp_scalar,
+                hud_emphasis_scalar: loopPersonality.hud_emphasis_scalar
               };
             })
           };

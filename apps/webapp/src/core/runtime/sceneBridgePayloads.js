@@ -240,6 +240,9 @@ function buildSceneLoopDeckPayload(scene) {
       entryKindKey: "",
       sequenceKindKey: "",
       microflowKey: "",
+      personalityLabel: "",
+      personalityCaption: "",
+      densityLabel: "",
       loopRows: [],
       loopSignalRows: [],
       sequenceRows: [],
@@ -257,8 +260,11 @@ function buildSceneLoopDeckPayload(scene) {
   const sequenceLabel = formatRuntimeKeyLabel(selectedLoop.sequenceKindKey, "LOOP");
   const stageLabel = formatLoopStageValue(selectedLoop.loopStageValue);
   const microflowLabel = formatRuntimeKeyLabel(selectedLoop.microflowKey, "FLOW");
+  const personalityLabel = formatRuntimeKeyLabel(selectedLoop.personalityLabelKey || selectedLoop.personalityKey, "");
+  const personalityCaption = formatRuntimeKeyLabel(selectedLoop.personalityCaptionKey, "");
+  const densityLabel = formatRuntimeKeyLabel(selectedLoop.densityLabelKey, "");
   return {
-    lineText: `${districtLabel} | ${entryLabel} | ${statusLabel} | ${sequenceLabel} ${stageLabel} | ${microflowLabel}`,
+    lineText: `${districtLabel} | ${entryLabel} | ${statusLabel}${personalityLabel ? ` | ${personalityLabel}` : ""} | ${sequenceLabel} ${stageLabel} | ${microflowLabel}`,
     districtKey: toText(selectedLoop.districtKey, ""),
     loopStatusKey: toText(selectedLoop.loopStatusKey, ""),
     loopStatusLabel: statusLabel,
@@ -266,6 +272,9 @@ function buildSceneLoopDeckPayload(scene) {
     entryKindKey: toText(selectedLoop.entryKindKey, ""),
     sequenceKindKey: toText(selectedLoop.sequenceKindKey, ""),
     microflowKey: toText(selectedLoop.microflowKey, ""),
+    personalityLabel,
+    personalityCaption,
+    densityLabel,
     loopRows: asArray(selectedLoop.loopRows).slice(0, 3),
     loopSignalRows: asArray(selectedLoop.loopSignalRows).slice(0, 3),
     sequenceRows: asArray(selectedLoop.sequenceRows).slice(0, 3),
@@ -452,18 +461,18 @@ function buildDomainLoopPanelPayload(scene, domainKey) {
   const microflowLabel = formatRuntimeKeyLabel(loopDeck.microflowKey, "FLOW");
   return {
     lineText: districtMatches
-      ? `${domainConfig.activeLabel} | ${microflowLabel} | ${loopDeck.loopStatusLabel} | ${loopDeck.stageValue}`
+      ? `${domainConfig.activeLabel} | ${microflowLabel}${loopDeck.personalityLabel ? ` | ${loopDeck.personalityLabel}` : ""} | ${loopDeck.loopStatusLabel} | ${loopDeck.stageValue}`
       : `${domainConfig.standbyLabel} | ${districtLabel} ${loopDeck.loopStatusLabel}`,
     hintText: districtMatches
-      ? `${entryLabel} | ${sequenceLabel}`
+      ? `${entryLabel} | ${sequenceLabel}${loopDeck.densityLabel ? ` | ${loopDeck.densityLabel}` : ""}`
       : `Focus ${districtLabel} | ${entryLabel} | ${microflowLabel}`,
     focusLineText: districtMatches
-      ? `${districtLabel} | ${microflowLabel} | ${entryLabel}`
+      ? `${districtLabel} | ${microflowLabel}${loopDeck.personalityLabel ? ` | ${loopDeck.personalityLabel}` : ""} | ${entryLabel}`
       : `TRACK ${districtLabel} | ${microflowLabel}`,
     opsLineText: districtMatches
       ? `${loopDeck.loopStatusLabel} | ${loopDeck.stageValue} | ${microflowLabel}`
       : `FOCUS ${districtLabel} | ${loopDeck.loopStatusLabel}`,
-    opsHintText: `${entryLabel} | ${sequenceLabel} | ${microflowLabel}`,
+    opsHintText: `${entryLabel} | ${sequenceLabel}${loopDeck.personalityCaption ? ` | ${loopDeck.personalityCaption}` : ""} | ${microflowLabel}`,
     statusLineText: `${loopDeck.loopStatusLabel} | ${loopDeck.stageValue} | ${entryLabel}`,
     detailLineText: loopDeck.detailLine,
     signalLineText: loopDeck.signalLine,

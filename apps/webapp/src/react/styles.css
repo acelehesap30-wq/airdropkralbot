@@ -125,6 +125,32 @@ body {
   background: linear-gradient(135deg, rgba(8, 21, 44, 0.68), rgba(9, 30, 54, 0.52));
 }
 
+.akrSceneWorldHud[data-tone="aggressive"] {
+  border-color: rgba(255, 108, 147, 0.28);
+  box-shadow: 0 14px 40px rgba(54, 10, 24, 0.32);
+}
+
+.akrSceneWorldHud[data-tone="precision"] {
+  border-color: rgba(98, 214, 255, 0.26);
+  box-shadow: 0 14px 40px rgba(8, 22, 44, 0.28);
+}
+
+.akrSceneWorldHud[data-tone="stack"] {
+  border-color: rgba(110, 255, 182, 0.24);
+}
+
+.akrSceneWorldHud[data-tone="route"] {
+  border-color: rgba(255, 211, 111, 0.24);
+}
+
+.akrSceneWorldHud[data-tone="overwatch"] {
+  border-color: rgba(151, 180, 255, 0.24);
+}
+
+.akrSceneWorldHud[data-tone="glide"] {
+  border-color: rgba(123, 230, 255, 0.22);
+}
+
 .akrSceneWorldHud strong {
   color: var(--akr-accent-2);
   text-transform: uppercase;
@@ -1132,6 +1158,36 @@ body {
   max-width: 132px;
 }
 
+.akrSceneInteractionModalChip.is-personality.is-aggressive {
+  border-color: rgba(255, 108, 147, 0.32);
+  background: rgba(61, 17, 31, 0.34);
+}
+
+.akrSceneInteractionModalChip.is-personality.is-precision {
+  border-color: rgba(98, 214, 255, 0.3);
+  background: rgba(8, 30, 46, 0.34);
+}
+
+.akrSceneInteractionModalChip.is-personality.is-stack {
+  border-color: rgba(110, 255, 182, 0.28);
+  background: rgba(10, 34, 30, 0.34);
+}
+
+.akrSceneInteractionModalChip.is-personality.is-route {
+  border-color: rgba(255, 211, 111, 0.3);
+  background: rgba(48, 34, 12, 0.34);
+}
+
+.akrSceneInteractionModalChip.is-personality.is-overwatch {
+  border-color: rgba(151, 180, 255, 0.3);
+  background: rgba(18, 27, 50, 0.34);
+}
+
+.akrSceneInteractionModalChip.is-personality.is-glide {
+  border-color: rgba(123, 230, 255, 0.28);
+  background: rgba(10, 32, 46, 0.34);
+}
+
 .akrSceneInteractionModalActionGrid {
   display: grid;
   gap: 8px;
@@ -1496,6 +1552,47 @@ body {
   border-radius: 999px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+}
+
+.akrSceneWorldFocus.isPersonality {
+  color: #e7fbff;
+}
+
+.akrSceneWorldFocus.isPersonality.is-aggressive {
+  border-color: rgba(255, 108, 147, 0.32);
+  background: rgba(255, 108, 147, 0.12);
+}
+
+.akrSceneWorldFocus.isPersonality.is-precision {
+  border-color: rgba(98, 214, 255, 0.32);
+  background: rgba(98, 214, 255, 0.1);
+}
+
+.akrSceneWorldFocus.isPersonality.is-stack {
+  border-color: rgba(110, 255, 182, 0.3);
+  background: rgba(110, 255, 182, 0.1);
+}
+
+.akrSceneWorldFocus.isPersonality.is-route {
+  border-color: rgba(255, 211, 111, 0.32);
+  background: rgba(255, 211, 111, 0.12);
+}
+
+.akrSceneWorldFocus.isPersonality.is-overwatch {
+  border-color: rgba(151, 180, 255, 0.32);
+  background: rgba(151, 180, 255, 0.11);
+}
+
+.akrSceneWorldFocus.isPersonality.is-glide {
+  border-color: rgba(123, 230, 255, 0.3);
+  background: rgba(123, 230, 255, 0.1);
+}
+
+.akrSceneWorldFocus.isCaption {
+  color: #d8f7ff;
+  max-width: min(320px, 48vw);
+  text-transform: none;
+  letter-spacing: 0.02em;
 }
 
 .akrGlass {

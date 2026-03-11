@@ -664,6 +664,11 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
       loopStageValue: string;
       directorPaceLabelKey?: string;
       hudToneLabelKey?: string;
+      personalityKey?: string;
+      personalityLabelKey?: string;
+      personalityCaptionKey?: string;
+      personalityBandKey?: string;
+      densityLabelKey?: string;
       loopRows?: Array<{ label_key: string; value: string; status_key: string }>;
       loopSignalRows?: Array<{ label_key: string; value: string; status_key: string }>;
       sequenceRows?: Array<{ label_key: string; value: string; status_key: string }>;
@@ -700,6 +705,11 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
           loop_stage_value: payload.loopStageValue,
           director_pace_label_key: String(payload.directorPaceLabelKey || ""),
           hud_tone_label_key: String(payload.hudToneLabelKey || ""),
+          personality_key: String(payload.personalityKey || ""),
+          personality_label_key: String(payload.personalityLabelKey || ""),
+          personality_caption_key: String(payload.personalityCaptionKey || ""),
+          personality_band_key: String(payload.personalityBandKey || ""),
+          density_label_key: String(payload.densityLabelKey || ""),
           actor_key: String(payload.actorKey || ""),
           cluster_key: String(payload.clusterKey || ""),
           hotspot_key: String(payload.hotspotKey || ""),
