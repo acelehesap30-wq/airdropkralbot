@@ -309,6 +309,13 @@ function buildLoopMicroLine(label, primary, secondary) {
   return `${label} ${toText(primary, "--")} | ${toText(secondary, "--")}`.trim();
 }
 
+function buildLoopMicroDetail(...segments) {
+  return segments
+    .map((segment) => toText(segment, ""))
+    .filter(Boolean)
+    .join(" | ");
+}
+
 function buildPvpLoopMicroPanels(loopDeck, active) {
   if (!active) {
     return {
@@ -327,6 +334,9 @@ function buildPvpLoopMicroPanels(loopDeck, active) {
   const diagBand = readLoopRowValue(sharedRows, ["diag_band"], "--");
   const riskBand = readLoopRowValue(sharedRows, ["risk_band"], "--");
   const ladderCharge = readLoopRowValue(sharedRows, ["ladder_charge"], "--");
+  const entryLabel = formatRuntimeKeyLabel(loopDeck.entryKindKey, "ENTRY");
+  const sequenceLabel = formatRuntimeKeyLabel(loopDeck.sequenceKindKey, "LOOP");
+  const personalityLabel = toText(loopDeck.personalityLabel, "");
   return {
     duelText: buildLoopMicroLine(
       "DUEL",
@@ -343,9 +353,13 @@ function buildPvpLoopMicroPanels(loopDeck, active) {
       diagBand,
       readLoopRowValue(sharedRows, ["risk_band", "tick_tempo"], "--")
     ),
-    duelDetailText: `QUEUE ${readLoopRowValue(sharedRows, ["queue_depth"], "--")} | RISK ${riskBand}`,
-    ladderDetailText: `CHARGE ${ladderCharge} | TICK ${tickTempo}`,
-    telemetryDetailText: `DIAG ${diagBand} | RISK ${riskBand}`
+    duelDetailText: buildLoopMicroDetail(
+      `QUEUE ${readLoopRowValue(sharedRows, ["queue_depth"], "--")}`,
+      `RISK ${riskBand}`,
+      entryLabel
+    ),
+    ladderDetailText: buildLoopMicroDetail(`CHARGE ${ladderCharge}`, `TICK ${tickTempo}`, sequenceLabel),
+    telemetryDetailText: buildLoopMicroDetail(`DIAG ${diagBand}`, `RISK ${riskBand}`, personalityLabel)
   };
 }
 
@@ -367,15 +381,22 @@ function buildVaultLoopMicroPanels(loopDeck, active) {
   const payoutState = readLoopRowValue(sharedRows, ["payout_state"], "--");
   const routeState = readLoopRowValue(sharedRows, ["route_state"], "--");
   const premiumState = readLoopRowValue(sharedRows, ["premium_state"], "--");
+  const entryLabel = formatRuntimeKeyLabel(loopDeck.entryKindKey, "ENTRY");
+  const sequenceLabel = formatRuntimeKeyLabel(loopDeck.sequenceKindKey, "LOOP");
+  const personalityCaption = toText(loopDeck.personalityCaption, "");
   return {
     walletText: buildLoopMicroLine("WALLET", walletState, loopDeck.loopStatusLabel || "IDLE"),
     payoutText: buildLoopMicroLine("PAYOUT", payoutState, routeState),
     routeText: buildLoopMicroLine("ROUTE", routeState, walletState),
     premiumText: buildLoopMicroLine("PREMIUM", premiumState, loopDeck.stageValue || loopDeck.loopStatusLabel || "--"),
-    walletDetailText: `STATE ${walletState} | FLOW ${loopDeck.loopStatusLabel || "IDLE"}`,
-    payoutDetailText: `PAYOUT ${payoutState} | ROUTE ${routeState}`,
-    routeDetailText: `ROUTE ${routeState} | WALLET ${walletState}`,
-    premiumDetailText: `PASS ${premiumState} | STAGE ${loopDeck.stageValue || loopDeck.loopStatusLabel || "--"}`
+    walletDetailText: buildLoopMicroDetail(`STATE ${walletState}`, `FLOW ${loopDeck.loopStatusLabel || "IDLE"}`, entryLabel),
+    payoutDetailText: buildLoopMicroDetail(`PAYOUT ${payoutState}`, `ROUTE ${routeState}`, sequenceLabel),
+    routeDetailText: buildLoopMicroDetail(`ROUTE ${routeState}`, `WALLET ${walletState}`, personalityCaption),
+    premiumDetailText: buildLoopMicroDetail(
+      `PASS ${premiumState}`,
+      `STAGE ${loopDeck.stageValue || loopDeck.loopStatusLabel || "--"}`,
+      entryLabel
+    )
   };
 }
 
@@ -395,6 +416,9 @@ function buildAdminLoopMicroPanels(loopDeck, active) {
   const sceneHealth = readLoopRowValue(sharedRows, ["scene_health"], "--");
   const alertCount = readLoopRowValue(sharedRows, ["alerts"], "0");
   const liveOpsSent = readLoopRowValue(sharedRows, ["liveops_sent"], "0");
+  const entryLabel = formatRuntimeKeyLabel(loopDeck.entryKindKey, "ENTRY");
+  const sequenceLabel = formatRuntimeKeyLabel(loopDeck.sequenceKindKey, "LOOP");
+  const microflowLabel = formatRuntimeKeyLabel(loopDeck.microflowKey, "FLOW");
   return {
     queueText: buildLoopMicroLine(
       "QUEUE",
@@ -411,9 +435,13 @@ function buildAdminLoopMicroPanels(loopDeck, active) {
       liveOpsSent,
       loopDeck.stageValue || loopDeck.loopStatusLabel || "--"
     ),
-    queueDetailText: `DEPTH ${queueDepth} | FLOW ${loopDeck.loopStatusLabel || "IDLE"}`,
-    runtimeDetailText: `HEALTH ${sceneHealth} | ALERT ${alertCount}`,
-    dispatchDetailText: `SENT ${liveOpsSent} | STAGE ${loopDeck.stageValue || loopDeck.loopStatusLabel || "--"}`
+    queueDetailText: buildLoopMicroDetail(`DEPTH ${queueDepth}`, `FLOW ${loopDeck.loopStatusLabel || "IDLE"}`, microflowLabel),
+    runtimeDetailText: buildLoopMicroDetail(`HEALTH ${sceneHealth}`, `ALERT ${alertCount}`, sequenceLabel),
+    dispatchDetailText: buildLoopMicroDetail(
+      `SENT ${liveOpsSent}`,
+      `STAGE ${loopDeck.stageValue || loopDeck.loopStatusLabel || "--"}`,
+      entryLabel
+    )
   };
 }
 

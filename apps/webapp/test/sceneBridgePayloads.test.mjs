@@ -343,9 +343,9 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
   assert.match(payloads.combatHud.loopDuelText, /DUEL ENGAGE \| ACTIVE/i);
   assert.match(payloads.combatHud.loopLadderText, /LADDER -- \| --/i);
   assert.match(payloads.combatHud.loopTelemetryText, /TELEMETRY HOT \| WATCH/i);
-  assert.match(payloads.combatHud.loopDuelDetailText, /QUEUE 3 \| RISK WATCH/i);
-  assert.match(payloads.combatHud.loopLadderDetailText, /CHARGE -- \| TICK --/i);
-  assert.match(payloads.combatHud.loopTelemetryDetailText, /DIAG HOT \| RISK WATCH/i);
+  assert.match(payloads.combatHud.loopDuelDetailText, /QUEUE 3 \| RISK WATCH \| DUEL CONSOLE/i);
+  assert.match(payloads.combatHud.loopLadderDetailText, /CHARGE -- \| TICK -- \| DUEL SEQUENCE/i);
+  assert.match(payloads.combatHud.loopTelemetryDetailText, /DIAG HOT \| RISK WATCH \| (WORLD )?PERSONALITY ASSAULT/i);
   assert.equal(payloads.cameraDirector.mode.key, "broadcast");
   assert.match(payloads.cameraDirector.focus.text, /ACTIVE/);
   assert.equal(payloads.pvpRoundDirector.heat.phase, "engage");
@@ -381,6 +381,74 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
   assert.equal(payloads.tokenTreasury.actionDirector.badgeText, "SUBMIT");
   assert.match(payloads.tokenTreasury.pulse.gateLineText, /0.001230 BTC/);
   assert.equal(payloads.tokenTreasury.txLifecycle.rows.at(-1).chip, "PASS");
+});
+
+test("buildPlayerBridgePayloads surfaces active vault loop micro panels from selected exchange flow", async () => {
+  const mod = await loadModule();
+  const payloads = mod.buildPlayerBridgePayloads({
+    mutators: createMutators(),
+    vaultData: {
+      overview: {
+        token_summary: { symbol: "NXT", chain: "TON", balance: 320, price_usd: 0.0311 },
+        route_status: { status: "live", chains: [{ chain: "TON", enabled: true, pay_currency: "TON" }] },
+        payout_status: { can_request: true, requestable_btc: 0.00088, unlock_tier: "T2" },
+        wallet_session: { active: true, chain: "TON", address_masked: "UQ...222", kyc_status: "approved" },
+        monetization_status: {
+          enabled: true,
+          player_effects: { premium_active: true },
+          active_pass_count: 1,
+          spend_summary: { SC: 14, RC: 6, HC: 1 }
+        }
+      },
+      monetization: {
+        status: {
+          enabled: true,
+          active_passes: [{ pass_key: "pass_alpha" }],
+          cosmetics: { owned_count: 2 },
+          spend_summary: { SC: 14, RC: 6, HC: 1 }
+        },
+        active_effects: { premium_active: true }
+      }
+    },
+    scene: {
+      selectedLoop: {
+        districtKey: "exchange_district",
+        protocolCardKey: "vault_protocol",
+        protocolPodKey: "payout_pod",
+        microflowKey: "payout_flow",
+        entryKindKey: "world_entry_kind_payout_terminal",
+        sequenceKindKey: "world_modal_kind_payout_route",
+        personalityKey: "steady",
+        personalityLabelKey: "steady",
+        personalityCaptionKey: "stable_route",
+        densityLabelKey: "world_hud_density_compact",
+        loopStatusKey: "live",
+        loopStatusLabelKey: "loop_status_live",
+        loopStageValue: "submit",
+        loopRows: [
+          { label_key: "world_sheet_metric_wallet_state", value: "APPROVED", status_key: "live" },
+          { label_key: "world_sheet_metric_payout_state", value: "OPEN", status_key: "live" },
+          { label_key: "world_sheet_metric_route_state", value: "2/3", status_key: "watch" }
+        ],
+        loopSignalRows: [{ label_key: "world_sheet_metric_premium_state", value: "ACTIVE", status_key: "live" }],
+        sequenceRows: [{ label_key: "world_sheet_metric_route_state", value: "2/3", status_key: "watch" }]
+      }
+    },
+    sceneRuntime: {
+      lowEndMode: false,
+      effectiveQuality: "high"
+    }
+  });
+
+  assert.match(payloads.tokenOverview.loopLineText, /VAULT LOOP/);
+  assert.match(payloads.tokenOverview.loopWalletText, /WALLET APPROVED \| LIVE/i);
+  assert.match(payloads.tokenOverview.loopPayoutText, /PAYOUT OPEN \| 2\/3/i);
+  assert.match(payloads.tokenOverview.loopRouteText, /ROUTE 2\/3 \| APPROVED/i);
+  assert.match(payloads.tokenOverview.loopPremiumText, /PREMIUM ACTIVE \| SUBMIT/i);
+  assert.match(payloads.tokenOverview.loopWalletDetailText, /STATE APPROVED \| FLOW LIVE \| PAYOUT TERMINAL/i);
+  assert.match(payloads.tokenOverview.loopPayoutDetailText, /PAYOUT OPEN \| ROUTE 2\/3 \| PAYOUT ROUTE/i);
+  assert.match(payloads.tokenOverview.loopRouteDetailText, /ROUTE 2\/3 \| WALLET APPROVED \| STABLE ROUTE/i);
+  assert.match(payloads.tokenOverview.loopPremiumDetailText, /PASS ACTIVE \| STAGE SUBMIT \| PAYOUT TERMINAL/i);
 });
 
 test("buildAdminBridgePayloads produces runtime, asset and audit cards from admin state", async () => {
@@ -451,9 +519,9 @@ test("buildAdminBridgePayloads produces runtime, asset and audit cards from admi
   assert.match(payloads.runtime.loopQueueText, /QUEUE 2 \| WATCH/i);
   assert.match(payloads.runtime.loopRuntimeText, /RUNTIME WATCH \| ALERT 3/i);
   assert.match(payloads.runtime.loopDispatchText, /DISPATCH 12 \| ALERT/i);
-  assert.match(payloads.runtime.loopQueueDetailText, /DEPTH 2 \| FLOW WATCH/i);
-  assert.match(payloads.runtime.loopRuntimeDetailText, /HEALTH WATCH \| ALERT 3/i);
-  assert.match(payloads.runtime.loopDispatchDetailText, /SENT 12 \| STAGE ALERT/i);
+  assert.match(payloads.runtime.loopQueueDetailText, /DEPTH 2 \| FLOW WATCH \| DISPATCH FLOW/i);
+  assert.match(payloads.runtime.loopRuntimeDetailText, /HEALTH WATCH \| ALERT 3 \| DISPATCH SEQUENCE/i);
+  assert.match(payloads.runtime.loopDispatchDetailText, /SENT 12 \| STAGE ALERT \| DISPATCH CONSOLE/i);
   assert.equal(payloads.assetStatus.rows.length, 2);
   assert.equal(payloads.assetRuntime.signalLineText, "Ready 75% | Integrity 75% | Missing 1");
   assert.equal(payloads.auditRuntime.phaseChipText, "PHASE PARTIAL");
