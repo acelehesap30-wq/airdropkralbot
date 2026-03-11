@@ -415,6 +415,8 @@ function renderLoop(payload: NonNullable<OperationsDeckBridgePayload["loop"]>): 
   const detail = byId<HTMLElement>("tasksLoopDetail");
   const signal = byId<HTMLElement>("tasksLoopSignal");
   const sequence = byId<HTMLElement>("tasksLoopSequence");
+  const lootFlowCards = byId<HTMLElement>("tasksLoopLootFlowCards");
+  const lootFlowBlocks = byId<HTMLElement>("tasksLoopLootFlowBlocks");
   if (!line || !hint || !focus || !ops || !status || !detail || !signal || !sequence) {
     return false;
   }
@@ -430,6 +432,8 @@ function renderLoop(payload: NonNullable<OperationsDeckBridgePayload["loop"]>): 
   renderLoopFamily("tasksLoopClaim", readLoopFamily(payload, "claim"));
   renderLoopFamily("tasksLoopStreak", readLoopFamily(payload, "streak"));
   renderLoopFamily("tasksLoopLoot", readLoopFamily(payload, "loot"));
+  renderLoopBridgeCards(lootFlowCards, Array.isArray(payload.lootFlowCards) ? (payload.lootFlowCards as LoopBridgeCard[]) : undefined);
+  renderLoopBridgeBlocks(lootFlowBlocks, Array.isArray(payload.lootFlowBlocks) ? (payload.lootFlowBlocks as LoopBridgeBlock[]) : undefined);
   return true;
 }
 

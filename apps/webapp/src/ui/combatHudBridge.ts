@@ -133,6 +133,8 @@ type CombatHudPayload = {
   loopDuelCadenceText?: string;
   loopDuelCards?: LoopBridgeCard[];
   loopDuelBlocks?: LoopBridgeBlock[];
+  loopDuelFlowCards?: LoopBridgeCard[];
+  loopDuelFlowBlocks?: LoopBridgeBlock[];
   loopLadderCards?: LoopBridgeCard[];
   loopLadderBlocks?: LoopBridgeBlock[];
   loopLadderFamilyText?: string;
@@ -344,6 +346,8 @@ function render(payload: CombatHudPayload): boolean {
   const loopDuelPanel = byId("combatLoopDuelPanel");
   const loopDuelCards = byId("combatLoopDuelCards");
   const loopDuelBlocks = byId("combatLoopDuelBlocks");
+  const loopDuelFlowCards = byId("combatLoopDuelFlowCards");
+  const loopDuelFlowBlocks = byId("combatLoopDuelFlowBlocks");
   const loopLadderCards = byId("combatLoopLadderCards");
   const loopLadderBlocks = byId("combatLoopLadderBlocks");
   const loopTelemetryCards = byId("combatLoopTelemetryCards");
@@ -644,6 +648,8 @@ function render(payload: CombatHudPayload): boolean {
   }
   renderLoopBridgeCards(loopDuelCards, payload.loopDuelCards);
   renderLoopBridgeBlocks(loopDuelBlocks, payload.loopDuelBlocks);
+  renderLoopBridgeCards(loopDuelFlowCards, payload.loopDuelFlowCards);
+  renderLoopBridgeBlocks(loopDuelFlowBlocks, payload.loopDuelFlowBlocks);
   renderLoopBridgeCards(loopLadderCards, payload.loopLadderCards);
   renderLoopBridgeBlocks(loopLadderBlocks, payload.loopLadderBlocks);
   renderLoopBridgeCards(loopTelemetryCards, payload.loopTelemetryCards);
