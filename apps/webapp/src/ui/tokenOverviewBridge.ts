@@ -81,6 +81,9 @@ export type TokenOverviewBridgePayload = {
   loopWalletFlowCards?: LoopBridgeCard[];
   loopWalletFlowBlocks?: LoopBridgeBlock[];
   loopWalletFlowPanels?: LoopBridgePanel[];
+  loopWalletSubflowCards?: LoopBridgeCard[];
+  loopWalletSubflowBlocks?: LoopBridgeBlock[];
+  loopWalletSubflowPanels?: LoopBridgePanel[];
   loopPayoutCards?: LoopBridgeCard[];
   loopPayoutBlocks?: LoopBridgeBlock[];
   loopPayoutFlowCards?: LoopBridgeCard[];
@@ -192,6 +195,9 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   const loopWalletFlowCards = byId<HTMLElement>("tokenLoopWalletFlowCards");
   const loopWalletFlowBlocks = byId<HTMLElement>("tokenLoopWalletFlowBlocks");
   const loopWalletFlowPanels = byId<HTMLElement>("tokenLoopWalletFlowPanels");
+  const loopWalletSubflowCards = byId<HTMLElement>("tokenLoopWalletSubflowCards");
+  const loopWalletSubflowBlocks = byId<HTMLElement>("tokenLoopWalletSubflowBlocks");
+  const loopWalletSubflowPanels = byId<HTMLElement>("tokenLoopWalletSubflowPanels");
   const loopWalletFocus = byId<HTMLElement>("tokenLoopWalletFocus");
   const loopWalletStage = byId<HTMLElement>("tokenLoopWalletStage");
   const loopPayout = byId<HTMLElement>("tokenLoopPayout");
@@ -414,6 +420,9 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   renderLoopBridgeCards(loopWalletFlowCards, payload.loopWalletFlowCards);
   renderLoopBridgeBlocks(loopWalletFlowBlocks, payload.loopWalletFlowBlocks);
   renderLoopBridgePanels(loopWalletFlowPanels, payload.loopWalletFlowPanels);
+  renderLoopBridgeCards(loopWalletSubflowCards, payload.loopWalletSubflowCards);
+  renderLoopBridgeBlocks(loopWalletSubflowBlocks, payload.loopWalletSubflowBlocks);
+  renderLoopBridgePanels(loopWalletSubflowPanels, payload.loopWalletSubflowPanels);
   renderLoopBridgeCards(loopPayoutCards, payload.loopPayoutCards);
   renderLoopBridgeBlocks(loopPayoutBlocks, payload.loopPayoutBlocks);
   renderLoopBridgeCards(loopPayoutFlowCards, payload.loopPayoutFlowCards);

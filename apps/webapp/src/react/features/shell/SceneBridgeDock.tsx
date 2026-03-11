@@ -605,6 +605,9 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
                   <div id="combatLoopDuelFlowCards" className="akrBridgeFocusCards hidden" />
                   <div id="combatLoopDuelFlowBlocks" className="akrBridgeFlowBlocks hidden" />
                   <div id="combatLoopDuelFlowPanels" className="akrBridgeFlowPanels hidden" />
+                  <div id="combatLoopDuelSubflowCards" className="akrBridgeFocusCards hidden" />
+                  <div id="combatLoopDuelSubflowBlocks" className="akrBridgeFlowBlocks hidden" />
+                  <div id="combatLoopDuelSubflowPanels" className="akrBridgeFlowPanels hidden" />
                   <div className="akrChipRow">
                     <BridgeChip id="combatLoopDuelFamily" className="combatAlertChip neutral tone-neutral" />
                     <BridgeChip id="combatLoopDuelFlow" className="combatAlertChip neutral tone-neutral" />
@@ -999,6 +1002,9 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
               <div id="tasksLoopLootFlowCards" className="akrBridgeFocusCards hidden" />
               <div id="tasksLoopLootFlowBlocks" className="akrBridgeFlowBlocks hidden" />
               <div id="tasksLoopLootFlowPanels" className="akrBridgeFlowPanels hidden" />
+              <div id="tasksLoopLootSubflowCards" className="akrBridgeFocusCards hidden" />
+              <div id="tasksLoopLootSubflowBlocks" className="akrBridgeFlowBlocks hidden" />
+              <div id="tasksLoopLootSubflowPanels" className="akrBridgeFlowPanels hidden" />
               <div className="akrChipRow">
                 <BridgeChip id="tasksLoopLootFamily" className="combatAlertChip neutral tone-neutral" />
                 <BridgeChip id="tasksLoopLootFlow" className="combatAlertChip neutral tone-neutral" />
@@ -1107,6 +1113,9 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
                 <div id="tokenLoopWalletFlowCards" className="akrBridgeFocusCards hidden" />
                 <div id="tokenLoopWalletFlowBlocks" className="akrBridgeFlowBlocks hidden" />
                 <div id="tokenLoopWalletFlowPanels" className="akrBridgeFlowPanels hidden" />
+                <div id="tokenLoopWalletSubflowCards" className="akrBridgeFocusCards hidden" />
+                <div id="tokenLoopWalletSubflowBlocks" className="akrBridgeFlowBlocks hidden" />
+                <div id="tokenLoopWalletSubflowPanels" className="akrBridgeFlowPanels hidden" />
                 <div className="akrChipRow">
                   <BridgeChip id="tokenLoopWalletFamily" className="combatAlertChip neutral tone-neutral" />
                   <BridgeChip id="tokenLoopWalletFlow" className="combatAlertChip neutral tone-neutral" />
@@ -1562,6 +1571,9 @@ function AdminBridgeCards(props: { lang: Lang }) {
             <div id="adminRuntimeLoopDispatchFlowCards" className="akrBridgeFocusCards hidden" />
             <div id="adminRuntimeLoopDispatchFlowBlocks" className="akrBridgeFlowBlocks hidden" />
             <div id="adminRuntimeLoopDispatchFlowPanels" className="akrBridgeFlowPanels hidden" />
+            <div id="adminRuntimeLoopDispatchSubflowCards" className="akrBridgeFocusCards hidden" />
+            <div id="adminRuntimeLoopDispatchSubflowBlocks" className="akrBridgeFlowBlocks hidden" />
+            <div id="adminRuntimeLoopDispatchSubflowPanels" className="akrBridgeFlowPanels hidden" />
             <div className="akrChipRow">
               <BridgeChip id="adminRuntimeLoopDispatchFamily" className="combatAlertChip neutral tone-neutral" />
               <BridgeChip id="adminRuntimeLoopDispatchFlow" className="combatAlertChip neutral tone-neutral" />

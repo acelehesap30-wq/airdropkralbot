@@ -82,6 +82,9 @@ type RuntimeBridgePayload = {
   loopDispatchFlowCards?: LoopBridgeCard[];
   loopDispatchFlowBlocks?: LoopBridgeBlock[];
   loopDispatchFlowPanels?: LoopBridgePanel[];
+  loopDispatchSubflowCards?: LoopBridgeCard[];
+  loopDispatchSubflowBlocks?: LoopBridgeBlock[];
+  loopDispatchSubflowPanels?: LoopBridgePanel[];
 };
 
 type AdminRuntimeBridge = {
@@ -169,6 +172,9 @@ function render(payload: RuntimeBridgePayload): boolean {
   const loopDispatchFlowCards = byId<HTMLElement>("adminRuntimeLoopDispatchFlowCards");
   const loopDispatchFlowBlocks = byId<HTMLElement>("adminRuntimeLoopDispatchFlowBlocks");
   const loopDispatchFlowPanels = byId<HTMLElement>("adminRuntimeLoopDispatchFlowPanels");
+  const loopDispatchSubflowCards = byId<HTMLElement>("adminRuntimeLoopDispatchSubflowCards");
+  const loopDispatchSubflowBlocks = byId<HTMLElement>("adminRuntimeLoopDispatchSubflowBlocks");
+  const loopDispatchSubflowPanels = byId<HTMLElement>("adminRuntimeLoopDispatchSubflowPanels");
   const loopDispatchFocus = byId<HTMLElement>("adminRuntimeLoopDispatchFocus");
   const loopDispatchStage = byId<HTMLElement>("adminRuntimeLoopDispatchStage");
   const loopQueueState = byId<HTMLElement>("adminRuntimeLoopQueueState");
@@ -418,6 +424,9 @@ function render(payload: RuntimeBridgePayload): boolean {
   renderLoopBridgeCards(loopDispatchFlowCards, payload.loopDispatchFlowCards);
   renderLoopBridgeBlocks(loopDispatchFlowBlocks, payload.loopDispatchFlowBlocks);
   renderLoopBridgePanels(loopDispatchFlowPanels, payload.loopDispatchFlowPanels);
+  renderLoopBridgeCards(loopDispatchSubflowCards, payload.loopDispatchSubflowCards);
+  renderLoopBridgeBlocks(loopDispatchSubflowBlocks, payload.loopDispatchSubflowBlocks);
+  renderLoopBridgePanels(loopDispatchSubflowPanels, payload.loopDispatchSubflowPanels);
   setChipTone(loopDispatchFamily, resolveLoopRailTone(payload.loopDispatchTone, "family"));
   setChipTone(loopDispatchFlow, resolveLoopRailTone(payload.loopDispatchTone, "flow"));
   setChipTone(loopDispatchSummary, resolveLoopRailTone(payload.loopDispatchTone, "summary"));

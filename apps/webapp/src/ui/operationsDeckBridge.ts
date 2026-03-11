@@ -40,6 +40,9 @@ type LoopFamilyPanel = {
   flowCards?: LoopBridgeCard[];
   flowBlocks?: LoopBridgeBlock[];
   flowPanels?: LoopBridgePanel[];
+  subflowCards?: LoopBridgeCard[];
+  subflowBlocks?: LoopBridgeBlock[];
+  subflowPanels?: LoopBridgePanel[];
   familyText?: string;
   flowText?: string;
   summaryText?: string;
@@ -357,6 +360,9 @@ function renderLoopFamily(prefix: string, payload: LoopFamilyPanel): void {
   renderLoopBridgeCards(byId<HTMLElement>(`${prefix}FlowCards`), payload.flowCards);
   renderLoopBridgeBlocks(byId<HTMLElement>(`${prefix}FlowBlocks`), payload.flowBlocks);
   renderLoopBridgePanels(byId<HTMLElement>(`${prefix}FlowPanels`), payload.flowPanels);
+  renderLoopBridgeCards(byId<HTMLElement>(`${prefix}SubflowCards`), payload.subflowCards);
+  renderLoopBridgeBlocks(byId<HTMLElement>(`${prefix}SubflowBlocks`), payload.subflowBlocks);
+  renderLoopBridgePanels(byId<HTMLElement>(`${prefix}SubflowPanels`), payload.subflowPanels);
   setNodeText(`${prefix}Family`, payload.familyText, "FLOW --");
   setNodeText(`${prefix}Flow`, payload.flowText, "ENTRY --");
   setNodeText(`${prefix}Summary`, payload.summaryText, "SUMMARY --");
@@ -396,6 +402,15 @@ function readLoopFamily(payload: LoopPayload, familyKey: string): LoopFamilyPane
     flowCards: Array.isArray(source[`${familyKey}FlowCards`]) ? (source[`${familyKey}FlowCards`] as LoopBridgeCard[]) : undefined,
     flowBlocks: Array.isArray(source[`${familyKey}FlowBlocks`]) ? (source[`${familyKey}FlowBlocks`] as LoopBridgeBlock[]) : undefined,
     flowPanels: Array.isArray(source[`${familyKey}FlowPanels`]) ? (source[`${familyKey}FlowPanels`] as LoopBridgePanel[]) : undefined,
+    subflowCards: Array.isArray(source[`${familyKey}SubflowCards`])
+      ? (source[`${familyKey}SubflowCards`] as LoopBridgeCard[])
+      : undefined,
+    subflowBlocks: Array.isArray(source[`${familyKey}SubflowBlocks`])
+      ? (source[`${familyKey}SubflowBlocks`] as LoopBridgeBlock[])
+      : undefined,
+    subflowPanels: Array.isArray(source[`${familyKey}SubflowPanels`])
+      ? (source[`${familyKey}SubflowPanels`] as LoopBridgePanel[])
+      : undefined,
     familyText: safeText(source[`${familyKey}FamilyText`], "FLOW --"),
     flowText: safeText(source[`${familyKey}FlowText`], "ENTRY --"),
     summaryText: safeText(source[`${familyKey}SummaryText`], "SUMMARY --"),
