@@ -600,6 +600,10 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
                   <p id="combatLoopDuel" className="akrBridgeHint">
                     DUEL | WAIT
                   </p>
+                  <div className="akrChipRow">
+                    <BridgeChip id="combatLoopDuelFamily" className="combatAlertChip neutral tone-neutral" />
+                    <BridgeChip id="combatLoopDuelFlow" className="combatAlertChip neutral tone-neutral" />
+                  </div>
                   <p id="combatLoopDuelFocus" className="akrBridgeHint">
                     ENTRY WAIT | FOCUS WAIT | PERSONA --
                   </p>
@@ -838,6 +842,10 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
               <p id="tasksLoopLoot" className="akrBridgeHint">
                 LOOT | WAIT
               </p>
+              <div className="akrChipRow">
+                <BridgeChip id="tasksLoopLootFamily" className="combatAlertChip neutral tone-neutral" />
+                <BridgeChip id="tasksLoopLootFlow" className="combatAlertChip neutral tone-neutral" />
+              </div>
               <p id="tasksLoopLootFocus" className="akrBridgeHint">
                 ENTRY WAIT | FOCUS WAIT | FLOW WAIT
               </p>
@@ -925,6 +933,10 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
                 <p className="akrBridgeHint" id="tokenLoopWallet">
                   -
                 </p>
+                <div className="akrChipRow">
+                  <BridgeChip id="tokenLoopWalletFamily" className="combatAlertChip neutral tone-neutral" />
+                  <BridgeChip id="tokenLoopWalletFlow" className="combatAlertChip neutral tone-neutral" />
+                </div>
                 <p className="akrBridgeHint" id="tokenLoopWalletFocus">
                   -
                 </p>
@@ -1224,6 +1236,10 @@ function AdminBridgeCards(props: { lang: Lang }) {
             <p id="adminRuntimeLoopDispatch" className="akrBridgeHint">
               -
             </p>
+            <div className="akrChipRow">
+              <BridgeChip id="adminRuntimeLoopDispatchFamily" className="combatAlertChip neutral tone-neutral" />
+              <BridgeChip id="adminRuntimeLoopDispatchFlow" className="combatAlertChip neutral tone-neutral" />
+            </div>
             <p id="adminRuntimeLoopDispatchFocus" className="akrBridgeHint">
               -
             </p>

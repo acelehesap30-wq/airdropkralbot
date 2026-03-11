@@ -32,6 +32,8 @@ type PulseChip = {
 type LoopFamilyPanel = {
   text: string;
   tone?: string;
+  familyText?: string;
+  flowText?: string;
   focusText: string;
   stageText: string;
   stateText: string;
@@ -329,6 +331,8 @@ function setNodeText(id: string, value: unknown, fallback: string): void {
 function renderLoopFamily(prefix: string, payload: LoopFamilyPanel): void {
   setPanelTone(`${prefix}Panel`, payload.tone);
   setNodeText(prefix, payload.text, "WAIT");
+  setNodeText(`${prefix}Family`, payload.familyText, "FLOW --");
+  setNodeText(`${prefix}Flow`, payload.flowText, "ENTRY --");
   setNodeText(`${prefix}Focus`, payload.focusText, "FOCUS WAIT");
   setNodeText(`${prefix}Stage`, payload.stageText, "STAGE --");
   setNodeText(`${prefix}State`, payload.stateText, "STATE --");

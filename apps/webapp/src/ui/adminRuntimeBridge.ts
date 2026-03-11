@@ -34,6 +34,8 @@ type RuntimeBridgePayload = {
   loopQueueDetailText?: string;
   loopRuntimeDetailText?: string;
   loopDispatchDetailText?: string;
+  loopDispatchFamilyText?: string;
+  loopDispatchFlowText?: string;
   loopDispatchAttentionText?: string;
   loopDispatchCadenceText?: string;
 };
@@ -113,6 +115,8 @@ function render(payload: RuntimeBridgePayload): boolean {
   const loopQueueDetail = byId<HTMLElement>("adminRuntimeLoopQueueDetail");
   const loopRuntimeDetail = byId<HTMLElement>("adminRuntimeLoopRuntimeDetail");
   const loopDispatchDetail = byId<HTMLElement>("adminRuntimeLoopDispatchDetail");
+  const loopDispatchFamily = byId<HTMLElement>("adminRuntimeLoopDispatchFamily");
+  const loopDispatchFlow = byId<HTMLElement>("adminRuntimeLoopDispatchFlow");
   const loopDispatchAttention = byId<HTMLElement>("adminRuntimeLoopDispatchAttention");
   const loopDispatchCadence = byId<HTMLElement>("adminRuntimeLoopDispatchCadence");
   if (!line || !eventsLine || !loopLine || !loopHint || !loopFocus || !loopOpsLine || !loopOpsHint || !loopSequence || !loopState || !loopDetail || !loopSignal) {
@@ -195,6 +199,12 @@ function render(payload: RuntimeBridgePayload): boolean {
   if (loopDispatchDetail) {
     loopDispatchDetail.textContent = String(payload.loopDispatchDetailText || "Dispatch gate detay bekleniyor.");
   }
+  if (loopDispatchFamily) {
+    loopDispatchFamily.textContent = String(payload.loopDispatchFamilyText || "FLOW --");
+  }
+  if (loopDispatchFlow) {
+    loopDispatchFlow.textContent = String(payload.loopDispatchFlowText || "ENTRY --");
+  }
   if (loopDispatchAttention) {
     loopDispatchAttention.textContent = String(payload.loopDispatchAttentionText || "ATTN --");
   }
@@ -224,6 +234,8 @@ function render(payload: RuntimeBridgePayload): boolean {
   pulseOnce(loopQueueDetail);
   pulseOnce(loopRuntimeDetail);
   pulseOnce(loopDispatchDetail);
+  pulseOnce(loopDispatchFamily);
+  pulseOnce(loopDispatchFlow);
   pulseOnce(loopDispatchAttention);
   pulseOnce(loopDispatchCadence);
   return true;
