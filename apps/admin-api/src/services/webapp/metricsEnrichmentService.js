@@ -322,6 +322,50 @@ function buildSceneLoopDistrictAttentionBreakdown(rows) {
     .sort((left, right) => right.item_count - left.item_count || String(left.bucket_key).localeCompare(String(right.bucket_key)));
 }
 
+function buildSceneLoopDistrictLatestBandBreakdown(rows) {
+  const counters = new Map();
+  (Array.isArray(rows) ? rows : []).forEach((row) => {
+    const key = String(row?.latest_health_band || row?.health_band || "no_data");
+    counters.set(key, (counters.get(key) || 0) + 1);
+  });
+  return Array.from(counters.entries())
+    .map(([bucket_key, item_count]) => ({
+      bucket_key,
+      item_count: Math.max(0, Math.floor(toNum(item_count, 0)))
+    }))
+    .sort((left, right) => right.item_count - left.item_count || String(left.bucket_key).localeCompare(String(right.bucket_key)));
+}
+
+function buildSceneLoopDistrictTrendBreakdown(rows) {
+  const counters = new Map();
+  (Array.isArray(rows) ? rows : []).forEach((row) => {
+    const key = String(row?.trend_direction || "no_data");
+    counters.set(key, (counters.get(key) || 0) + 1);
+  });
+  return Array.from(counters.entries())
+    .map(([bucket_key, item_count]) => ({
+      bucket_key,
+      item_count: Math.max(0, Math.floor(toNum(item_count, 0)))
+    }))
+    .sort((left, right) => right.item_count - left.item_count || String(left.bucket_key).localeCompare(String(right.bucket_key)));
+}
+
+function buildSceneLoopDistrictHealthTrendBreakdown(rows) {
+  const counters = new Map();
+  (Array.isArray(rows) ? rows : []).forEach((row) => {
+    const latestBand = String(row?.latest_health_band || row?.health_band || "no_data");
+    const trend = String(row?.trend_direction || "no_data");
+    const key = `${latestBand}:${trend}`;
+    counters.set(key, (counters.get(key) || 0) + 1);
+  });
+  return Array.from(counters.entries())
+    .map(([bucket_key, item_count]) => ({
+      bucket_key,
+      item_count: Math.max(0, Math.floor(toNum(item_count, 0)))
+    }))
+    .sort((left, right) => right.item_count - left.item_count || String(left.bucket_key).localeCompare(String(right.bucket_key)));
+}
+
 function resolveSceneTrendDirection(latestReadyRate, earliestReadyRate, sampleCount) {
   if (Math.max(0, Math.floor(toNum(sampleCount, 0))) < 2) {
     return "no_data";
@@ -496,6 +540,15 @@ function enrichWebappRevenueMetrics(rawMetrics = {}) {
         })[0]
       : null;
   metrics.scene_loop_district_matrix_7d = buildSceneLoopDistrictMatrix(metrics.scene_loop_district_daily_breakdown_7d);
+  metrics.scene_loop_district_latest_band_breakdown_7d = buildSceneLoopDistrictLatestBandBreakdown(
+    metrics.scene_loop_district_matrix_7d
+  );
+  metrics.scene_loop_district_trend_breakdown_7d = buildSceneLoopDistrictTrendBreakdown(
+    metrics.scene_loop_district_matrix_7d
+  );
+  metrics.scene_loop_district_health_trend_breakdown_7d = buildSceneLoopDistrictHealthTrendBreakdown(
+    metrics.scene_loop_district_matrix_7d
+  );
   metrics.scene_loop_district_attention_breakdown_7d = buildSceneLoopDistrictAttentionBreakdown(
     metrics.scene_loop_district_matrix_7d
   );
@@ -591,6 +644,9 @@ module.exports = {
   resolveSceneLoopHealthBand,
   resolveSceneLoopDistrictHealthBand,
   resolveSceneLoopDistrictAttentionBand,
+  buildSceneLoopDistrictLatestBandBreakdown,
+  buildSceneLoopDistrictTrendBreakdown,
+  buildSceneLoopDistrictHealthTrendBreakdown,
   buildSceneLoopDistrictAttentionBreakdown,
   resolveSceneLoopTrendDirection,
   buildSceneBandBreakdown,

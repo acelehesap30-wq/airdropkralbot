@@ -371,6 +371,9 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
   const sceneLoopPeakDay7d = asRecord(props.metricsData?.scene_loop_peak_day_7d);
   const sceneLoopDailyBreakdown = asRows(props.metricsData?.scene_loop_daily_breakdown_7d);
   const sceneLoopDistrictMatrix = asRows(props.metricsData?.scene_loop_district_matrix_7d);
+  const sceneLoopDistrictLatestBandBreakdown = asRows(props.metricsData?.scene_loop_district_latest_band_breakdown_7d);
+  const sceneLoopDistrictTrendBreakdown = asRows(props.metricsData?.scene_loop_district_trend_breakdown_7d);
+  const sceneLoopDistrictHealthTrendBreakdown = asRows(props.metricsData?.scene_loop_district_health_trend_breakdown_7d);
   const sceneLoopDistrictAttentionBreakdown = asRows(props.metricsData?.scene_loop_district_attention_breakdown_7d);
   const sceneLoopDistrictBreakdown = asRows(props.metricsData?.scene_loop_district_breakdown_24h);
   const sceneLoopStatusBreakdown = asRows(props.metricsData?.scene_loop_status_breakdown_24h);
@@ -589,6 +592,18 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
         <SceneLoopDistrictMatrixList
           title={t(props.lang, "admin_runtime_scene_loop_district_matrix_title")}
           rows={sceneLoopDistrictMatrix}
+        />
+        <BreakdownList
+          title={t(props.lang, "admin_runtime_scene_loop_district_latest_band_title")}
+          rows={sceneLoopDistrictLatestBandBreakdown}
+        />
+        <BreakdownList
+          title={t(props.lang, "admin_runtime_scene_loop_district_trend_title")}
+          rows={sceneLoopDistrictTrendBreakdown}
+        />
+        <BreakdownList
+          title={t(props.lang, "admin_runtime_scene_loop_district_health_trend_title")}
+          rows={sceneLoopDistrictHealthTrendBreakdown}
         />
         <BreakdownList
           title={t(props.lang, "admin_runtime_scene_loop_attention_title")}
