@@ -1,4 +1,5 @@
 import { resolveLoopRailTone } from "../core/runtime/loopRailTone.js";
+import { renderLoopBridgeCards, type LoopBridgeCard } from "./loopBridgeCards.js";
 
 type RuntimeBridgePayload = {
   lineText: string;
@@ -66,6 +67,7 @@ type RuntimeBridgePayload = {
   loopDispatchResponseText?: string;
   loopDispatchAttentionText?: string;
   loopDispatchCadenceText?: string;
+  loopDispatchCards?: LoopBridgeCard[];
 };
 
 type AdminRuntimeBridge = {
@@ -138,6 +140,7 @@ function render(payload: RuntimeBridgePayload): boolean {
   const loopRuntimeStage = byId<HTMLElement>("adminRuntimeLoopRuntimeStage");
   const loopDispatch = byId<HTMLElement>("adminRuntimeLoopDispatch");
   const loopDispatchPanel = byId<HTMLElement>("adminRuntimeLoopDispatchPanel");
+  const loopDispatchCards = byId<HTMLElement>("adminRuntimeLoopDispatchCards");
   const loopDispatchFocus = byId<HTMLElement>("adminRuntimeLoopDispatchFocus");
   const loopDispatchStage = byId<HTMLElement>("adminRuntimeLoopDispatchStage");
   const loopQueueState = byId<HTMLElement>("adminRuntimeLoopQueueState");
@@ -372,6 +375,7 @@ function render(payload: RuntimeBridgePayload): boolean {
   if (loopDispatchCadence) {
     loopDispatchCadence.textContent = String(payload.loopDispatchCadenceText || "CADENCE --");
   }
+  renderLoopBridgeCards(loopDispatchCards, payload.loopDispatchCards);
   setChipTone(loopDispatchFamily, resolveLoopRailTone(payload.loopDispatchTone, "family"));
   setChipTone(loopDispatchFlow, resolveLoopRailTone(payload.loopDispatchTone, "flow"));
   setChipTone(loopDispatchSummary, resolveLoopRailTone(payload.loopDispatchTone, "summary"));

@@ -338,6 +338,9 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
   assert.match(payloads.combatHud.loopFocusText, /ARENA PRIME|DUEL|ENTRY|PERSONALITY ASSAULT/i);
   assert.match(payloads.combatHud.loopSequenceText, /DUEL PHASE ENGAGE/i);
   assert.match(payloads.combatHud.loopStateText, /ACTIVE|ENGAGE|DUEL/i);
+  assert.equal(payloads.combatHud.loopDuelCards?.length, 3);
+  assert.equal(payloads.combatHud.loopDuelCards?.[0]?.title, "PHASE");
+  assert.match(payloads.combatHud.loopDuelCards?.[0]?.value || "", /ENGAGE|ACTIVE/i);
   assert.match(payloads.combatHud.loopDetailText, /QUEUE DEPTH 3|RISK BAND WATCH/i);
   assert.match(payloads.combatHud.loopSignalText, /DIAG BAND HOT/i);
   assert.match(payloads.combatHud.loopDuelText, /DUEL ENGAGE \| ACTIVE/i);
@@ -570,6 +573,9 @@ test("buildPlayerBridgePayloads surfaces active vault loop micro panels from sel
   assert.match(payloads.tokenOverview.loopPayoutDetailText, /PAYOUT OPEN \| ROUTE 2\/3 \| PAYOUT ROUTE/i);
   assert.match(payloads.tokenOverview.loopRouteDetailText, /ROUTE 2\/3 \| WALLET APPROVED \| STABLE ROUTE/i);
   assert.match(payloads.tokenOverview.loopPremiumDetailText, /PASS ACTIVE \| STAGE SUBMIT \| PAYOUT TERMINAL/i);
+  assert.equal(payloads.tokenOverview.loopWalletCards?.length, 3);
+  assert.equal(payloads.tokenOverview.loopWalletCards?.[0]?.title, "WALLET");
+  assert.match(payloads.tokenOverview.loopWalletCards?.[0]?.value || "", /APPROVED|LIVE/i);
 });
 
 test("buildPlayerBridgePayloads surfaces active tasks loop micro panels from selected mission flow", async () => {
@@ -710,6 +716,9 @@ test("buildPlayerBridgePayloads surfaces active tasks loop micro panels from sel
     payloads.operations.loop.streakCadenceText,
     /PERSONA (WORLD )?PERSONALITY CAPTION CADENCE \| FLOW CLAIM FLOW \| STREAK 7d/i
   );
+  assert.equal(payloads.operations.loop.lootCards?.length, 3);
+  assert.equal(payloads.operations.loop.lootCards?.[0]?.title, "CLAIM");
+  assert.match(payloads.operations.loop.lootCards?.[0]?.value || "", /2 READY/i);
 });
 
 test("buildAdminBridgePayloads produces runtime, asset and audit cards from admin state", async () => {
@@ -827,6 +836,9 @@ test("buildAdminBridgePayloads produces runtime, asset and audit cards from admi
   assert.match(payloads.runtime.loopRuntimeResponseText, /HEALTH WATCH \| FLOW WATCH \| SEQ DISPATCH SEQUENCE/i);
   assert.match(payloads.runtime.loopRuntimeAttentionText, /HEALTH WATCH \| ALERT 3 \| FLOW DISPATCH FLOW/i);
   assert.match(payloads.runtime.loopRuntimeCadenceText, /SEQ DISPATCH SEQUENCE \| FLOW DISPATCH FLOW \| HEALTH WATCH/i);
+  assert.equal(payloads.runtime.loopDispatchCards?.length, 3);
+  assert.equal(payloads.runtime.loopDispatchCards?.[0]?.title, "SENT");
+  assert.match(payloads.runtime.loopDispatchCards?.[0]?.value || "", /12|ALERT/i);
   assert.equal(payloads.assetStatus.rows.length, 2);
   assert.equal(payloads.assetRuntime.signalLineText, "Ready 75% | Integrity 75% | Missing 1");
   assert.equal(payloads.auditRuntime.phaseChipText, "PHASE PARTIAL");

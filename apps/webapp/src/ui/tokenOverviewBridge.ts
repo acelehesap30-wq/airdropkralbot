@@ -1,4 +1,5 @@
 import { resolveLoopRailTone } from "../core/runtime/loopRailTone.js";
+import { renderLoopBridgeCards, type LoopBridgeCard } from "./loopBridgeCards.js";
 
 type ChainOption = {
   chain: string;
@@ -75,6 +76,7 @@ export type TokenOverviewBridgePayload = {
   loopWalletResponseText?: string;
   loopWalletAttentionText?: string;
   loopWalletCadenceText?: string;
+  loopWalletCards?: LoopBridgeCard[];
   loopPayoutFamilyText?: string;
   loopPayoutFlowText?: string;
   loopPayoutSummaryText?: string;
@@ -166,6 +168,7 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   const loopSignal = byId<HTMLElement>("tokenLoopSignal");
   const loopWallet = byId<HTMLElement>("tokenLoopWallet");
   const loopWalletPanel = byId<HTMLElement>("tokenLoopWalletPanel");
+  const loopWalletCards = byId<HTMLElement>("tokenLoopWalletCards");
   const loopWalletFocus = byId<HTMLElement>("tokenLoopWalletFocus");
   const loopWalletStage = byId<HTMLElement>("tokenLoopWalletStage");
   const loopPayout = byId<HTMLElement>("tokenLoopPayout");
@@ -368,6 +371,7 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   if (loopWalletCadence) {
     loopWalletCadence.textContent = safeText(payload.loopWalletCadenceText, "CADENCE --");
   }
+  renderLoopBridgeCards(loopWalletCards, payload.loopWalletCards);
   setChipTone(loopWalletFamily, resolveLoopRailTone(payload.loopWalletTone, "family"));
   setChipTone(loopWalletFlow, resolveLoopRailTone(payload.loopWalletTone, "flow"));
   setChipTone(loopWalletSummary, resolveLoopRailTone(payload.loopWalletTone, "summary"));

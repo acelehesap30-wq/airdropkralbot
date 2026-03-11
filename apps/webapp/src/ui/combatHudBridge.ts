@@ -1,4 +1,5 @@
 import { resolveLoopRailTone } from "../core/runtime/loopRailTone.js";
+import { renderLoopBridgeCards, type LoopBridgeCard } from "./loopBridgeCards.js";
 
 type CombatTrailRow = {
   action: string;
@@ -130,6 +131,7 @@ type CombatHudPayload = {
   loopDuelResponseText?: string;
   loopDuelAttentionText?: string;
   loopDuelCadenceText?: string;
+  loopDuelCards?: LoopBridgeCard[];
   loopLadderFamilyText?: string;
   loopLadderFlowText?: string;
   loopLadderSummaryText?: string;
@@ -335,6 +337,7 @@ function render(payload: CombatHudPayload): boolean {
   const loopSignal = byId("combatLoopSignal");
   const loopDuel = byId("combatLoopDuel");
   const loopDuelPanel = byId("combatLoopDuelPanel");
+  const loopDuelCards = byId("combatLoopDuelCards");
   const loopDuelFocus = byId("combatLoopDuelFocus");
   const loopDuelStage = byId("combatLoopDuelStage");
   const loopLadder = byId("combatLoopLadder");
@@ -629,6 +632,7 @@ function render(payload: CombatHudPayload): boolean {
   if (loopDuelCadence) {
     loopDuelCadence.textContent = String(payload.loopDuelCadenceText || "CADENCE --");
   }
+  renderLoopBridgeCards(loopDuelCards, payload.loopDuelCards);
   setChipTone(loopDuelFamily, resolveLoopRailTone(payload.loopDuelTone, "family"));
   setChipTone(loopDuelFlow, resolveLoopRailTone(payload.loopDuelTone, "flow"));
   setChipTone(loopDuelSummary, resolveLoopRailTone(payload.loopDuelTone, "summary"));

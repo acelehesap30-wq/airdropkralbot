@@ -1,4 +1,5 @@
 import { resolveLoopRailTone } from "../core/runtime/loopRailTone.js";
+import { renderLoopBridgeCards, type LoopBridgeCard } from "./loopBridgeCards.js";
 
 type OfferItem = {
   id: number | string;
@@ -34,6 +35,7 @@ type PulseChip = {
 type LoopFamilyPanel = {
   text: string;
   tone?: string;
+  cards?: LoopBridgeCard[];
   familyText?: string;
   flowText?: string;
   summaryText?: string;
@@ -349,6 +351,7 @@ function setNodeText(id: string, value: unknown, fallback: string): void {
 function renderLoopFamily(prefix: string, payload: LoopFamilyPanel): void {
   setPanelTone(`${prefix}Panel`, payload.tone);
   setNodeText(prefix, payload.text, "WAIT");
+  renderLoopBridgeCards(byId<HTMLElement>(`${prefix}Cards`), payload.cards);
   setNodeText(`${prefix}Family`, payload.familyText, "FLOW --");
   setNodeText(`${prefix}Flow`, payload.flowText, "ENTRY --");
   setNodeText(`${prefix}Summary`, payload.summaryText, "SUMMARY --");
