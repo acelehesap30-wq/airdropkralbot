@@ -315,6 +315,8 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
   assert.equal(payloads.publicTelemetry.assetManifest.badgeText, "ASSET 3/4");
   assert.equal(payloads.publicTelemetry.pvpLeaderboard.badgeText, "TOP 2");
   assert.equal(payloads.pvpDirector.cinematic.phaseBadgeText, "ACTIVE");
+  assert.match(payloads.pvpDirector.loopLineText, /ARENA LOOP/);
+  assert.match(payloads.pvpDirector.loopHintText, /DUEL CONSOLE/);
   assert.equal(payloads.pvpRejectIntel.badge.text, "REJ TIMEOUT");
   assert.equal(payloads.pvpEvents.timelineRows.length, 6);
   assert.equal(payloads.pvpDuel.tick.live, true);
@@ -333,6 +335,8 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
   assert.equal(payloads.tokenOverview.symbol, "NXT");
   assert.match(payloads.tokenOverview.summaryText, /TON LIVE/);
   assert.match(payloads.tokenOverview.unitsText, /PASS 1/);
+  assert.match(payloads.tokenOverview.loopLineText, /VAULT STANDBY|VAULT LOOP/);
+  assert.match(payloads.tokenOverview.loopHintText, /ARENA PRIME|DUEL CONSOLE|Scene loop focus/i);
   assert.equal(payloads.tokenOverview.statusChips[1].text, "PAY OPEN");
   assert.equal(payloads.tokenTreasury.route.badgeText, "ROUTE 2/3");
   assert.equal(payloads.tokenTreasury.actionDirector.badgeText, "SUBMIT");
@@ -378,6 +382,8 @@ test("buildAdminBridgePayloads produces runtime, asset and audit cards from admi
   });
 
   assert.match(payloads.runtime.lineText, /Queue 2/);
+  assert.match(payloads.runtime.loopLineText, /OPS STANDBY|OPS LOOP/);
+  assert.match(payloads.runtime.loopHintText, /Scene loop focus|ARENA PRIME/i);
   assert.equal(payloads.assetStatus.rows.length, 2);
   assert.equal(payloads.assetRuntime.signalLineText, "Ready 75% | Integrity 75% | Missing 1");
   assert.equal(payloads.auditRuntime.phaseChipText, "PHASE PARTIAL");

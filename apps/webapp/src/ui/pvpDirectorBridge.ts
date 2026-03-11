@@ -33,6 +33,8 @@ type MomentumPayload = {
 type PvpDirectorPayload = {
   cinematic?: CinematicPayload;
   momentum?: MomentumPayload;
+  loopLineText?: string;
+  loopHintText?: string;
 };
 
 type PvpDirectorBridge = {
@@ -224,6 +226,13 @@ export function installPvpDirectorBridge(): void {
       }
       if (payload.momentum) {
         handled = renderMomentum(payload.momentum) || handled;
+      }
+      const loopLine = byId<HTMLElement>("pvpLoopLine");
+      const loopHint = byId<HTMLElement>("pvpLoopHint");
+      if (loopLine && loopHint) {
+        loopLine.textContent = String(payload.loopLineText || "ARENA LOOP | WAIT");
+        loopHint.textContent = String(payload.loopHintText || "Scene loop focus bekleniyor.");
+        handled = true;
       }
       return handled;
     }

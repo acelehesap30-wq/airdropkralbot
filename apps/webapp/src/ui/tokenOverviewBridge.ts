@@ -22,6 +22,8 @@ export type TokenOverviewBridgePayload = {
   selectedChain: string;
   buyDisabled: boolean;
   statusChips?: StatusChip[];
+  loopLineText?: string;
+  loopHintText?: string;
 };
 
 type TokenOverviewBridge = {
@@ -56,10 +58,12 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   const mintable = byId<HTMLElement>("tokenMintable");
   const units = byId<HTMLElement>("tokenUnits");
   const hint = byId<HTMLElement>("tokenHint");
+  const loopLine = byId<HTMLElement>("tokenLoopLine");
+  const loopHint = byId<HTMLElement>("tokenLoopHint");
   const chainSelect = byId<HTMLSelectElement>("tokenChainSelect");
   const buyBtn = byId<HTMLButtonElement>("tokenBuyBtn");
 
-  if (!badge || !balance || !summary || !rate || !mintable || !units || !hint || !chainSelect || !buyBtn) {
+  if (!badge || !balance || !summary || !rate || !mintable || !units || !hint || !loopLine || !loopHint || !chainSelect || !buyBtn) {
     return false;
   }
 
@@ -70,6 +74,8 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   mintable.textContent = safeText(payload.mintableText, "0.0000 NXT");
   units.textContent = safeText(payload.unitsText, "Unify Units: 0");
   hint.textContent = safeText(payload.hintText, "Talep olustur, odeme yap, tx hash gonder, admin onayi bekle.");
+  loopLine.textContent = safeText(payload.loopLineText, "VAULT LOOP | WAIT");
+  loopHint.textContent = safeText(payload.loopHintText, "Scene loop focus bekleniyor.");
 
   const options = Array.isArray(payload.chainOptions) ? payload.chainOptions : [];
   chainSelect.innerHTML = options

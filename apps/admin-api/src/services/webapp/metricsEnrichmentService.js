@@ -102,6 +102,30 @@ function normalizeSceneLoopDailyRows(rows, limit = 7) {
     .slice(0, Math.max(1, Math.floor(toNum(limit, 7))));
 }
 
+function normalizeSceneLoopDistrictDailyRows(rows, limit = 42) {
+  const source = Array.isArray(rows) ? rows : [];
+  return source
+    .map((row) => ({
+      day: String(row?.day || ""),
+      district_key: String(row?.district_key || "unknown"),
+      total_count: Math.max(0, Math.floor(toNum(row?.total_count, 0))),
+      live_count: Math.max(0, Math.floor(toNum(row?.live_count, 0))),
+      blocked_count: Math.max(0, Math.floor(toNum(row?.blocked_count, 0)))
+    }))
+    .filter((row) => row.day && row.district_key)
+    .map((row) => {
+      const liveShare = toRate(row.live_count, row.total_count);
+      const blockedShare = toRate(row.blocked_count, row.total_count);
+      return {
+        ...row,
+        live_share: liveShare,
+        blocked_share: blockedShare,
+        health_band: resolveSceneLoopHealthBand(row.total_count, 1, liveShare, blockedShare)
+      };
+    })
+    .slice(0, Math.max(1, Math.floor(toNum(limit, 42))));
+}
+
 function resolveSceneLoopHealthBand(totalCount, districtCount, liveShare, blockedShare) {
   const total = Math.max(0, Math.floor(toNum(totalCount, 0)));
   const districts = Math.max(0, Math.floor(toNum(districtCount, 0)));
@@ -185,6 +209,59 @@ function buildSceneLoopAlarmReasons(rows) {
     reasons.push("latest_watch_band");
   }
   return reasons.slice(0, 4);
+}
+
+function buildSceneLoopDistrictMatrix(rows, limit = 8) {
+  const source = Array.isArray(rows) ? rows : [];
+  const grouped = new Map();
+  source.forEach((row) => {
+    const districtKey = String(row?.district_key || "unknown");
+    if (!grouped.has(districtKey)) {
+      grouped.set(districtKey, []);
+    }
+    grouped.get(districtKey).push(row);
+  });
+  return Array.from(grouped.entries())
+    .map(([district_key, districtRows]) => {
+      const sortedRows = [...districtRows].sort(
+        (left, right) => String(right.day || "").localeCompare(String(left.day || ""))
+      );
+      const totalCount = sortedRows.reduce((sum, row) => sum + Math.max(0, Math.floor(toNum(row.total_count, 0))), 0);
+      const liveCount = sortedRows.reduce((sum, row) => sum + Math.max(0, Math.floor(toNum(row.live_count, 0))), 0);
+      const blockedCount = sortedRows.reduce((sum, row) => sum + Math.max(0, Math.floor(toNum(row.blocked_count, 0))), 0);
+      const liveShare = toRate(liveCount, totalCount);
+      const blockedShare = toRate(blockedCount, totalCount);
+      const latestRow = sortedRows[0] || null;
+      const earliestRow = sortedRows[sortedRows.length - 1] || null;
+      const dayCount = sortedRows.length;
+      return {
+        district_key,
+        total_count: totalCount,
+        live_count: liveCount,
+        blocked_count: blockedCount,
+        live_share: liveShare,
+        blocked_share: blockedShare,
+        day_count: dayCount,
+        latest_day: latestRow?.day || null,
+        latest_total_count: Math.max(0, Math.floor(toNum(latestRow?.total_count, 0))),
+        health_band: resolveSceneLoopHealthBand(totalCount, dayCount, liveShare, blockedShare),
+        trend_direction: resolveSceneLoopTrendDirection(
+          latestRow?.total_count,
+          earliestRow?.total_count,
+          sortedRows.length
+        ),
+        trend_delta: Math.max(
+          -9999,
+          Math.min(9999, Math.floor(toNum(latestRow?.total_count, 0) - toNum(earliestRow?.total_count, 0)))
+        )
+      };
+    })
+    .sort((left, right) => {
+      const totalGap = toNum(right.total_count, 0) - toNum(left.total_count, 0);
+      if (Math.abs(totalGap) > 0.0001) return totalGap;
+      return String(left.district_key || "").localeCompare(String(right.district_key || ""));
+    })
+    .slice(0, Math.max(1, Math.floor(toNum(limit, 8))));
 }
 
 function resolveSceneTrendDirection(latestReadyRate, earliestReadyRate, sampleCount) {
@@ -322,6 +399,9 @@ function enrichWebappRevenueMetrics(rawMetrics = {}) {
   metrics.scene_loop_blocked_24h = Math.max(0, Math.floor(toNum(metrics.scene_loop_blocked_24h, 0)));
   metrics.scene_loop_district_coverage_24h = Math.max(0, Math.floor(toNum(metrics.scene_loop_district_coverage_24h, 0)));
   metrics.scene_loop_daily_breakdown_7d = normalizeSceneLoopDailyRows(metrics.scene_loop_daily_breakdown_7d);
+  metrics.scene_loop_district_daily_breakdown_7d = normalizeSceneLoopDistrictDailyRows(
+    metrics.scene_loop_district_daily_breakdown_7d
+  );
   metrics.scene_loop_events_7d = metrics.scene_loop_daily_breakdown_7d.reduce(
     (sum, row) => sum + Math.max(0, Math.floor(toNum(row.total_count, 0))),
     0
@@ -357,6 +437,7 @@ function enrichWebappRevenueMetrics(rawMetrics = {}) {
           return String(right.day || "").localeCompare(String(left.day || ""));
         })[0]
       : null;
+  metrics.scene_loop_district_matrix_7d = buildSceneLoopDistrictMatrix(metrics.scene_loop_district_daily_breakdown_7d);
   metrics.scene_loop_district_breakdown_24h = normalizeBreakdownRows(metrics.scene_loop_district_breakdown_24h);
   metrics.scene_loop_status_breakdown_24h = normalizeBreakdownRows(metrics.scene_loop_status_breakdown_24h);
   metrics.scene_loop_sequence_breakdown_24h = normalizeBreakdownRows(metrics.scene_loop_sequence_breakdown_24h);
@@ -445,10 +526,12 @@ module.exports = {
   normalizeBreakdownRows,
   normalizeSceneDailyRows,
   normalizeSceneLoopDailyRows,
+  normalizeSceneLoopDistrictDailyRows,
   resolveSceneLoopHealthBand,
   resolveSceneLoopTrendDirection,
   buildSceneBandBreakdown,
   buildSceneLoopBandBreakdown,
+  buildSceneLoopDistrictMatrix,
   buildSceneAlarmReasons,
   buildSceneLoopAlarmReasons,
   resolveSceneLoopAlarmState,

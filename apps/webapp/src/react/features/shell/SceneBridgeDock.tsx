@@ -177,6 +177,12 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
                 <p id="pvpCineLine" className="akrBridgeLine">
                   Cinematic Director
                 </p>
+                <p id="pvpLoopLine" className="akrBridgeHint">
+                  Arena loop bekleniyor.
+                </p>
+                <p id="pvpLoopHint" className="akrBridgeHint">
+                  Scene loop focus bekleniyor.
+                </p>
                 <MeterTrack id="pvpCineMeter" />
                 <div className="akrBridgeStrip akrCameraDirectorBox">
                   <p className="akrBridgeHint">Cinematic Camera</p>
@@ -665,6 +671,12 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
               <p className="akrBridgeHint" id="tokenHint">
                 -
               </p>
+              <p className="akrBridgeHint" id="tokenLoopLine">
+                -
+              </p>
+              <p className="akrBridgeHint" id="tokenLoopHint">
+                -
+              </p>
               <div className="akrChipRow">
                 <BridgeChip id="tokenWalletChip" />
                 <BridgeChip id="tokenPayoutChip" />
@@ -791,6 +803,12 @@ function AdminBridgeCards(props: { lang: Lang }) {
             -
           </p>
           <p id="adminRuntimeEvents" className="akrBridgeHint">
+            -
+          </p>
+          <p id="adminRuntimeLoopLine" className="akrBridgeHint">
+            -
+          </p>
+          <p id="adminRuntimeLoopHint" className="akrBridgeHint">
             -
           </p>
         </div>

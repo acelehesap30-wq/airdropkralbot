@@ -1,6 +1,8 @@
 type RuntimeBridgePayload = {
   lineText: string;
   eventsLineText: string;
+  loopLineText?: string;
+  loopHintText?: string;
 };
 
 type AdminRuntimeBridge = {
@@ -38,13 +40,19 @@ function pulseOnce(node: HTMLElement | null, className = "enter"): void {
 function render(payload: RuntimeBridgePayload): boolean {
   const line = byId<HTMLElement>("adminRuntimeLine");
   const eventsLine = byId<HTMLElement>("adminRuntimeEvents");
-  if (!line || !eventsLine) {
+  const loopLine = byId<HTMLElement>("adminRuntimeLoopLine");
+  const loopHint = byId<HTMLElement>("adminRuntimeLoopHint");
+  if (!line || !eventsLine || !loopLine || !loopHint) {
     return false;
   }
   line.textContent = String(payload.lineText || "Bot Runtime: -");
   eventsLine.textContent = String(payload.eventsLineText || "Runtime events: kayit yok");
+  loopLine.textContent = String(payload.loopLineText || "OPS LOOP | WAIT");
+  loopHint.textContent = String(payload.loopHintText || "Scene loop focus bekleniyor.");
   pulseOnce(line);
   pulseOnce(eventsLine);
+  pulseOnce(loopLine);
+  pulseOnce(loopHint);
   return true;
 }
 

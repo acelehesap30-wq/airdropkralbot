@@ -146,6 +146,32 @@ function SceneLoopDailyTrendList(props: { title: string; rows: Array<Record<stri
   );
 }
 
+function SceneLoopDistrictMatrixList(props: { title: string; rows: Array<Record<string, unknown>> }) {
+  if (!props.rows.length) {
+    return (
+      <div>
+        <strong>{props.title}</strong>
+        <p className="akrMutedLine">-</p>
+      </div>
+    );
+  }
+  return (
+    <div>
+      <strong>{props.title}</strong>
+      <div className="akrStack">
+        {props.rows.slice(0, 8).map((row, index) => (
+          <p className="akrMutedLine" key={`${props.title}_${String(row.district_key || index)}`}>
+            {String(row.district_key || "-")} | {String(row.health_band || "no_data")} | {String(row.trend_direction || "no_data")} (
+            {Math.floor(Number(row.trend_delta || 0))}) | loops {Math.floor(Number(row.total_count || 0))} | live{" "}
+            {Math.floor(Number(row.live_count || 0))} | blocked {Math.floor(Number(row.blocked_count || 0))} | days{" "}
+            {Math.floor(Number(row.day_count || 0))}
+          </p>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function SkipDailyTrendList(props: { title: string; rows: Array<Record<string, unknown>> }) {
   if (!props.rows.length) {
     return (
@@ -343,6 +369,7 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
   const sceneLoopBandBreakdown7d = asRows(props.metricsData?.scene_loop_band_breakdown_7d);
   const sceneLoopPeakDay7d = asRecord(props.metricsData?.scene_loop_peak_day_7d);
   const sceneLoopDailyBreakdown = asRows(props.metricsData?.scene_loop_daily_breakdown_7d);
+  const sceneLoopDistrictMatrix = asRows(props.metricsData?.scene_loop_district_matrix_7d);
   const sceneLoopDistrictBreakdown = asRows(props.metricsData?.scene_loop_district_breakdown_24h);
   const sceneLoopStatusBreakdown = asRows(props.metricsData?.scene_loop_status_breakdown_24h);
   const sceneLoopSequenceBreakdown = asRows(props.metricsData?.scene_loop_sequence_breakdown_24h);
@@ -557,6 +584,10 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
           </p>
         </div>
         <SceneLoopDailyTrendList title={t(props.lang, "admin_runtime_scene_loop_daily_title")} rows={sceneLoopDailyBreakdown} />
+        <SceneLoopDistrictMatrixList
+          title={t(props.lang, "admin_runtime_scene_loop_district_matrix_title")}
+          rows={sceneLoopDistrictMatrix}
+        />
         <BreakdownList title={t(props.lang, "admin_runtime_scene_loop_band_title")} rows={sceneLoopBandBreakdown7d} />
         <BreakdownList title={t(props.lang, "admin_runtime_scene_loop_district_title")} rows={sceneLoopDistrictBreakdown} />
         <BreakdownList title={t(props.lang, "admin_runtime_scene_loop_status_title")} rows={sceneLoopStatusBreakdown} />

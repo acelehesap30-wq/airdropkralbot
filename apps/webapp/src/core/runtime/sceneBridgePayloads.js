@@ -247,6 +247,52 @@ function buildSceneLoopDeckPayload(scene) {
     microflowKey: toText(selectedLoop.microflowKey, "")
   };
 }
+
+function buildDomainLoopPanelPayload(scene, domainKey) {
+  const loopDeck = buildSceneLoopDeckPayload(scene);
+  const domainConfig = {
+    pvp: {
+      districtKey: "arena_prime",
+      standbyLabel: "PVP STANDBY",
+      activeLabel: "ARENA LOOP"
+    },
+    vault: {
+      districtKey: "exchange_district",
+      standbyLabel: "VAULT STANDBY",
+      activeLabel: "VAULT LOOP"
+    },
+    admin: {
+      districtKey: "ops_citadel",
+      standbyLabel: "OPS STANDBY",
+      activeLabel: "OPS LOOP"
+    }
+  }[domainKey] || {
+    districtKey: "",
+    standbyLabel: "LOOP STANDBY",
+    activeLabel: "LOOP ACTIVE"
+  };
+  if (!loopDeck.districtKey) {
+    return {
+      lineText: `${domainConfig.standbyLabel} | WAIT`,
+      hintText: "Scene loop focus bekleniyor.",
+      active: false
+    };
+  }
+  const districtMatches = domainConfig.districtKey === loopDeck.districtKey;
+  const districtLabel = formatRuntimeKeyLabel(loopDeck.districtKey, "DISTRICT");
+  const entryLabel = formatRuntimeKeyLabel(loopDeck.entryKindKey, "ENTRY");
+  const sequenceLabel = formatRuntimeKeyLabel(loopDeck.sequenceKindKey, "LOOP");
+  const microflowLabel = formatRuntimeKeyLabel(loopDeck.microflowKey, "FLOW");
+  return {
+    lineText: districtMatches
+      ? `${domainConfig.activeLabel} | ${microflowLabel} | ${loopDeck.loopStatusLabel} | ${loopDeck.stageValue}`
+      : `${domainConfig.standbyLabel} | ${districtLabel} ${loopDeck.loopStatusLabel}`,
+    hintText: districtMatches
+      ? `${entryLabel} | ${sequenceLabel}`
+      : `Focus ${districtLabel} | ${entryLabel} | ${microflowLabel}`,
+    active: districtMatches
+  };
+}
 function buildSceneTelemetryPayload(mutators, input) {
   if (!mutators?.computeSceneAlarmMetrics || !mutators?.computeSceneIntegrityOverlayMetrics) return null;
   const alarmMetrics = mutators.computeSceneAlarmMetrics(input);
@@ -456,6 +502,7 @@ function buildPvpRuntimePayload(rawRuntime, rawLive, pvpView, scene, assetMetric
   const sessionSnapshot = asRecord(league.session_snapshot);
   const trendRows = asArray(league.trend);
   const latestReject = asRecord(asArray(pvpView.reject_mix)[0]);
+  const loopPanel = buildDomainLoopPanelPayload(scene, "pvp");
   const reducedMotion = Boolean(asRecord(scene).reducedMotion);
   const lowEndMode = Boolean(asRecord(scene).lowEndMode || asRecord(scene).capabilityProfile?.low_end_mode);
   const effectiveQuality = toText(asRecord(scene).effectiveQuality || "medium", "medium").toLowerCase();
@@ -765,7 +812,9 @@ function buildPvpRuntimePayload(rawRuntime, rawLive, pvpView, scene, assetMetric
         },
         pulseObjectives: latestReject.hit_count > 0 || toNum(dailyDuel.progress_pct) >= 100,
         reducedMotion
-      }
+      },
+      loopLineText: loopPanel.lineText,
+      loopHintText: loopPanel.hintText
     },
     events: {
       timelineRows,
@@ -1115,13 +1164,14 @@ function buildOperationsDeckPayload(data, taskResult, homeFeed, scene) {
     };
   }
 
-function buildTokenOverviewPayload(vaultRoot, vaultView) {
+function buildTokenOverviewPayload(vaultRoot, vaultView, scene) {
   const root = asRecord(vaultRoot);
   const overview = asRecord(root.overview);
   const routeStatus = asRecord(overview.route_status || root.route);
   const chains = asArray(routeStatus.chains);
   const summary = asRecord(vaultView.summary);
   const latest = asRecord(vaultView.latest);
+  const loopPanel = buildDomainLoopPanelPayload(scene, "vault");
   const selectedChain = toText(summary.token_chain || summary.wallet_chain || (chains[0] && chains[0].chain) || "TON", "TON");
   const quoteUsd = Number(toNum(latest.quote_usd)).toFixed(2);
   const routeSummary = `Routes ${Math.floor(toNum(summary.route_ok))}/${Math.floor(toNum(summary.route_total))}`;
@@ -1157,6 +1207,8 @@ function buildTokenOverviewPayload(vaultRoot, vaultView) {
       payCurrency: toText(asRecord(row).pay_currency || asRecord(row).currency || "", "")
     })),
     selectedChain,
+    loopLineText: loopPanel.lineText,
+    loopHintText: loopPanel.hintText,
     statusChips: [
       {
         id: "tokenWalletChip",
@@ -1444,7 +1496,7 @@ function buildTokenTreasuryPayload(mutators, vaultRoot, vaultView) {
     }
   };
 }
-function buildAdminRuntimePayload(adminRuntime, adminPanels) {
+function buildAdminRuntimePayload(adminRuntime, adminPanels, scene) {
   const summary = asRecord(adminRuntime?.summary);
   const queue = asArray(adminRuntime?.queue);
   const deploy = asRecord(adminPanels?.deploy_status);
@@ -1452,9 +1504,12 @@ function buildAdminRuntimePayload(adminRuntime, adminPanels) {
   const latest = asRecord(bot.latest);
   const featureFlags = asRecord(summary.feature_flags);
   const sourceMode = toText(asRecord(summary.runtime_flags).source_mode || deploy.bundle_mode || "runtime");
+  const loopPanel = buildDomainLoopPanelPayload(scene, "admin");
   return {
     lineText: `Queue ${queue.length} | Bundle ${toText(deploy.bundle_mode || deploy.webapp_bundle_mode || "unknown")} | Flags ${Object.keys(featureFlags).length}`,
-    eventsLineText: `Bot ${toText(latest.state_key || latest.status || "idle")} | Lock ${latest.lock_acquired === true ? "yes" : "no"} | Source ${sourceMode}`
+    eventsLineText: `Bot ${toText(latest.state_key || latest.status || "idle")} | Lock ${latest.lock_acquired === true ? "yes" : "no"} | Source ${sourceMode}`,
+    loopLineText: loopPanel.lineText,
+    loopHintText: loopPanel.hintText
   };
 }
 
@@ -1642,7 +1697,7 @@ function buildPlayerBridgePayloads(options = {}) {
     cameraDirector: pvpRuntimePayloads.camera,
     pvpRoundDirector: pvpRuntimePayloads.roundDirector,
     operations: buildOperationsDeckPayload(data, options.taskResult, homeFeed, scene),
-    tokenOverview: buildTokenOverviewPayload(vaultRoot, vaultView),
+    tokenOverview: buildTokenOverviewPayload(vaultRoot, vaultView, scene),
     tokenTreasury: buildTokenTreasuryPayload(mutators, vaultRoot, vaultView)
   };
 }
@@ -1651,7 +1706,7 @@ function buildAdminBridgePayloads(options = {}) {
   const mutators = asRecord(options.mutators);
   const adminPanels = asRecord(options.adminPanels);
   return {
-    runtime: buildAdminRuntimePayload(options.adminRuntime, adminPanels),
+    runtime: buildAdminRuntimePayload(options.adminRuntime, adminPanels, options.scene),
     assetStatus: buildAdminAssetStatusPayload(adminPanels),
     assetRuntime: buildAdminAssetRuntimePayload(mutators, adminPanels),
     auditRuntime: buildAdminAuditPayload(adminPanels)

@@ -138,6 +138,12 @@ test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
       { day: "2026-03-08", total_count: 11, district_count: 3, live_count: 7, blocked_count: 3 },
       { day: "2026-03-07", total_count: 7, district_count: 2, live_count: 3, blocked_count: 2 }
     ],
+    scene_loop_district_daily_breakdown_7d: [
+      { day: "2026-03-08", district_key: "arena_prime", total_count: 6, live_count: 4, blocked_count: 1 },
+      { day: "2026-03-07", district_key: "arena_prime", total_count: 3, live_count: 2, blocked_count: 1 },
+      { day: "2026-03-08", district_key: "exchange_district", total_count: 3, live_count: 2, blocked_count: 1 },
+      { day: "2026-03-07", district_key: "exchange_district", total_count: 2, live_count: 1, blocked_count: 0 }
+    ],
     scene_loop_district_breakdown_24h: [{ bucket_key: "arena_prime", item_count: 6 }],
     scene_loop_status_breakdown_24h: [{ bucket_key: "active", item_count: 8 }],
     scene_loop_sequence_breakdown_24h: [{ bucket_key: "world_modal_kind_duel_sequence", item_count: 4 }],
@@ -184,6 +190,10 @@ test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
   assert.equal(enriched.scene_loop_daily_breakdown_7d[0].district_count, 3);
   assert.equal(enriched.scene_loop_daily_breakdown_7d[0].live_count, 7);
   assert.equal(enriched.scene_loop_daily_breakdown_7d[0].blocked_count, 3);
+  assert.equal(enriched.scene_loop_district_matrix_7d[0].district_key, "arena_prime");
+  assert.equal(enriched.scene_loop_district_matrix_7d[0].total_count, 9);
+  assert.equal(enriched.scene_loop_district_matrix_7d[0].trend_direction, "improving");
+  assert.equal(enriched.scene_loop_district_matrix_7d[0].health_band, "yellow");
   assert.equal(enriched.scene_loop_district_breakdown_24h[0].bucket_key, "arena_prime");
   assert.equal(enriched.scene_loop_status_breakdown_24h[0].bucket_key, "active");
   assert.equal(enriched.scene_loop_sequence_breakdown_24h[0].bucket_key, "world_modal_kind_duel_sequence");

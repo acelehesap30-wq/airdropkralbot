@@ -4180,6 +4180,7 @@ async function buildAdminMetrics(db) {
       scene_loop_band_breakdown_7d: [],
       scene_loop_peak_day_7d: null,
       scene_loop_daily_breakdown_7d: [],
+      scene_loop_district_daily_breakdown_7d: [],
       scene_loop_district_breakdown_24h: [],
       scene_loop_status_breakdown_24h: [],
       scene_loop_sequence_breakdown_24h: [],
@@ -4440,6 +4441,41 @@ async function buildAdminMetrics(db) {
          ) AS scene_loop_daily_breakdown_7d,
          (
            SELECT COALESCE(
+             json_agg(
+               json_build_object(
+                 'day', day,
+                 'district_key', district_key,
+                 'total_count', total_count,
+                 'live_count', live_count,
+                 'blocked_count', blocked_count
+               )
+               ORDER BY day DESC, total_count DESC, district_key
+             ),
+             '[]'::json
+           )
+           FROM (
+             SELECT
+               to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS day,
+               COALESCE(NULLIF(lower(payload_json->>'district_key'), ''), 'unknown') AS district_key,
+               COUNT(*)::int AS total_count,
+               COUNT(*) FILTER (
+                 WHERE COALESCE(NULLIF(lower(payload_json->>'loop_status_key'), ''), 'unknown')
+                   IN ('active', 'ready', 'open', 'live', 'available', 'engaged', 'armed')
+               )::int AS live_count,
+               COUNT(*) FILTER (
+                 WHERE COALESCE(NULLIF(lower(payload_json->>'loop_status_key'), ''), 'unknown')
+                   IN ('blocked', 'locked', 'review', 'failed', 'cooldown')
+               )::int AS blocked_count
+             FROM v5_webapp_ui_events
+             WHERE created_at >= now() - interval '7 days'
+               AND event_key = 'runtime.scene.loop'
+             GROUP BY 1, 2
+             ORDER BY day DESC, total_count DESC, district_key
+             LIMIT 42
+           ) district_daily_rows
+         ) AS scene_loop_district_daily_breakdown_7d,
+         (
+           SELECT COALESCE(
              json_agg(json_build_object('bucket_key', bucket_key, 'item_count', item_count) ORDER BY item_count DESC, bucket_key),
              '[]'::json
            )
@@ -4503,6 +4539,9 @@ async function buildAdminMetrics(db) {
     metrics.scene_loop_district_coverage_24h = Number(sceneLoopRow.scene_loop_district_coverage_24h || 0);
     metrics.scene_loop_daily_breakdown_7d = Array.isArray(sceneLoopRow.scene_loop_daily_breakdown_7d)
       ? sceneLoopRow.scene_loop_daily_breakdown_7d
+      : [];
+    metrics.scene_loop_district_daily_breakdown_7d = Array.isArray(sceneLoopRow.scene_loop_district_daily_breakdown_7d)
+      ? sceneLoopRow.scene_loop_district_daily_breakdown_7d
       : [];
     metrics.scene_loop_district_breakdown_24h = Array.isArray(sceneLoopRow.scene_loop_district_breakdown_24h)
       ? sceneLoopRow.scene_loop_district_breakdown_24h
