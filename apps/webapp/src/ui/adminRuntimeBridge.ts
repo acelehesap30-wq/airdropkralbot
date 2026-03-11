@@ -36,6 +36,8 @@ type RuntimeBridgePayload = {
   loopDispatchDetailText?: string;
   loopDispatchFamilyText?: string;
   loopDispatchFlowText?: string;
+  loopDispatchSummaryText?: string;
+  loopDispatchGateText?: string;
   loopDispatchAttentionText?: string;
   loopDispatchCadenceText?: string;
 };
@@ -117,6 +119,8 @@ function render(payload: RuntimeBridgePayload): boolean {
   const loopDispatchDetail = byId<HTMLElement>("adminRuntimeLoopDispatchDetail");
   const loopDispatchFamily = byId<HTMLElement>("adminRuntimeLoopDispatchFamily");
   const loopDispatchFlow = byId<HTMLElement>("adminRuntimeLoopDispatchFlow");
+  const loopDispatchSummary = byId<HTMLElement>("adminRuntimeLoopDispatchSummary");
+  const loopDispatchGate = byId<HTMLElement>("adminRuntimeLoopDispatchGate");
   const loopDispatchAttention = byId<HTMLElement>("adminRuntimeLoopDispatchAttention");
   const loopDispatchCadence = byId<HTMLElement>("adminRuntimeLoopDispatchCadence");
   if (!line || !eventsLine || !loopLine || !loopHint || !loopFocus || !loopOpsLine || !loopOpsHint || !loopSequence || !loopState || !loopDetail || !loopSignal) {
@@ -205,6 +209,12 @@ function render(payload: RuntimeBridgePayload): boolean {
   if (loopDispatchFlow) {
     loopDispatchFlow.textContent = String(payload.loopDispatchFlowText || "ENTRY --");
   }
+  if (loopDispatchSummary) {
+    loopDispatchSummary.textContent = String(payload.loopDispatchSummaryText || "SUMMARY --");
+  }
+  if (loopDispatchGate) {
+    loopDispatchGate.textContent = String(payload.loopDispatchGateText || "GATE --");
+  }
   if (loopDispatchAttention) {
     loopDispatchAttention.textContent = String(payload.loopDispatchAttentionText || "ATTN --");
   }
@@ -236,6 +246,8 @@ function render(payload: RuntimeBridgePayload): boolean {
   pulseOnce(loopDispatchDetail);
   pulseOnce(loopDispatchFamily);
   pulseOnce(loopDispatchFlow);
+  pulseOnce(loopDispatchSummary);
+  pulseOnce(loopDispatchGate);
   pulseOnce(loopDispatchAttention);
   pulseOnce(loopDispatchCadence);
   return true;

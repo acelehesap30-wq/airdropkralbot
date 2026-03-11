@@ -34,6 +34,8 @@ type LoopFamilyPanel = {
   tone?: string;
   familyText?: string;
   flowText?: string;
+  summaryText?: string;
+  gateText?: string;
   focusText: string;
   stageText: string;
   stateText: string;
@@ -333,6 +335,8 @@ function renderLoopFamily(prefix: string, payload: LoopFamilyPanel): void {
   setNodeText(prefix, payload.text, "WAIT");
   setNodeText(`${prefix}Family`, payload.familyText, "FLOW --");
   setNodeText(`${prefix}Flow`, payload.flowText, "ENTRY --");
+  setNodeText(`${prefix}Summary`, payload.summaryText, "SUMMARY --");
+  setNodeText(`${prefix}Gate`, payload.gateText, "GATE --");
   setNodeText(`${prefix}Focus`, payload.focusText, "FOCUS WAIT");
   setNodeText(`${prefix}Stage`, payload.stageText, "STAGE --");
   setNodeText(`${prefix}State`, payload.stateText, "STATE --");

@@ -120,6 +120,8 @@ type CombatHudPayload = {
   loopTelemetryDetailText?: string;
   loopDuelFamilyText?: string;
   loopDuelFlowText?: string;
+  loopDuelSummaryText?: string;
+  loopDuelGateText?: string;
   loopDuelAttentionText?: string;
   loopDuelCadenceText?: string;
   rejectCategory?: string;
@@ -302,6 +304,8 @@ function render(payload: CombatHudPayload): boolean {
   const loopTelemetryDetail = byId("combatLoopTelemetryDetail");
   const loopDuelFamily = byId("combatLoopDuelFamily");
   const loopDuelFlow = byId("combatLoopDuelFlow");
+  const loopDuelSummary = byId("combatLoopDuelSummary");
+  const loopDuelGate = byId("combatLoopDuelGate");
   const loopDuelAttention = byId("combatLoopDuelAttention");
   const loopDuelCadence = byId("combatLoopDuelCadence");
 
@@ -541,6 +545,12 @@ function render(payload: CombatHudPayload): boolean {
   }
   if (loopDuelFlow) {
     loopDuelFlow.textContent = String(payload.loopDuelFlowText || "ENTRY --");
+  }
+  if (loopDuelSummary) {
+    loopDuelSummary.textContent = String(payload.loopDuelSummaryText || "SUMMARY --");
+  }
+  if (loopDuelGate) {
+    loopDuelGate.textContent = String(payload.loopDuelGateText || "GATE --");
   }
   if (loopDuelAttention) {
     loopDuelAttention.textContent = String(payload.loopDuelAttentionText || "ATTN --");

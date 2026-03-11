@@ -65,6 +65,8 @@ export type TokenOverviewBridgePayload = {
   loopPremiumDetailText?: string;
   loopWalletFamilyText?: string;
   loopWalletFlowText?: string;
+  loopWalletSummaryText?: string;
+  loopWalletGateText?: string;
   loopWalletAttentionText?: string;
   loopWalletCadenceText?: string;
 };
@@ -151,6 +153,8 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   const loopPremiumDetail = byId<HTMLElement>("tokenLoopPremiumDetail");
   const loopWalletFamily = byId<HTMLElement>("tokenLoopWalletFamily");
   const loopWalletFlow = byId<HTMLElement>("tokenLoopWalletFlow");
+  const loopWalletSummary = byId<HTMLElement>("tokenLoopWalletSummary");
+  const loopWalletGate = byId<HTMLElement>("tokenLoopWalletGate");
   const loopWalletAttention = byId<HTMLElement>("tokenLoopWalletAttention");
   const loopWalletCadence = byId<HTMLElement>("tokenLoopWalletCadence");
   const chainSelect = byId<HTMLSelectElement>("tokenChainSelect");
@@ -260,6 +264,12 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   }
   if (loopWalletFlow) {
     loopWalletFlow.textContent = safeText(payload.loopWalletFlowText, "ENTRY --");
+  }
+  if (loopWalletSummary) {
+    loopWalletSummary.textContent = safeText(payload.loopWalletSummaryText, "SUMMARY --");
+  }
+  if (loopWalletGate) {
+    loopWalletGate.textContent = safeText(payload.loopWalletGateText, "GATE --");
   }
   if (loopWalletAttention) {
     loopWalletAttention.textContent = safeText(payload.loopWalletAttentionText, "ATTN --");
