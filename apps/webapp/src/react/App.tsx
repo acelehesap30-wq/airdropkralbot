@@ -664,6 +664,9 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
       loopStageValue: string;
       directorPaceLabelKey?: string;
       hudToneLabelKey?: string;
+      loopRows?: Array<{ label_key: string; value: string; status_key: string }>;
+      loopSignalRows?: Array<{ label_key: string; value: string; status_key: string }>;
+      sequenceRows?: Array<{ label_key: string; value: string; status_key: string }>;
       actorKey?: string;
       clusterKey?: string;
       hotspotKey?: string;

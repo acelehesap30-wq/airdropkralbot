@@ -26,6 +26,8 @@ export type TokenOverviewBridgePayload = {
   loopHintText?: string;
   loopOpsLineText?: string;
   loopOpsHintText?: string;
+  loopDetailText?: string;
+  loopSignalText?: string;
 };
 
 type TokenOverviewBridge = {
@@ -64,10 +66,12 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   const loopHint = byId<HTMLElement>("tokenLoopHint");
   const loopOpsLine = byId<HTMLElement>("tokenLoopOpsLine");
   const loopOpsHint = byId<HTMLElement>("tokenLoopOpsHint");
+  const loopDetail = byId<HTMLElement>("tokenLoopDetail");
+  const loopSignal = byId<HTMLElement>("tokenLoopSignal");
   const chainSelect = byId<HTMLSelectElement>("tokenChainSelect");
   const buyBtn = byId<HTMLButtonElement>("tokenBuyBtn");
 
-  if (!badge || !balance || !summary || !rate || !mintable || !units || !hint || !loopLine || !loopHint || !loopOpsLine || !loopOpsHint || !chainSelect || !buyBtn) {
+  if (!badge || !balance || !summary || !rate || !mintable || !units || !hint || !loopLine || !loopHint || !loopOpsLine || !loopOpsHint || !loopDetail || !loopSignal || !chainSelect || !buyBtn) {
     return false;
   }
 
@@ -82,6 +86,8 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   loopHint.textContent = safeText(payload.loopHintText, "Scene loop focus bekleniyor.");
   loopOpsLine.textContent = safeText(payload.loopOpsLineText, "WAIT | FLOW IDLE");
   loopOpsHint.textContent = safeText(payload.loopOpsHintText, "District flow aktif degil.");
+  loopDetail.textContent = safeText(payload.loopDetailText, "Loop detay bekleniyor.");
+  loopSignal.textContent = safeText(payload.loopSignalText, "Signal detay bekleniyor.");
 
   const options = Array.isArray(payload.chainOptions) ? payload.chainOptions : [];
   chainSelect.innerHTML = options

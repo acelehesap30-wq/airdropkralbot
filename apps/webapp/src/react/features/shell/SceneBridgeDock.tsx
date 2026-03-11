@@ -581,6 +581,12 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
                 <p id="combatLoopOpsLine" className="akrBridgeHint">
                   WAIT | FLOW IDLE
                 </p>
+                <p id="combatLoopDetail" className="akrBridgeHint">
+                  Loop detay bekleniyor.
+                </p>
+                <p id="combatLoopSignal" className="akrBridgeHint">
+                  Signal detay bekleniyor.
+                </p>
               </div>
             </div>
 
@@ -690,6 +696,12 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
                 -
               </p>
               <p className="akrBridgeHint" id="tokenLoopOpsHint">
+                -
+              </p>
+              <p className="akrBridgeHint" id="tokenLoopDetail">
+                -
+              </p>
+              <p className="akrBridgeHint" id="tokenLoopSignal">
                 -
               </p>
               <div className="akrChipRow">
@@ -830,6 +842,12 @@ function AdminBridgeCards(props: { lang: Lang }) {
             -
           </p>
           <p id="adminRuntimeLoopOpsHint" className="akrBridgeHint">
+            -
+          </p>
+          <p id="adminRuntimeLoopDetail" className="akrBridgeHint">
+            -
+          </p>
+          <p id="adminRuntimeLoopSignal" className="akrBridgeHint">
             -
           </p>
         </div>

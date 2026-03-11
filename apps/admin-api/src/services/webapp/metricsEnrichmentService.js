@@ -268,6 +268,11 @@ function buildSceneLoopDistrictMatrix(rows, limit = 8) {
         yellow_days: yellowDays,
         red_days: redDays,
         health_band: resolveSceneLoopDistrictHealthBand(totalCount, liveShare, blockedShare),
+        attention_band: resolveSceneLoopDistrictAttentionBand(
+          String(latestRow?.health_band || "no_data"),
+          resolveSceneLoopTrendDirection(latestRow?.total_count, earliestRow?.total_count, sortedRows.length),
+          blockedShare
+        ),
         trend_direction: resolveSceneLoopTrendDirection(
           latestRow?.total_count,
           earliestRow?.total_count,
@@ -285,6 +290,36 @@ function buildSceneLoopDistrictMatrix(rows, limit = 8) {
       return String(left.district_key || "").localeCompare(String(right.district_key || ""));
     })
     .slice(0, Math.max(1, Math.floor(toNum(limit, 8))));
+}
+
+function resolveSceneLoopDistrictAttentionBand(latestHealthBand, trendDirection, blockedShare) {
+  const latestBand = String(latestHealthBand || "no_data");
+  const trend = String(trendDirection || "no_data");
+  const blocked = clamp(toNum(blockedShare, 0), 0, 1);
+  if (latestBand === "red" || (trend === "degrading" && blocked >= 0.25)) {
+    return "alert";
+  }
+  if (latestBand === "yellow" || trend === "degrading" || blocked >= 0.18) {
+    return "watch";
+  }
+  if (latestBand === "green" || trend === "improving" || trend === "stable") {
+    return "clear";
+  }
+  return "no_data";
+}
+
+function buildSceneLoopDistrictAttentionBreakdown(rows) {
+  const counters = new Map();
+  (Array.isArray(rows) ? rows : []).forEach((row) => {
+    const key = String(row?.attention_band || "no_data");
+    counters.set(key, (counters.get(key) || 0) + 1);
+  });
+  return Array.from(counters.entries())
+    .map(([bucket_key, item_count]) => ({
+      bucket_key,
+      item_count: Math.max(0, Math.floor(toNum(item_count, 0)))
+    }))
+    .sort((left, right) => right.item_count - left.item_count || String(left.bucket_key).localeCompare(String(right.bucket_key)));
 }
 
 function resolveSceneTrendDirection(latestReadyRate, earliestReadyRate, sampleCount) {
@@ -461,6 +496,9 @@ function enrichWebappRevenueMetrics(rawMetrics = {}) {
         })[0]
       : null;
   metrics.scene_loop_district_matrix_7d = buildSceneLoopDistrictMatrix(metrics.scene_loop_district_daily_breakdown_7d);
+  metrics.scene_loop_district_attention_breakdown_7d = buildSceneLoopDistrictAttentionBreakdown(
+    metrics.scene_loop_district_matrix_7d
+  );
   metrics.scene_loop_district_breakdown_24h = normalizeBreakdownRows(metrics.scene_loop_district_breakdown_24h);
   metrics.scene_loop_status_breakdown_24h = normalizeBreakdownRows(metrics.scene_loop_status_breakdown_24h);
   metrics.scene_loop_sequence_breakdown_24h = normalizeBreakdownRows(metrics.scene_loop_sequence_breakdown_24h);
@@ -552,6 +590,8 @@ module.exports = {
   normalizeSceneLoopDistrictDailyRows,
   resolveSceneLoopHealthBand,
   resolveSceneLoopDistrictHealthBand,
+  resolveSceneLoopDistrictAttentionBand,
+  buildSceneLoopDistrictAttentionBreakdown,
   resolveSceneLoopTrendDirection,
   buildSceneBandBreakdown,
   buildSceneLoopBandBreakdown,

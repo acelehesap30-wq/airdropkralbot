@@ -39,6 +39,9 @@ type BabylonDistrictSceneHostProps = {
     loopStageValue: string;
     directorPaceLabelKey?: string;
     hudToneLabelKey?: string;
+    loopRows?: Array<{ label_key: string; value: string; status_key: string }>;
+    loopSignalRows?: Array<{ label_key: string; value: string; status_key: string }>;
+    sequenceRows?: Array<{ label_key: string; value: string; status_key: string }>;
     actorKey?: string;
     clusterKey?: string;
     hotspotKey?: string;
@@ -465,6 +468,9 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
       loopStageValue: String(selectedMicroflow.loop_stage_value || selectedMicroflow.stage_value || ""),
       directorPaceLabelKey: selectedMicroflow.director_pace_label_key || undefined,
       hudToneLabelKey: selectedMicroflow.hud_tone_label_key || undefined,
+      loopRows: Array.isArray(selectedMicroflow.loop_rows) ? selectedMicroflow.loop_rows.slice(0, 3) : [],
+      loopSignalRows: Array.isArray(selectedMicroflow.loop_signal_rows) ? selectedMicroflow.loop_signal_rows.slice(0, 2) : [],
+      sequenceRows: Array.isArray(selectedMicroflow.sequence_rows) ? selectedMicroflow.sequence_rows.slice(0, 3) : [],
       actorKey: worldState.active_hotspot_key || undefined,
       clusterKey: worldState.active_cluster_key || undefined,
       hotspotKey: worldState.active_hotspot_key || undefined,

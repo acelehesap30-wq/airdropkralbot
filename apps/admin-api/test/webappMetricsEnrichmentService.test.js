@@ -198,6 +198,9 @@ test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
   assert.equal(enriched.scene_loop_district_matrix_7d[0].yellow_days, 2);
   assert.equal(enriched.scene_loop_district_matrix_7d[0].red_days, 0);
   assert.equal(enriched.scene_loop_district_matrix_7d[0].latest_health_band, "yellow");
+  assert.equal(enriched.scene_loop_district_matrix_7d[0].attention_band, "watch");
+  assert.equal(enriched.scene_loop_district_attention_breakdown_7d[0].bucket_key, "watch");
+  assert.equal(enriched.scene_loop_district_attention_breakdown_7d[0].item_count, 2);
   assert.equal(enriched.scene_loop_district_breakdown_24h[0].bucket_key, "arena_prime");
   assert.equal(enriched.scene_loop_status_breakdown_24h[0].bucket_key, "active");
   assert.equal(enriched.scene_loop_sequence_breakdown_24h[0].bucket_key, "world_modal_kind_duel_sequence");

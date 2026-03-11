@@ -164,7 +164,7 @@ function SceneLoopDistrictMatrixList(props: { title: string; rows: Array<Record<
             {String(row.district_key || "-")} | latest {String(row.latest_health_band || row.health_band || "no_data")} | trend{" "}
             {String(row.trend_direction || "no_data")} ({Math.floor(Number(row.trend_delta || 0))}) | loops{" "}
             {Math.floor(Number(row.total_count || 0))} | live {Math.floor(Number(row.live_count || 0))} | blocked{" "}
-            {Math.floor(Number(row.blocked_count || 0))} | G/Y/R {Math.floor(Number(row.green_days || 0))}/
+            {Math.floor(Number(row.blocked_count || 0))} | attn {String(row.attention_band || "no_data")} | G/Y/R {Math.floor(Number(row.green_days || 0))}/
             {Math.floor(Number(row.yellow_days || 0))}/{Math.floor(Number(row.red_days || 0))}
           </p>
         ))}
@@ -371,6 +371,7 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
   const sceneLoopPeakDay7d = asRecord(props.metricsData?.scene_loop_peak_day_7d);
   const sceneLoopDailyBreakdown = asRows(props.metricsData?.scene_loop_daily_breakdown_7d);
   const sceneLoopDistrictMatrix = asRows(props.metricsData?.scene_loop_district_matrix_7d);
+  const sceneLoopDistrictAttentionBreakdown = asRows(props.metricsData?.scene_loop_district_attention_breakdown_7d);
   const sceneLoopDistrictBreakdown = asRows(props.metricsData?.scene_loop_district_breakdown_24h);
   const sceneLoopStatusBreakdown = asRows(props.metricsData?.scene_loop_status_breakdown_24h);
   const sceneLoopSequenceBreakdown = asRows(props.metricsData?.scene_loop_sequence_breakdown_24h);
@@ -588,6 +589,10 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
         <SceneLoopDistrictMatrixList
           title={t(props.lang, "admin_runtime_scene_loop_district_matrix_title")}
           rows={sceneLoopDistrictMatrix}
+        />
+        <BreakdownList
+          title={t(props.lang, "admin_runtime_scene_loop_attention_title")}
+          rows={sceneLoopDistrictAttentionBreakdown}
         />
         <BreakdownList title={t(props.lang, "admin_runtime_scene_loop_band_title")} rows={sceneLoopBandBreakdown7d} />
         <BreakdownList title={t(props.lang, "admin_runtime_scene_loop_district_title")} rows={sceneLoopDistrictBreakdown} />

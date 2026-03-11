@@ -198,6 +198,7 @@ function buildSceneStatusPayload(profileMetrics) {
 function formatRuntimeKeyLabel(value, fallback = "-") {
   const text = toText(value, fallback)
     .replace(/^world_(entry|sequence|modal|loop)_kind_/, "")
+    .replace(/^world_sheet_metric_/, "")
     .replace(/^loop_status_/, "")
     .replace(/^district_/, "")
     .replace(/^scene_/, "")
@@ -213,6 +214,20 @@ function formatLoopStageValue(value) {
   return text ? text.replace(/_/g, " ").toUpperCase() : "-";
 }
 
+function formatLoopRows(rows, fallback = "") {
+  const source = asArray(rows)
+    .map((row) => asRecord(row))
+    .filter((row) => Object.keys(row).length > 0)
+    .slice(0, 3);
+  if (!source.length) {
+    return fallback;
+  }
+  return source
+    .map((row) => `${formatRuntimeKeyLabel(row.label_key || row.key || "metric", "METRIC")} ${toText(row.value, "-")}`.trim())
+    .filter(Boolean)
+    .join(" | ");
+}
+
 function buildSceneLoopDeckPayload(scene) {
   const selectedLoop = asRecord(scene?.selectedLoop);
   if (!selectedLoop) {
@@ -224,7 +239,10 @@ function buildSceneLoopDeckPayload(scene) {
       stageValue: "",
       entryKindKey: "",
       sequenceKindKey: "",
-      microflowKey: ""
+      microflowKey: "",
+      detailLine: "",
+      signalLine: "",
+      sequenceLine: ""
     };
   }
   const districtLabel = formatRuntimeKeyLabel(selectedLoop.districtKey, "DISTRICT");
@@ -244,7 +262,10 @@ function buildSceneLoopDeckPayload(scene) {
     stageValue: stageLabel,
     entryKindKey: toText(selectedLoop.entryKindKey, ""),
     sequenceKindKey: toText(selectedLoop.sequenceKindKey, ""),
-    microflowKey: toText(selectedLoop.microflowKey, "")
+    microflowKey: toText(selectedLoop.microflowKey, ""),
+    detailLine: formatLoopRows(selectedLoop.loopRows, "Loop detay bekleniyor."),
+    signalLine: formatLoopRows(selectedLoop.loopSignalRows, "Signal detay bekleniyor."),
+    sequenceLine: formatLoopRows(selectedLoop.sequenceRows, "Sequence detay bekleniyor.")
   };
 }
 
@@ -277,6 +298,9 @@ function buildDomainLoopPanelPayload(scene, domainKey) {
       hintText: "Scene loop focus bekleniyor.",
       opsLineText: "WAIT | FLOW IDLE",
       opsHintText: "District flow aktif degil.",
+      detailLineText: "Loop detay bekleniyor.",
+      signalLineText: "Signal detay bekleniyor.",
+      sequenceLineText: "Sequence detay bekleniyor.",
       active: false
     };
   }
@@ -296,6 +320,9 @@ function buildDomainLoopPanelPayload(scene, domainKey) {
       ? `${loopDeck.loopStatusLabel} | ${loopDeck.stageValue} | ${microflowLabel}`
       : `FOCUS ${districtLabel} | ${loopDeck.loopStatusLabel}`,
     opsHintText: `${entryLabel} | ${sequenceLabel} | ${microflowLabel}`,
+    detailLineText: loopDeck.detailLine,
+    signalLineText: loopDeck.signalLine,
+    sequenceLineText: loopDeck.sequenceLine,
     active: districtMatches
   };
 }
@@ -971,7 +998,9 @@ function buildPvpRuntimePayload(rawRuntime, rawLive, pvpView, scene, assetMetric
       assetSyncPct: Math.round(clamp(assetMetrics.integrityRatio) * 100),
       loopLineText: loopPanel.lineText,
       loopHintText: loopPanel.opsHintText,
-      loopOpsLineText: loopPanel.opsLineText
+      loopOpsLineText: loopPanel.opsLineText,
+      loopDetailText: loopPanel.detailLineText,
+      loopSignalText: loopPanel.signalLineText
     },
     camera: {
       mode: {
@@ -1220,6 +1249,8 @@ function buildTokenOverviewPayload(vaultRoot, vaultView, scene) {
     loopHintText: loopPanel.hintText,
     loopOpsLineText: loopPanel.opsLineText,
     loopOpsHintText: loopPanel.opsHintText,
+    loopDetailText: loopPanel.detailLineText,
+    loopSignalText: loopPanel.signalLineText,
     statusChips: [
       {
         id: "tokenWalletChip",
@@ -1522,7 +1553,9 @@ function buildAdminRuntimePayload(adminRuntime, adminPanels, scene) {
     loopLineText: loopPanel.lineText,
     loopHintText: loopPanel.hintText,
     loopOpsLineText: loopPanel.opsLineText,
-    loopOpsHintText: loopPanel.opsHintText
+    loopOpsHintText: loopPanel.opsHintText,
+    loopDetailText: loopPanel.detailLineText,
+    loopSignalText: loopPanel.signalLineText
   };
 }
 

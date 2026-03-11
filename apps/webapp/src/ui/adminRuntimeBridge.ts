@@ -5,6 +5,8 @@ type RuntimeBridgePayload = {
   loopHintText?: string;
   loopOpsLineText?: string;
   loopOpsHintText?: string;
+  loopDetailText?: string;
+  loopSignalText?: string;
 };
 
 type AdminRuntimeBridge = {
@@ -46,7 +48,9 @@ function render(payload: RuntimeBridgePayload): boolean {
   const loopHint = byId<HTMLElement>("adminRuntimeLoopHint");
   const loopOpsLine = byId<HTMLElement>("adminRuntimeLoopOpsLine");
   const loopOpsHint = byId<HTMLElement>("adminRuntimeLoopOpsHint");
-  if (!line || !eventsLine || !loopLine || !loopHint || !loopOpsLine || !loopOpsHint) {
+  const loopDetail = byId<HTMLElement>("adminRuntimeLoopDetail");
+  const loopSignal = byId<HTMLElement>("adminRuntimeLoopSignal");
+  if (!line || !eventsLine || !loopLine || !loopHint || !loopOpsLine || !loopOpsHint || !loopDetail || !loopSignal) {
     return false;
   }
   line.textContent = String(payload.lineText || "Bot Runtime: -");
@@ -55,12 +59,16 @@ function render(payload: RuntimeBridgePayload): boolean {
   loopHint.textContent = String(payload.loopHintText || "Scene loop focus bekleniyor.");
   loopOpsLine.textContent = String(payload.loopOpsLineText || "WAIT | FLOW IDLE");
   loopOpsHint.textContent = String(payload.loopOpsHintText || "District flow aktif degil.");
+  loopDetail.textContent = String(payload.loopDetailText || "Loop detay bekleniyor.");
+  loopSignal.textContent = String(payload.loopSignalText || "Signal detay bekleniyor.");
   pulseOnce(line);
   pulseOnce(eventsLine);
   pulseOnce(loopLine);
   pulseOnce(loopHint);
   pulseOnce(loopOpsLine);
   pulseOnce(loopOpsHint);
+  pulseOnce(loopDetail);
+  pulseOnce(loopSignal);
   return true;
 }
 
