@@ -97,6 +97,9 @@ type CombatHudPayload = {
   loopDuelText?: string;
   loopLadderText?: string;
   loopTelemetryText?: string;
+  loopDuelStateText?: string;
+  loopLadderStateText?: string;
+  loopTelemetryStateText?: string;
   loopDuelDetailText?: string;
   loopLadderDetailText?: string;
   loopTelemetryDetailText?: string;
@@ -249,6 +252,9 @@ function render(payload: CombatHudPayload): boolean {
   const loopDuel = byId("combatLoopDuel");
   const loopLadder = byId("combatLoopLadder");
   const loopTelemetry = byId("combatLoopTelemetry");
+  const loopDuelState = byId("combatLoopDuelState");
+  const loopLadderState = byId("combatLoopLadderState");
+  const loopTelemetryState = byId("combatLoopTelemetryState");
   const loopDuelDetail = byId("combatLoopDuelDetail");
   const loopLadderDetail = byId("combatLoopLadderDetail");
   const loopTelemetryDetail = byId("combatLoopTelemetryDetail");
@@ -432,6 +438,15 @@ function render(payload: CombatHudPayload): boolean {
   }
   if (loopTelemetry) {
     loopTelemetry.textContent = String(payload.loopTelemetryText || "TELEMETRY | WAIT");
+  }
+  if (loopDuelState) {
+    loopDuelState.textContent = String(payload.loopDuelStateText || "FLOW WAIT | ENTRY WAIT | PHASE --");
+  }
+  if (loopLadderState) {
+    loopLadderState.textContent = String(payload.loopLadderStateText || "FLOW WAIT | SEQ WAIT | STAGE --");
+  }
+  if (loopTelemetryState) {
+    loopTelemetryState.textContent = String(payload.loopTelemetryStateText || "FLOW WAIT | PERSONA WAIT | SEQ --");
   }
   if (loopDuelDetail) {
     loopDuelDetail.textContent = String(payload.loopDuelDetailText || "Queue ve sync detay bekleniyor.");

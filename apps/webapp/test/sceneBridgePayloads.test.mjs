@@ -343,6 +343,12 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
   assert.match(payloads.combatHud.loopDuelText, /DUEL ENGAGE \| ACTIVE/i);
   assert.match(payloads.combatHud.loopLadderText, /LADDER -- \| --/i);
   assert.match(payloads.combatHud.loopTelemetryText, /TELEMETRY HOT \| WATCH/i);
+  assert.match(payloads.combatHud.loopDuelStateText, /FLOW DUEL FLOW \| ENTRY DUEL CONSOLE \| PHASE ENGAGE/i);
+  assert.match(payloads.combatHud.loopLadderStateText, /FLOW DUEL FLOW \| SEQ DUEL SEQUENCE \| STAGE ENGAGE/i);
+  assert.match(
+    payloads.combatHud.loopTelemetryStateText,
+    /FLOW DUEL FLOW \| PERSONA (WORLD )?PERSONALITY ASSAULT \| SEQ DUEL SEQUENCE/i
+  );
   assert.match(payloads.combatHud.loopDuelDetailText, /QUEUE 3 \| RISK WATCH \| DUEL CONSOLE/i);
   assert.match(payloads.combatHud.loopLadderDetailText, /CHARGE -- \| TICK -- \| DUEL SEQUENCE/i);
   assert.match(payloads.combatHud.loopTelemetryDetailText, /DIAG HOT \| RISK WATCH \| (WORLD )?PERSONALITY ASSAULT/i);
@@ -445,6 +451,10 @@ test("buildPlayerBridgePayloads surfaces active vault loop micro panels from sel
   assert.match(payloads.tokenOverview.loopPayoutText, /PAYOUT OPEN \| 2\/3/i);
   assert.match(payloads.tokenOverview.loopRouteText, /ROUTE 2\/3 \| APPROVED/i);
   assert.match(payloads.tokenOverview.loopPremiumText, /PREMIUM ACTIVE \| SUBMIT/i);
+  assert.match(payloads.tokenOverview.loopWalletStateText, /FLOW PAYOUT FLOW \| ENTRY PAYOUT TERMINAL \| STATE APPROVED/i);
+  assert.match(payloads.tokenOverview.loopPayoutStateText, /FLOW PAYOUT FLOW \| SEQ PAYOUT ROUTE \| PAYOUT OPEN/i);
+  assert.match(payloads.tokenOverview.loopRouteStateText, /FLOW PAYOUT FLOW \| PERSONA STABLE ROUTE \| ROUTE 2\/3/i);
+  assert.match(payloads.tokenOverview.loopPremiumStateText, /FLOW PAYOUT FLOW \| STAGE SUBMIT \| PASS ACTIVE/i);
   assert.match(payloads.tokenOverview.loopWalletDetailText, /STATE APPROVED \| FLOW LIVE \| PAYOUT TERMINAL/i);
   assert.match(payloads.tokenOverview.loopPayoutDetailText, /PAYOUT OPEN \| ROUTE 2\/3 \| PAYOUT ROUTE/i);
   assert.match(payloads.tokenOverview.loopRouteDetailText, /ROUTE 2\/3 \| WALLET APPROVED \| STABLE ROUTE/i);
@@ -519,6 +529,9 @@ test("buildAdminBridgePayloads produces runtime, asset and audit cards from admi
   assert.match(payloads.runtime.loopQueueText, /QUEUE 2 \| WATCH/i);
   assert.match(payloads.runtime.loopRuntimeText, /RUNTIME WATCH \| ALERT 3/i);
   assert.match(payloads.runtime.loopDispatchText, /DISPATCH 12 \| ALERT/i);
+  assert.match(payloads.runtime.loopQueueStateText, /FLOW DISPATCH FLOW \| ENTRY DISPATCH CONSOLE \| QUEUE 2/i);
+  assert.match(payloads.runtime.loopRuntimeStateText, /FLOW DISPATCH FLOW \| SEQ DISPATCH SEQUENCE \| HEALTH WATCH/i);
+  assert.match(payloads.runtime.loopDispatchStateText, /FLOW DISPATCH FLOW \| STAGE ALERT \| SENT 12/i);
   assert.match(payloads.runtime.loopQueueDetailText, /DEPTH 2 \| FLOW WATCH \| DISPATCH FLOW/i);
   assert.match(payloads.runtime.loopRuntimeDetailText, /HEALTH WATCH \| ALERT 3 \| DISPATCH SEQUENCE/i);
   assert.match(payloads.runtime.loopDispatchDetailText, /SENT 12 \| STAGE ALERT \| DISPATCH CONSOLE/i);

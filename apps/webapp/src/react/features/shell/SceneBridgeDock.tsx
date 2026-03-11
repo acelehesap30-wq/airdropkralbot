@@ -599,17 +599,26 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
                 <p id="combatLoopDuel" className="akrBridgeHint">
                   DUEL | WAIT
                 </p>
+                <p id="combatLoopDuelState" className="akrBridgeHint">
+                  FLOW WAIT | ENTRY WAIT | PHASE --
+                </p>
                 <p id="combatLoopDuelDetail" className="akrBridgeHint">
                   Queue ve sync detay bekleniyor.
                 </p>
                 <p id="combatLoopLadder" className="akrBridgeHint">
                   LADDER | WAIT
                 </p>
+                <p id="combatLoopLadderState" className="akrBridgeHint">
+                  FLOW WAIT | SEQ WAIT | STAGE --
+                </p>
                 <p id="combatLoopLadderDetail" className="akrBridgeHint">
                   Ladder snapshot bekleniyor.
                 </p>
                 <p id="combatLoopTelemetry" className="akrBridgeHint">
                   TELEMETRY | WAIT
+                </p>
+                <p id="combatLoopTelemetryState" className="akrBridgeHint">
+                  FLOW WAIT | PERSONA WAIT | SEQ --
                 </p>
                 <p id="combatLoopTelemetryDetail" className="akrBridgeHint">
                   Reject ve asset telemetry bekleniyor.
@@ -743,10 +752,16 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
               <p className="akrBridgeHint" id="tokenLoopWallet">
                 -
               </p>
+              <p className="akrBridgeHint" id="tokenLoopWalletState">
+                -
+              </p>
               <p className="akrBridgeHint" id="tokenLoopWalletDetail">
                 -
               </p>
               <p className="akrBridgeHint" id="tokenLoopPayout">
+                -
+              </p>
+              <p className="akrBridgeHint" id="tokenLoopPayoutState">
                 -
               </p>
               <p className="akrBridgeHint" id="tokenLoopPayoutDetail">
@@ -755,10 +770,16 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
               <p className="akrBridgeHint" id="tokenLoopRoute">
                 -
               </p>
+              <p className="akrBridgeHint" id="tokenLoopRouteState">
+                -
+              </p>
               <p className="akrBridgeHint" id="tokenLoopRouteDetail">
                 -
               </p>
               <p className="akrBridgeHint" id="tokenLoopPremium">
+                -
+              </p>
+              <p className="akrBridgeHint" id="tokenLoopPremiumState">
                 -
               </p>
               <p className="akrBridgeHint" id="tokenLoopPremiumDetail">
@@ -922,16 +943,25 @@ function AdminBridgeCards(props: { lang: Lang }) {
           <p id="adminRuntimeLoopQueue" className="akrBridgeHint">
             -
           </p>
+          <p id="adminRuntimeLoopQueueState" className="akrBridgeHint">
+            -
+          </p>
           <p id="adminRuntimeLoopQueueDetail" className="akrBridgeHint">
             -
           </p>
           <p id="adminRuntimeLoopRuntime" className="akrBridgeHint">
             -
           </p>
+          <p id="adminRuntimeLoopRuntimeState" className="akrBridgeHint">
+            -
+          </p>
           <p id="adminRuntimeLoopRuntimeDetail" className="akrBridgeHint">
             -
           </p>
           <p id="adminRuntimeLoopDispatch" className="akrBridgeHint">
+            -
+          </p>
+          <p id="adminRuntimeLoopDispatchState" className="akrBridgeHint">
             -
           </p>
           <p id="adminRuntimeLoopDispatchDetail" className="akrBridgeHint">

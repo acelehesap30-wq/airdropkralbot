@@ -35,6 +35,10 @@ export type TokenOverviewBridgePayload = {
   loopPayoutText?: string;
   loopRouteText?: string;
   loopPremiumText?: string;
+  loopWalletStateText?: string;
+  loopPayoutStateText?: string;
+  loopRouteStateText?: string;
+  loopPremiumStateText?: string;
   loopWalletDetailText?: string;
   loopPayoutDetailText?: string;
   loopRouteDetailText?: string;
@@ -86,6 +90,10 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   const loopPayout = byId<HTMLElement>("tokenLoopPayout");
   const loopRoute = byId<HTMLElement>("tokenLoopRoute");
   const loopPremium = byId<HTMLElement>("tokenLoopPremium");
+  const loopWalletState = byId<HTMLElement>("tokenLoopWalletState");
+  const loopPayoutState = byId<HTMLElement>("tokenLoopPayoutState");
+  const loopRouteState = byId<HTMLElement>("tokenLoopRouteState");
+  const loopPremiumState = byId<HTMLElement>("tokenLoopPremiumState");
   const loopWalletDetail = byId<HTMLElement>("tokenLoopWalletDetail");
   const loopPayoutDetail = byId<HTMLElement>("tokenLoopPayoutDetail");
   const loopRouteDetail = byId<HTMLElement>("tokenLoopRouteDetail");
@@ -124,6 +132,18 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   }
   if (loopPremium) {
     loopPremium.textContent = safeText(payload.loopPremiumText, "PREMIUM | WAIT");
+  }
+  if (loopWalletState) {
+    loopWalletState.textContent = safeText(payload.loopWalletStateText, "FLOW WAIT | ENTRY WAIT | STATE --");
+  }
+  if (loopPayoutState) {
+    loopPayoutState.textContent = safeText(payload.loopPayoutStateText, "FLOW WAIT | SEQ WAIT | PAYOUT --");
+  }
+  if (loopRouteState) {
+    loopRouteState.textContent = safeText(payload.loopRouteStateText, "FLOW WAIT | PERSONA WAIT | ROUTE --");
+  }
+  if (loopPremiumState) {
+    loopPremiumState.textContent = safeText(payload.loopPremiumStateText, "FLOW WAIT | STAGE -- | PASS --");
   }
   if (loopWalletDetail) {
     loopWalletDetail.textContent = safeText(payload.loopWalletDetailText, "Wallet verification detay bekleniyor.");

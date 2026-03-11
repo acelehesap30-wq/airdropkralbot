@@ -13,6 +13,9 @@ type RuntimeBridgePayload = {
   loopQueueText?: string;
   loopRuntimeText?: string;
   loopDispatchText?: string;
+  loopQueueStateText?: string;
+  loopRuntimeStateText?: string;
+  loopDispatchStateText?: string;
   loopQueueDetailText?: string;
   loopRuntimeDetailText?: string;
   loopDispatchDetailText?: string;
@@ -65,6 +68,9 @@ function render(payload: RuntimeBridgePayload): boolean {
   const loopQueue = byId<HTMLElement>("adminRuntimeLoopQueue");
   const loopRuntime = byId<HTMLElement>("adminRuntimeLoopRuntime");
   const loopDispatch = byId<HTMLElement>("adminRuntimeLoopDispatch");
+  const loopQueueState = byId<HTMLElement>("adminRuntimeLoopQueueState");
+  const loopRuntimeState = byId<HTMLElement>("adminRuntimeLoopRuntimeState");
+  const loopDispatchState = byId<HTMLElement>("adminRuntimeLoopDispatchState");
   const loopQueueDetail = byId<HTMLElement>("adminRuntimeLoopQueueDetail");
   const loopRuntimeDetail = byId<HTMLElement>("adminRuntimeLoopRuntimeDetail");
   const loopDispatchDetail = byId<HTMLElement>("adminRuntimeLoopDispatchDetail");
@@ -90,6 +96,15 @@ function render(payload: RuntimeBridgePayload): boolean {
   }
   if (loopDispatch) {
     loopDispatch.textContent = String(payload.loopDispatchText || "DISPATCH | WAIT");
+  }
+  if (loopQueueState) {
+    loopQueueState.textContent = String(payload.loopQueueStateText || "FLOW WAIT | ENTRY WAIT | QUEUE --");
+  }
+  if (loopRuntimeState) {
+    loopRuntimeState.textContent = String(payload.loopRuntimeStateText || "FLOW WAIT | SEQ WAIT | HEALTH --");
+  }
+  if (loopDispatchState) {
+    loopDispatchState.textContent = String(payload.loopDispatchStateText || "FLOW WAIT | STAGE -- | SENT --");
   }
   if (loopQueueDetail) {
     loopQueueDetail.textContent = String(payload.loopQueueDetailText || "Queue action detay bekleniyor.");
