@@ -1,3 +1,5 @@
+import { resolveLoopRailTone } from "../core/runtime/loopRailTone.js";
+
 type CombatTrailRow = {
   action: string;
   accepted: boolean;
@@ -248,6 +250,15 @@ function setTone(node: HTMLElement | null, tone: unknown): void {
   }
   const key = String(tone || "neutral").toLowerCase();
   node.dataset.tone = key || "neutral";
+}
+
+function setChipTone(node: HTMLElement | null, tone: unknown): void {
+  if (!node) {
+    return;
+  }
+  const key = String(tone || "neutral").toLowerCase() || "neutral";
+  node.classList.remove("neutral", "info", "safe", "advantage", "balanced", "pressure", "aggressive", "critical");
+  node.classList.add(key);
 }
 
 function render(payload: CombatHudPayload): boolean {
@@ -618,6 +629,16 @@ function render(payload: CombatHudPayload): boolean {
   if (loopDuelCadence) {
     loopDuelCadence.textContent = String(payload.loopDuelCadenceText || "CADENCE --");
   }
+  setChipTone(loopDuelFamily, resolveLoopRailTone(payload.loopDuelTone, "family"));
+  setChipTone(loopDuelFlow, resolveLoopRailTone(payload.loopDuelTone, "flow"));
+  setChipTone(loopDuelSummary, resolveLoopRailTone(payload.loopDuelTone, "summary"));
+  setChipTone(loopDuelGate, resolveLoopRailTone(payload.loopDuelTone, "gate"));
+  setChipTone(loopDuelLead, resolveLoopRailTone(payload.loopDuelTone, "lead"));
+  setChipTone(loopDuelWindow, resolveLoopRailTone(payload.loopDuelTone, "window"));
+  setChipTone(loopDuelPressure, resolveLoopRailTone(payload.loopDuelTone, "pressure"));
+  setChipTone(loopDuelResponse, resolveLoopRailTone(payload.loopDuelTone, "response"));
+  setChipTone(loopDuelAttention, resolveLoopRailTone(payload.loopDuelTone, "attention"));
+  setChipTone(loopDuelCadence, resolveLoopRailTone(payload.loopDuelTone, "cadence"));
   if (loopLadderFamily) {
     loopLadderFamily.textContent = String(payload.loopLadderFamilyText || "FLOW --");
   }
@@ -648,6 +669,16 @@ function render(payload: CombatHudPayload): boolean {
   if (loopLadderCadence) {
     loopLadderCadence.textContent = String(payload.loopLadderCadenceText || "CADENCE --");
   }
+  setChipTone(loopLadderFamily, resolveLoopRailTone(payload.loopLadderTone, "family"));
+  setChipTone(loopLadderFlow, resolveLoopRailTone(payload.loopLadderTone, "flow"));
+  setChipTone(loopLadderSummary, resolveLoopRailTone(payload.loopLadderTone, "summary"));
+  setChipTone(loopLadderGate, resolveLoopRailTone(payload.loopLadderTone, "gate"));
+  setChipTone(loopLadderLead, resolveLoopRailTone(payload.loopLadderTone, "lead"));
+  setChipTone(loopLadderWindow, resolveLoopRailTone(payload.loopLadderTone, "window"));
+  setChipTone(loopLadderPressure, resolveLoopRailTone(payload.loopLadderTone, "pressure"));
+  setChipTone(loopLadderResponse, resolveLoopRailTone(payload.loopLadderTone, "response"));
+  setChipTone(loopLadderAttention, resolveLoopRailTone(payload.loopLadderTone, "attention"));
+  setChipTone(loopLadderCadence, resolveLoopRailTone(payload.loopLadderTone, "cadence"));
   if (loopTelemetryFamily) {
     loopTelemetryFamily.textContent = String(payload.loopTelemetryFamilyText || "FLOW --");
   }
@@ -678,6 +709,16 @@ function render(payload: CombatHudPayload): boolean {
   if (loopTelemetryCadence) {
     loopTelemetryCadence.textContent = String(payload.loopTelemetryCadenceText || "CADENCE --");
   }
+  setChipTone(loopTelemetryFamily, resolveLoopRailTone(payload.loopTelemetryTone, "family"));
+  setChipTone(loopTelemetryFlow, resolveLoopRailTone(payload.loopTelemetryTone, "flow"));
+  setChipTone(loopTelemetrySummary, resolveLoopRailTone(payload.loopTelemetryTone, "summary"));
+  setChipTone(loopTelemetryGate, resolveLoopRailTone(payload.loopTelemetryTone, "gate"));
+  setChipTone(loopTelemetryLead, resolveLoopRailTone(payload.loopTelemetryTone, "lead"));
+  setChipTone(loopTelemetryWindow, resolveLoopRailTone(payload.loopTelemetryTone, "window"));
+  setChipTone(loopTelemetryPressure, resolveLoopRailTone(payload.loopTelemetryTone, "pressure"));
+  setChipTone(loopTelemetryResponse, resolveLoopRailTone(payload.loopTelemetryTone, "response"));
+  setChipTone(loopTelemetryAttention, resolveLoopRailTone(payload.loopTelemetryTone, "attention"));
+  setChipTone(loopTelemetryCadence, resolveLoopRailTone(payload.loopTelemetryTone, "cadence"));
   if (loopLadderDetail) {
     loopLadderDetail.textContent = String(payload.loopLadderDetailText || "Ladder snapshot bekleniyor.");
   }

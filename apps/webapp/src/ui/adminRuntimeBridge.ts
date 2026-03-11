@@ -1,3 +1,5 @@
+import { resolveLoopRailTone } from "../core/runtime/loopRailTone.js";
+
 type RuntimeBridgePayload = {
   lineText: string;
   eventsLineText: string;
@@ -103,6 +105,15 @@ function setTone(node: HTMLElement | null, tone: unknown): void {
     return;
   }
   node.dataset.tone = String(tone || "neutral").toLowerCase() || "neutral";
+}
+
+function setChipTone(node: HTMLElement | null, tone: unknown): void {
+  if (!node) {
+    return;
+  }
+  const nextTone = String(tone || "neutral").toLowerCase() || "neutral";
+  node.classList.remove("neutral", "info", "safe", "advantage", "balanced", "pressure", "aggressive", "critical");
+  node.classList.add(nextTone);
 }
 
 function render(payload: RuntimeBridgePayload): boolean {
@@ -275,6 +286,16 @@ function render(payload: RuntimeBridgePayload): boolean {
   if (loopQueueCadence) {
     loopQueueCadence.textContent = String(payload.loopQueueCadenceText || "CADENCE --");
   }
+  setChipTone(loopQueueFamily, resolveLoopRailTone(payload.loopQueueTone, "family"));
+  setChipTone(loopQueueFlow, resolveLoopRailTone(payload.loopQueueTone, "flow"));
+  setChipTone(loopQueueSummary, resolveLoopRailTone(payload.loopQueueTone, "summary"));
+  setChipTone(loopQueueGate, resolveLoopRailTone(payload.loopQueueTone, "gate"));
+  setChipTone(loopQueueLead, resolveLoopRailTone(payload.loopQueueTone, "lead"));
+  setChipTone(loopQueueWindow, resolveLoopRailTone(payload.loopQueueTone, "window"));
+  setChipTone(loopQueuePressure, resolveLoopRailTone(payload.loopQueueTone, "pressure"));
+  setChipTone(loopQueueResponse, resolveLoopRailTone(payload.loopQueueTone, "response"));
+  setChipTone(loopQueueAttention, resolveLoopRailTone(payload.loopQueueTone, "attention"));
+  setChipTone(loopQueueCadence, resolveLoopRailTone(payload.loopQueueTone, "cadence"));
   if (loopRuntimeDetail) {
     loopRuntimeDetail.textContent = String(payload.loopRuntimeDetailText || "Runtime diagnostics bekleniyor.");
   }
@@ -308,6 +329,16 @@ function render(payload: RuntimeBridgePayload): boolean {
   if (loopRuntimeCadence) {
     loopRuntimeCadence.textContent = String(payload.loopRuntimeCadenceText || "CADENCE --");
   }
+  setChipTone(loopRuntimeFamily, resolveLoopRailTone(payload.loopRuntimeTone, "family"));
+  setChipTone(loopRuntimeFlow, resolveLoopRailTone(payload.loopRuntimeTone, "flow"));
+  setChipTone(loopRuntimeSummary, resolveLoopRailTone(payload.loopRuntimeTone, "summary"));
+  setChipTone(loopRuntimeGate, resolveLoopRailTone(payload.loopRuntimeTone, "gate"));
+  setChipTone(loopRuntimeLead, resolveLoopRailTone(payload.loopRuntimeTone, "lead"));
+  setChipTone(loopRuntimeWindow, resolveLoopRailTone(payload.loopRuntimeTone, "window"));
+  setChipTone(loopRuntimePressure, resolveLoopRailTone(payload.loopRuntimeTone, "pressure"));
+  setChipTone(loopRuntimeResponse, resolveLoopRailTone(payload.loopRuntimeTone, "response"));
+  setChipTone(loopRuntimeAttention, resolveLoopRailTone(payload.loopRuntimeTone, "attention"));
+  setChipTone(loopRuntimeCadence, resolveLoopRailTone(payload.loopRuntimeTone, "cadence"));
   if (loopDispatchDetail) {
     loopDispatchDetail.textContent = String(payload.loopDispatchDetailText || "Dispatch gate detay bekleniyor.");
   }
@@ -341,6 +372,16 @@ function render(payload: RuntimeBridgePayload): boolean {
   if (loopDispatchCadence) {
     loopDispatchCadence.textContent = String(payload.loopDispatchCadenceText || "CADENCE --");
   }
+  setChipTone(loopDispatchFamily, resolveLoopRailTone(payload.loopDispatchTone, "family"));
+  setChipTone(loopDispatchFlow, resolveLoopRailTone(payload.loopDispatchTone, "flow"));
+  setChipTone(loopDispatchSummary, resolveLoopRailTone(payload.loopDispatchTone, "summary"));
+  setChipTone(loopDispatchGate, resolveLoopRailTone(payload.loopDispatchTone, "gate"));
+  setChipTone(loopDispatchLead, resolveLoopRailTone(payload.loopDispatchTone, "lead"));
+  setChipTone(loopDispatchWindow, resolveLoopRailTone(payload.loopDispatchTone, "window"));
+  setChipTone(loopDispatchPressure, resolveLoopRailTone(payload.loopDispatchTone, "pressure"));
+  setChipTone(loopDispatchResponse, resolveLoopRailTone(payload.loopDispatchTone, "response"));
+  setChipTone(loopDispatchAttention, resolveLoopRailTone(payload.loopDispatchTone, "attention"));
+  setChipTone(loopDispatchCadence, resolveLoopRailTone(payload.loopDispatchTone, "cadence"));
   pulseOnce(line);
   pulseOnce(eventsLine);
   pulseOnce(loopLine);

@@ -1,3 +1,5 @@
+import { resolveLoopRailTone } from "../core/runtime/loopRailTone.js";
+
 type ChainOption = {
   chain: string;
   payCurrency: string;
@@ -134,6 +136,15 @@ function setTone(node: HTMLElement | null, tone: unknown): void {
     return;
   }
   node.dataset.tone = safeText(tone, "neutral").toLowerCase() || "neutral";
+}
+
+function setChipTone(node: HTMLElement | null, tone: unknown): void {
+  if (!node) {
+    return;
+  }
+  const nextTone = safeText(tone, "neutral").toLowerCase() || "neutral";
+  node.classList.remove("neutral", "info", "safe", "advantage", "balanced", "pressure", "aggressive", "critical");
+  node.classList.add(nextTone);
 }
 
 function render(payload: TokenOverviewBridgePayload): boolean {
@@ -357,6 +368,16 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   if (loopWalletCadence) {
     loopWalletCadence.textContent = safeText(payload.loopWalletCadenceText, "CADENCE --");
   }
+  setChipTone(loopWalletFamily, resolveLoopRailTone(payload.loopWalletTone, "family"));
+  setChipTone(loopWalletFlow, resolveLoopRailTone(payload.loopWalletTone, "flow"));
+  setChipTone(loopWalletSummary, resolveLoopRailTone(payload.loopWalletTone, "summary"));
+  setChipTone(loopWalletGate, resolveLoopRailTone(payload.loopWalletTone, "gate"));
+  setChipTone(loopWalletLead, resolveLoopRailTone(payload.loopWalletTone, "lead"));
+  setChipTone(loopWalletWindow, resolveLoopRailTone(payload.loopWalletTone, "window"));
+  setChipTone(loopWalletPressure, resolveLoopRailTone(payload.loopWalletTone, "pressure"));
+  setChipTone(loopWalletResponse, resolveLoopRailTone(payload.loopWalletTone, "response"));
+  setChipTone(loopWalletAttention, resolveLoopRailTone(payload.loopWalletTone, "attention"));
+  setChipTone(loopWalletCadence, resolveLoopRailTone(payload.loopWalletTone, "cadence"));
   if (loopPayoutDetail) {
     loopPayoutDetail.textContent = safeText(payload.loopPayoutDetailText, "Payout route detay bekleniyor.");
   }
@@ -390,6 +411,16 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   if (loopPayoutCadence) {
     loopPayoutCadence.textContent = safeText(payload.loopPayoutCadenceText, "CADENCE --");
   }
+  setChipTone(loopPayoutFamily, resolveLoopRailTone(payload.loopPayoutTone, "family"));
+  setChipTone(loopPayoutFlow, resolveLoopRailTone(payload.loopPayoutTone, "flow"));
+  setChipTone(loopPayoutSummary, resolveLoopRailTone(payload.loopPayoutTone, "summary"));
+  setChipTone(loopPayoutGate, resolveLoopRailTone(payload.loopPayoutTone, "gate"));
+  setChipTone(loopPayoutLead, resolveLoopRailTone(payload.loopPayoutTone, "lead"));
+  setChipTone(loopPayoutWindow, resolveLoopRailTone(payload.loopPayoutTone, "window"));
+  setChipTone(loopPayoutPressure, resolveLoopRailTone(payload.loopPayoutTone, "pressure"));
+  setChipTone(loopPayoutResponse, resolveLoopRailTone(payload.loopPayoutTone, "response"));
+  setChipTone(loopPayoutAttention, resolveLoopRailTone(payload.loopPayoutTone, "attention"));
+  setChipTone(loopPayoutCadence, resolveLoopRailTone(payload.loopPayoutTone, "cadence"));
   if (loopRouteDetail) {
     loopRouteDetail.textContent = safeText(payload.loopRouteDetailText, "Route quorum detay bekleniyor.");
   }
@@ -423,6 +454,16 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   if (loopRouteCadence) {
     loopRouteCadence.textContent = safeText(payload.loopRouteCadenceText, "CADENCE --");
   }
+  setChipTone(loopRouteFamily, resolveLoopRailTone(payload.loopRouteTone, "family"));
+  setChipTone(loopRouteFlow, resolveLoopRailTone(payload.loopRouteTone, "flow"));
+  setChipTone(loopRouteSummary, resolveLoopRailTone(payload.loopRouteTone, "summary"));
+  setChipTone(loopRouteGate, resolveLoopRailTone(payload.loopRouteTone, "gate"));
+  setChipTone(loopRouteLead, resolveLoopRailTone(payload.loopRouteTone, "lead"));
+  setChipTone(loopRouteWindow, resolveLoopRailTone(payload.loopRouteTone, "window"));
+  setChipTone(loopRoutePressure, resolveLoopRailTone(payload.loopRouteTone, "pressure"));
+  setChipTone(loopRouteResponse, resolveLoopRailTone(payload.loopRouteTone, "response"));
+  setChipTone(loopRouteAttention, resolveLoopRailTone(payload.loopRouteTone, "attention"));
+  setChipTone(loopRouteCadence, resolveLoopRailTone(payload.loopRouteTone, "cadence"));
   if (loopPremiumDetail) {
     loopPremiumDetail.textContent = safeText(payload.loopPremiumDetailText, "Premium lane detay bekleniyor.");
   }
@@ -456,6 +497,16 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   if (loopPremiumCadence) {
     loopPremiumCadence.textContent = safeText(payload.loopPremiumCadenceText, "CADENCE --");
   }
+  setChipTone(loopPremiumFamily, resolveLoopRailTone(payload.loopPremiumTone, "family"));
+  setChipTone(loopPremiumFlow, resolveLoopRailTone(payload.loopPremiumTone, "flow"));
+  setChipTone(loopPremiumSummary, resolveLoopRailTone(payload.loopPremiumTone, "summary"));
+  setChipTone(loopPremiumGate, resolveLoopRailTone(payload.loopPremiumTone, "gate"));
+  setChipTone(loopPremiumLead, resolveLoopRailTone(payload.loopPremiumTone, "lead"));
+  setChipTone(loopPremiumWindow, resolveLoopRailTone(payload.loopPremiumTone, "window"));
+  setChipTone(loopPremiumPressure, resolveLoopRailTone(payload.loopPremiumTone, "pressure"));
+  setChipTone(loopPremiumResponse, resolveLoopRailTone(payload.loopPremiumTone, "response"));
+  setChipTone(loopPremiumAttention, resolveLoopRailTone(payload.loopPremiumTone, "attention"));
+  setChipTone(loopPremiumCadence, resolveLoopRailTone(payload.loopPremiumTone, "cadence"));
 
   const options = Array.isArray(payload.chainOptions) ? payload.chainOptions : [];
   chainSelect.innerHTML = options

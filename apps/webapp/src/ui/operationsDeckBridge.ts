@@ -1,3 +1,5 @@
+import { resolveLoopRailTone } from "../core/runtime/loopRailTone.js";
+
 type OfferItem = {
   id: number | string;
   title: string;
@@ -326,6 +328,16 @@ function setPanelTone(id: string, tone: unknown): void {
   node.dataset.tone = safeText(tone, "neutral").toLowerCase();
 }
 
+function setChipTone(id: string, tone: unknown): void {
+  const node = byId<HTMLElement>(id);
+  if (!node) {
+    return;
+  }
+  const nextTone = safeText(tone, "neutral").toLowerCase();
+  node.classList.remove("neutral", "info", "safe", "advantage", "balanced", "pressure", "aggressive", "critical");
+  node.classList.add(nextTone || "neutral");
+}
+
 function setNodeText(id: string, value: unknown, fallback: string): void {
   const node = byId<HTMLElement>(id);
   if (!node) {
@@ -353,6 +365,16 @@ function renderLoopFamily(prefix: string, payload: LoopFamilyPanel): void {
   setNodeText(`${prefix}Detail`, payload.detailText, "Detay bekleniyor.");
   setNodeText(`${prefix}Attention`, payload.attentionText, "ATTN --");
   setNodeText(`${prefix}Cadence`, payload.cadenceText, "CADENCE --");
+  setChipTone(`${prefix}Family`, resolveLoopRailTone(payload.tone, "family"));
+  setChipTone(`${prefix}Flow`, resolveLoopRailTone(payload.tone, "flow"));
+  setChipTone(`${prefix}Summary`, resolveLoopRailTone(payload.tone, "summary"));
+  setChipTone(`${prefix}Gate`, resolveLoopRailTone(payload.tone, "gate"));
+  setChipTone(`${prefix}Lead`, resolveLoopRailTone(payload.tone, "lead"));
+  setChipTone(`${prefix}Window`, resolveLoopRailTone(payload.tone, "window"));
+  setChipTone(`${prefix}Pressure`, resolveLoopRailTone(payload.tone, "pressure"));
+  setChipTone(`${prefix}Response`, resolveLoopRailTone(payload.tone, "response"));
+  setChipTone(`${prefix}Attention`, resolveLoopRailTone(payload.tone, "attention"));
+  setChipTone(`${prefix}Cadence`, resolveLoopRailTone(payload.tone, "cadence"));
 }
 
 function renderLoop(payload: NonNullable<OperationsDeckBridgePayload["loop"]>): boolean {
