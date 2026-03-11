@@ -563,6 +563,70 @@ function buildSceneLoopDistrictFamilyHealthAttentionTrendMatrix(rows, limit = 12
     .slice(0, Math.max(1, Math.floor(toNum(limit, 12))));
 }
 
+function buildSceneLoopDistrictFamilyHealthAttentionTrendDailyBreakdown(rows, limit = 18) {
+  const source = Array.isArray(rows) ? rows : [];
+  const grouped = new Map();
+  source.forEach((row) => {
+    const districtKey = String(row?.district_key || "unknown");
+    const loopFamilyKey = normalizeSceneLoopFamilyKey(row?.loop_family_key);
+    const compositeKey = `${districtKey}:${loopFamilyKey}`;
+    if (!grouped.has(compositeKey)) {
+      grouped.set(compositeKey, []);
+    }
+    grouped.get(compositeKey).push(row);
+  });
+  const output = [];
+  grouped.forEach((familyRows, compositeKey) => {
+    const [district_key, loop_family_key] = compositeKey.split(":");
+    const sortedRows = [...familyRows].sort((left, right) => String(right.day || "").localeCompare(String(left.day || "")));
+    sortedRows.forEach((row, index) => {
+      const liveCount = Math.max(0, Math.floor(toNum(row?.live_count, 0)));
+      const blockedCount = Math.max(0, Math.floor(toNum(row?.blocked_count, 0)));
+      const totalCount = Math.max(0, Math.floor(toNum(row?.total_count, 0)));
+      const liveShare = toRate(liveCount, totalCount);
+      const blockedShare = toRate(blockedCount, totalCount);
+      const olderRow = sortedRows[index + 1] || null;
+      const trendDirection = resolveSceneLoopTrendDirection(totalCount, olderRow?.total_count, olderRow ? 2 : 1);
+      const latestHealthBand = resolveSceneLoopDistrictHealthBand(totalCount, liveShare, blockedShare);
+      const attentionBand = resolveSceneLoopDistrictAttentionBand(latestHealthBand, trendDirection, blockedShare);
+      output.push({
+        day: String(row?.day || ""),
+        district_key,
+        loop_family_key,
+        total_count: totalCount,
+        live_count: liveCount,
+        blocked_count: blockedCount,
+        live_share: liveShare,
+        blocked_share: blockedShare,
+        latest_health_band: latestHealthBand,
+        attention_band: attentionBand,
+        trend_direction: trendDirection,
+        trend_delta: Math.max(
+          -9999,
+          Math.min(9999, Math.floor(toNum(row?.total_count, 0) - toNum(olderRow?.total_count, 0)))
+        )
+      });
+    });
+  });
+  return output
+    .sort((left, right) => {
+      const dayOrder = String(right.day || "").localeCompare(String(left.day || ""));
+      if (dayOrder !== 0) return dayOrder;
+      const attentionGap = rankSceneLoopAttentionBand(right.attention_band) - rankSceneLoopAttentionBand(left.attention_band);
+      if (attentionGap !== 0) return attentionGap;
+      const healthGap = rankSceneLoopHealthBand(right.latest_health_band) - rankSceneLoopHealthBand(left.latest_health_band);
+      if (healthGap !== 0) return healthGap;
+      const trendGap = rankSceneLoopTrendDirection(right.trend_direction) - rankSceneLoopTrendDirection(left.trend_direction);
+      if (trendGap !== 0) return trendGap;
+      const totalGap = toNum(right.total_count, 0) - toNum(left.total_count, 0);
+      if (Math.abs(totalGap) > 0.0001) return totalGap;
+      return `${String(left.district_key || "")}:${String(left.loop_family_key || "")}`.localeCompare(
+        `${String(right.district_key || "")}:${String(right.loop_family_key || "")}`
+      );
+    })
+    .slice(0, Math.max(1, Math.floor(toNum(limit, 18))));
+}
+
 function resolveSceneLoopDistrictAttentionBand(latestHealthBand, trendDirection, blockedShare) {
   const latestBand = String(latestHealthBand || "no_data");
   const trend = String(trendDirection || "no_data");
@@ -861,6 +925,8 @@ function enrichWebappRevenueMetrics(rawMetrics = {}) {
     buildSceneLoopDistrictFamilyHealthAttentionTrendBreakdown(metrics.scene_loop_district_family_matrix_7d);
   metrics.scene_loop_district_family_health_attention_trend_matrix_7d =
     buildSceneLoopDistrictFamilyHealthAttentionTrendMatrix(metrics.scene_loop_district_family_matrix_7d);
+  metrics.scene_loop_district_family_health_attention_trend_daily_breakdown_7d =
+    buildSceneLoopDistrictFamilyHealthAttentionTrendDailyBreakdown(metrics.scene_loop_district_family_daily_breakdown_7d);
   metrics.scene_runtime_daily_breakdown_7d = normalizeSceneDailyRows(metrics.scene_runtime_daily_breakdown_7d);
   const sceneDailyRows = metrics.scene_runtime_daily_breakdown_7d;
   const latestSceneDay = sceneDailyRows[0] || null;
@@ -962,6 +1028,7 @@ module.exports = {
   buildSceneLoopDistrictFamilyAttentionTrendBreakdown,
   buildSceneLoopDistrictFamilyHealthAttentionTrendBreakdown,
   buildSceneLoopDistrictFamilyHealthAttentionTrendMatrix,
+  buildSceneLoopDistrictFamilyHealthAttentionTrendDailyBreakdown,
   resolveSceneLoopTrendDirection,
   buildSceneBandBreakdown,
   buildSceneLoopBandBreakdown,
