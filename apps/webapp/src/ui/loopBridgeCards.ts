@@ -3,6 +3,11 @@ export type LoopBridgeCard = {
   value: string;
   hint?: string;
   tone?: string;
+  focus_key?: string;
+  risk_key?: string;
+  risk_focus_key?: string;
+  family_key?: string;
+  microflow_key?: string;
 };
 
 export type LoopBridgeBlock = {
@@ -11,6 +16,11 @@ export type LoopBridgeBlock = {
   gate: string;
   hint?: string;
   tone?: string;
+  focus_key?: string;
+  risk_key?: string;
+  risk_focus_key?: string;
+  family_key?: string;
+  microflow_key?: string;
 };
 
 export type LoopBridgePanel = {
@@ -18,6 +28,11 @@ export type LoopBridgePanel = {
   lines: string[];
   hint?: string;
   tone?: string;
+  focus_key?: string;
+  risk_key?: string;
+  risk_focus_key?: string;
+  family_key?: string;
+  microflow_key?: string;
 };
 
 function safeText(value: unknown, fallback = ""): string {
@@ -35,6 +50,37 @@ function normalizeTone(value: unknown): string {
   return "neutral";
 }
 
+type LoopBridgeMeta = {
+  focus_key?: string;
+  risk_key?: string;
+  risk_focus_key?: string;
+  family_key?: string;
+  microflow_key?: string;
+};
+
+function applyBridgeMeta(article: HTMLElement, meta: LoopBridgeMeta): void {
+  const focusKey = safeText(meta.focus_key);
+  const riskKey = safeText(meta.risk_key);
+  const riskFocusKey = safeText(meta.risk_focus_key);
+  const familyKey = safeText(meta.family_key);
+  const microflowKey = safeText(meta.microflow_key);
+  if (focusKey) {
+    article.dataset.focusKey = focusKey;
+  }
+  if (riskKey) {
+    article.dataset.riskKey = riskKey;
+  }
+  if (riskFocusKey) {
+    article.dataset.riskFocusKey = riskFocusKey;
+  }
+  if (familyKey) {
+    article.dataset.familyKey = familyKey;
+  }
+  if (microflowKey) {
+    article.dataset.microflowKey = microflowKey;
+  }
+}
+
 export function renderLoopBridgeCards(host: HTMLElement | null, cards: LoopBridgeCard[] | undefined): void {
   if (!host) {
     return;
@@ -50,6 +96,7 @@ export function renderLoopBridgeCards(host: HTMLElement | null, cards: LoopBridg
     const article = document.createElement("article");
     article.className = "akrBridgeFocusCard";
     article.dataset.tone = normalizeTone(card.tone);
+    applyBridgeMeta(article, card);
 
     const title = document.createElement("span");
     title.textContent = safeText(card.title, "FLOW");
@@ -85,6 +132,7 @@ export function renderLoopBridgeBlocks(host: HTMLElement | null, blocks: LoopBri
     const article = document.createElement("article");
     article.className = "akrBridgeFlowBlock";
     article.dataset.tone = normalizeTone(block.tone);
+    applyBridgeMeta(article, block);
 
     const title = document.createElement("span");
     title.textContent = safeText(block.title, "FLOW");
@@ -124,6 +172,7 @@ export function renderLoopBridgePanels(host: HTMLElement | null, panels: LoopBri
     const article = document.createElement("article");
     article.className = "akrBridgeFlowPanel";
     article.dataset.tone = normalizeTone(panel.tone);
+    applyBridgeMeta(article, panel);
 
     const title = document.createElement("span");
     title.textContent = safeText(panel.title, "FLOW");

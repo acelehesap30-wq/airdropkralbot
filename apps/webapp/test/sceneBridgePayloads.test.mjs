@@ -346,13 +346,21 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
   assert.equal(payloads.combatHud.loopDuelFlowCards?.[0]?.title, "STANCE");
   assert.match(payloads.combatHud.loopDuelFlowCards?.[0]?.value || "", /DUEL CONSOLE|DUEL FLOW/i);
   assert.match(payloads.combatHud.loopDuelFlowCards?.[0]?.hint || "", /FOCUS arena_prime:duel:duel_flow/i);
+  assert.equal(payloads.combatHud.loopDuelFlowCards?.[0]?.focus_key, "arena_prime:duel:duel_flow");
+  assert.match(payloads.combatHud.loopDuelFlowCards?.[0]?.risk_key || "", /^[a-z_]+:[a-z_]+:[a-z_]+$/i);
+  assert.match(
+    payloads.combatHud.loopDuelFlowCards?.[0]?.risk_focus_key || "",
+    /^arena_prime:duel:duel_flow\|[a-z_]+:[a-z_]+:[a-z_]+$/i
+  );
   assert.equal(payloads.combatHud.loopDuelFlowCards?.[2]?.title, "RISK");
   assert.equal(payloads.combatHud.loopDuelFlowBlocks?.length, 3);
   assert.equal(payloads.combatHud.loopDuelFlowBlocks?.[2]?.title, "RISK");
+  assert.equal(payloads.combatHud.loopDuelFlowBlocks?.[0]?.focus_key, "arena_prime:duel:duel_flow");
   assert.equal(payloads.combatHud.loopDuelFlowPanels?.length, 3);
   assert.equal(payloads.combatHud.loopDuelFlowPanels?.[0]?.title, "STANCE");
   assert.equal(payloads.combatHud.loopDuelFlowPanels?.[1]?.title, "STATUS");
   assert.equal(payloads.combatHud.loopDuelFlowPanels?.[2]?.title, "RESOLVE");
+  assert.equal(payloads.combatHud.loopDuelFlowPanels?.[2]?.focus_key, "arena_prime:duel:duel_flow");
   assert.equal(payloads.combatHud.loopDuelRiskCards?.length, 4);
   assert.equal(payloads.combatHud.loopDuelRiskCards?.[0]?.title, "HEALTH");
   assert.equal(payloads.combatHud.loopDuelRiskCards?.[1]?.title, "ATTN");
@@ -472,12 +480,17 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
   assert.match(payloads.combatHud.loopLadderRiskPanels?.[2]?.lines?.[5] || "", /^RISK [a-z_]+:[a-z_]+:[a-z_]+$/i);
   assert.equal(payloads.combatHud.loopLadderSubflowCards?.length, 3);
   assert.equal(payloads.combatHud.loopLadderSubflowCards?.[0]?.title, "RANK");
+  assert.equal(payloads.combatHud.loopLadderSubflowCards?.[0]?.focus_key, "arena_prime:ladder:duel_flow");
   assert.equal(payloads.combatHud.loopLadderSubflowBlocks?.length, 3);
   assert.equal(payloads.combatHud.loopLadderSubflowBlocks?.[0]?.title, "RANK");
   assert.equal(payloads.combatHud.loopLadderSubflowPanels?.length, 3);
   assert.equal(payloads.combatHud.loopLadderSubflowPanels?.[0]?.title, "RANK");
   assert.equal(payloads.combatHud.loopLadderSubflowPanels?.[1]?.title, "STATUS");
   assert.equal(payloads.combatHud.loopLadderSubflowPanels?.[2]?.title, "PUSH");
+  assert.match(
+    payloads.combatHud.loopLadderSubflowPanels?.[2]?.risk_focus_key || "",
+    /^arena_prime:ladder:duel_flow\|[a-z_]+:[a-z_]+:[a-z_]+$/i
+  );
   assert.match(payloads.combatHud.loopTelemetryFamilyText, /FLOW DUEL FLOW \| STATUS ACTIVE \| DIAG HOT/i);
   assert.match(payloads.combatHud.loopTelemetryFlowText, /PERSONA (WORLD )?PERSONALITY ASSAULT \| SEQ DUEL SEQUENCE \| FLOW DUEL FLOW/i);
   assert.match(payloads.combatHud.loopTelemetrySummaryText, /DIAG HOT \| RISK WATCH \| FLOW DUEL FLOW/i);
@@ -771,6 +784,11 @@ test("buildPlayerBridgePayloads surfaces active vault loop micro panels from sel
   assert.equal(payloads.tokenOverview.loopWalletFlowCards?.length, 3);
   assert.equal(payloads.tokenOverview.loopWalletFlowCards?.[0]?.title, "LINK");
   assert.match(payloads.tokenOverview.loopWalletFlowCards?.[0]?.value || "", /WALLET TERMINAL|PAYOUT TERMINAL|PAYOUT FLOW/i);
+  assert.equal(payloads.tokenOverview.loopWalletFlowCards?.[0]?.focus_key, "exchange_district:wallet:payout_flow");
+  assert.match(
+    payloads.tokenOverview.loopWalletFlowCards?.[0]?.risk_focus_key || "",
+    /^exchange_district:wallet:payout_flow\|[a-z_]+:[a-z_]+:[a-z_]+$/i
+  );
   assert.equal(payloads.tokenOverview.loopWalletFlowBlocks?.length, 3);
   assert.equal(payloads.tokenOverview.loopWalletFlowPanels?.length, 3);
   assert.equal(payloads.tokenOverview.loopWalletFlowPanels?.[0]?.title, "LINK");
@@ -1035,6 +1053,7 @@ test("buildPlayerBridgePayloads surfaces active tasks loop micro panels from sel
   assert.equal(payloads.operations.loop.lootFlowPanels?.[0]?.title, "OFFER");
   assert.equal(payloads.operations.loop.lootFlowPanels?.[1]?.title, "STATE");
   assert.equal(payloads.operations.loop.lootFlowPanels?.[2]?.title, "REVEAL");
+  assert.equal(payloads.operations.loop.lootFlowPanels?.[0]?.focus_key, "mission_quarter:loot:claim_flow");
   assert.equal(payloads.operations.loop.lootRiskCards?.length, 4);
   assert.equal(payloads.operations.loop.lootRiskCards?.[0]?.title, "HEALTH");
   assert.equal(payloads.operations.loop.lootRiskCards?.[1]?.title, "ATTN");
@@ -1248,6 +1267,11 @@ test("buildAdminBridgePayloads produces runtime, asset and audit cards from admi
   assert.equal(payloads.runtime.loopDispatchFlowCards?.length, 3);
   assert.equal(payloads.runtime.loopDispatchFlowCards?.[0]?.title, "QUEUE");
   assert.match(payloads.runtime.loopDispatchFlowCards?.[0]?.value || "", /DISPATCH CONSOLE|DISPATCH FLOW/i);
+  assert.equal(payloads.runtime.loopDispatchFlowCards?.[0]?.focus_key, "ops_citadel:dispatch:dispatch_flow");
+  assert.match(
+    payloads.runtime.loopDispatchFlowCards?.[0]?.risk_focus_key || "",
+    /^ops_citadel:dispatch:dispatch_flow\|[a-z_]+:[a-z_]+:[a-z_]+$/i
+  );
   assert.equal(payloads.runtime.loopDispatchFlowBlocks?.length, 3);
   assert.equal(payloads.runtime.loopDispatchFlowPanels?.length, 3);
   assert.equal(payloads.runtime.loopDispatchFlowPanels?.[0]?.title, "QUEUE");
