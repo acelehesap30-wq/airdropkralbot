@@ -91,6 +91,8 @@ type RuntimeBridgePayload = {
   loopDispatchFlowCards?: LoopBridgeCard[];
   loopDispatchFlowBlocks?: LoopBridgeBlock[];
   loopDispatchFlowPanels?: LoopBridgePanel[];
+  loopDispatchRiskCards?: LoopBridgeCard[];
+  loopDispatchRiskBlocks?: LoopBridgeBlock[];
   loopDispatchRiskPanels?: LoopBridgePanel[];
   loopDispatchSubflowCards?: LoopBridgeCard[];
   loopDispatchSubflowBlocks?: LoopBridgeBlock[];
@@ -188,6 +190,8 @@ function render(payload: RuntimeBridgePayload): boolean {
   const loopDispatchFlowCards = byId<HTMLElement>("adminRuntimeLoopDispatchFlowCards");
   const loopDispatchFlowBlocks = byId<HTMLElement>("adminRuntimeLoopDispatchFlowBlocks");
   const loopDispatchFlowPanels = byId<HTMLElement>("adminRuntimeLoopDispatchFlowPanels");
+  const loopDispatchRiskCards = byId<HTMLElement>("adminRuntimeLoopDispatchRiskCards");
+  const loopDispatchRiskBlocks = byId<HTMLElement>("adminRuntimeLoopDispatchRiskBlocks");
   const loopDispatchRiskPanels = byId<HTMLElement>("adminRuntimeLoopDispatchRiskPanels");
   const loopDispatchSubflowCards = byId<HTMLElement>("adminRuntimeLoopDispatchSubflowCards");
   const loopDispatchSubflowBlocks = byId<HTMLElement>("adminRuntimeLoopDispatchSubflowBlocks");
@@ -461,6 +465,8 @@ function render(payload: RuntimeBridgePayload): boolean {
   renderLoopBridgeCards(loopDispatchFlowCards, payload.loopDispatchFlowCards);
   renderLoopBridgeBlocks(loopDispatchFlowBlocks, payload.loopDispatchFlowBlocks);
   renderLoopBridgePanels(loopDispatchFlowPanels, payload.loopDispatchFlowPanels);
+  renderLoopBridgeCards(loopDispatchRiskCards, payload.loopDispatchRiskCards);
+  renderLoopBridgeBlocks(loopDispatchRiskBlocks, payload.loopDispatchRiskBlocks);
   renderLoopBridgePanels(loopDispatchRiskPanels, payload.loopDispatchRiskPanels);
   renderLoopBridgeCards(loopDispatchSubflowCards, payload.loopDispatchSubflowCards);
   renderLoopBridgeBlocks(loopDispatchSubflowBlocks, payload.loopDispatchSubflowBlocks);
