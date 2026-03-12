@@ -625,6 +625,7 @@ function buildLoopFamilyBridgeBundle(tone, rails) {
   const riskSummaryText = buildLoopRiskSummaryText(source);
   const riskKeyText = buildLoopRiskKeyText(source);
   const focusKeyText = buildLoopFocusKeyText(source);
+  const riskFocusKeyText = buildLoopRiskFocusKeyText(source);
   return {
     cards: applyLoopBridgeMeta(buildLoopBridgeCards(
       buildLoopBridgeCard(
@@ -634,7 +635,12 @@ function buildLoopFamilyBridgeBundle(tone, rails) {
         buildLoopMicroDetail(source.familyText, focusKeyText ? `FOCUS ${focusKeyText}` : "")
       ),
       buildLoopBridgeCard("GATE", source.gateText, tone, source.flowText),
-      buildLoopBridgeCard("RISK", riskSummaryText, tone, riskKeyText)
+      buildLoopBridgeCard(
+        "RISK",
+        riskSummaryText,
+        tone,
+        buildLoopMicroDetail(riskKeyText ? `RISK ${riskKeyText}` : "", riskFocusKeyText ? `RFK ${riskFocusKeyText}` : "")
+      )
     ), source),
     blocks: applyLoopBridgeMeta(buildLoopBridgeBlocks(
       buildLoopBridgeBlock(
@@ -645,7 +651,13 @@ function buildLoopFamilyBridgeBundle(tone, rails) {
         buildLoopMicroDetail(source.summaryText, focusKeyText ? `FOCUS ${focusKeyText}` : "")
       ),
       buildLoopBridgeBlock("GATE", source.summaryText, source.gateText, tone, source.windowText),
-      buildLoopBridgeBlock("RISK", buildLoopHealthText(source), buildLoopAttentionText(source), tone, riskKeyText)
+      buildLoopBridgeBlock(
+        "RISK",
+        buildLoopHealthText(source),
+        buildLoopAttentionText(source),
+        tone,
+        buildLoopMicroDetail(riskKeyText ? `RISK ${riskKeyText}` : "", riskFocusKeyText ? `RFK ${riskFocusKeyText}` : "")
+      )
     ), source)
   };
 }
@@ -655,6 +667,7 @@ function buildLoopFlowFamilyBridgeBundle(tone, rails, titles) {
   const riskSummaryText = buildLoopRiskSummaryText(source);
   const riskKeyText = buildLoopRiskKeyText(source);
   const focusKeyText = buildLoopFocusKeyText(source);
+  const riskFocusKeyText = buildLoopRiskFocusKeyText(source);
   const [entryTitle, stateTitle, resolveTitle] = normalizeLoopFlowPanelTitles(titles);
   return {
     cards: applyLoopBridgeMeta(buildLoopBridgeCards(
@@ -665,7 +678,12 @@ function buildLoopFlowFamilyBridgeBundle(tone, rails, titles) {
         buildLoopMicroDetail(source.gateText || source.summaryText, focusKeyText ? `FOCUS ${focusKeyText}` : "")
       ),
       buildLoopBridgeCard(stateTitle, source.stateText || source.summaryText, tone, source.stageText || source.detailText),
-      buildLoopBridgeCard("RISK", riskSummaryText, tone, riskKeyText)
+      buildLoopBridgeCard(
+        "RISK",
+        riskSummaryText,
+        tone,
+        buildLoopMicroDetail(riskKeyText ? `RISK ${riskKeyText}` : "", riskFocusKeyText ? `RFK ${riskFocusKeyText}` : "")
+      )
     ), source),
     blocks: applyLoopBridgeMeta(buildLoopBridgeBlocks(
       buildLoopBridgeBlock(
@@ -676,7 +694,13 @@ function buildLoopFlowFamilyBridgeBundle(tone, rails, titles) {
         buildLoopMicroDetail(source.gateText || source.detailText, focusKeyText ? `FOCUS ${focusKeyText}` : "")
       ),
       buildLoopBridgeBlock(resolveTitle, source.windowText || source.summaryText, source.summaryText || source.stateText, tone, source.attentionText || source.cadenceText),
-      buildLoopBridgeBlock("RISK", riskSummaryText, source.signalText || source.pressureText, tone, riskKeyText)
+      buildLoopBridgeBlock(
+        "RISK",
+        riskSummaryText,
+        source.signalText || source.pressureText,
+        tone,
+        buildLoopMicroDetail(riskKeyText ? `RISK ${riskKeyText}` : "", riskFocusKeyText ? `RFK ${riskFocusKeyText}` : "")
+      )
     ), source)
   };
 }
@@ -686,7 +710,12 @@ function buildLoopRiskBridgeBundle(tone, rails) {
   const riskComponentText = buildLoopRiskComponentText(source);
   const riskKeyText = buildLoopRiskKeyText(source);
   const focusKeyText = buildLoopFocusKeyText(source);
-  const riskHintText = buildLoopMicroDetail(focusKeyText ? `FOCUS ${focusKeyText}` : "", `RISK ${riskKeyText}`);
+  const riskFocusKeyText = buildLoopRiskFocusKeyText(source);
+  const riskHintText = buildLoopMicroDetail(
+    focusKeyText ? `FOCUS ${focusKeyText}` : "",
+    riskKeyText ? `RISK ${riskKeyText}` : "",
+    riskFocusKeyText ? `RFK ${riskFocusKeyText}` : ""
+  );
   return {
     cards: applyLoopBridgeMeta(buildLoopBridgeCards(
       buildLoopBridgeCard("HEALTH", buildLoopHealthText(source), tone, source.stateText || source.summaryText),
@@ -830,6 +859,7 @@ function buildLoopSubflowPanels(tone, rails, titles) {
   const riskComponentText = buildLoopRiskComponentText(source);
   const riskKeyText = buildLoopRiskKeyText(source);
   const focusKeyText = buildLoopFocusKeyText(source);
+  const riskFocusKeyText = buildLoopRiskFocusKeyText(source);
   const [entryTitle, stateTitle, opsTitle] = normalizeLoopSubflowPanelTitles(titles);
   return applyLoopBridgeMeta([
     {
@@ -861,7 +891,8 @@ function buildLoopSubflowPanels(tone, rails, titles) {
         toText(source.signalText || source.pressureText, "SIGNAL --"),
         riskComponentText,
         buildLoopMicroDetail(buildLoopRiskSummaryText(source)),
-        `RISK ${riskKeyText}`
+        `RISK ${riskKeyText}`,
+        riskFocusKeyText ? `RFK ${riskFocusKeyText}` : ""
       ]
     }
   ], source);
@@ -870,6 +901,8 @@ function buildLoopSubflowPanels(tone, rails, titles) {
 function buildLoopSubflowBundle(tone, rails, titles) {
   const source = asRecord(rails);
   const focusKeyText = buildLoopFocusKeyText(source);
+  const riskKeyText = buildLoopRiskKeyText(source);
+  const riskFocusKeyText = buildLoopRiskFocusKeyText(source);
   const [entryTitle, stateTitle, opsTitle] = normalizeLoopSubflowPanelTitles(titles);
   return {
     cards: applyLoopBridgeMeta(buildLoopBridgeCards(
@@ -880,7 +913,16 @@ function buildLoopSubflowBundle(tone, rails, titles) {
         buildLoopMicroDetail(source.focusText || source.gateText, focusKeyText ? `FOCUS ${focusKeyText}` : "")
       ),
       buildLoopBridgeCard(stateTitle, source.stateText || source.summaryText, tone, source.stageText || source.windowText),
-      buildLoopBridgeCard("PRESS", source.pressureText || source.signalText, tone, source.responseText || source.attentionText)
+      buildLoopBridgeCard(
+        "PRESS",
+        source.pressureText || source.signalText,
+        tone,
+        buildLoopMicroDetail(
+          source.responseText || source.attentionText,
+          riskKeyText ? `RISK ${riskKeyText}` : "",
+          riskFocusKeyText ? `RFK ${riskFocusKeyText}` : ""
+        )
+      )
     ), source),
     blocks: applyLoopBridgeMeta(buildLoopBridgeBlocks(
       buildLoopBridgeBlock(
@@ -891,7 +933,13 @@ function buildLoopSubflowBundle(tone, rails, titles) {
         buildLoopMicroDetail(source.focusText, focusKeyText ? `FOCUS ${focusKeyText}` : "")
       ),
       buildLoopBridgeBlock(opsTitle, source.windowText || source.summaryText, source.responseText || source.attentionText, tone, source.stageText),
-      buildLoopBridgeBlock("OPS", source.opsText || source.detailText, source.signalText || source.pressureText, tone, source.detailText)
+      buildLoopBridgeBlock(
+        "OPS",
+        source.opsText || source.detailText,
+        source.signalText || source.pressureText,
+        tone,
+        buildLoopMicroDetail(source.detailText, riskKeyText ? `RISK ${riskKeyText}` : "", riskFocusKeyText ? `RFK ${riskFocusKeyText}` : "")
+      )
     ), source),
     panels: buildLoopSubflowPanels(tone, source, titles)
   };

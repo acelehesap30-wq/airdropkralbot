@@ -50,6 +50,20 @@ function formatStamp(value: unknown): string {
   return raw || "-";
 }
 
+function renderRiskContextSuffix(row: Record<string, unknown>): string {
+  const parts: string[] = [];
+  if (row.focus_key) {
+    parts.push(`focus ${String(row.focus_key)}`);
+  }
+  if (row.risk_key) {
+    parts.push(`risk ${String(row.risk_key)}`);
+  }
+  if (row.risk_focus_key) {
+    parts.push(`risk-focus ${String(row.risk_focus_key)}`);
+  }
+  return parts.length ? ` | ${parts.join(" | ")}` : "";
+}
+
 function AlarmReasonList(props: { title: string; rows: string[] }) {
   if (!props.rows.length) {
     return (
@@ -228,6 +242,7 @@ function SceneLoopDistrictFamilyMatrixList(props: {
               {Math.floor(Number(row.live_count || 0))} | blocked {Math.floor(Number(row.blocked_count || 0))} | attn{" "}
               {String(row.attention_band || "no_data")} | G/Y/R {Math.floor(Number(row.green_days || 0))}/
               {Math.floor(Number(row.yellow_days || 0))}/{Math.floor(Number(row.red_days || 0))}
+              {renderRiskContextSuffix(row)}
             </p>
           ));
         })()}
@@ -267,6 +282,7 @@ function SceneLoopDistrictFamilyDailyMatrixList(props: {
               {String(row.trend_direction || "no_data")} ({Math.floor(Number(row.trend_delta || 0))}) | loops{" "}
               {Math.floor(Number(row.total_count || 0))} | live {Math.floor(Number(row.live_count || 0))} | blocked{" "}
               {Math.floor(Number(row.blocked_count || 0))}
+              {renderRiskContextSuffix(row)}
             </p>
           ));
         })()}
@@ -340,7 +356,7 @@ function SceneLoopRiskDimensionMatrixList(props: { title: string; rows: Array<Re
             {String(row.latest_health_band || row.health_band || "no_data")} | attn {String(row.attention_band || "no_data")} | trend{" "}
             {String(row.trend_direction || "no_data")} ({Math.floor(Number(row.trend_delta || 0))}) | days{" "}
             {Math.floor(Number(row.day_count || 0))} | hits {Math.floor(Number(row.item_count || 0))}
-            {row.risk_focus_key ? ` | risk-focus ${String(row.risk_focus_key)}` : ""}
+            {renderRiskContextSuffix(row)}
           </p>
         ))}
       </div>
@@ -367,7 +383,7 @@ function SceneLoopRiskDimensionDailyMatrixList(props: { title: string; rows: Arr
             {String(row.latest_health_band || row.health_band || "no_data")} | attn {String(row.attention_band || "no_data")} | trend{" "}
             {String(row.trend_direction || "no_data")} ({Math.floor(Number(row.trend_delta || 0))}) | hits{" "}
             {Math.floor(Number(row.item_count || 0))}
-            {row.risk_focus_key ? ` | risk-focus ${String(row.risk_focus_key)}` : ""}
+            {renderRiskContextSuffix(row)}
           </p>
         ))}
       </div>

@@ -402,8 +402,16 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
   assert.equal(payloads.combatHud.loopDuelSubflowCards?.length, 3);
   assert.equal(payloads.combatHud.loopDuelSubflowCards?.[0]?.title, "STANCE");
   assert.match(payloads.combatHud.loopDuelSubflowCards?.[0]?.hint || "", /FOCUS arena_prime:duel:duel_flow/i);
+  assert.match(
+    payloads.combatHud.loopDuelSubflowCards?.[2]?.hint || "",
+    /RFK arena_prime:duel:duel_flow\|[a-z_]+:[a-z_]+:[a-z_]+/i
+  );
   assert.equal(payloads.combatHud.loopDuelSubflowBlocks?.length, 3);
   assert.equal(payloads.combatHud.loopDuelSubflowBlocks?.[0]?.title, "STANCE");
+  assert.match(
+    payloads.combatHud.loopDuelSubflowBlocks?.[2]?.hint || "",
+    /RFK arena_prime:duel:duel_flow\|[a-z_]+:[a-z_]+:[a-z_]+/i
+  );
   assert.equal(payloads.combatHud.loopDuelSubflowPanels?.length, 3);
   assert.equal(payloads.combatHud.loopDuelSubflowPanels?.[0]?.title, "STANCE");
   assert.equal(payloads.combatHud.loopDuelSubflowPanels?.[1]?.title, "STATUS");
@@ -412,6 +420,10 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
   assert.match(payloads.combatHud.loopDuelSubflowPanels?.[1]?.lines?.[2] || "", /ATTN|ENGAGE|FLOW|HEALTH/i);
   assert.match(payloads.combatHud.loopDuelSubflowPanels?.[2]?.lines?.[2] || "", /TREND|SEQ|FLOW|HEALTH/i);
   assert.match(payloads.combatHud.loopDuelSubflowPanels?.[2]?.lines?.[3] || "", /HEALTH .*ATTN .*TREND /i);
+  assert.match(
+    payloads.combatHud.loopDuelSubflowPanels?.[2]?.lines?.[5] || "",
+    /^RFK arena_prime:duel:duel_flow\|[a-z_]+:[a-z_]+:[a-z_]+$/i
+  );
   assert.equal(payloads.combatHud.loopDuelBlocks?.length, 3);
   assert.equal(payloads.combatHud.loopDuelBlocks?.[0]?.title, "FLOW");
   assert.match(payloads.combatHud.loopDuelBlocks?.[0]?.summary || "", /ACTIVE|ENGAGE|FLOW/i);
@@ -1090,6 +1102,10 @@ test("buildPlayerBridgePayloads surfaces active tasks loop micro panels from sel
   assert.equal(payloads.operations.loop.lootSubflowPanels?.[1]?.title, "STATE");
   assert.equal(payloads.operations.loop.lootSubflowPanels?.[2]?.title, "REVEAL");
   assert.match(payloads.operations.loop.lootSubflowPanels?.[2]?.lines?.[3] || "", /HEALTH .*ATTN .*TREND /i);
+  assert.match(
+    payloads.operations.loop.lootSubflowPanels?.[2]?.lines?.[5] || "",
+    /^RFK mission_quarter:loot:claim_flow\|[a-z_]+:[a-z_]+:[a-z_]+$/i
+  );
   assert.equal(payloads.operations.loop.lootBlocks?.length, 3);
   assert.equal(payloads.operations.loop.lootBlocks?.[0]?.title, "FLOW");
   assert.match(payloads.operations.loop.lootBlocks?.[0]?.summary || "", /READY|WATCH|FLOW/i);
@@ -1328,6 +1344,10 @@ test("buildAdminBridgePayloads produces runtime, asset and audit cards from admi
   assert.match(payloads.runtime.loopDispatchSubflowPanels?.[1]?.lines?.[2] || "", /HEALTH WATCH|ALERT 3|FLOW DISPATCH FLOW/i);
   assert.match(payloads.runtime.loopDispatchSubflowPanels?.[2]?.lines?.[2] || "", /HB [A-Z_]+ \| ATTN [A-Z_]+ \| TREND [A-Z_]+/i);
   assert.match(payloads.runtime.loopDispatchSubflowPanels?.[2]?.lines?.[3] || "", /HEALTH .*ATTN .*TREND /i);
+  assert.match(
+    payloads.runtime.loopDispatchSubflowPanels?.[2]?.lines?.[5] || "",
+    /^RFK ops_citadel:dispatch:dispatch_flow\|[a-z_]+:[a-z_]+:[a-z_]+$/i
+  );
   assert.equal(payloads.runtime.loopDispatchBlocks?.length, 3);
   assert.equal(payloads.runtime.loopDispatchBlocks?.[0]?.title, "FLOW");
   assert.match(payloads.runtime.loopDispatchBlocks?.[0]?.summary || "", /WATCH|ALERT|FLOW/i);
