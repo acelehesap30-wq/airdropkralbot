@@ -99,6 +99,21 @@ type HoverPreview = {
   sourceType: string;
 };
 
+type RiskContext = {
+  district_key?: string;
+  family_key?: string;
+  flow_key?: string;
+  microflow_key?: string;
+  focus_key?: string;
+  risk_key?: string;
+  risk_focus_key?: string;
+  risk_health_band_key?: string;
+  risk_attention_band_key?: string;
+  risk_trend_direction_key?: string;
+  entry_kind_key?: string;
+  sequence_kind_key?: string;
+};
+
 type ClusterActionItem = {
   key: string;
   label: string;
@@ -128,6 +143,7 @@ type ClusterActionItem = {
   risk_trend_direction_key?: string;
   entry_kind_key?: string;
   sequence_kind_key?: string;
+  risk_context?: RiskContext;
   action_context?: {
     district_key?: string;
     family_key?: string;
@@ -160,6 +176,7 @@ type ProtocolCardActionItem = {
   risk_health_band_key?: string;
   risk_attention_band_key?: string;
   risk_trend_direction_key?: string;
+  risk_context?: RiskContext;
   action_context?: ClusterActionItem["action_context"];
 };
 
@@ -185,6 +202,7 @@ type InteractionModalLaneCard = {
   risk_trend_direction_key?: string;
   entry_kind_key?: string;
   sequence_kind_key?: string;
+  risk_context?: RiskContext;
   action_context?: ClusterActionItem["action_context"];
 };
 
@@ -237,6 +255,7 @@ type ProtocolCardFlowPod = {
     risk_health_band_key?: string;
     risk_attention_band_key?: string;
     risk_trend_direction_key?: string;
+    risk_context?: RiskContext;
     action_context?: {
       district_key?: string;
       family_key?: string;
@@ -359,6 +378,7 @@ type ProtocolCard = {
   risk_trend_direction_key?: string;
   entry_kind_key?: string;
   sequence_kind_key?: string;
+  risk_context?: RiskContext;
   action_context?: ClusterActionItem["action_context"];
   preview_rows?: Array<{ label_key: string; value: string; status_key: string }>;
   flow_rows?: Array<{ label_key: string; value: string; status_key: string }>;
@@ -367,6 +387,10 @@ type ProtocolCard = {
   flow_pods?: ProtocolCardFlowPod[];
   action_items?: ProtocolCardActionItem[];
 };
+
+function asRiskContext(value: unknown): RiskContext {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as RiskContext) : {};
+}
 
 async function loadBabylonSceneModules() {
   const [
@@ -569,35 +593,59 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
     );
   }, [selectedProtocolCard, selectedProtocolPod, worldState.interaction_modal?.modal_cards]);
   const selectedLoopActionContext = useMemo(
-    () => ({
-      familyKey: String(selectedMicroflow?.action_context?.family_key || selectedMicroflow?.family_key || ""),
-      flowKey: String(selectedMicroflow?.action_context?.flow_key || selectedMicroflow?.flow_key || ""),
-      microflowKey: String(selectedMicroflow?.action_context?.microflow_key || selectedMicroflow?.microflow_key || ""),
-      focusKey: String(selectedMicroflow?.action_context?.focus_key || selectedMicroflow?.focus_key || ""),
-      riskKey: String(selectedMicroflow?.action_context?.risk_key || selectedMicroflow?.risk_key || ""),
-      riskFocusKey: String(selectedMicroflow?.action_context?.risk_focus_key || selectedMicroflow?.risk_focus_key || ""),
-      entryKindKey: String(
-        selectedMicroflow?.action_context?.entry_kind_key || selectedMicroflow?.entry_kind_key || ""
-      ),
-      sequenceKindKey: String(
-        selectedMicroflow?.action_context?.sequence_kind_key || selectedMicroflow?.sequence_kind_key || ""
-      ),
-      riskHealthBandKey: String(
-        selectedMicroflow?.action_context?.risk_health_band_key || selectedMicroflow?.risk_health_band_key || ""
-      ),
-      riskAttentionBandKey: String(
-        selectedMicroflow?.action_context?.risk_attention_band_key || selectedMicroflow?.risk_attention_band_key || ""
-      ),
-      riskTrendDirectionKey: String(
-        selectedMicroflow?.action_context?.risk_trend_direction_key || selectedMicroflow?.risk_trend_direction_key || ""
-      )
-    }),
+    () => {
+      const riskContext = asRiskContext(selectedMicroflow?.risk_context);
+      const actionContext = asRiskContext(selectedMicroflow?.action_context);
+      return {
+        familyKey: String(riskContext.family_key || actionContext.family_key || selectedMicroflow?.family_key || ""),
+        flowKey: String(riskContext.flow_key || actionContext.flow_key || selectedMicroflow?.flow_key || ""),
+        microflowKey: String(
+          riskContext.microflow_key || actionContext.microflow_key || selectedMicroflow?.microflow_key || ""
+        ),
+        focusKey: String(riskContext.focus_key || actionContext.focus_key || selectedMicroflow?.focus_key || ""),
+        riskKey: String(riskContext.risk_key || actionContext.risk_key || selectedMicroflow?.risk_key || ""),
+        riskFocusKey: String(
+          riskContext.risk_focus_key || actionContext.risk_focus_key || selectedMicroflow?.risk_focus_key || ""
+        ),
+        entryKindKey: String(
+          riskContext.entry_kind_key ||
+            actionContext.entry_kind_key ||
+            selectedMicroflow?.entry_kind_key ||
+            ""
+        ),
+        sequenceKindKey: String(
+          riskContext.sequence_kind_key ||
+            actionContext.sequence_kind_key ||
+            selectedMicroflow?.sequence_kind_key ||
+            ""
+        ),
+        riskHealthBandKey: String(
+          riskContext.risk_health_band_key ||
+            actionContext.risk_health_band_key ||
+            selectedMicroflow?.risk_health_band_key ||
+            ""
+        ),
+        riskAttentionBandKey: String(
+          riskContext.risk_attention_band_key ||
+            actionContext.risk_attention_band_key ||
+            selectedMicroflow?.risk_attention_band_key ||
+            ""
+        ),
+        riskTrendDirectionKey: String(
+          riskContext.risk_trend_direction_key ||
+            actionContext.risk_trend_direction_key ||
+            selectedMicroflow?.risk_trend_direction_key ||
+            ""
+        )
+      };
+    },
     [selectedMicroflow]
   );
   const resolveSceneActionContext = useCallback(
     (
       action?:
         | {
+            risk_context?: RiskContext;
             action_context?: ClusterActionItem["action_context"];
             family_key?: string;
             flow_key?: string;
@@ -614,6 +662,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
         | null,
       fallback?:
         | {
+            risk_context?: RiskContext;
             action_context?: ClusterActionItem["action_context"];
             family_key?: string;
             flow_key?: string;
@@ -628,96 +677,124 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
             risk_trend_direction_key?: string;
           }
         | null
-    ) => ({
-      familyKey: String(
-        action?.action_context?.family_key ||
-          action?.family_key ||
-          fallback?.action_context?.family_key ||
-          fallback?.family_key ||
-          selectedLoopActionContext.familyKey ||
-          ""
-      ),
-      flowKey: String(
-        action?.action_context?.flow_key ||
-          action?.flow_key ||
-          fallback?.action_context?.flow_key ||
-          fallback?.flow_key ||
-          selectedLoopActionContext.flowKey ||
-          ""
-      ),
-      microflowKey: String(
-        action?.action_context?.microflow_key ||
-          action?.microflow_key ||
-          fallback?.action_context?.microflow_key ||
-          fallback?.microflow_key ||
-          selectedLoopActionContext.microflowKey ||
-          ""
-      ),
-      focusKey: String(
-        action?.action_context?.focus_key ||
-          action?.focus_key ||
-          fallback?.action_context?.focus_key ||
-          fallback?.focus_key ||
-          selectedLoopActionContext.focusKey ||
-          ""
-      ),
-      riskKey: String(
-        action?.action_context?.risk_key ||
-          action?.risk_key ||
-          fallback?.action_context?.risk_key ||
-          fallback?.risk_key ||
-          selectedLoopActionContext.riskKey ||
-          ""
-      ),
-      riskFocusKey: String(
-        action?.action_context?.risk_focus_key ||
-          action?.risk_focus_key ||
-          fallback?.action_context?.risk_focus_key ||
-          fallback?.risk_focus_key ||
-          selectedLoopActionContext.riskFocusKey ||
-          ""
-      ),
-      entryKindKey: String(
-        action?.action_context?.entry_kind_key ||
-          action?.entry_kind_key ||
-          fallback?.action_context?.entry_kind_key ||
-          fallback?.entry_kind_key ||
-          selectedLoopActionContext.entryKindKey ||
-          ""
-      ),
-      sequenceKindKey: String(
-        action?.action_context?.sequence_kind_key ||
-          action?.sequence_kind_key ||
-          fallback?.action_context?.sequence_kind_key ||
-          fallback?.sequence_kind_key ||
-          selectedLoopActionContext.sequenceKindKey ||
-          ""
-      ),
-      riskHealthBandKey: String(
-        action?.action_context?.risk_health_band_key ||
-          action?.risk_health_band_key ||
-          fallback?.action_context?.risk_health_band_key ||
-          fallback?.risk_health_band_key ||
-          selectedLoopActionContext.riskHealthBandKey ||
-          ""
-      ),
-      riskAttentionBandKey: String(
-        action?.action_context?.risk_attention_band_key ||
-          action?.risk_attention_band_key ||
-          fallback?.action_context?.risk_attention_band_key ||
-          fallback?.risk_attention_band_key ||
-          selectedLoopActionContext.riskAttentionBandKey ||
-          ""
-      ),
-      riskTrendDirectionKey: String(
-        action?.action_context?.risk_trend_direction_key ||
-          action?.risk_trend_direction_key ||
-          fallback?.action_context?.risk_trend_direction_key ||
-          fallback?.risk_trend_direction_key ||
-          selectedLoopActionContext.riskTrendDirectionKey ||
-          ""
-      )
-    }),
+    ) => {
+      const actionRiskContext = asRiskContext(action?.risk_context);
+      const actionContext = asRiskContext(action?.action_context);
+      const fallbackRiskContext = asRiskContext(fallback?.risk_context);
+      const fallbackContext = asRiskContext(fallback?.action_context);
+      return {
+        familyKey: String(
+          actionRiskContext.family_key ||
+            actionContext.family_key ||
+            action?.family_key ||
+            fallbackRiskContext.family_key ||
+            fallbackContext.family_key ||
+            fallback?.family_key ||
+            selectedLoopActionContext.familyKey ||
+            ""
+        ),
+        flowKey: String(
+          actionRiskContext.flow_key ||
+            actionContext.flow_key ||
+            action?.flow_key ||
+            fallbackRiskContext.flow_key ||
+            fallbackContext.flow_key ||
+            fallback?.flow_key ||
+            selectedLoopActionContext.flowKey ||
+            ""
+        ),
+        microflowKey: String(
+          actionRiskContext.microflow_key ||
+            actionContext.microflow_key ||
+            action?.microflow_key ||
+            fallbackRiskContext.microflow_key ||
+            fallbackContext.microflow_key ||
+            fallback?.microflow_key ||
+            selectedLoopActionContext.microflowKey ||
+            ""
+        ),
+        focusKey: String(
+          actionRiskContext.focus_key ||
+            actionContext.focus_key ||
+            action?.focus_key ||
+            fallbackRiskContext.focus_key ||
+            fallbackContext.focus_key ||
+            fallback?.focus_key ||
+            selectedLoopActionContext.focusKey ||
+            ""
+        ),
+        riskKey: String(
+          actionRiskContext.risk_key ||
+            actionContext.risk_key ||
+            action?.risk_key ||
+            fallbackRiskContext.risk_key ||
+            fallbackContext.risk_key ||
+            fallback?.risk_key ||
+            selectedLoopActionContext.riskKey ||
+            ""
+        ),
+        riskFocusKey: String(
+          actionRiskContext.risk_focus_key ||
+            actionContext.risk_focus_key ||
+            action?.risk_focus_key ||
+            fallbackRiskContext.risk_focus_key ||
+            fallbackContext.risk_focus_key ||
+            fallback?.risk_focus_key ||
+            selectedLoopActionContext.riskFocusKey ||
+            ""
+        ),
+        entryKindKey: String(
+          actionRiskContext.entry_kind_key ||
+            actionContext.entry_kind_key ||
+            action?.entry_kind_key ||
+            fallbackRiskContext.entry_kind_key ||
+            fallbackContext.entry_kind_key ||
+            fallback?.entry_kind_key ||
+            selectedLoopActionContext.entryKindKey ||
+            ""
+        ),
+        sequenceKindKey: String(
+          actionRiskContext.sequence_kind_key ||
+            actionContext.sequence_kind_key ||
+            action?.sequence_kind_key ||
+            fallbackRiskContext.sequence_kind_key ||
+            fallbackContext.sequence_kind_key ||
+            fallback?.sequence_kind_key ||
+            selectedLoopActionContext.sequenceKindKey ||
+            ""
+        ),
+        riskHealthBandKey: String(
+          actionRiskContext.risk_health_band_key ||
+            actionContext.risk_health_band_key ||
+            action?.risk_health_band_key ||
+            fallbackRiskContext.risk_health_band_key ||
+            fallbackContext.risk_health_band_key ||
+            fallback?.risk_health_band_key ||
+            selectedLoopActionContext.riskHealthBandKey ||
+            ""
+        ),
+        riskAttentionBandKey: String(
+          actionRiskContext.risk_attention_band_key ||
+            actionContext.risk_attention_band_key ||
+            action?.risk_attention_band_key ||
+            fallbackRiskContext.risk_attention_band_key ||
+            fallbackContext.risk_attention_band_key ||
+            fallback?.risk_attention_band_key ||
+            selectedLoopActionContext.riskAttentionBandKey ||
+            ""
+        ),
+        riskTrendDirectionKey: String(
+          actionRiskContext.risk_trend_direction_key ||
+            actionContext.risk_trend_direction_key ||
+            action?.risk_trend_direction_key ||
+            fallbackRiskContext.risk_trend_direction_key ||
+            fallbackContext.risk_trend_direction_key ||
+            fallback?.risk_trend_direction_key ||
+            selectedLoopActionContext.riskTrendDirectionKey ||
+            ""
+        )
+      };
+    },
     [selectedLoopActionContext]
   );
   const activateModalLane = useCallback((card: InteractionModalLaneCard | null) => {

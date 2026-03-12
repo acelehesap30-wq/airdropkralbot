@@ -70,6 +70,14 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
     state.interaction_surface.action_context?.risk_focus_key,
     "central_hub:travel:travel_flow|green:stable:flat"
   );
+  assert.equal(state.interaction_surface.risk_context?.district_key, "central_hub");
+  assert.equal(state.interaction_surface.risk_context?.focus_key, "central_hub:travel:travel_flow");
+  assert.equal(
+    state.interaction_surface.risk_context?.risk_focus_key,
+    "central_hub:travel:travel_flow|green:stable:flat"
+  );
+  assert.equal(state.interaction_surface.risk_context?.entry_kind_key, "world_entry_kind_hub_portal");
+  assert.equal(state.interaction_surface.risk_context?.sequence_kind_key, "world_modal_kind_travel_gate");
   assert.equal(state.interaction_surface.action_items[0].action_key, SHELL_ACTION_KEY.PLAYER_SEASON_HALL);
   assert.equal(state.interaction_surface.action_items[0].family_key, "travel");
   assert.equal(state.interaction_surface.action_items[0].flow_key, "travel_flow");
@@ -143,6 +151,12 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
   assert.equal(state.interaction_modal.modal_cards[0].action_context?.focus_key, "central_hub:travel:travel_flow");
   assert.equal(state.interaction_modal.modal_cards[0].action_context?.entry_kind_key, "world_entry_kind_hub_portal");
   assert.equal(state.interaction_modal.modal_cards[0].action_context?.sequence_kind_key, "world_modal_kind_travel_gate");
+  assert.equal(state.interaction_modal.modal_cards[0].risk_context?.district_key, "central_hub");
+  assert.equal(state.interaction_modal.modal_cards[0].risk_context?.focus_key, "central_hub:travel:travel_flow");
+  assert.equal(
+    state.interaction_modal.modal_cards[0].risk_context?.risk_focus_key,
+    "central_hub:travel:travel_flow|green:stable:flat"
+  );
   assert.equal(state.interaction_modal.modal_cards[0].protocol_card_key, state.interaction_modal.protocol_cards[0].card_key);
   assert.equal(state.interaction_modal.modal_cards[0].protocol_pod_key, state.interaction_modal.protocol_cards[0].flow_pods[0].pod_key);
   assert.equal(
@@ -179,6 +193,12 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
   assert.equal(state.interaction_modal.protocol_cards[0].action_context?.focus_key, "central_hub:travel:travel_flow");
   assert.equal(state.interaction_modal.protocol_cards[0].action_context?.entry_kind_key, "world_entry_kind_hub_portal");
   assert.equal(state.interaction_modal.protocol_cards[0].action_context?.sequence_kind_key, "world_modal_kind_travel_gate");
+  assert.equal(state.interaction_modal.protocol_cards[0].risk_context?.district_key, "central_hub");
+  assert.equal(state.interaction_modal.protocol_cards[0].risk_context?.focus_key, "central_hub:travel:travel_flow");
+  assert.equal(
+    state.interaction_modal.protocol_cards[0].risk_context?.risk_focus_key,
+    "central_hub:travel:travel_flow|green:stable:flat"
+  );
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].focus_key, "central_hub:travel:travel_flow");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].risk_focus_key, "central_hub:travel:travel_flow|green:stable:flat");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].risk_health_band_key, "green");
@@ -187,6 +207,14 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].action_context?.focus_key, "central_hub:travel:travel_flow");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].action_context?.entry_kind_key, "world_entry_kind_hub_portal");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].action_context?.sequence_kind_key, "world_modal_kind_travel_gate");
+  assert.equal(
+    state.interaction_modal.protocol_cards[0].flow_pods[0].risk_context?.focus_key,
+    "central_hub:travel:travel_flow"
+  );
+  assert.equal(
+    state.interaction_modal.protocol_cards[0].flow_pods[0].risk_context?.risk_focus_key,
+    "central_hub:travel:travel_flow|green:stable:flat"
+  );
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].focus_key, "central_hub:travel:travel_flow");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].risk_key, "green:stable:flat");
   assert.equal(
@@ -199,6 +227,14 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
   );
   assert.equal(
     state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].action_context?.risk_focus_key,
+    "central_hub:travel:travel_flow|green:stable:flat"
+  );
+  assert.equal(
+    state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].risk_context?.focus_key,
+    "central_hub:travel:travel_flow"
+  );
+  assert.equal(
+    state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].risk_context?.risk_focus_key,
     "central_hub:travel:travel_flow|green:stable:flat"
   );
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].risk_health_band_key, "green");
@@ -337,6 +373,12 @@ test("buildDistrictWorldState trims pvp nodes on low-end profile", () => {
     state.interaction_surface.action_context?.risk_focus_key,
     "arena_prime:duel:duel_flow|green:stable:flat"
   );
+  assert.equal(state.interaction_surface.risk_context?.district_key, "arena_prime");
+  assert.equal(state.interaction_surface.risk_context?.focus_key, "arena_prime:duel:duel_flow");
+  assert.equal(
+    state.interaction_surface.risk_context?.risk_focus_key,
+    "arena_prime:duel:duel_flow|green:stable:flat"
+  );
   assert.equal(state.interaction_flow.flow_kind_key, "world_flow_kind_arena_loop");
   assert.equal(state.interaction_flow.readiness_value_key, "world_flow_state_ready");
   assert.equal(state.interaction_flow.family_key, "duel");
@@ -425,6 +467,12 @@ test("buildDistrictWorldState trims pvp nodes on low-end profile", () => {
   assert.equal(state.interaction_modal.protocol_cards[0].action_context?.focus_key, "arena_prime:duel:duel_flow");
   assert.equal(state.interaction_modal.protocol_cards[0].action_context?.entry_kind_key, "world_entry_kind_duel_console");
   assert.equal(state.interaction_modal.protocol_cards[0].action_context?.sequence_kind_key, "world_modal_kind_duel_sequence");
+  assert.equal(state.interaction_modal.protocol_cards[0].risk_context?.district_key, "arena_prime");
+  assert.equal(state.interaction_modal.protocol_cards[0].risk_context?.focus_key, "arena_prime:duel:duel_flow");
+  assert.equal(
+    state.interaction_modal.protocol_cards[0].risk_context?.risk_focus_key,
+    "arena_prime:duel:duel_flow|green:stable:flat"
+  );
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].focus_key, "arena_prime:duel:duel_flow");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].risk_focus_key, "arena_prime:duel:duel_flow|green:stable:flat");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].risk_health_band_key, "green");
@@ -433,6 +481,14 @@ test("buildDistrictWorldState trims pvp nodes on low-end profile", () => {
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].action_context?.focus_key, "arena_prime:duel:duel_flow");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].action_context?.entry_kind_key, "world_entry_kind_duel_console");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].action_context?.sequence_kind_key, "world_modal_kind_duel_sequence");
+  assert.equal(
+    state.interaction_modal.protocol_cards[0].flow_pods[0].risk_context?.focus_key,
+    "arena_prime:duel:duel_flow"
+  );
+  assert.equal(
+    state.interaction_modal.protocol_cards[0].flow_pods[0].risk_context?.risk_focus_key,
+    "arena_prime:duel:duel_flow|green:stable:flat"
+  );
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].focus_key, "arena_prime:duel:duel_flow");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].risk_key, "green:stable:flat");
   assert.equal(
@@ -445,6 +501,14 @@ test("buildDistrictWorldState trims pvp nodes on low-end profile", () => {
   );
   assert.equal(
     state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].action_context?.risk_focus_key,
+    "arena_prime:duel:duel_flow|green:stable:flat"
+  );
+  assert.equal(
+    state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].risk_context?.focus_key,
+    "arena_prime:duel:duel_flow"
+  );
+  assert.equal(
+    state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].risk_context?.risk_focus_key,
     "arena_prime:duel:duel_flow|green:stable:flat"
   );
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].risk_health_band_key, "green");
