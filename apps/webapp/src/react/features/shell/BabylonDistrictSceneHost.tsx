@@ -180,6 +180,11 @@ type InteractionModalLaneCard = {
   focus_key?: string;
   risk_key?: string;
   risk_focus_key?: string;
+  risk_health_band_key?: string;
+  risk_attention_band_key?: string;
+  risk_trend_direction_key?: string;
+  entry_kind_key?: string;
+  sequence_kind_key?: string;
   action_context?: ClusterActionItem["action_context"];
 };
 
@@ -207,6 +212,9 @@ type ProtocolCardFlowPod = {
   focus_key?: string;
   risk_key?: string;
   risk_focus_key?: string;
+  risk_health_band_key?: string;
+  risk_attention_band_key?: string;
+  risk_trend_direction_key?: string;
   action_context?: ClusterActionItem["action_context"];
   rows?: Array<{ label_key: string; value: string; status_key: string }>;
   signal_rows?: Array<{ label_key: string; value: string; status_key: string }>;
@@ -346,6 +354,11 @@ type ProtocolCard = {
   focus_key?: string;
   risk_key?: string;
   risk_focus_key?: string;
+  risk_health_band_key?: string;
+  risk_attention_band_key?: string;
+  risk_trend_direction_key?: string;
+  entry_kind_key?: string;
+  sequence_kind_key?: string;
   action_context?: ClusterActionItem["action_context"];
   preview_rows?: Array<{ label_key: string; value: string; status_key: string }>;
   flow_rows?: Array<{ label_key: string; value: string; status_key: string }>;

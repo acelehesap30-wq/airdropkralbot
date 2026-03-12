@@ -6044,6 +6044,23 @@ function enrichDistrictInteractionModal(interactionModal, input) {
         focus_key: toText(primaryMicroflow.focus_key, ""),
         risk_key: toText(primaryMicroflow.risk_key, ""),
         risk_focus_key: toText(primaryMicroflow.risk_focus_key, ""),
+        risk_health_band_key: toText(
+          primaryMicroflow.risk_health_band_key,
+          toText(podActionContext.risk_health_band_key, "")
+        ),
+        risk_attention_band_key: toText(
+          primaryMicroflow.risk_attention_band_key,
+          toText(podActionContext.risk_attention_band_key, "")
+        ),
+        risk_trend_direction_key: toText(
+          primaryMicroflow.risk_trend_direction_key,
+          toText(podActionContext.risk_trend_direction_key, "")
+        ),
+        entry_kind_key: toText(primaryMicroflow.entry_kind_key, toText(podActionContext.entry_kind_key, "")),
+        sequence_kind_key: toText(
+          primaryMicroflow.sequence_kind_key,
+          toText(podActionContext.sequence_kind_key, "")
+        ),
         action_context: podActionContext,
         microflow_cards: enrichedMicroflows,
         action_items: buildContextActionItems(flowPod.action_items, podActionContext)
@@ -6059,6 +6076,17 @@ function enrichDistrictInteractionModal(interactionModal, input) {
       focus_key: toText(primaryPod.focus_key, ""),
       risk_key: toText(primaryPod.risk_key, ""),
       risk_focus_key: toText(primaryPod.risk_focus_key, ""),
+      risk_health_band_key: toText(primaryPod.risk_health_band_key, toText(cardActionContext.risk_health_band_key, "")),
+      risk_attention_band_key: toText(
+        primaryPod.risk_attention_band_key,
+        toText(cardActionContext.risk_attention_band_key, "")
+      ),
+      risk_trend_direction_key: toText(
+        primaryPod.risk_trend_direction_key,
+        toText(cardActionContext.risk_trend_direction_key, "")
+      ),
+      entry_kind_key: toText(primaryPod.entry_kind_key, toText(cardActionContext.entry_kind_key, "")),
+      sequence_kind_key: toText(primaryPod.sequence_kind_key, toText(cardActionContext.sequence_kind_key, "")),
       action_context: cardActionContext,
       flow_pods: enrichedFlowPods,
       action_items: buildContextActionItems(protocolCard.action_items, cardActionContext)
@@ -6103,6 +6131,20 @@ function enrichDistrictInteractionModal(interactionModal, input) {
       focus_key: toText(modalActionContext.focus_key, toText(microflow.focus_key, "")),
       risk_key: toText(modalActionContext.risk_key, toText(microflow.risk_key, "")),
       risk_focus_key: toText(modalActionContext.risk_focus_key, toText(microflow.risk_focus_key, "")),
+      risk_health_band_key: toText(
+        modalActionContext.risk_health_band_key,
+        toText(microflow.risk_health_band_key, "")
+      ),
+      risk_attention_band_key: toText(
+        modalActionContext.risk_attention_band_key,
+        toText(microflow.risk_attention_band_key, "")
+      ),
+      risk_trend_direction_key: toText(
+        modalActionContext.risk_trend_direction_key,
+        toText(microflow.risk_trend_direction_key, "")
+      ),
+      entry_kind_key: toText(modalActionContext.entry_kind_key, toText(microflow.entry_kind_key, "")),
+      sequence_kind_key: toText(modalActionContext.sequence_kind_key, toText(microflow.sequence_kind_key, "")),
       action_context: modalActionContext
     };
   });
