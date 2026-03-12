@@ -379,7 +379,9 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
   assert.equal(payloads.combatHud.loopDuelSubflowBlocks?.length, 3);
   assert.equal(payloads.combatHud.loopDuelSubflowBlocks?.[0]?.title, "FLOW");
   assert.equal(payloads.combatHud.loopDuelSubflowPanels?.length, 3);
-  assert.equal(payloads.combatHud.loopDuelSubflowPanels?.[0]?.title, "ENTRY");
+  assert.equal(payloads.combatHud.loopDuelSubflowPanels?.[0]?.title, "STANCE");
+  assert.equal(payloads.combatHud.loopDuelSubflowPanels?.[1]?.title, "STATUS");
+  assert.equal(payloads.combatHud.loopDuelSubflowPanels?.[2]?.title, "RESOLVE");
   assert.match(payloads.combatHud.loopDuelSubflowPanels?.[1]?.lines?.[1] || "", /HEALTH|FLOW|ENTRY/i);
   assert.match(payloads.combatHud.loopDuelSubflowPanels?.[1]?.lines?.[2] || "", /ATTN|ENGAGE|FLOW|HEALTH/i);
   assert.match(payloads.combatHud.loopDuelSubflowPanels?.[2]?.lines?.[2] || "", /TREND|SEQ|FLOW|HEALTH/i);
@@ -455,7 +457,9 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
   assert.equal(payloads.combatHud.loopLadderSubflowBlocks?.length, 3);
   assert.equal(payloads.combatHud.loopLadderSubflowBlocks?.[0]?.title, "FLOW");
   assert.equal(payloads.combatHud.loopLadderSubflowPanels?.length, 3);
-  assert.equal(payloads.combatHud.loopLadderSubflowPanels?.[0]?.title, "ENTRY");
+  assert.equal(payloads.combatHud.loopLadderSubflowPanels?.[0]?.title, "RANK");
+  assert.equal(payloads.combatHud.loopLadderSubflowPanels?.[1]?.title, "STATUS");
+  assert.equal(payloads.combatHud.loopLadderSubflowPanels?.[2]?.title, "PUSH");
   assert.match(payloads.combatHud.loopTelemetryFamilyText, /FLOW DUEL FLOW \| STATUS ACTIVE \| DIAG HOT/i);
   assert.match(payloads.combatHud.loopTelemetryFlowText, /PERSONA (WORLD )?PERSONALITY ASSAULT \| SEQ DUEL SEQUENCE \| FLOW DUEL FLOW/i);
   assert.match(payloads.combatHud.loopTelemetrySummaryText, /DIAG HOT \| RISK WATCH \| FLOW DUEL FLOW/i);
@@ -495,7 +499,9 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
   assert.equal(payloads.combatHud.loopTelemetrySubflowBlocks?.length, 3);
   assert.equal(payloads.combatHud.loopTelemetrySubflowBlocks?.[0]?.title, "FLOW");
   assert.equal(payloads.combatHud.loopTelemetrySubflowPanels?.length, 3);
-  assert.equal(payloads.combatHud.loopTelemetrySubflowPanels?.[0]?.title, "ENTRY");
+  assert.equal(payloads.combatHud.loopTelemetrySubflowPanels?.[0]?.title, "SCAN");
+  assert.equal(payloads.combatHud.loopTelemetrySubflowPanels?.[1]?.title, "STATUS");
+  assert.equal(payloads.combatHud.loopTelemetrySubflowPanels?.[2]?.title, "TRACE");
   assert.match(payloads.combatHud.loopLadderDetailText, /CHARGE -- \| TICK -- \| DUEL SEQUENCE/i);
   assert.match(payloads.combatHud.loopTelemetryDetailText, /DIAG HOT \| RISK WATCH \| (WORLD )?PERSONALITY ASSAULT/i);
   assert.equal(payloads.cameraDirector.mode.key, "broadcast");
@@ -666,7 +672,9 @@ test("buildPlayerBridgePayloads surfaces active vault loop micro panels from sel
   assert.equal(payloads.tokenOverview.loopPayoutSubflowBlocks?.length, 3);
   assert.equal(payloads.tokenOverview.loopPayoutSubflowBlocks?.[0]?.title, "FLOW");
   assert.equal(payloads.tokenOverview.loopPayoutSubflowPanels?.length, 3);
-  assert.equal(payloads.tokenOverview.loopPayoutSubflowPanels?.[0]?.title, "ENTRY");
+  assert.equal(payloads.tokenOverview.loopPayoutSubflowPanels?.[0]?.title, "REQUEST");
+  assert.equal(payloads.tokenOverview.loopPayoutSubflowPanels?.[1]?.title, "STATE");
+  assert.equal(payloads.tokenOverview.loopPayoutSubflowPanels?.[2]?.title, "PROOF");
   assert.match(payloads.tokenOverview.loopPayoutSubflowPanels?.[2]?.lines?.[3] || "", /HEALTH .*ATTN .*TREND /i);
   assert.match(payloads.tokenOverview.loopRouteFamilyText, /FLOW PAYOUT FLOW \| STATUS LIVE \| ROUTE 2\/3/i);
   assert.match(payloads.tokenOverview.loopRouteFlowText, /PERSONA STABLE ROUTE \| FLOW PAYOUT FLOW \| SEQ PAYOUT ROUTE/i);
@@ -698,7 +706,9 @@ test("buildPlayerBridgePayloads surfaces active vault loop micro panels from sel
   assert.equal(payloads.tokenOverview.loopRouteSubflowBlocks?.length, 3);
   assert.equal(payloads.tokenOverview.loopRouteSubflowBlocks?.[0]?.title, "FLOW");
   assert.equal(payloads.tokenOverview.loopRouteSubflowPanels?.length, 3);
-  assert.equal(payloads.tokenOverview.loopRouteSubflowPanels?.[0]?.title, "ENTRY");
+  assert.equal(payloads.tokenOverview.loopRouteSubflowPanels?.[0]?.title, "ROUTE");
+  assert.equal(payloads.tokenOverview.loopRouteSubflowPanels?.[1]?.title, "STATE");
+  assert.equal(payloads.tokenOverview.loopRouteSubflowPanels?.[2]?.title, "COVERAGE");
   assert.match(payloads.tokenOverview.loopPremiumFamilyText, /FLOW PAYOUT FLOW \| STATUS LIVE \| PASS ACTIVE/i);
   assert.match(payloads.tokenOverview.loopPremiumFlowText, /ENTRY PAYOUT TERMINAL \| FLOW PAYOUT FLOW \| STAGE SUBMIT/i);
   assert.match(payloads.tokenOverview.loopPremiumSummaryText, /PASS ACTIVE \| STAGE SUBMIT \| FLOW PAYOUT FLOW/i);
@@ -729,7 +739,9 @@ test("buildPlayerBridgePayloads surfaces active vault loop micro panels from sel
   assert.equal(payloads.tokenOverview.loopPremiumSubflowBlocks?.length, 3);
   assert.equal(payloads.tokenOverview.loopPremiumSubflowBlocks?.[0]?.title, "FLOW");
   assert.equal(payloads.tokenOverview.loopPremiumSubflowPanels?.length, 3);
-  assert.equal(payloads.tokenOverview.loopPremiumSubflowPanels?.[0]?.title, "ENTRY");
+  assert.equal(payloads.tokenOverview.loopPremiumSubflowPanels?.[0]?.title, "PASS");
+  assert.equal(payloads.tokenOverview.loopPremiumSubflowPanels?.[1]?.title, "STATE");
+  assert.equal(payloads.tokenOverview.loopPremiumSubflowPanels?.[2]?.title, "PERK");
   assert.match(payloads.tokenOverview.loopPayoutDetailText, /PAYOUT OPEN \| ROUTE 2\/3 \| PAYOUT ROUTE/i);
   assert.match(payloads.tokenOverview.loopRouteDetailText, /ROUTE 2\/3 \| WALLET APPROVED \| STABLE ROUTE/i);
   assert.match(payloads.tokenOverview.loopPremiumDetailText, /PASS ACTIVE \| STAGE SUBMIT \| PAYOUT TERMINAL/i);
@@ -767,7 +779,9 @@ test("buildPlayerBridgePayloads surfaces active vault loop micro panels from sel
   assert.equal(payloads.tokenOverview.loopWalletSubflowBlocks?.length, 3);
   assert.equal(payloads.tokenOverview.loopWalletSubflowBlocks?.[0]?.title, "FLOW");
   assert.equal(payloads.tokenOverview.loopWalletSubflowPanels?.length, 3);
-  assert.equal(payloads.tokenOverview.loopWalletSubflowPanels?.[0]?.title, "ENTRY");
+  assert.equal(payloads.tokenOverview.loopWalletSubflowPanels?.[0]?.title, "LINK");
+  assert.equal(payloads.tokenOverview.loopWalletSubflowPanels?.[1]?.title, "STATE");
+  assert.equal(payloads.tokenOverview.loopWalletSubflowPanels?.[2]?.title, "ROUTE");
   assert.equal(payloads.tokenOverview.loopWalletBlocks?.length, 3);
   assert.equal(payloads.tokenOverview.loopWalletBlocks?.[0]?.title, "FLOW");
   assert.match(payloads.tokenOverview.loopWalletBlocks?.[0]?.summary || "", /APPROVED|LIVE|FLOW/i);
@@ -900,7 +914,9 @@ test("buildPlayerBridgePayloads surfaces active tasks loop micro panels from sel
   assert.equal(payloads.operations.loop.offerSubflowBlocks?.length, 3);
   assert.equal(payloads.operations.loop.offerSubflowBlocks?.[0]?.title, "FLOW");
   assert.equal(payloads.operations.loop.offerSubflowPanels?.length, 3);
-  assert.equal(payloads.operations.loop.offerSubflowPanels?.[0]?.title, "ENTRY");
+  assert.equal(payloads.operations.loop.offerSubflowPanels?.[0]?.title, "OFFER");
+  assert.equal(payloads.operations.loop.offerSubflowPanels?.[1]?.title, "STATUS");
+  assert.equal(payloads.operations.loop.offerSubflowPanels?.[2]?.title, "STACK");
   assert.match(payloads.operations.loop.claimFamilyText, /FLOW CLAIM FLOW \| STATUS READY \| CLAIM 2 READY/i);
   assert.match(payloads.operations.loop.claimFlowText, /SEQ CONTRACT SEQUENCE \| FLOW CLAIM FLOW \| STAGE 2 READY/i);
   assert.match(payloads.operations.loop.claimSummaryText, /CLAIM 2 READY \| STAGE 2 READY \| FLOW CLAIM FLOW/i);
@@ -931,7 +947,9 @@ test("buildPlayerBridgePayloads surfaces active tasks loop micro panels from sel
   assert.equal(payloads.operations.loop.claimSubflowBlocks?.length, 3);
   assert.equal(payloads.operations.loop.claimSubflowBlocks?.[0]?.title, "FLOW");
   assert.equal(payloads.operations.loop.claimSubflowPanels?.length, 3);
-  assert.equal(payloads.operations.loop.claimSubflowPanels?.[0]?.title, "ENTRY");
+  assert.equal(payloads.operations.loop.claimSubflowPanels?.[0]?.title, "CLAIM");
+  assert.equal(payloads.operations.loop.claimSubflowPanels?.[1]?.title, "STATUS");
+  assert.equal(payloads.operations.loop.claimSubflowPanels?.[2]?.title, "PROOF");
   assert.match(payloads.operations.loop.streakFamilyText, /FLOW CLAIM FLOW \| STATUS READY \| STREAK 7d/i);
   assert.match(
     payloads.operations.loop.streakFlowText,
@@ -974,7 +992,9 @@ test("buildPlayerBridgePayloads surfaces active tasks loop micro panels from sel
   assert.equal(payloads.operations.loop.streakSubflowBlocks?.length, 3);
   assert.equal(payloads.operations.loop.streakSubflowBlocks?.[0]?.title, "FLOW");
   assert.equal(payloads.operations.loop.streakSubflowPanels?.length, 3);
-  assert.equal(payloads.operations.loop.streakSubflowPanels?.[0]?.title, "ENTRY");
+  assert.equal(payloads.operations.loop.streakSubflowPanels?.[0]?.title, "STREAK");
+  assert.equal(payloads.operations.loop.streakSubflowPanels?.[1]?.title, "STATUS");
+  assert.equal(payloads.operations.loop.streakSubflowPanels?.[2]?.title, "SYNC");
   assert.equal(payloads.operations.loop.lootCards?.length, 3);
   assert.equal(payloads.operations.loop.lootCards?.[0]?.title, "CLAIM");
   assert.match(payloads.operations.loop.lootCards?.[0]?.value || "", /2 READY/i);
@@ -1010,7 +1030,9 @@ test("buildPlayerBridgePayloads surfaces active tasks loop micro panels from sel
   assert.equal(payloads.operations.loop.lootSubflowBlocks?.length, 3);
   assert.equal(payloads.operations.loop.lootSubflowBlocks?.[0]?.title, "FLOW");
   assert.equal(payloads.operations.loop.lootSubflowPanels?.length, 3);
-  assert.equal(payloads.operations.loop.lootSubflowPanels?.[0]?.title, "ENTRY");
+  assert.equal(payloads.operations.loop.lootSubflowPanels?.[0]?.title, "OFFER");
+  assert.equal(payloads.operations.loop.lootSubflowPanels?.[1]?.title, "STATE");
+  assert.equal(payloads.operations.loop.lootSubflowPanels?.[2]?.title, "REVEAL");
   assert.match(payloads.operations.loop.lootSubflowPanels?.[2]?.lines?.[3] || "", /HEALTH .*ATTN .*TREND /i);
   assert.equal(payloads.operations.loop.lootBlocks?.length, 3);
   assert.equal(payloads.operations.loop.lootBlocks?.[0]?.title, "FLOW");
@@ -1144,7 +1166,9 @@ test("buildAdminBridgePayloads produces runtime, asset and audit cards from admi
   assert.equal(payloads.runtime.loopQueueSubflowBlocks?.length, 3);
   assert.equal(payloads.runtime.loopQueueSubflowBlocks?.[0]?.title, "FLOW");
   assert.equal(payloads.runtime.loopQueueSubflowPanels?.length, 3);
-  assert.equal(payloads.runtime.loopQueueSubflowPanels?.[0]?.title, "ENTRY");
+  assert.equal(payloads.runtime.loopQueueSubflowPanels?.[0]?.title, "QUEUE");
+  assert.equal(payloads.runtime.loopQueueSubflowPanels?.[1]?.title, "STATUS");
+  assert.equal(payloads.runtime.loopQueueSubflowPanels?.[2]?.title, "REVIEW");
   assert.match(payloads.runtime.loopRuntimeFamilyText, /FLOW DISPATCH FLOW \| STATUS WATCH \| HEALTH WATCH/i);
   assert.match(payloads.runtime.loopRuntimeFlowText, /SEQ DISPATCH SEQUENCE \| FLOW DISPATCH FLOW \| ALERT 3/i);
   assert.match(payloads.runtime.loopRuntimeSummaryText, /HEALTH WATCH \| ALERT 3 \| FLOW DISPATCH FLOW/i);
@@ -1176,7 +1200,9 @@ test("buildAdminBridgePayloads produces runtime, asset and audit cards from admi
   assert.equal(payloads.runtime.loopRuntimeSubflowBlocks?.length, 3);
   assert.equal(payloads.runtime.loopRuntimeSubflowBlocks?.[0]?.title, "FLOW");
   assert.equal(payloads.runtime.loopRuntimeSubflowPanels?.length, 3);
-  assert.equal(payloads.runtime.loopRuntimeSubflowPanels?.[0]?.title, "ENTRY");
+  assert.equal(payloads.runtime.loopRuntimeSubflowPanels?.[0]?.title, "RUNTIME");
+  assert.equal(payloads.runtime.loopRuntimeSubflowPanels?.[1]?.title, "STATUS");
+  assert.equal(payloads.runtime.loopRuntimeSubflowPanels?.[2]?.title, "HEALTH");
   assert.equal(payloads.runtime.loopDispatchCards?.length, 3);
   assert.equal(payloads.runtime.loopDispatchCards?.[0]?.title, "SENT");
   assert.match(payloads.runtime.loopDispatchCards?.[0]?.value || "", /12|ALERT/i);
@@ -1220,7 +1246,9 @@ test("buildAdminBridgePayloads produces runtime, asset and audit cards from admi
   assert.equal(payloads.runtime.loopDispatchSubflowBlocks?.length, 3);
   assert.equal(payloads.runtime.loopDispatchSubflowBlocks?.[0]?.title, "FLOW");
   assert.equal(payloads.runtime.loopDispatchSubflowPanels?.length, 3);
-  assert.equal(payloads.runtime.loopDispatchSubflowPanels?.[0]?.title, "ENTRY");
+  assert.equal(payloads.runtime.loopDispatchSubflowPanels?.[0]?.title, "QUEUE");
+  assert.equal(payloads.runtime.loopDispatchSubflowPanels?.[1]?.title, "HEALTH");
+  assert.equal(payloads.runtime.loopDispatchSubflowPanels?.[2]?.title, "RELEASE");
   assert.match(payloads.runtime.loopDispatchSubflowPanels?.[1]?.lines?.[1] || "", /HEALTH WATCH|FLOW DISPATCH FLOW|ENTRY DISPATCH CONSOLE/i);
   assert.match(payloads.runtime.loopDispatchSubflowPanels?.[1]?.lines?.[2] || "", /HEALTH WATCH|ALERT 3|FLOW DISPATCH FLOW/i);
   assert.match(payloads.runtime.loopDispatchSubflowPanels?.[2]?.lines?.[2] || "", /SEQ DISPATCH SEQUENCE|FLOW DISPATCH FLOW|HEALTH WATCH/i);
