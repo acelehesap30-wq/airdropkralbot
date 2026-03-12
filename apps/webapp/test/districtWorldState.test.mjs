@@ -47,6 +47,15 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
   assert.equal(state.interaction_sheet.title_key, "world_hotspot_season_gate");
   assert.equal(state.interaction_sheet.rows.length, 4);
   assert.equal(state.interaction_sheet.rows[0].label_key, "world_sheet_metric_progress");
+  assert.equal(state.interaction_sheet.family_key, "travel");
+  assert.equal(state.interaction_sheet.flow_key, "travel_flow");
+  assert.equal(state.interaction_sheet.focus_key, "central_hub:travel:travel_flow");
+  assert.equal(state.interaction_sheet.risk_focus_key, "central_hub:travel:travel_flow|green:stable:flat");
+  assert.equal(state.interaction_sheet.entry_kind_key, "world_entry_kind_hub_portal");
+  assert.equal(state.interaction_sheet.sequence_kind_key, "world_modal_kind_travel_gate");
+  assert.equal(state.interaction_sheet.action_context?.district_key, "central_hub");
+  assert.equal(state.interaction_sheet.action_context?.focus_key, "central_hub:travel:travel_flow");
+  assert.equal(state.interaction_sheet.action_context?.risk_focus_key, "central_hub:travel:travel_flow|green:stable:flat");
   assert.equal(state.interaction_surface.surface_kind_key, "world_surface_kind_travel_portal");
   assert.equal(state.interaction_surface.hero_label_key, "world_sheet_metric_progress");
   assert.equal(state.interaction_surface.family_key, "travel");
@@ -55,6 +64,12 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
   assert.equal(state.interaction_surface.risk_focus_key, "central_hub:travel:travel_flow|green:stable:flat");
   assert.equal(state.interaction_surface.entry_kind_key, "world_entry_kind_hub_portal");
   assert.equal(state.interaction_surface.sequence_kind_key, "world_modal_kind_travel_gate");
+  assert.equal(state.interaction_surface.action_context?.district_key, "central_hub");
+  assert.equal(state.interaction_surface.action_context?.focus_key, "central_hub:travel:travel_flow");
+  assert.equal(
+    state.interaction_surface.action_context?.risk_focus_key,
+    "central_hub:travel:travel_flow|green:stable:flat"
+  );
   assert.equal(state.interaction_surface.action_items[0].action_key, SHELL_ACTION_KEY.PLAYER_SEASON_HALL);
   assert.equal(state.interaction_surface.action_items[0].family_key, "travel");
   assert.equal(state.interaction_surface.action_items[0].flow_key, "travel_flow");
@@ -80,6 +95,12 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
   assert.equal(state.interaction_entry.focus_key, "central_hub:travel:travel_flow");
   assert.equal(state.interaction_entry.risk_focus_key, "central_hub:travel:travel_flow|green:stable:flat");
   assert.equal(state.interaction_entry.sequence_kind_key, "world_modal_kind_travel_gate");
+  assert.equal(state.interaction_entry.action_context?.district_key, "central_hub");
+  assert.equal(state.interaction_entry.action_context?.focus_key, "central_hub:travel:travel_flow");
+  assert.equal(
+    state.interaction_entry.action_context?.risk_focus_key,
+    "central_hub:travel:travel_flow|green:stable:flat"
+  );
   assert.equal(state.interaction_entry.preview_rows[0].label_key, "world_sheet_metric_progress");
   assert.equal(state.interaction_terminal.terminal_kind_key, "world_entry_kind_hub_portal");
   assert.equal(state.interaction_terminal.terminal_class_key, "travel_portal");
@@ -88,12 +109,27 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
   assert.equal(state.interaction_terminal.focus_key, "central_hub:travel:travel_flow");
   assert.equal(state.interaction_terminal.risk_focus_key, "central_hub:travel:travel_flow|green:stable:flat");
   assert.equal(state.interaction_terminal.sequence_kind_key, "world_modal_kind_travel_gate");
+  assert.equal(state.interaction_terminal.action_context?.district_key, "central_hub");
+  assert.equal(state.interaction_terminal.action_context?.focus_key, "central_hub:travel:travel_flow");
+  assert.equal(
+    state.interaction_terminal.action_context?.risk_focus_key,
+    "central_hub:travel:travel_flow|green:stable:flat"
+  );
   assert.equal(state.interaction_terminal.signal_rows[0].label_key, "world_sheet_metric_progress");
   assert.equal(state.interaction_terminal.signal_rows[2].label_key, "world_terminal_signal_actions");
   assert.equal(state.interaction_terminal.preview_rows[0].label_key, "world_sheet_metric_progress");
   assert.equal(state.interaction_terminal.flow_rows[0].label_key, "world_sheet_metric_progress");
   assert.equal(state.interaction_modal.modal_kind_key, "world_modal_kind_travel_gate");
   assert.equal(state.interaction_modal.modal_class_key, "travel_gate");
+  assert.equal(state.interaction_modal.family_key, "travel");
+  assert.equal(state.interaction_modal.flow_key, "travel_flow");
+  assert.equal(state.interaction_modal.focus_key, "central_hub:travel:travel_flow");
+  assert.equal(state.interaction_modal.risk_focus_key, "central_hub:travel:travel_flow|green:stable:flat");
+  assert.equal(state.interaction_modal.entry_kind_key, "world_entry_kind_hub_portal");
+  assert.equal(state.interaction_modal.sequence_kind_key, "world_modal_kind_travel_gate");
+  assert.equal(state.interaction_modal.action_context?.district_key, "central_hub");
+  assert.equal(state.interaction_modal.action_context?.focus_key, "central_hub:travel:travel_flow");
+  assert.equal(state.interaction_modal.action_context?.risk_focus_key, "central_hub:travel:travel_flow|green:stable:flat");
   assert.equal(state.interaction_modal.signal_rows[2].label_key, "world_terminal_signal_actions");
   assert.equal(state.interaction_modal.modal_cards[0].label_key, "world_modal_lane_season_arc");
   assert.equal(state.interaction_modal.modal_cards[1].label_key, "world_modal_lane_mission_queue");
@@ -279,6 +315,14 @@ test("buildDistrictWorldState trims pvp nodes on low-end profile", () => {
   assert.equal(state.rail_profile_key, "arena_prime");
   assert.equal(state.interaction_sheet.title_key, "world_hotspot_duel_pit");
   assert.equal(state.interaction_sheet.rows[0].label_key, "world_sheet_metric_duel_phase");
+  assert.equal(state.interaction_sheet.family_key, "duel");
+  assert.equal(state.interaction_sheet.flow_key, "duel_flow");
+  assert.equal(state.interaction_sheet.focus_key, "arena_prime:duel:duel_flow");
+  assert.equal(state.interaction_sheet.risk_focus_key, "arena_prime:duel:duel_flow|green:stable:flat");
+  assert.equal(state.interaction_sheet.entry_kind_key, "world_entry_kind_duel_console");
+  assert.equal(state.interaction_sheet.sequence_kind_key, "world_modal_kind_duel_sequence");
+  assert.equal(state.interaction_sheet.action_context?.district_key, "arena_prime");
+  assert.equal(state.interaction_sheet.action_context?.focus_key, "arena_prime:duel:duel_flow");
   assert.equal(state.interaction_surface.surface_kind_key, "world_surface_kind_arena_console");
   assert.equal(state.interaction_surface.hero_label_key, "world_sheet_metric_duel_phase");
   assert.equal(state.interaction_surface.family_key, "duel");
@@ -287,6 +331,12 @@ test("buildDistrictWorldState trims pvp nodes on low-end profile", () => {
   assert.equal(state.interaction_surface.risk_focus_key, "arena_prime:duel:duel_flow|green:stable:flat");
   assert.equal(state.interaction_surface.entry_kind_key, "world_entry_kind_duel_console");
   assert.equal(state.interaction_surface.sequence_kind_key, "world_modal_kind_duel_sequence");
+  assert.equal(state.interaction_surface.action_context?.district_key, "arena_prime");
+  assert.equal(state.interaction_surface.action_context?.focus_key, "arena_prime:duel:duel_flow");
+  assert.equal(
+    state.interaction_surface.action_context?.risk_focus_key,
+    "arena_prime:duel:duel_flow|green:stable:flat"
+  );
   assert.equal(state.interaction_flow.flow_kind_key, "world_flow_kind_arena_loop");
   assert.equal(state.interaction_flow.readiness_value_key, "world_flow_state_ready");
   assert.equal(state.interaction_flow.family_key, "duel");
@@ -302,6 +352,12 @@ test("buildDistrictWorldState trims pvp nodes on low-end profile", () => {
   assert.equal(state.interaction_entry.focus_key, "arena_prime:duel:duel_flow");
   assert.equal(state.interaction_entry.risk_focus_key, "arena_prime:duel:duel_flow|green:stable:flat");
   assert.equal(state.interaction_entry.sequence_kind_key, "world_modal_kind_duel_sequence");
+  assert.equal(state.interaction_entry.action_context?.district_key, "arena_prime");
+  assert.equal(state.interaction_entry.action_context?.focus_key, "arena_prime:duel:duel_flow");
+  assert.equal(
+    state.interaction_entry.action_context?.risk_focus_key,
+    "arena_prime:duel:duel_flow|green:stable:flat"
+  );
   assert.equal(state.interaction_terminal.terminal_kind_key, "world_entry_kind_duel_console");
   assert.equal(state.interaction_terminal.terminal_class_key, "arena_console");
   assert.equal(state.interaction_terminal.family_key, "duel");
@@ -309,9 +365,23 @@ test("buildDistrictWorldState trims pvp nodes on low-end profile", () => {
   assert.equal(state.interaction_terminal.focus_key, "arena_prime:duel:duel_flow");
   assert.equal(state.interaction_terminal.risk_focus_key, "arena_prime:duel:duel_flow|green:stable:flat");
   assert.equal(state.interaction_terminal.sequence_kind_key, "world_modal_kind_duel_sequence");
+  assert.equal(state.interaction_terminal.action_context?.district_key, "arena_prime");
+  assert.equal(state.interaction_terminal.action_context?.focus_key, "arena_prime:duel:duel_flow");
+  assert.equal(
+    state.interaction_terminal.action_context?.risk_focus_key,
+    "arena_prime:duel:duel_flow|green:stable:flat"
+  );
   assert.equal(state.interaction_terminal.flow_rows[0].label_key, "world_sheet_metric_duel_phase");
   assert.equal(state.interaction_modal.modal_kind_key, "world_modal_kind_duel_sequence");
   assert.equal(state.interaction_modal.modal_class_key, "duel_sequence");
+  assert.equal(state.interaction_modal.family_key, "duel");
+  assert.equal(state.interaction_modal.flow_key, "duel_flow");
+  assert.equal(state.interaction_modal.focus_key, "arena_prime:duel:duel_flow");
+  assert.equal(state.interaction_modal.risk_focus_key, "arena_prime:duel:duel_flow|green:stable:flat");
+  assert.equal(state.interaction_modal.entry_kind_key, "world_entry_kind_duel_console");
+  assert.equal(state.interaction_modal.sequence_kind_key, "world_modal_kind_duel_sequence");
+  assert.equal(state.interaction_modal.action_context?.district_key, "arena_prime");
+  assert.equal(state.interaction_modal.action_context?.focus_key, "arena_prime:duel:duel_flow");
   assert.equal(state.interaction_modal.modal_cards[0].label_key, "world_modal_lane_duel_sync");
   assert.equal(state.interaction_modal.modal_cards[2].label_key, "world_modal_lane_tick_window");
   assert.equal(state.interaction_modal.modal_cards[0].focus_key, "arena_prime:duel:duel_flow");
@@ -469,6 +539,14 @@ test("buildDistrictWorldState maps admin runtime into ops citadel", () => {
   assert.equal(state.rail_profile_key, "ops_citadel");
   assert.equal(state.interaction_sheet.title_key, "world_hotspot_queue_gate");
   assert.equal(state.interaction_sheet.rows[0].label_key, "world_sheet_metric_queue_depth");
+  assert.equal(state.interaction_sheet.family_key, "queue");
+  assert.equal(state.interaction_sheet.flow_key, "queue_flow");
+  assert.equal(state.interaction_sheet.focus_key, "ops_citadel:queue:queue_flow");
+  assert.equal(state.interaction_sheet.risk_focus_key, "ops_citadel:queue:queue_flow|yellow:watch:flat");
+  assert.equal(state.interaction_sheet.entry_kind_key, "world_entry_kind_queue_console");
+  assert.equal(state.interaction_sheet.sequence_kind_key, "world_modal_kind_queue_review");
+  assert.equal(state.interaction_sheet.action_context?.district_key, "ops_citadel");
+  assert.equal(state.interaction_sheet.action_context?.focus_key, "ops_citadel:queue:queue_flow");
   assert.equal(state.interaction_surface.surface_kind_key, "world_surface_kind_ops_console");
   assert.equal(state.interaction_surface.hero_label_key, "world_sheet_metric_queue_depth");
   assert.equal(state.interaction_surface.family_key, "queue");
@@ -477,6 +555,12 @@ test("buildDistrictWorldState maps admin runtime into ops citadel", () => {
   assert.equal(state.interaction_surface.risk_focus_key, "ops_citadel:queue:queue_flow|yellow:watch:flat");
   assert.equal(state.interaction_surface.entry_kind_key, "world_entry_kind_queue_console");
   assert.equal(state.interaction_surface.sequence_kind_key, "world_modal_kind_queue_review");
+  assert.equal(state.interaction_surface.action_context?.district_key, "ops_citadel");
+  assert.equal(state.interaction_surface.action_context?.focus_key, "ops_citadel:queue:queue_flow");
+  assert.equal(
+    state.interaction_surface.action_context?.risk_focus_key,
+    "ops_citadel:queue:queue_flow|yellow:watch:flat"
+  );
   assert.equal(state.interaction_flow.flow_kind_key, "world_flow_kind_ops_loop");
   assert.equal(state.interaction_flow.readiness_value_key, "world_flow_state_watch");
   assert.equal(state.interaction_flow.family_key, "queue");
@@ -492,6 +576,12 @@ test("buildDistrictWorldState maps admin runtime into ops citadel", () => {
   assert.equal(state.interaction_entry.focus_key, "ops_citadel:queue:queue_flow");
   assert.equal(state.interaction_entry.risk_focus_key, "ops_citadel:queue:queue_flow|yellow:watch:flat");
   assert.equal(state.interaction_entry.sequence_kind_key, "world_modal_kind_queue_review");
+  assert.equal(state.interaction_entry.action_context?.district_key, "ops_citadel");
+  assert.equal(state.interaction_entry.action_context?.focus_key, "ops_citadel:queue:queue_flow");
+  assert.equal(
+    state.interaction_entry.action_context?.risk_focus_key,
+    "ops_citadel:queue:queue_flow|yellow:watch:flat"
+  );
   assert.equal(state.interaction_terminal.terminal_kind_key, "world_entry_kind_queue_console");
   assert.equal(state.interaction_terminal.terminal_class_key, "ops_console");
   assert.equal(state.interaction_terminal.family_key, "queue");
@@ -499,9 +589,23 @@ test("buildDistrictWorldState maps admin runtime into ops citadel", () => {
   assert.equal(state.interaction_terminal.focus_key, "ops_citadel:queue:queue_flow");
   assert.equal(state.interaction_terminal.risk_focus_key, "ops_citadel:queue:queue_flow|yellow:watch:flat");
   assert.equal(state.interaction_terminal.sequence_kind_key, "world_modal_kind_queue_review");
+  assert.equal(state.interaction_terminal.action_context?.district_key, "ops_citadel");
+  assert.equal(state.interaction_terminal.action_context?.focus_key, "ops_citadel:queue:queue_flow");
+  assert.equal(
+    state.interaction_terminal.action_context?.risk_focus_key,
+    "ops_citadel:queue:queue_flow|yellow:watch:flat"
+  );
   assert.equal(state.interaction_terminal.signal_rows[1].label_key, "world_sheet_metric_scene_health");
   assert.equal(state.interaction_modal.modal_kind_key, "world_modal_kind_queue_review");
   assert.equal(state.interaction_modal.modal_class_key, "queue_review");
+  assert.equal(state.interaction_modal.family_key, "queue");
+  assert.equal(state.interaction_modal.flow_key, "queue_flow");
+  assert.equal(state.interaction_modal.focus_key, "ops_citadel:queue:queue_flow");
+  assert.equal(state.interaction_modal.risk_focus_key, "ops_citadel:queue:queue_flow|yellow:watch:flat");
+  assert.equal(state.interaction_modal.entry_kind_key, "world_entry_kind_queue_console");
+  assert.equal(state.interaction_modal.sequence_kind_key, "world_modal_kind_queue_review");
+  assert.equal(state.interaction_modal.action_context?.district_key, "ops_citadel");
+  assert.equal(state.interaction_modal.action_context?.focus_key, "ops_citadel:queue:queue_flow");
   assert.equal(state.interaction_modal.modal_cards[0].label_key, "world_modal_lane_queue_review");
   assert.equal(state.interaction_modal.modal_cards[2].label_key, "world_modal_lane_dispatch_gate");
   assert.equal(state.interaction_modal.modal_cards[2].focus_key, "ops_citadel:dispatch:dispatch_flow");

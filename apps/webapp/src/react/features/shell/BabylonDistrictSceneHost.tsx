@@ -2083,6 +2083,11 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           data-composition-profile={selectedMicroflow?.composition_profile_key || ""}
           data-sheet-anchor={selectedMicroflow?.sheet_anchor_key || ""}
           data-sheet-presence={selectedMicroflow?.sheet_presence_key || ""}
+          data-focus-key={worldState.interaction_sheet.focus_key || ""}
+          data-risk-key={worldState.interaction_sheet.risk_key || ""}
+          data-risk-focus-key={worldState.interaction_sheet.risk_focus_key || ""}
+          data-entry-kind-key={worldState.interaction_sheet.entry_kind_key || ""}
+          data-sequence-kind-key={worldState.interaction_sheet.sequence_kind_key || ""}
         >
           <div className="akrSceneWorldSheetHeader">
             <strong>
@@ -2101,6 +2106,14 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                 <strong>{t(props.lang, worldState.interaction_sheet.cluster_label_key as never)}</strong>
               ) : worldState.interaction_sheet.cluster_label ? (
                 <strong>{worldState.interaction_sheet.cluster_label}</strong>
+              ) : null}
+            </div>
+          ) : null}
+          {worldState.interaction_sheet.focus_key || worldState.interaction_sheet.risk_focus_key ? (
+            <div className="akrSceneWorldSheetContext">
+              {worldState.interaction_sheet.focus_key ? <small>{worldState.interaction_sheet.focus_key}</small> : null}
+              {worldState.interaction_sheet.risk_focus_key ? (
+                <small>{worldState.interaction_sheet.risk_focus_key}</small>
               ) : null}
             </div>
           ) : null}
@@ -2125,6 +2138,11 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           data-composition-profile={selectedMicroflow?.composition_profile_key || ""}
           data-entry-anchor={selectedMicroflow?.entry_anchor_key || ""}
           data-entry-presence={selectedMicroflow?.entry_presence_key || ""}
+          data-focus-key={worldState.interaction_surface.focus_key || ""}
+          data-risk-key={worldState.interaction_surface.risk_key || ""}
+          data-risk-focus-key={worldState.interaction_surface.risk_focus_key || ""}
+          data-entry-kind-key={worldState.interaction_surface.entry_kind_key || ""}
+          data-sequence-kind-key={worldState.interaction_surface.sequence_kind_key || ""}
         >
           <div className="akrSceneEntrySurfaceHeader">
             <span>{t(props.lang, worldState.interaction_surface.surface_kind_key as never)}</span>
@@ -2164,12 +2182,39 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
               <strong>{t(props.lang, worldState.interaction_surface.hint_label_key as never)}</strong>
             ) : null}
           </div>
+          {worldState.interaction_surface.focus_key || worldState.interaction_surface.risk_focus_key ? (
+            <div className="akrSceneEntrySurfaceContext">
+              {worldState.interaction_surface.focus_key ? (
+                <small>{worldState.interaction_surface.focus_key}</small>
+              ) : null}
+              {worldState.interaction_surface.risk_focus_key ? (
+                <small>{worldState.interaction_surface.risk_focus_key}</small>
+              ) : null}
+            </div>
+          ) : null}
           {worldState.interaction_entry ? (
-            <div className={`akrSceneEntrySurfaceMode is-${worldState.interaction_entry.entry_class_key} is-${worldState.interaction_entry.status_key}`}>
+            <div
+              className={`akrSceneEntrySurfaceMode is-${worldState.interaction_entry.entry_class_key} is-${worldState.interaction_entry.status_key}`}
+              data-focus-key={worldState.interaction_entry.focus_key || ""}
+              data-risk-key={worldState.interaction_entry.risk_key || ""}
+              data-risk-focus-key={worldState.interaction_entry.risk_focus_key || ""}
+              data-entry-kind-key={worldState.interaction_entry.entry_kind_key || ""}
+              data-sequence-kind-key={worldState.interaction_entry.sequence_kind_key || ""}
+            >
               <div className="akrSceneEntrySurfaceModeHeader">
                 <span>{t(props.lang, worldState.interaction_entry.entry_kind_key as never)}</span>
                 <strong>{t(props.lang, worldState.interaction_entry.status_label_key as never)}</strong>
               </div>
+              {worldState.interaction_entry.focus_key || worldState.interaction_entry.risk_focus_key ? (
+                <div className="akrSceneEntrySurfaceModeContext">
+                  {worldState.interaction_entry.focus_key ? (
+                    <small>{worldState.interaction_entry.focus_key}</small>
+                  ) : null}
+                  {worldState.interaction_entry.risk_focus_key ? (
+                    <small>{worldState.interaction_entry.risk_focus_key}</small>
+                  ) : null}
+                </div>
+              ) : null}
               <div className="akrSceneEntrySurfaceModeRows">
                 {worldState.interaction_entry.preview_rows.map((row: { label_key: string; value: string; status_key: string }) => (
                   <div key={`${worldState.interaction_entry.entry_key}:${row.label_key}`} className={`akrSceneEntrySurfaceModeRow is-${row.status_key}`}>
@@ -2249,6 +2294,11 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           data-composition-profile={selectedMicroflow?.composition_profile_key || ""}
           data-console-anchor={selectedMicroflow?.console_anchor_key || ""}
           data-console-presence={selectedMicroflow?.console_presence_key || ""}
+          data-focus-key={worldState.interaction_terminal.focus_key || ""}
+          data-risk-key={worldState.interaction_terminal.risk_key || ""}
+          data-risk-focus-key={worldState.interaction_terminal.risk_focus_key || ""}
+          data-entry-kind-key={worldState.interaction_terminal.entry_kind_key || ""}
+          data-sequence-kind-key={worldState.interaction_terminal.sequence_kind_key || ""}
         >
           <div className="akrSceneTerminalConsoleHeader">
             <div className="akrSceneTerminalConsoleTitle">
@@ -2277,6 +2327,16 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
               <span>{t(props.lang, worldState.interaction_terminal.intent_tone_key as never)}</span>
             ) : null}
           </div>
+          {worldState.interaction_terminal.focus_key || worldState.interaction_terminal.risk_focus_key ? (
+            <div className="akrSceneTerminalConsoleContext">
+              {worldState.interaction_terminal.focus_key ? (
+                <strong>{worldState.interaction_terminal.focus_key}</strong>
+              ) : null}
+              {worldState.interaction_terminal.risk_focus_key ? (
+                <small>{worldState.interaction_terminal.risk_focus_key}</small>
+              ) : null}
+            </div>
+          ) : null}
           <div className="akrSceneTerminalConsoleGrid">
             <section className="akrSceneTerminalConsoleSection">
               <div className="akrSceneTerminalConsoleSectionHeader">
@@ -2391,6 +2451,11 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           data-composition-profile={selectedMicroflow?.composition_profile_key || ""}
           data-modal-anchor={selectedMicroflow?.modal_anchor_key || ""}
           data-modal-presence={selectedMicroflow?.modal_presence_key || ""}
+          data-focus-key={worldState.interaction_modal.focus_key || ""}
+          data-risk-key={worldState.interaction_modal.risk_key || ""}
+          data-risk-focus-key={worldState.interaction_modal.risk_focus_key || ""}
+          data-entry-kind-key={worldState.interaction_modal.entry_kind_key || ""}
+          data-sequence-kind-key={worldState.interaction_modal.sequence_kind_key || ""}
         >
           <div className="akrSceneInteractionModalHeader">
             <div className="akrSceneInteractionModalTitle">
@@ -2417,6 +2482,16 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
               <span>{t(props.lang, worldState.interaction_modal.hint_label_key as never)}</span>
             ) : null}
           </div>
+          {worldState.interaction_modal.focus_key || worldState.interaction_modal.risk_focus_key ? (
+            <div className="akrSceneInteractionModalContext">
+              {worldState.interaction_modal.focus_key ? (
+                <strong>{worldState.interaction_modal.focus_key}</strong>
+              ) : null}
+              {worldState.interaction_modal.risk_focus_key ? (
+                <small>{worldState.interaction_modal.risk_focus_key}</small>
+              ) : null}
+            </div>
+          ) : null}
           <div className="akrSceneInteractionModalGrid">
             <section className="akrSceneInteractionModalSection">
               <div className="akrSceneInteractionModalSectionHeader">

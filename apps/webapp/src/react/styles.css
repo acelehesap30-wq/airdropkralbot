@@ -666,6 +666,20 @@ body {
   letter-spacing: 0.06em;
 }
 
+.akrSceneWorldSheetContext {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.akrSceneWorldSheetContext small {
+  color: rgba(170, 228, 255, 0.72);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .akrSceneWorldSheetRows {
   display: grid;
   gap: 8px;
@@ -803,6 +817,22 @@ body {
   color: #fff3c7;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+}
+
+.akrSceneEntrySurfaceContext,
+.akrSceneEntrySurfaceModeContext {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.akrSceneEntrySurfaceContext small,
+.akrSceneEntrySurfaceModeContext small {
+  color: rgba(176, 232, 255, 0.76);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .akrSceneEntrySurfaceMode {
@@ -1144,6 +1174,21 @@ body {
   letter-spacing: 0.02em;
 }
 
+.akrSceneTerminalConsoleContext {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.akrSceneTerminalConsoleContext strong,
+.akrSceneTerminalConsoleContext small {
+  color: rgba(176, 232, 255, 0.78);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .akrSceneTerminalConsoleClose {
   min-width: 92px;
   padding: 8px 10px;
@@ -1400,6 +1445,21 @@ body {
   font-family: "Space Grotesk", "Segoe UI", sans-serif;
   color: #f2fbff;
   letter-spacing: 0.02em;
+}
+
+.akrSceneInteractionModalContext {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.akrSceneInteractionModalContext strong,
+.akrSceneInteractionModalContext small {
+  color: rgba(176, 232, 255, 0.78);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .akrSceneInteractionModalClose {
