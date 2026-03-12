@@ -313,10 +313,17 @@ function resolveSceneLoopMicroflowSequenceKindKey(loopMicroflowKey, loopFamilyKe
   }
 }
 
+function resolveSceneLoopMicroflowFlowKey(loopMicroflowKey, loopFamilyKey) {
+  const microflowKey = normalizeSceneLoopMicroflowKey(loopMicroflowKey);
+  const familyKey = normalizeSceneLoopMicroflowFamilyKey(loopFamilyKey ?? loopMicroflowKey);
+  return `${familyKey}:${microflowKey}`;
+}
+
 function buildSceneLoopRiskContext(row) {
   const districtKey = String(row?.district_key || "unknown");
   const loopFamilyKey = normalizeSceneLoopMicroflowFamilyKey(row?.loop_family_key ?? row?.loop_microflow_key);
   const loopMicroflowKey = normalizeSceneLoopMicroflowKey(row?.loop_microflow_key);
+  const flowKey = resolveSceneLoopMicroflowFlowKey(loopMicroflowKey, loopFamilyKey);
   const latestHealthBand = String(row?.latest_health_band || row?.health_band || "no_data");
   const attentionBand = String(row?.attention_band || "no_data");
   const trendDirection = String(row?.trend_direction || "no_data");
@@ -328,6 +335,7 @@ function buildSceneLoopRiskContext(row) {
   const riskContext = {
     district_key: districtKey,
     family_key: loopFamilyKey,
+    flow_key: flowKey,
     microflow_key: loopMicroflowKey,
     focus_key: focusKey,
     risk_key: riskKey,
@@ -342,6 +350,7 @@ function buildSceneLoopRiskContext(row) {
     district_key: districtKey,
     loop_family_key: loopFamilyKey,
     family_key: loopFamilyKey,
+    flow_key: flowKey,
     loop_microflow_key: loopMicroflowKey,
     microflow_key: loopMicroflowKey,
     focus_key: focusKey,
@@ -1721,17 +1730,19 @@ function buildSceneLoopDimensionBreakdownDaily(rows, field, limit = 24) {
 function buildSceneLoopDimensionRiskMatrix(rows, field, limit = 18) {
   const grouped = new Map();
   (Array.isArray(rows) ? rows : []).forEach((row) => {
+    const context = buildSceneLoopRiskContext(row);
     const bucketKey = String(row?.[field] || "unknown");
-    const riskKey = String(row?.risk_key || "no_data:no_data:no_data");
+    const riskKey = String(context.risk_key || "no_data:no_data:no_data");
     const day = String(row?.day || "");
     const compositeKey = `${bucketKey}:${riskKey}`;
     if (!grouped.has(compositeKey)) {
       grouped.set(compositeKey, {
+        ...context,
         bucket_key: bucketKey,
         risk_key: riskKey,
-        latest_health_band: String(row?.latest_health_band || row?.health_band || "no_data"),
-        attention_band: String(row?.attention_band || "no_data"),
-        trend_direction: String(row?.trend_direction || "no_data"),
+        latest_health_band: String(context.latest_health_band || row?.health_band || "no_data"),
+        attention_band: String(context.attention_band || "no_data"),
+        trend_direction: String(context.trend_direction || "no_data"),
         trend_delta: Math.floor(toNum(row?.trend_delta, 0)),
         total_count: Math.max(0, Math.floor(toNum(row?.total_count, 0))),
         live_count: Math.max(0, Math.floor(toNum(row?.live_count, 0))),
@@ -1748,10 +1759,11 @@ function buildSceneLoopDimensionRiskMatrix(rows, field, limit = 18) {
       current.day_count = Math.max(0, Math.floor(toNum(current.day_count, 0)) + 1);
     }
     if (!current.latest_day || day.localeCompare(current.latest_day) > 0) {
+      Object.assign(current, context);
       current.latest_day = day || null;
-      current.latest_health_band = String(row?.latest_health_band || row?.health_band || "no_data");
-      current.attention_band = String(row?.attention_band || "no_data");
-      current.trend_direction = String(row?.trend_direction || "no_data");
+      current.latest_health_band = String(context.latest_health_band || row?.health_band || "no_data");
+      current.attention_band = String(context.attention_band || "no_data");
+      current.trend_direction = String(context.trend_direction || "no_data");
       current.trend_delta = Math.floor(toNum(row?.trend_delta, 0));
       current.total_count = Math.max(0, Math.floor(toNum(row?.total_count, 0)));
       current.live_count = Math.max(0, Math.floor(toNum(row?.live_count, 0)));
@@ -1776,21 +1788,25 @@ function buildSceneLoopDimensionRiskMatrix(rows, field, limit = 18) {
 
 function buildSceneLoopDimensionRiskMatrixDaily(rows, field, limit = 24) {
   return (Array.isArray(rows) ? rows : [])
-    .map((row) => ({
-      day: String(row?.day || ""),
-      bucket_key: String(row?.[field] || "unknown"),
-      risk_key: String(row?.risk_key || "no_data:no_data:no_data"),
-      latest_health_band: String(row?.latest_health_band || row?.health_band || "no_data"),
-      attention_band: String(row?.attention_band || "no_data"),
-      trend_direction: String(row?.trend_direction || "no_data"),
-      trend_delta: Math.floor(toNum(row?.trend_delta, 0)),
-      total_count: Math.max(0, Math.floor(toNum(row?.total_count, 0))),
-      live_count: Math.max(0, Math.floor(toNum(row?.live_count, 0))),
-      blocked_count: Math.max(0, Math.floor(toNum(row?.blocked_count, 0))),
-      priority_score: Math.max(0, Math.floor(toNum(row?.priority_score, 0))),
-      item_count: 1,
-      day_count: 1
-    }))
+    .map((row) => {
+      const context = buildSceneLoopRiskContext(row);
+      return {
+        day: String(row?.day || ""),
+        ...context,
+        bucket_key: String(row?.[field] || "unknown"),
+        risk_key: String(context.risk_key || "no_data:no_data:no_data"),
+        latest_health_band: String(context.latest_health_band || row?.health_band || "no_data"),
+        attention_band: String(context.attention_band || "no_data"),
+        trend_direction: String(context.trend_direction || "no_data"),
+        trend_delta: Math.floor(toNum(row?.trend_delta, 0)),
+        total_count: Math.max(0, Math.floor(toNum(row?.total_count, 0))),
+        live_count: Math.max(0, Math.floor(toNum(row?.live_count, 0))),
+        blocked_count: Math.max(0, Math.floor(toNum(row?.blocked_count, 0))),
+        priority_score: Math.max(0, Math.floor(toNum(row?.priority_score, 0))),
+        item_count: 1,
+        day_count: 1
+      };
+    })
     .sort((left, right) => {
       const dayOrder = String(right.day || "").localeCompare(String(left.day || ""));
       if (dayOrder !== 0) return dayOrder;

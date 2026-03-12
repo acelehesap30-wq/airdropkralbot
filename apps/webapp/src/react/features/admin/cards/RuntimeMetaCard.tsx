@@ -53,6 +53,9 @@ function formatStamp(value: unknown): string {
 function renderRiskContextSuffix(row: Record<string, unknown>): string {
   const riskContext = asRecord(row.risk_context) || row;
   const parts: string[] = [];
+  if (riskContext.flow_key) {
+    parts.push(`flow ${String(riskContext.flow_key)}`);
+  }
   if (riskContext.focus_key) {
     parts.push(`focus ${String(riskContext.focus_key)}`);
   }

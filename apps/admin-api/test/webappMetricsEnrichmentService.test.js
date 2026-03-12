@@ -355,6 +355,7 @@ test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
   assert.equal(enriched.scene_loop_district_microflow_risk_rows_7d[0].loop_family_key, "wallet_link");
   assert.equal(enriched.scene_loop_district_microflow_risk_rows_7d[0].loop_microflow_key, "wallet");
   assert.equal(enriched.scene_loop_district_microflow_risk_rows_7d[0].family_key, "wallet_link");
+  assert.equal(enriched.scene_loop_district_microflow_risk_rows_7d[0].flow_key, "wallet_link:wallet");
   assert.equal(enriched.scene_loop_district_microflow_risk_rows_7d[0].microflow_key, "wallet");
   assert.equal(enriched.scene_loop_district_microflow_risk_rows_7d[0].entry_kind_key, "world_entry_kind_wallet_terminal");
   assert.equal(enriched.scene_loop_district_microflow_risk_rows_7d[0].sequence_kind_key, "world_modal_kind_wallet_terminal");
@@ -362,6 +363,10 @@ test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
   assert.equal(enriched.scene_loop_district_microflow_risk_rows_7d[0].risk_health_band_key, "red");
   assert.equal(enriched.scene_loop_district_microflow_risk_rows_7d[0].risk_attention_band_key, "alert");
   assert.equal(enriched.scene_loop_district_microflow_risk_rows_7d[0].risk_trend_direction_key, "no_data");
+  assert.equal(
+    enriched.scene_loop_district_microflow_risk_rows_7d[0].risk_context?.flow_key,
+    "wallet_link:wallet"
+  );
   assert.equal(
     enriched.scene_loop_district_microflow_risk_rows_7d[0].risk_context?.focus_key,
     "exchange_district:wallet_link:wallet"
@@ -384,6 +389,7 @@ test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
   assert.equal(enriched.scene_loop_district_microflow_risk_rows_daily_7d[0].loop_family_key, "payout_lane");
   assert.equal(enriched.scene_loop_district_microflow_risk_rows_daily_7d[0].loop_microflow_key, "payout");
   assert.equal(enriched.scene_loop_district_microflow_risk_rows_daily_7d[0].family_key, "payout_lane");
+  assert.equal(enriched.scene_loop_district_microflow_risk_rows_daily_7d[0].flow_key, "payout_lane:payout");
   assert.equal(enriched.scene_loop_district_microflow_risk_rows_daily_7d[0].microflow_key, "payout");
   assert.equal(enriched.scene_loop_district_microflow_risk_rows_daily_7d[0].entry_kind_key, "world_entry_kind_payout_terminal");
   assert.equal(enriched.scene_loop_district_microflow_risk_rows_daily_7d[0].sequence_kind_key, "world_modal_kind_payout_route");
@@ -391,6 +397,10 @@ test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
   assert.equal(enriched.scene_loop_district_microflow_risk_rows_daily_7d[0].risk_health_band_key, "yellow");
   assert.equal(enriched.scene_loop_district_microflow_risk_rows_daily_7d[0].risk_attention_band_key, "watch");
   assert.equal(enriched.scene_loop_district_microflow_risk_rows_daily_7d[0].risk_trend_direction_key, "no_data");
+  assert.equal(
+    enriched.scene_loop_district_microflow_risk_rows_daily_7d[0].risk_context?.flow_key,
+    "payout_lane:payout"
+  );
   assert.equal(
     enriched.scene_loop_district_microflow_risk_rows_daily_7d[0].risk_context?.focus_key,
     "exchange_district:payout_lane:payout"
@@ -514,8 +524,29 @@ test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
     enriched.scene_loop_district_microflow_risk_matrix_7d.some(
       (row) =>
         row.focus_key === "exchange_district:wallet_link:wallet" &&
+        row.flow_key === "wallet_link:wallet" &&
         row.risk_context?.entry_kind_key === "world_entry_kind_wallet_terminal" &&
+        row.risk_context?.flow_key === "wallet_link:wallet" &&
         row.risk_focus_key === "exchange_district:wallet_link:wallet|red:alert:no_data"
+    )
+  );
+  assert.ok(
+    enriched.scene_loop_district_microflow_risk_matrix_daily_7d.some(
+      (row) =>
+        row.day === "2026-03-08" &&
+        row.focus_key === "exchange_district:payout_lane:payout" &&
+        row.flow_key === "payout_lane:payout" &&
+        row.risk_context?.sequence_kind_key === "world_modal_kind_payout_route"
+    )
+  );
+  assert.ok(
+    enriched.scene_loop_district_microflow_risk_entry_kind_matrix_daily_7d.some(
+      (row) =>
+        row.day === "2026-03-08" &&
+        row.bucket_key === "world_entry_kind_payout_terminal" &&
+        row.focus_key === "exchange_district:payout_lane:payout" &&
+        row.flow_key === "payout_lane:payout" &&
+        row.risk_context?.flow_key === "payout_lane:payout"
     )
   );
   assert.ok(
