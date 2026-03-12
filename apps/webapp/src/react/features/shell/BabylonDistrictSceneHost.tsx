@@ -62,9 +62,15 @@ type BabylonDistrictSceneHostProps = {
     laneKey: string;
     label: string;
     labelKey?: string;
+    familyKey?: string;
+    flowKey?: string;
+    microflowKey?: string;
     focusKey?: string;
     riskKey?: string;
     riskFocusKey?: string;
+    riskHealthBandKey?: string;
+    riskAttentionBandKey?: string;
+    riskTrendDirectionKey?: string;
     sourceType?: string;
     actorKey?: string;
     interactionKind?: string;
@@ -109,13 +115,22 @@ type ClusterActionItem = {
   };
   is_secondary: boolean;
   is_primary_surface_action?: boolean;
+  family_key?: string;
+  flow_key?: string;
+  microflow_key?: string;
   focus_key?: string;
   risk_key?: string;
   risk_focus_key?: string;
+  risk_health_band_key?: string;
+  risk_attention_band_key?: string;
+  risk_trend_direction_key?: string;
+  entry_kind_key?: string;
+  sequence_kind_key?: string;
   action_context?: {
     district_key?: string;
     family_key?: string;
     flow_key?: string;
+    microflow_key?: string;
     focus_key?: string;
     risk_key?: string;
     risk_focus_key?: string;
@@ -134,9 +149,15 @@ type ProtocolCardActionItem = {
   hint_label_key?: string;
   tone_key?: string;
   intent_profile_key?: string;
+  family_key?: string;
+  flow_key?: string;
+  microflow_key?: string;
   focus_key?: string;
   risk_key?: string;
   risk_focus_key?: string;
+  risk_health_band_key?: string;
+  risk_attention_band_key?: string;
+  risk_trend_direction_key?: string;
   action_context?: ClusterActionItem["action_context"];
 };
 
@@ -210,6 +231,7 @@ type ProtocolCardFlowPod = {
       district_key?: string;
       family_key?: string;
       flow_key?: string;
+      microflow_key?: string;
       focus_key?: string;
       risk_key?: string;
       risk_focus_key?: string;
@@ -533,9 +555,21 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
   }, [selectedProtocolCard, selectedProtocolPod, worldState.interaction_modal?.modal_cards]);
   const selectedLoopActionContext = useMemo(
     () => ({
+      familyKey: String(selectedMicroflow?.action_context?.family_key || selectedMicroflow?.family_key || ""),
+      flowKey: String(selectedMicroflow?.action_context?.flow_key || selectedMicroflow?.flow_key || ""),
+      microflowKey: String(selectedMicroflow?.action_context?.microflow_key || selectedMicroflow?.microflow_key || ""),
       focusKey: String(selectedMicroflow?.action_context?.focus_key || selectedMicroflow?.focus_key || ""),
       riskKey: String(selectedMicroflow?.action_context?.risk_key || selectedMicroflow?.risk_key || ""),
-      riskFocusKey: String(selectedMicroflow?.action_context?.risk_focus_key || selectedMicroflow?.risk_focus_key || "")
+      riskFocusKey: String(selectedMicroflow?.action_context?.risk_focus_key || selectedMicroflow?.risk_focus_key || ""),
+      riskHealthBandKey: String(
+        selectedMicroflow?.action_context?.risk_health_band_key || selectedMicroflow?.risk_health_band_key || ""
+      ),
+      riskAttentionBandKey: String(
+        selectedMicroflow?.action_context?.risk_attention_band_key || selectedMicroflow?.risk_attention_band_key || ""
+      ),
+      riskTrendDirectionKey: String(
+        selectedMicroflow?.action_context?.risk_trend_direction_key || selectedMicroflow?.risk_trend_direction_key || ""
+      )
     }),
     [selectedMicroflow]
   );
@@ -544,20 +578,56 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
       action?:
         | {
             action_context?: ClusterActionItem["action_context"];
+            family_key?: string;
+            flow_key?: string;
+            microflow_key?: string;
             focus_key?: string;
             risk_key?: string;
             risk_focus_key?: string;
+            risk_health_band_key?: string;
+            risk_attention_band_key?: string;
+            risk_trend_direction_key?: string;
           }
         | null,
       fallback?:
         | {
             action_context?: ClusterActionItem["action_context"];
+            family_key?: string;
+            flow_key?: string;
+            microflow_key?: string;
             focus_key?: string;
             risk_key?: string;
             risk_focus_key?: string;
+            risk_health_band_key?: string;
+            risk_attention_band_key?: string;
+            risk_trend_direction_key?: string;
           }
         | null
     ) => ({
+      familyKey: String(
+        action?.action_context?.family_key ||
+          action?.family_key ||
+          fallback?.action_context?.family_key ||
+          fallback?.family_key ||
+          selectedLoopActionContext.familyKey ||
+          ""
+      ),
+      flowKey: String(
+        action?.action_context?.flow_key ||
+          action?.flow_key ||
+          fallback?.action_context?.flow_key ||
+          fallback?.flow_key ||
+          selectedLoopActionContext.flowKey ||
+          ""
+      ),
+      microflowKey: String(
+        action?.action_context?.microflow_key ||
+          action?.microflow_key ||
+          fallback?.action_context?.microflow_key ||
+          fallback?.microflow_key ||
+          selectedLoopActionContext.microflowKey ||
+          ""
+      ),
       focusKey: String(
         action?.action_context?.focus_key ||
           action?.focus_key ||
@@ -581,6 +651,30 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           fallback?.risk_focus_key ||
           selectedLoopActionContext.riskFocusKey ||
           ""
+      ),
+      riskHealthBandKey: String(
+        action?.action_context?.risk_health_band_key ||
+          action?.risk_health_band_key ||
+          fallback?.action_context?.risk_health_band_key ||
+          fallback?.risk_health_band_key ||
+          selectedLoopActionContext.riskHealthBandKey ||
+          ""
+      ),
+      riskAttentionBandKey: String(
+        action?.action_context?.risk_attention_band_key ||
+          action?.risk_attention_band_key ||
+          fallback?.action_context?.risk_attention_band_key ||
+          fallback?.risk_attention_band_key ||
+          selectedLoopActionContext.riskAttentionBandKey ||
+          ""
+      ),
+      riskTrendDirectionKey: String(
+        action?.action_context?.risk_trend_direction_key ||
+          action?.risk_trend_direction_key ||
+          fallback?.action_context?.risk_trend_direction_key ||
+          fallback?.risk_trend_direction_key ||
+          selectedLoopActionContext.riskTrendDirectionKey ||
+          ""
       )
     }),
     [selectedLoopActionContext]
@@ -599,6 +693,89 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
       setActiveMicroflowKey(card.microflow_key);
     }
   }, []);
+  const buildSceneActionDataAttrs = useCallback(
+    (
+      action?:
+        | {
+            action_context?: ClusterActionItem["action_context"];
+            family_key?: string;
+            flow_key?: string;
+            microflow_key?: string;
+            focus_key?: string;
+            risk_key?: string;
+            risk_focus_key?: string;
+            risk_health_band_key?: string;
+            risk_attention_band_key?: string;
+            risk_trend_direction_key?: string;
+          }
+        | null,
+      fallback?:
+        | {
+            action_context?: ClusterActionItem["action_context"];
+            family_key?: string;
+            flow_key?: string;
+            microflow_key?: string;
+            focus_key?: string;
+            risk_key?: string;
+            risk_focus_key?: string;
+            risk_health_band_key?: string;
+            risk_attention_band_key?: string;
+            risk_trend_direction_key?: string;
+          }
+        | null
+    ) => {
+      const context = resolveSceneActionContext(action, fallback);
+      return {
+        "data-family-key": context.familyKey || "",
+        "data-flow-key": context.flowKey || "",
+        "data-microflow-key": context.microflowKey || "",
+        "data-focus-key": context.focusKey || "",
+        "data-risk-key": context.riskKey || "",
+        "data-risk-focus-key": context.riskFocusKey || "",
+        "data-risk-health-band": context.riskHealthBandKey || "",
+        "data-risk-attention-band": context.riskAttentionBandKey || "",
+        "data-risk-trend-direction": context.riskTrendDirectionKey || ""
+      };
+    },
+    [resolveSceneActionContext]
+  );
+  const renderSceneActionContextMeta = useCallback(
+    (
+      action?:
+        | {
+            action_context?: ClusterActionItem["action_context"];
+            family_key?: string;
+            microflow_key?: string;
+            risk_focus_key?: string;
+          }
+        | null,
+      fallback?:
+        | {
+            action_context?: ClusterActionItem["action_context"];
+            family_key?: string;
+            microflow_key?: string;
+            risk_focus_key?: string;
+          }
+        | null
+    ) => {
+      const context = resolveSceneActionContext(action, fallback);
+      const parts = [];
+      if (context.familyKey) {
+        parts.push(`FAM ${context.familyKey}`);
+      }
+      if (context.microflowKey) {
+        parts.push(`MICRO ${context.microflowKey}`);
+      }
+      if (context.riskFocusKey) {
+        parts.push(`RFK ${context.riskFocusKey}`);
+      }
+      if (!parts.length) {
+        return null;
+      }
+      return <small className="akrSceneActionContextMeta">{parts.join(" | ")}</small>;
+    },
+    [resolveSceneActionContext]
+  );
 
   useEffect(() => {
     setTerminalOpen(false);
@@ -1809,6 +1986,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                 className={`akrSceneWorldAction ${action.is_secondary ? "isSecondary" : "isPrimary"} is-${
                   action.intent_profile?.rail_class_key || action.intent_profile_key || "open_primary"
                 }`}
+                {...buildSceneActionDataAttrs(action, focusedCluster)}
                 onClick={() =>
                   triggerSceneAction({
                     actionKey: action.action_key,
@@ -1835,6 +2013,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                 <span>{t(props.lang, (action.intent_profile?.intent_label_key || "world_intent_open") as never)}</span>
                 <span>{t(props.lang, (action.intent_profile?.intent_tone_key || "world_intent_tone_open") as never)}</span>
                 <span>{t(props.lang, action.hint_label_key as never)}</span>
+                {renderSceneActionContextMeta(action, focusedCluster)}
               </button>
             ))}
           </div>
@@ -1978,6 +2157,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                 className={`akrSceneEntrySurfaceAction ${action.is_primary_surface_action ? "isPrimary" : "isSecondary"} is-${
                   action.intent_profile_key || "open"
                 }`}
+                {...buildSceneActionDataAttrs(action)}
                 onClick={() =>
                   triggerSceneAction({
                     actionKey: action.action_key,
@@ -1999,6 +2179,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
               >
                 <span>{t(props.lang, (action.intent_profile?.intent_label_key || "world_intent_open") as never)}</span>
                 <strong>{action.label_key ? t(props.lang, action.label_key as never) : action.label}</strong>
+                {renderSceneActionContextMeta(action)}
               </button>
             ))}
           </div>
@@ -2116,6 +2297,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                   className={`akrSceneTerminalConsoleAction ${action.is_primary_surface_action ? "isPrimary" : "isSecondary"} is-${
                     action.intent_profile_key || "open"
                   }`}
+                  {...buildSceneActionDataAttrs(action)}
                   onClick={() =>
                     triggerSceneAction({
                       actionKey: action.action_key,
@@ -2138,6 +2320,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                   <span>{t(props.lang, (action.intent_profile?.intent_label_key || "world_intent_open") as never)}</span>
                   <strong>{action.label_key ? t(props.lang, action.label_key as never) : action.label}</strong>
                   <span>{t(props.lang, action.hint_label_key as never)}</span>
+                  {renderSceneActionContextMeta(action)}
                 </button>
               ))}
             </div>
@@ -2258,13 +2441,14 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                   (card: ProtocolCard) => (
                     <button
                       key={`${worldState.interaction_modal.modal_key}:${card.card_key}`}
-                      type="button"
-                      className={`akrSceneInteractionModalDeck is-${card.status_key} ${card.is_actionable ? "is-actionable" : "is-passive"} ${
-                        selectedProtocolCard?.card_key === card.card_key ? "is-selected" : ""
-                      }`}
-                      onMouseEnter={() => setActiveProtocolCardKey(card.card_key)}
-                      onFocus={() => setActiveProtocolCardKey(card.card_key)}
-                      onClick={() => {
+                    type="button"
+                    className={`akrSceneInteractionModalDeck is-${card.status_key} ${card.is_actionable ? "is-actionable" : "is-passive"} ${
+                      selectedProtocolCard?.card_key === card.card_key ? "is-selected" : ""
+                    }`}
+                    {...buildSceneActionDataAttrs(card)}
+                    onMouseEnter={() => setActiveProtocolCardKey(card.card_key)}
+                    onFocus={() => setActiveProtocolCardKey(card.card_key)}
+                    onClick={() => {
                         setActiveProtocolCardKey(card.card_key);
                         if (card.action_key) {
                           triggerSceneAction({
@@ -2291,6 +2475,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                       <strong>{card.value}</strong>
                       {card.tone_key ? <em>{t(props.lang, card.tone_key as never)}</em> : null}
                       {card.action_label_key ? <b>{t(props.lang, card.action_label_key as never)}</b> : null}
+                      {renderSceneActionContextMeta(card)}
                     </button>
                   )
                 )}
@@ -2422,6 +2607,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                           key={`${selectedProtocolCard.card_key}:pod:${pod.pod_key}`}
                           type="button"
                           className={`akrSceneInteractionModalPod is-${pod.status_key} ${selectedProtocolPod?.pod_key === pod.pod_key ? "is-selected" : ""}`}
+                          {...buildSceneActionDataAttrs(pod, selectedProtocolCard)}
                           onMouseEnter={() => setActiveProtocolPodKey(pod.pod_key)}
                           onFocus={() => setActiveProtocolPodKey(pod.pod_key)}
                           onClick={() => setActiveProtocolPodKey(pod.pod_key)}
@@ -2433,6 +2619,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                           </div>
                           {pod.tone_key ? <em>{t(props.lang, pod.tone_key as never)}</em> : null}
                           {pod.hint_label_key ? <b>{t(props.lang, pod.hint_label_key as never)}</b> : null}
+                          {renderSceneActionContextMeta(pod, selectedProtocolCard)}
                           <div className="akrSceneInteractionModalPodMeta">
                             <span>{pod.status_label_key ? t(props.lang, pod.status_label_key as never) : pod.value}</span>
                             <strong>{pod.action_items?.length || 0}</strong>
@@ -2547,6 +2734,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                                 key={`${selectedProtocolPod.pod_key}:microflow:${item.microflow_key}`}
                                 type="button"
                                 className={`akrSceneInteractionModalMicroflow is-${item.status_key} ${selectedMicroflow?.microflow_key === item.microflow_key ? "is-selected" : ""}`}
+                                {...buildSceneActionDataAttrs(item, selectedProtocolPod)}
                                 onMouseEnter={() => setActiveMicroflowKey(item.microflow_key)}
                                 onFocus={() => setActiveMicroflowKey(item.microflow_key)}
                                 onClick={() => setActiveMicroflowKey(item.microflow_key)}
@@ -2570,6 +2758,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                                 {item.action_label_key ? (
                                   <b>{t(props.lang, item.action_label_key as never)}</b>
                                 ) : null}
+                                {renderSceneActionContextMeta(item, selectedProtocolPod)}
                               </button>
                             ))}
                           </div>
@@ -2739,6 +2928,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                               <button
                                 type="button"
                                 className="akrSceneInteractionModalAction"
+                                {...buildSceneActionDataAttrs(selectedMicroflow)}
                                 onClick={() =>
                                   triggerSceneAction({
                                     actionKey: selectedMicroflow.action_key || "",
@@ -2767,6 +2957,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                                     ? t(props.lang, selectedMicroflow.action_label_key as never)
                                     : t(props.lang, selectedMicroflow.label_key as never)}
                                 </strong>
+                                {renderSceneActionContextMeta(selectedMicroflow)}
                               </button>
                             </div>
                           ) : null}
@@ -2810,6 +3001,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                             key={`${selectedProtocolPod.pod_key}:${action.item_key}`}
                             type="button"
                             className={`akrSceneInteractionModalAction ${action.intent_profile_key ? `is-${action.intent_profile_key}` : ""}`}
+                            {...buildSceneActionDataAttrs(action, selectedProtocolPod)}
                             onClick={() =>
                               triggerSceneAction({
                                 actionKey: action.action_key,
@@ -2831,6 +3023,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                             <span>{action.hint_label_key ? t(props.lang, action.hint_label_key as never) : t(props.lang, selectedProtocolPod.label_key as never)}</span>
                             <strong>{t(props.lang, action.label_key as never)}</strong>
                             {action.tone_key ? <span>{t(props.lang, action.tone_key as never)}</span> : null}
+                            {renderSceneActionContextMeta(action, selectedProtocolPod)}
                           </button>
                         ))}
                       </div>
@@ -2850,6 +3043,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                         key={`${selectedProtocolCard.card_key}:${action.item_key}`}
                         type="button"
                         className={`akrSceneInteractionModalAction ${action.intent_profile_key ? `is-${action.intent_profile_key}` : ""}`}
+                        {...buildSceneActionDataAttrs(action, selectedProtocolCard)}
                         onClick={() =>
                           triggerSceneAction({
                             actionKey: action.action_key,
@@ -2871,6 +3065,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                         <span>{action.hint_label_key ? t(props.lang, action.hint_label_key as never) : t(props.lang, selectedProtocolCard.label_key as never)}</span>
                         <strong>{t(props.lang, action.label_key as never)}</strong>
                         {action.tone_key ? <span>{t(props.lang, action.tone_key as never)}</span> : null}
+                        {renderSceneActionContextMeta(action, selectedProtocolCard)}
                       </button>
                     ))}
                   </div>
@@ -2921,6 +3116,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                   className={`akrSceneInteractionModalAction ${action.is_primary_surface_action ? "isPrimary" : "isSecondary"} is-${
                     action.intent_profile_key || "open"
                   }`}
+                  {...buildSceneActionDataAttrs(action)}
                   onClick={() =>
                     triggerSceneAction({
                       actionKey: action.action_key,
@@ -2943,6 +3139,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                   <span>{t(props.lang, (action.intent_profile?.intent_label_key || "world_intent_open") as never)}</span>
                   <strong>{action.label_key ? t(props.lang, action.label_key as never) : action.label}</strong>
                   <span>{t(props.lang, action.hint_label_key as never)}</span>
+                  {renderSceneActionContextMeta(action)}
                 </button>
               ))}
             </div>

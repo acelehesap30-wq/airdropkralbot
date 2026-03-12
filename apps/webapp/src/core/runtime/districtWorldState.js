@@ -5889,9 +5889,17 @@ function enrichDistrictInteractionModal(interactionModal, input) {
     asList(items).map((item) => ({
       ...item,
       action_context: actionContext ? { ...actionContext } : undefined,
+      family_key: actionContext?.family_key || "",
+      flow_key: actionContext?.flow_key || "",
+      microflow_key: actionContext?.microflow_key || "",
       focus_key: actionContext?.focus_key || "",
       risk_key: actionContext?.risk_key || "",
-      risk_focus_key: actionContext?.risk_focus_key || ""
+      risk_focus_key: actionContext?.risk_focus_key || "",
+      risk_health_band_key: actionContext?.risk_health_band_key || "",
+      risk_attention_band_key: actionContext?.risk_attention_band_key || "",
+      risk_trend_direction_key: actionContext?.risk_trend_direction_key || "",
+      entry_kind_key: actionContext?.entry_kind_key || "",
+      sequence_kind_key: actionContext?.sequence_kind_key || ""
     }));
   const enrichedProtocolCards = modal.protocol_cards.map((card) => {
     const protocolCard = asRecord(card);
@@ -5936,6 +5944,7 @@ function enrichDistrictInteractionModal(interactionModal, input) {
             district_key: districtKey,
             family_key: familyKey,
             flow_key: flowKey,
+            microflow_key: toText(microflow.microflow_key, ""),
             focus_key: focusKey,
             risk_key: riskKey,
             risk_focus_key: riskFocusKey,
@@ -6104,6 +6113,114 @@ function enrichDistrictInteractionModal(interactionModal, input) {
   };
 }
 
+function buildInteractionActionContextLookup(interactionModal) {
+  const modal = asRecord(interactionModal);
+  const lookup = new Map();
+  const register = (actionKey, source) => {
+    const normalizedActionKey = toText(actionKey, "");
+    if (!normalizedActionKey || lookup.has(normalizedActionKey)) {
+      return;
+    }
+    const item = asRecord(source);
+    const actionContext = asRecord(item.action_context);
+    const familyKey = toText(actionContext.family_key || item.family_key, "");
+    const flowKey = toText(actionContext.flow_key || item.flow_key, "");
+    const microflowKey = toText(actionContext.microflow_key || item.microflow_key, "");
+    const focusKey = toText(actionContext.focus_key || item.focus_key, "");
+    const riskKey = toText(actionContext.risk_key || item.risk_key, "");
+    const riskFocusKey = toText(actionContext.risk_focus_key || item.risk_focus_key, "");
+    if (!familyKey && !flowKey && !microflowKey && !focusKey && !riskFocusKey) {
+      return;
+    }
+    lookup.set(normalizedActionKey, {
+      action_context:
+        familyKey || flowKey || microflowKey || focusKey || riskKey || riskFocusKey
+          ? {
+              district_key: toText(actionContext.district_key || item.district_key, ""),
+              family_key: familyKey,
+              flow_key: flowKey,
+              microflow_key: microflowKey,
+              focus_key: focusKey,
+              risk_key: riskKey,
+              risk_focus_key: riskFocusKey,
+              risk_health_band_key: toText(
+                actionContext.risk_health_band_key || item.risk_health_band_key,
+                ""
+              ),
+              risk_attention_band_key: toText(
+                actionContext.risk_attention_band_key || item.risk_attention_band_key,
+                ""
+              ),
+              risk_trend_direction_key: toText(
+                actionContext.risk_trend_direction_key || item.risk_trend_direction_key,
+                ""
+              ),
+              entry_kind_key: toText(actionContext.entry_kind_key || item.entry_kind_key, ""),
+              sequence_kind_key: toText(actionContext.sequence_kind_key || item.sequence_kind_key, "")
+            }
+          : undefined,
+      family_key: familyKey,
+      flow_key: flowKey,
+      microflow_key: microflowKey,
+      focus_key: focusKey,
+      risk_key: riskKey,
+      risk_focus_key: riskFocusKey,
+      risk_health_band_key: toText(actionContext.risk_health_band_key || item.risk_health_band_key, ""),
+      risk_attention_band_key: toText(
+        actionContext.risk_attention_band_key || item.risk_attention_band_key,
+        ""
+      ),
+      risk_trend_direction_key: toText(
+        actionContext.risk_trend_direction_key || item.risk_trend_direction_key,
+        ""
+      ),
+      entry_kind_key: toText(actionContext.entry_kind_key || item.entry_kind_key, ""),
+      sequence_kind_key: toText(actionContext.sequence_kind_key || item.sequence_kind_key, "")
+    });
+  };
+
+  asList(modal.protocol_cards).forEach((card) => {
+    const protocolCard = asRecord(card);
+    asList(protocolCard.action_items).forEach((item) => register(asRecord(item).action_key, item));
+    asList(protocolCard.flow_pods).forEach((pod) => {
+      const protocolPod = asRecord(pod);
+      asList(protocolPod.action_items).forEach((item) => register(asRecord(item).action_key, item));
+      asList(protocolPod.microflow_cards).forEach((flow) => register(asRecord(flow).action_key, flow));
+    });
+  });
+  asList(modal.modal_cards).forEach((card) => register(asRecord(card).action_key, card));
+  return lookup;
+}
+
+function enrichInteractionActionItems(items, actionContextLookup) {
+  if (!(actionContextLookup instanceof Map) || !actionContextLookup.size) {
+    return asList(items);
+  }
+  return asList(items).map((item) => {
+    const record = asRecord(item);
+    const actionKey = toText(record.action_key, "");
+    const meta = actionContextLookup.get(actionKey);
+    if (!meta) {
+      return item;
+    }
+    return {
+      ...item,
+      action_context: meta.action_context ? { ...meta.action_context } : record.action_context,
+      family_key: toText(meta.family_key, ""),
+      flow_key: toText(meta.flow_key, ""),
+      microflow_key: toText(meta.microflow_key, ""),
+      focus_key: toText(meta.focus_key, ""),
+      risk_key: toText(meta.risk_key, ""),
+      risk_focus_key: toText(meta.risk_focus_key, ""),
+      risk_health_band_key: toText(meta.risk_health_band_key, ""),
+      risk_attention_band_key: toText(meta.risk_attention_band_key, ""),
+      risk_trend_direction_key: toText(meta.risk_trend_direction_key, ""),
+      entry_kind_key: toText(meta.entry_kind_key, ""),
+      sequence_kind_key: toText(meta.sequence_kind_key, "")
+    };
+  });
+}
+
 export function buildDistrictWorldState(input = {}) {
   const workspace = normalizeWorkspace(input.workspace);
   const tab = normalizeTab(input.tab);
@@ -6169,6 +6286,31 @@ export function buildDistrictWorldState(input = {}) {
     buildDistrictInteractionModal(input, districtKey, activeHotspot, interactionTerminal),
     input
   );
+  const actionContextLookup = buildInteractionActionContextLookup(interactionModal);
+  const enrichedInteractionClusters = interactionClusters.map((cluster) => ({
+    ...cluster,
+    action_items: enrichInteractionActionItems(cluster.action_items, actionContextLookup),
+    intent_slots: enrichInteractionActionItems(cluster.intent_slots, actionContextLookup)
+  }));
+  const enrichedActiveCluster = enrichedInteractionClusters.find((cluster) => cluster.is_active) || null;
+  const enrichedInteractionSurface = interactionSurface
+    ? {
+        ...interactionSurface,
+        action_items: enrichInteractionActionItems(interactionSurface.action_items, actionContextLookup)
+      }
+    : interactionSurface;
+  const enrichedInteractionTerminal = interactionTerminal
+    ? {
+        ...interactionTerminal,
+        action_items: enrichInteractionActionItems(interactionTerminal.action_items, actionContextLookup)
+      }
+    : interactionTerminal;
+  const enrichedInteractionModal = interactionModal
+    ? {
+        ...interactionModal,
+        action_items: enrichInteractionActionItems(interactionModal.action_items, actionContextLookup)
+      }
+    : interactionModal;
 
   return {
     world_key: `${workspace}:${tab}:${districtKey}`,
@@ -6212,24 +6354,24 @@ export function buildDistrictWorldState(input = {}) {
     active_hotspot_intent_tone_key: toText(activeHotspot?.intent_profile?.intent_tone_key, ""),
     active_hotspot_cluster_key: toText(activeHotspot?.cluster_key, ""),
     active_hotspot_is_secondary: Boolean(activeHotspot?.is_secondary),
-    active_cluster_key: toText(activeCluster?.cluster_key, ""),
-    active_cluster_label_key: toText(activeCluster?.label_key, ""),
-    active_cluster_label: toText(activeCluster?.label, ""),
-    active_cluster_primary_action_key: toText(activeCluster?.primary_action_key, ""),
-    active_cluster_primary_hint_key: toText(activeCluster?.primary_hint_label_key, ""),
-    active_cluster_secondary_count: toNum(activeCluster?.secondary_count, 0),
-    active_cluster_actions: asList(activeCluster?.action_items),
-    active_cluster_slot_count: toNum(activeCluster?.intent_slots?.length, 0),
+    active_cluster_key: toText(enrichedActiveCluster?.cluster_key, ""),
+    active_cluster_label_key: toText(enrichedActiveCluster?.label_key, ""),
+    active_cluster_label: toText(enrichedActiveCluster?.label, ""),
+    active_cluster_primary_action_key: toText(enrichedActiveCluster?.primary_action_key, ""),
+    active_cluster_primary_hint_key: toText(enrichedActiveCluster?.primary_hint_label_key, ""),
+    active_cluster_secondary_count: toNum(enrichedActiveCluster?.secondary_count, 0),
+    active_cluster_actions: asList(enrichedActiveCluster?.action_items),
+    active_cluster_slot_count: toNum(enrichedActiveCluster?.intent_slots?.length, 0),
     interaction_sheet: interactionSheet,
-    interaction_surface: interactionSurface,
+    interaction_surface: enrichedInteractionSurface,
     interaction_flow: interactionFlow,
     interaction_entry: interactionEntry,
-    interaction_terminal: interactionTerminal,
-    interaction_modal: interactionModal,
+    interaction_terminal: enrichedInteractionTerminal,
+    interaction_modal: enrichedInteractionModal,
     theme: districtTheme,
     actors,
-    interaction_cluster_count: interactionClusters.length,
-    interaction_clusters: interactionClusters,
+    interaction_cluster_count: enrichedInteractionClusters.length,
+    interaction_clusters: enrichedInteractionClusters,
     hotspots: hotspots.map((hotspot) => ({
       ...hotspot,
       is_active: hotspot.key === activeHotspotKey

@@ -525,6 +525,15 @@ body {
   letter-spacing: 0.08em;
 }
 
+.akrSceneActionContextMeta {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.58rem;
+  line-height: 1.35;
+  letter-spacing: 0.03em;
+  color: #7edfff;
+  word-break: break-word;
+}
+
 .akrSceneWorldAction.isPrimary {
   border-color: rgba(0, 214, 255, 0.28);
 }
@@ -1000,6 +1009,16 @@ body {
   font-family: "Space Grotesk", "Segoe UI", sans-serif;
   font-size: 0.9rem;
   color: #f2fbff;
+}
+
+.akrSceneEntrySurfaceAction .akrSceneActionContextMeta,
+.akrSceneTerminalConsoleAction .akrSceneActionContextMeta,
+.akrSceneInteractionModalAction .akrSceneActionContextMeta,
+.akrSceneInteractionModalDeck .akrSceneActionContextMeta,
+.akrSceneInteractionModalPod .akrSceneActionContextMeta,
+.akrSceneInteractionModalMicroflow .akrSceneActionContextMeta,
+.akrSceneWorldAction .akrSceneActionContextMeta {
+  color: #8fdaf3;
 }
 
 .akrSceneEntrySurfaceAction.isPrimary {

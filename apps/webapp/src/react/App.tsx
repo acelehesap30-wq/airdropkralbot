@@ -571,9 +571,15 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
       laneKey: string;
       label: string;
       labelKey?: string;
+      familyKey?: string;
+      flowKey?: string;
+      microflowKey?: string;
       focusKey?: string;
       riskKey?: string;
       riskFocusKey?: string;
+      riskHealthBandKey?: string;
+      riskAttentionBandKey?: string;
+      riskTrendDirectionKey?: string;
       sourceType?: string;
       actorKey?: string;
       interactionKind?: string;
@@ -640,9 +646,15 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
           cluster_key: String(payload.clusterKey || ""),
           interaction_kind: String(payload.interactionKind || "open"),
           is_secondary: Boolean(payload.isSecondary),
+          source_family_key: String(payload.familyKey || ""),
+          source_flow_key: String(payload.flowKey || ""),
+          source_microflow_key: String(payload.microflowKey || ""),
           source_focus_key: String(payload.focusKey || ""),
           source_risk_key: String(payload.riskKey || ""),
           source_risk_focus_key: String(payload.riskFocusKey || ""),
+          source_risk_health_band_key: String(payload.riskHealthBandKey || ""),
+          source_risk_attention_band_key: String(payload.riskAttentionBandKey || ""),
+          source_risk_trend_direction_key: String(payload.riskTrendDirectionKey || ""),
           node_label: payload.label,
           node_label_key: String(payload.labelKey || ""),
           target_workspace: target.workspace,

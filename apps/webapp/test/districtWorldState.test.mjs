@@ -50,6 +50,14 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
   assert.equal(state.interaction_surface.surface_kind_key, "world_surface_kind_travel_portal");
   assert.equal(state.interaction_surface.hero_label_key, "world_sheet_metric_progress");
   assert.equal(state.interaction_surface.action_items[0].action_key, SHELL_ACTION_KEY.PLAYER_SEASON_HALL);
+  assert.equal(state.interaction_surface.action_items[0].family_key, "travel");
+  assert.equal(state.interaction_surface.action_items[0].flow_key, "travel_flow");
+  assert.equal(state.interaction_surface.action_items[0].microflow_key, "world_modal_lane_season_arc:travel");
+  assert.equal(state.interaction_surface.action_items[0].focus_key, "central_hub:travel:travel_flow");
+  assert.equal(
+    state.interaction_surface.action_items[0].risk_focus_key,
+    "central_hub:travel:travel_flow|green:stable:flat"
+  );
   assert.equal(state.interaction_flow.flow_kind_key, "world_flow_kind_travel");
   assert.equal(state.interaction_flow.stage_value_key, "world_flow_state_live");
   assert.equal(state.interaction_flow.step_rows[0].label_key, "world_sheet_metric_progress");
@@ -162,6 +170,10 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].loop_stage_value, "62%");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].loop_rows[1].label_key, "world_sheet_metric_active_missions");
   assert.equal(state.interaction_modal.protocol_cards[1].action_items[0].action_key, SHELL_ACTION_KEY.PLAYER_TASKS_BOARD);
+  assert.equal(state.interaction_modal.protocol_cards[1].action_items[0].family_key, "travel");
+  assert.equal(state.interaction_modal.protocol_cards[1].action_items[0].flow_key, "travel_flow");
+  assert.equal(state.interaction_modal.protocol_cards[1].action_items[0].microflow_key, "world_modal_lane_mission_queue:travel");
+  assert.equal(state.interaction_modal.protocol_cards[1].action_items[0].focus_key, "central_hub:travel:travel_flow");
   assert.equal(state.active_cluster_key, "hub_gate_north");
   assert.equal(state.interaction_cluster_count, 3);
   assert.equal(state.active_cluster_slot_count, 2);
@@ -327,6 +339,10 @@ test("buildDistrictWorldState trims pvp nodes on low-end profile", () => {
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].loop_stage_value, "STRIKE");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].loop_rows[1].label_key, "world_sheet_metric_tick_tempo");
   assert.equal(state.interaction_modal.protocol_cards[1].action_items[1].action_key, SHELL_ACTION_KEY.PLAYER_PVP_LEADERBOARD);
+  assert.equal(state.interaction_modal.protocol_cards[1].action_items[1].family_key, "ladder");
+  assert.equal(state.interaction_modal.protocol_cards[1].action_items[1].flow_key, "ladder_flow");
+  assert.equal(state.interaction_modal.protocol_cards[1].action_items[1].microflow_key, "world_modal_lane_ladder_charge:ladder");
+  assert.equal(state.interaction_modal.protocol_cards[1].action_items[1].focus_key, "arena_prime:ladder:ladder_flow");
   assert.equal(state.hud_profile.compact_mode, true);
   assert.equal(state.interaction_cluster_count, 3);
   assert.deepEqual(
@@ -467,6 +483,10 @@ test("buildDistrictWorldState maps admin runtime into ops citadel", () => {
   assert.equal(state.interaction_modal.protocol_cards[2].flow_pods[0].microflow_cards[0].loop_stage_value, "READY");
   assert.equal(state.interaction_modal.protocol_cards[2].flow_pods[0].microflow_cards[0].loop_rows[0].label_key, "world_sheet_metric_liveops_sent");
   assert.equal(state.interaction_modal.protocol_cards[1].action_items[1].action_key, SHELL_ACTION_KEY.ADMIN_RUNTIME_FLAGS);
+  assert.equal(state.interaction_modal.protocol_cards[1].action_items[1].family_key, "runtime");
+  assert.equal(state.interaction_modal.protocol_cards[1].action_items[1].flow_key, "runtime_flow");
+  assert.equal(state.interaction_modal.protocol_cards[1].action_items[1].microflow_key, "world_modal_lane_runtime_watch:runtime");
+  assert.equal(state.interaction_modal.protocol_cards[1].action_items[1].focus_key, "ops_citadel:runtime:runtime_flow");
   assert.equal(state.interaction_cluster_count, 3);
   assert.deepEqual(
     state.actors.map((actor) => actor.kind),
