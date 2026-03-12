@@ -306,6 +306,7 @@ function SceneLoopDistrictFamilyPriorityList(props: {
               {Math.floor(Number(row.priority_score || 0))}
               {row.focus_key ? ` | focus ${String(row.focus_key)}` : ""}
               {row.risk_key ? ` | risk ${String(row.risk_key)}` : ""}
+              {row.risk_focus_key ? ` | risk-focus ${String(row.risk_focus_key)}` : ""}
               {row.latest_day && !row.day ? ` | latest ${String(row.latest_day)}` : ""}
               {row.day_count ? ` | days ${Math.floor(Number(row.day_count || 0))}` : ""}
               {row.item_count ? ` | hits ${Math.floor(Number(row.item_count || 0))}` : ""}
@@ -339,6 +340,7 @@ function SceneLoopRiskDimensionMatrixList(props: { title: string; rows: Array<Re
             {String(row.latest_health_band || row.health_band || "no_data")} | attn {String(row.attention_band || "no_data")} | trend{" "}
             {String(row.trend_direction || "no_data")} ({Math.floor(Number(row.trend_delta || 0))}) | days{" "}
             {Math.floor(Number(row.day_count || 0))} | hits {Math.floor(Number(row.item_count || 0))}
+            {row.risk_focus_key ? ` | risk-focus ${String(row.risk_focus_key)}` : ""}
           </p>
         ))}
       </div>
@@ -365,6 +367,7 @@ function SceneLoopRiskDimensionDailyMatrixList(props: { title: string; rows: Arr
             {String(row.latest_health_band || row.health_band || "no_data")} | attn {String(row.attention_band || "no_data")} | trend{" "}
             {String(row.trend_direction || "no_data")} ({Math.floor(Number(row.trend_delta || 0))}) | hits{" "}
             {Math.floor(Number(row.item_count || 0))}
+            {row.risk_focus_key ? ` | risk-focus ${String(row.risk_focus_key)}` : ""}
           </p>
         ))}
       </div>

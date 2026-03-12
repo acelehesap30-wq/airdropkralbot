@@ -1164,6 +1164,7 @@ function buildSceneLoopDistrictMicroflowRiskRows(rows, limit = 18) {
         live_count: Math.max(0, Math.floor(toNum(row?.live_count, 0))),
         blocked_count: Math.max(0, Math.floor(toNum(row?.blocked_count, 0))),
         risk_key: `${latestHealthBand}:${attentionBand}:${trendDirection}`,
+        risk_focus_key: `${districtKey}:${loopFamilyKey}:${loopMicroflowKey}|${latestHealthBand}:${attentionBand}:${trendDirection}`,
         priority_score: buildSceneLoopPriorityScore(attentionRank, healthRank, trendRank, totalCount),
         attention_rank: attentionRank,
         health_rank: healthRank,
@@ -1209,6 +1210,7 @@ function buildSceneLoopDistrictMicroflowRiskRowsDaily(rows, limit = 24) {
         live_count: Math.max(0, Math.floor(toNum(row?.live_count, 0))),
         blocked_count: Math.max(0, Math.floor(toNum(row?.blocked_count, 0))),
         risk_key: `${latestHealthBand}:${attentionBand}:${trendDirection}`,
+        risk_focus_key: `${districtKey}:${loopFamilyKey}:${loopMicroflowKey}|${latestHealthBand}:${attentionBand}:${trendDirection}`,
         priority_score: buildSceneLoopPriorityScore(attentionRank, healthRank, trendRank, totalCount),
         attention_rank: attentionRank,
         health_rank: healthRank,
@@ -1245,6 +1247,7 @@ function buildSceneLoopDistrictMicroflowRiskMatrix(rows, limit = 18) {
         loop_microflow_key: loopMicroflowKey,
         focus_key: `${districtKey}:${loopFamilyKey}:${loopMicroflowKey}`,
         risk_key: riskKey,
+        risk_focus_key: `${districtKey}:${loopFamilyKey}:${loopMicroflowKey}|${riskKey}`,
         latest_health_band: String(row?.latest_health_band || row?.health_band || "no_data"),
         attention_band: String(row?.attention_band || "no_data"),
         trend_direction: String(row?.trend_direction || "no_data"),
@@ -1299,6 +1302,9 @@ function buildSceneLoopDistrictMicroflowRiskMatrixDaily(rows, limit = 24) {
         row?.loop_family_key ?? row?.loop_microflow_key
       )}:${normalizeSceneLoopMicroflowKey(row?.loop_microflow_key)}`,
       risk_key: String(row?.risk_key || "no_data:no_data:no_data"),
+      risk_focus_key: `${String(row?.district_key || "unknown")}:${normalizeSceneLoopMicroflowFamilyKey(
+        row?.loop_family_key ?? row?.loop_microflow_key
+      )}:${normalizeSceneLoopMicroflowKey(row?.loop_microflow_key)}|${String(row?.risk_key || "no_data:no_data:no_data")}`,
       latest_health_band: String(row?.latest_health_band || row?.health_band || "no_data"),
       attention_band: String(row?.attention_band || "no_data"),
       trend_direction: String(row?.trend_direction || "no_data"),
@@ -1334,6 +1340,9 @@ function buildSceneLoopDistrictMicroflowRiskPriority(rows, limit = 18) {
         row?.loop_family_key ?? row?.loop_microflow_key
       )}:${normalizeSceneLoopMicroflowKey(row?.loop_microflow_key)}`,
       risk_key: String(row?.risk_key || "no_data:no_data:no_data"),
+      risk_focus_key: `${String(row?.district_key || "unknown")}:${normalizeSceneLoopMicroflowFamilyKey(
+        row?.loop_family_key ?? row?.loop_microflow_key
+      )}:${normalizeSceneLoopMicroflowKey(row?.loop_microflow_key)}|${String(row?.risk_key || "no_data:no_data:no_data")}`,
       latest_health_band: String(row?.latest_health_band || row?.health_band || "no_data"),
       attention_band: String(row?.attention_band || "no_data"),
       trend_direction: String(row?.trend_direction || "no_data"),
@@ -1371,6 +1380,9 @@ function buildSceneLoopDistrictMicroflowRiskPriorityDaily(rows, limit = 24) {
         row?.loop_family_key ?? row?.loop_microflow_key
       )}:${normalizeSceneLoopMicroflowKey(row?.loop_microflow_key)}`,
       risk_key: String(row?.risk_key || "no_data:no_data:no_data"),
+      risk_focus_key: `${String(row?.district_key || "unknown")}:${normalizeSceneLoopMicroflowFamilyKey(
+        row?.loop_family_key ?? row?.loop_microflow_key
+      )}:${normalizeSceneLoopMicroflowKey(row?.loop_microflow_key)}|${String(row?.risk_key || "no_data:no_data:no_data")}`,
       latest_health_band: String(row?.latest_health_band || row?.health_band || "no_data"),
       attention_band: String(row?.attention_band || "no_data"),
       trend_direction: String(row?.trend_direction || "no_data"),
@@ -1406,6 +1418,9 @@ function buildSceneLoopDistrictMicroflowRiskFocus(rows, limit = 12) {
         row?.loop_family_key ?? row?.loop_microflow_key
       )}:${normalizeSceneLoopMicroflowKey(row?.loop_microflow_key)}`,
       risk_key: String(row?.risk_key || "no_data:no_data:no_data"),
+      risk_focus_key: `${String(row?.district_key || "unknown")}:${normalizeSceneLoopMicroflowFamilyKey(
+        row?.loop_family_key ?? row?.loop_microflow_key
+      )}:${normalizeSceneLoopMicroflowKey(row?.loop_microflow_key)}|${String(row?.risk_key || "no_data:no_data:no_data")}`,
       latest_health_band: String(row?.latest_health_band || row?.health_band || "no_data"),
       attention_band: String(row?.attention_band || "no_data"),
       trend_direction: String(row?.trend_direction || "no_data"),
