@@ -561,12 +561,16 @@ function buildLoopBridgeMeta(source, familyKey = "") {
   const microflow_key =
     toText(row.microflowKey || row.microflow_key, "").toLowerCase() ||
     toText(focus_key.split(":")[2], "").toLowerCase();
+  const entry_kind_key = toText(row.entryKindKey || row.entry_kind_key, "").toLowerCase();
+  const sequence_kind_key = toText(row.sequenceKindKey || row.sequence_kind_key, "").toLowerCase();
   return {
     focus_key,
     risk_key,
     risk_focus_key,
     family_key,
-    microflow_key
+    microflow_key,
+    entry_kind_key,
+    sequence_kind_key
   };
 }
 
@@ -1527,6 +1531,13 @@ function buildPvpLoopMicroPanels(loopDeck, active) {
     cadenceText: panels.telemetryCadenceText
   });
   const duelFlowBundle = buildLoopFlowFamilyBridgeBundle(panels.duelTone, {
+    entryKindKey: loopDeck.entryKindKey,
+    sequenceKindKey: loopDeck.sequenceKindKey,
+    microflowKey: loopDeck.microflowKey,
+    focusKey: loopDeck.focusKey,
+    riskKey: loopDeck.riskKey,
+    riskFocusKey: loopDeck.riskFocusKey,
+    protocolPodKey: loopDeck.protocolPodKey,
     familyText: panels.duelFamilyText,
     flowText: panels.duelFlowText,
     summaryText: panels.duelSummaryText,
@@ -3206,6 +3217,13 @@ function buildAdminLoopMicroPanels(loopDeck, active) {
     cadenceText: panels.runtimeCadenceText
   });
   const dispatchFlowBundle = buildLoopFlowFamilyBridgeBundle(panels.dispatchTone, {
+    entryKindKey: loopDeck.entryKindKey,
+    sequenceKindKey: loopDeck.sequenceKindKey,
+    microflowKey: loopDeck.microflowKey,
+    focusKey: loopDeck.focusKey,
+    riskKey: loopDeck.riskKey,
+    riskFocusKey: loopDeck.riskFocusKey,
+    protocolPodKey: loopDeck.protocolPodKey,
     familyText: panels.dispatchFamilyText,
     flowText: panels.dispatchFlowText,
     summaryText: panels.dispatchSummaryText,
@@ -4037,6 +4055,13 @@ function buildOperationsLoopMicroPanels(loopDeck, active) {
     streakMicroflowText: microflowRailText
   };
   const lootFlowBundle = buildLoopFlowFamilyBridgeBundle(panels.lootTone, {
+    entryKindKey: loopDeck.entryKindKey,
+    sequenceKindKey: loopDeck.sequenceKindKey,
+    microflowKey: loopDeck.microflowKey,
+    focusKey: loopDeck.focusKey,
+    riskKey: loopDeck.riskKey,
+    riskFocusKey: loopDeck.riskFocusKey,
+    protocolPodKey: loopDeck.protocolPodKey,
     familyText: panels.lootFamilyText,
     flowText: panels.lootFlowText,
     summaryText: panels.lootSummaryText,
@@ -4407,6 +4432,13 @@ function buildOperationsLoopMicroPanels(loopDeck, active) {
   panels.lootRiskCards = lootRiskBundle.cards;
   panels.lootRiskBlocks = lootRiskBundle.blocks;
   panels.lootFlowPanels = buildLoopFlowFamilyPanels(panels.lootTone, {
+    entryKindKey: loopDeck.entryKindKey,
+    sequenceKindKey: loopDeck.sequenceKindKey,
+    microflowKey: loopDeck.microflowKey,
+    focusKey: loopDeck.focusKey,
+    riskKey: loopDeck.riskKey,
+    riskFocusKey: loopDeck.riskFocusKey,
+    protocolPodKey: loopDeck.protocolPodKey,
     familyText: panels.lootFamilyText,
     flowText: panels.lootFlowText,
     summaryText: panels.lootSummaryText,

@@ -495,6 +495,22 @@ const DICT = {
       "District x Mikroakis Risk Focus Key Matrisi",
     admin_runtime_scene_loop_district_microflow_risk_focus_key_matrix_daily_title:
       "District x Mikroakis Gunluk Risk Focus Key Matrisi",
+    admin_runtime_scene_loop_district_microflow_risk_entry_kind_title:
+      "District x Mikroakis Risk Entry Kind",
+    admin_runtime_scene_loop_district_microflow_risk_entry_kind_daily_title:
+      "District x Mikroakis Gunluk Risk Entry Kind",
+    admin_runtime_scene_loop_district_microflow_risk_entry_kind_matrix_title:
+      "District x Mikroakis Risk Entry Kind Matrisi",
+    admin_runtime_scene_loop_district_microflow_risk_entry_kind_matrix_daily_title:
+      "District x Mikroakis Gunluk Risk Entry Kind Matrisi",
+    admin_runtime_scene_loop_district_microflow_risk_sequence_kind_title:
+      "District x Mikroakis Risk Sequence Kind",
+    admin_runtime_scene_loop_district_microflow_risk_sequence_kind_daily_title:
+      "District x Mikroakis Gunluk Risk Sequence Kind",
+    admin_runtime_scene_loop_district_microflow_risk_sequence_kind_matrix_title:
+      "District x Mikroakis Risk Sequence Kind Matrisi",
+    admin_runtime_scene_loop_district_microflow_risk_sequence_kind_matrix_daily_title:
+      "District x Mikroakis Gunluk Risk Sequence Kind Matrisi",
     admin_runtime_scene_loop_district_microflow_risk_latest_band_title:
       "District x Mikroakis Risk Son Band",
     admin_runtime_scene_loop_district_microflow_risk_health_band_title:
@@ -1545,6 +1561,22 @@ const DICT = {
       "District x Microflow Risk Focus Key Matrix",
     admin_runtime_scene_loop_district_microflow_risk_focus_key_matrix_daily_title:
       "District x Microflow Daily Risk Focus Key Matrix",
+    admin_runtime_scene_loop_district_microflow_risk_entry_kind_title:
+      "District x Microflow Risk Entry Kind",
+    admin_runtime_scene_loop_district_microflow_risk_entry_kind_daily_title:
+      "District x Microflow Daily Risk Entry Kind",
+    admin_runtime_scene_loop_district_microflow_risk_entry_kind_matrix_title:
+      "District x Microflow Risk Entry Kind Matrix",
+    admin_runtime_scene_loop_district_microflow_risk_entry_kind_matrix_daily_title:
+      "District x Microflow Daily Risk Entry Kind Matrix",
+    admin_runtime_scene_loop_district_microflow_risk_sequence_kind_title:
+      "District x Microflow Risk Sequence Kind",
+    admin_runtime_scene_loop_district_microflow_risk_sequence_kind_daily_title:
+      "District x Microflow Daily Risk Sequence Kind",
+    admin_runtime_scene_loop_district_microflow_risk_sequence_kind_matrix_title:
+      "District x Microflow Risk Sequence Kind Matrix",
+    admin_runtime_scene_loop_district_microflow_risk_sequence_kind_matrix_daily_title:
+      "District x Microflow Daily Risk Sequence Kind Matrix",
     admin_runtime_scene_loop_district_microflow_risk_latest_band_title:
       "District x Microflow Risk Latest Band",
     admin_runtime_scene_loop_district_microflow_risk_health_band_title:

@@ -161,6 +161,187 @@ function normalizeSceneLoopMicroflowFamilyKey(value) {
   return normalizeSceneLoopFamilyKey(head);
 }
 
+function resolveSceneLoopMicroflowEntryKindKey(loopMicroflowKey, loopFamilyKey) {
+  const microflowKey = normalizeSceneLoopMicroflowKey(loopMicroflowKey);
+  const familyKey = normalizeSceneLoopMicroflowFamilyKey(loopFamilyKey ?? loopMicroflowKey);
+  switch (microflowKey) {
+    case "duel":
+      return "world_entry_kind_duel_console";
+    case "ladder":
+      return "world_entry_kind_ladder_console";
+    case "telemetry":
+    case "tick":
+      return "world_entry_kind_telemetry_console";
+    case "offer":
+    case "mission":
+      return "world_entry_kind_mission_terminal";
+    case "claim":
+      return "world_entry_kind_claim_terminal";
+    case "streak":
+      return "world_entry_kind_streak_terminal";
+    case "wallet":
+      return "world_entry_kind_wallet_terminal";
+    case "payout":
+      return "world_entry_kind_payout_terminal";
+    case "premium":
+      return "world_entry_kind_premium_terminal";
+    case "route":
+      return "world_entry_kind_rewards_vault";
+    case "queue":
+      return "world_entry_kind_queue_console";
+    case "runtime":
+      return "world_entry_kind_runtime_console";
+    case "dispatch":
+      return "world_entry_kind_dispatch_console";
+    case "travel":
+    case "season":
+      return "world_entry_kind_hub_portal";
+    default:
+      break;
+  }
+  switch (familyKey) {
+    case "duel_sync":
+      return "world_entry_kind_duel_console";
+    case "ladder_charge":
+      return "world_entry_kind_ladder_console";
+    case "telemetry_scan":
+    case "tick_window":
+    case "risk_watch":
+      return "world_entry_kind_telemetry_console";
+    case "offer_stack":
+    case "mission_queue":
+      return "world_entry_kind_mission_terminal";
+    case "claim_lane":
+      return "world_entry_kind_claim_terminal";
+    case "contract_pulse":
+      return "world_entry_kind_mission_terminal";
+    case "streak_pulse":
+      return "world_entry_kind_streak_terminal";
+    case "wallet_link":
+      return "world_entry_kind_wallet_terminal";
+    case "payout_lane":
+      return "world_entry_kind_payout_terminal";
+    case "premium_lane":
+      return "world_entry_kind_premium_terminal";
+    case "route_matrix":
+      return "world_entry_kind_rewards_vault";
+    case "queue_review":
+      return "world_entry_kind_queue_console";
+    case "runtime_watch":
+      return "world_entry_kind_runtime_console";
+    case "dispatch_gate":
+      return "world_entry_kind_dispatch_console";
+    case "season_arc":
+      return "world_entry_kind_hub_portal";
+    default:
+      return "world_entry_kind_hub_portal";
+  }
+}
+
+function resolveSceneLoopMicroflowSequenceKindKey(loopMicroflowKey, loopFamilyKey) {
+  const microflowKey = normalizeSceneLoopMicroflowKey(loopMicroflowKey);
+  const familyKey = normalizeSceneLoopMicroflowFamilyKey(loopFamilyKey ?? loopMicroflowKey);
+  switch (microflowKey) {
+    case "duel":
+      return "world_modal_kind_duel_sequence";
+    case "ladder":
+      return "world_modal_kind_ladder_sequence";
+    case "telemetry":
+    case "tick":
+      return "world_modal_kind_telemetry_scan";
+    case "offer":
+    case "mission":
+      return "world_modal_kind_mission_terminal";
+    case "claim":
+      return "world_modal_kind_contract_sequence";
+    case "streak":
+      return "world_modal_kind_streak_sync";
+    case "wallet":
+      return "world_modal_kind_wallet_terminal";
+    case "payout":
+      return "world_modal_kind_payout_route";
+    case "premium":
+      return "world_modal_kind_premium_unlock";
+    case "route":
+      return "world_modal_kind_payout_route";
+    case "queue":
+      return "world_modal_kind_queue_review";
+    case "runtime":
+      return "world_modal_kind_runtime_scan";
+    case "dispatch":
+      return "world_modal_kind_dispatch_sequence";
+    case "travel":
+    case "season":
+      return "world_modal_kind_travel_gate";
+    default:
+      break;
+  }
+  switch (familyKey) {
+    case "duel_sync":
+      return "world_modal_kind_duel_sequence";
+    case "ladder_charge":
+      return "world_modal_kind_ladder_sequence";
+    case "telemetry_scan":
+    case "tick_window":
+    case "risk_watch":
+      return "world_modal_kind_telemetry_scan";
+    case "offer_stack":
+    case "mission_queue":
+      return "world_modal_kind_mission_terminal";
+    case "claim_lane":
+    case "contract_pulse":
+      return "world_modal_kind_contract_sequence";
+    case "streak_pulse":
+      return "world_modal_kind_streak_sync";
+    case "wallet_link":
+      return "world_modal_kind_wallet_terminal";
+    case "payout_lane":
+    case "route_matrix":
+      return "world_modal_kind_payout_route";
+    case "premium_lane":
+      return "world_modal_kind_premium_unlock";
+    case "queue_review":
+      return "world_modal_kind_queue_review";
+    case "runtime_watch":
+      return "world_modal_kind_runtime_scan";
+    case "dispatch_gate":
+      return "world_modal_kind_dispatch_sequence";
+    case "season_arc":
+      return "world_modal_kind_travel_gate";
+    default:
+      return "world_modal_kind_travel_gate";
+  }
+}
+
+function buildSceneLoopRiskContext(row) {
+  const districtKey = String(row?.district_key || "unknown");
+  const loopFamilyKey = normalizeSceneLoopMicroflowFamilyKey(row?.loop_family_key ?? row?.loop_microflow_key);
+  const loopMicroflowKey = normalizeSceneLoopMicroflowKey(row?.loop_microflow_key);
+  const latestHealthBand = String(row?.latest_health_band || row?.health_band || "no_data");
+  const attentionBand = String(row?.attention_band || "no_data");
+  const trendDirection = String(row?.trend_direction || "no_data");
+  const focusKey = `${districtKey}:${loopFamilyKey}:${loopMicroflowKey}`;
+  const riskKey = String(row?.risk_key || `${latestHealthBand}:${attentionBand}:${trendDirection}`);
+  return {
+    district_key: districtKey,
+    loop_family_key: loopFamilyKey,
+    family_key: loopFamilyKey,
+    loop_microflow_key: loopMicroflowKey,
+    microflow_key: loopMicroflowKey,
+    focus_key: focusKey,
+    latest_health_band: latestHealthBand,
+    attention_band: attentionBand,
+    trend_direction: trendDirection,
+    risk_health_band_key: latestHealthBand,
+    risk_attention_band_key: attentionBand,
+    risk_trend_direction_key: trendDirection,
+    risk_key: riskKey,
+    risk_focus_key: `${focusKey}|${riskKey}`,
+    entry_kind_key: resolveSceneLoopMicroflowEntryKindKey(loopMicroflowKey, loopFamilyKey),
+    sequence_kind_key: resolveSceneLoopMicroflowSequenceKindKey(loopMicroflowKey, loopFamilyKey)
+  };
+}
+
 function normalizeSceneLoopDistrictFamilyDailyRows(rows, limit = 84) {
   const source = Array.isArray(rows) ? rows : [];
   return source
@@ -1141,30 +1322,17 @@ function buildSceneLoopDistrictMicroflowAttentionPriorityDaily(rows, limit = 24)
 function buildSceneLoopDistrictMicroflowRiskRows(rows, limit = 18) {
   return (Array.isArray(rows) ? rows : [])
     .map((row) => {
-      const districtKey = String(row?.district_key || "unknown");
-      const loopFamilyKey = normalizeSceneLoopMicroflowFamilyKey(row?.loop_family_key ?? row?.loop_microflow_key);
-      const loopMicroflowKey = normalizeSceneLoopMicroflowKey(row?.loop_microflow_key);
-      const latestHealthBand = String(row?.latest_health_band || row?.health_band || "no_data");
-      const attentionBand = String(row?.attention_band || "no_data");
-      const trendDirection = String(row?.trend_direction || "no_data");
-      const attentionRank = rankSceneLoopAttentionBand(attentionBand);
-      const healthRank = rankSceneLoopHealthBand(latestHealthBand);
-      const trendRank = rankSceneLoopTrendDirection(trendDirection);
+      const context = buildSceneLoopRiskContext(row);
+      const attentionRank = rankSceneLoopAttentionBand(context.attention_band);
+      const healthRank = rankSceneLoopHealthBand(context.latest_health_band);
+      const trendRank = rankSceneLoopTrendDirection(context.trend_direction);
       const totalCount = Math.max(0, Math.floor(toNum(row?.total_count, 0)));
       return {
-        district_key: districtKey,
-        loop_family_key: loopFamilyKey,
-        loop_microflow_key: loopMicroflowKey,
-        focus_key: `${districtKey}:${loopFamilyKey}:${loopMicroflowKey}`,
-        latest_health_band: latestHealthBand,
-        attention_band: attentionBand,
-        trend_direction: trendDirection,
+        ...context,
         trend_delta: Math.floor(toNum(row?.trend_delta, 0)),
         total_count: totalCount,
         live_count: Math.max(0, Math.floor(toNum(row?.live_count, 0))),
         blocked_count: Math.max(0, Math.floor(toNum(row?.blocked_count, 0))),
-        risk_key: `${latestHealthBand}:${attentionBand}:${trendDirection}`,
-        risk_focus_key: `${districtKey}:${loopFamilyKey}:${loopMicroflowKey}|${latestHealthBand}:${attentionBand}:${trendDirection}`,
         priority_score: buildSceneLoopPriorityScore(attentionRank, healthRank, trendRank, totalCount),
         attention_rank: attentionRank,
         health_rank: healthRank,
@@ -1186,31 +1354,18 @@ function buildSceneLoopDistrictMicroflowRiskRows(rows, limit = 18) {
 function buildSceneLoopDistrictMicroflowRiskRowsDaily(rows, limit = 24) {
   return (Array.isArray(rows) ? rows : [])
     .map((row) => {
-      const districtKey = String(row?.district_key || "unknown");
-      const loopFamilyKey = normalizeSceneLoopMicroflowFamilyKey(row?.loop_family_key ?? row?.loop_microflow_key);
-      const loopMicroflowKey = normalizeSceneLoopMicroflowKey(row?.loop_microflow_key);
-      const latestHealthBand = String(row?.latest_health_band || row?.health_band || "no_data");
-      const attentionBand = String(row?.attention_band || "no_data");
-      const trendDirection = String(row?.trend_direction || "no_data");
-      const attentionRank = rankSceneLoopAttentionBand(attentionBand);
-      const healthRank = rankSceneLoopHealthBand(latestHealthBand);
-      const trendRank = rankSceneLoopTrendDirection(trendDirection);
+      const context = buildSceneLoopRiskContext(row);
+      const attentionRank = rankSceneLoopAttentionBand(context.attention_band);
+      const healthRank = rankSceneLoopHealthBand(context.latest_health_band);
+      const trendRank = rankSceneLoopTrendDirection(context.trend_direction);
       const totalCount = Math.max(0, Math.floor(toNum(row?.total_count, 0)));
       return {
         day: String(row?.day || ""),
-        district_key: districtKey,
-        loop_family_key: loopFamilyKey,
-        loop_microflow_key: loopMicroflowKey,
-        focus_key: `${districtKey}:${loopFamilyKey}:${loopMicroflowKey}`,
-        latest_health_band: latestHealthBand,
-        attention_band: attentionBand,
-        trend_direction: trendDirection,
+        ...context,
         trend_delta: Math.floor(toNum(row?.trend_delta, 0)),
         total_count: totalCount,
         live_count: Math.max(0, Math.floor(toNum(row?.live_count, 0))),
         blocked_count: Math.max(0, Math.floor(toNum(row?.blocked_count, 0))),
-        risk_key: `${latestHealthBand}:${attentionBand}:${trendDirection}`,
-        risk_focus_key: `${districtKey}:${loopFamilyKey}:${loopMicroflowKey}|${latestHealthBand}:${attentionBand}:${trendDirection}`,
         priority_score: buildSceneLoopPriorityScore(attentionRank, healthRank, trendRank, totalCount),
         attention_rank: attentionRank,
         health_rank: healthRank,
@@ -1234,23 +1389,13 @@ function buildSceneLoopDistrictMicroflowRiskRowsDaily(rows, limit = 24) {
 function buildSceneLoopDistrictMicroflowRiskMatrix(rows, limit = 18) {
   const grouped = new Map();
   (Array.isArray(rows) ? rows : []).forEach((row) => {
-    const districtKey = String(row?.district_key || "unknown");
-    const loopFamilyKey = normalizeSceneLoopMicroflowFamilyKey(row?.loop_family_key ?? row?.loop_microflow_key);
-    const loopMicroflowKey = normalizeSceneLoopMicroflowKey(row?.loop_microflow_key);
-    const riskKey = String(row?.risk_key || "no_data:no_data:no_data");
+    const context = buildSceneLoopRiskContext(row);
+    const riskKey = String(context.risk_key || "no_data:no_data:no_data");
     const day = String(row?.day || "");
-    const compositeKey = `${districtKey}:${loopFamilyKey}:${loopMicroflowKey}:${riskKey}`;
+    const compositeKey = `${context.district_key}:${context.loop_family_key}:${context.loop_microflow_key}:${riskKey}`;
     if (!grouped.has(compositeKey)) {
       grouped.set(compositeKey, {
-        district_key: districtKey,
-        loop_family_key: loopFamilyKey,
-        loop_microflow_key: loopMicroflowKey,
-        focus_key: `${districtKey}:${loopFamilyKey}:${loopMicroflowKey}`,
-        risk_key: riskKey,
-        risk_focus_key: `${districtKey}:${loopFamilyKey}:${loopMicroflowKey}|${riskKey}`,
-        latest_health_band: String(row?.latest_health_band || row?.health_band || "no_data"),
-        attention_band: String(row?.attention_band || "no_data"),
-        trend_direction: String(row?.trend_direction || "no_data"),
+        ...context,
         trend_delta: Math.floor(toNum(row?.trend_delta, 0)),
         total_count: Math.max(0, Math.floor(toNum(row?.total_count, 0))),
         live_count: Math.max(0, Math.floor(toNum(row?.live_count, 0))),
@@ -1295,19 +1440,7 @@ function buildSceneLoopDistrictMicroflowRiskMatrixDaily(rows, limit = 24) {
   return (Array.isArray(rows) ? rows : [])
     .map((row) => ({
       day: String(row?.day || ""),
-      district_key: String(row?.district_key || "unknown"),
-      loop_family_key: normalizeSceneLoopMicroflowFamilyKey(row?.loop_family_key ?? row?.loop_microflow_key),
-      loop_microflow_key: normalizeSceneLoopMicroflowKey(row?.loop_microflow_key),
-      focus_key: `${String(row?.district_key || "unknown")}:${normalizeSceneLoopMicroflowFamilyKey(
-        row?.loop_family_key ?? row?.loop_microflow_key
-      )}:${normalizeSceneLoopMicroflowKey(row?.loop_microflow_key)}`,
-      risk_key: String(row?.risk_key || "no_data:no_data:no_data"),
-      risk_focus_key: `${String(row?.district_key || "unknown")}:${normalizeSceneLoopMicroflowFamilyKey(
-        row?.loop_family_key ?? row?.loop_microflow_key
-      )}:${normalizeSceneLoopMicroflowKey(row?.loop_microflow_key)}|${String(row?.risk_key || "no_data:no_data:no_data")}`,
-      latest_health_band: String(row?.latest_health_band || row?.health_band || "no_data"),
-      attention_band: String(row?.attention_band || "no_data"),
-      trend_direction: String(row?.trend_direction || "no_data"),
+      ...buildSceneLoopRiskContext(row),
       trend_delta: Math.floor(toNum(row?.trend_delta, 0)),
       total_count: Math.max(0, Math.floor(toNum(row?.total_count, 0))),
       live_count: Math.max(0, Math.floor(toNum(row?.live_count, 0))),
@@ -1333,19 +1466,7 @@ function buildSceneLoopDistrictMicroflowRiskMatrixDaily(rows, limit = 24) {
 function buildSceneLoopDistrictMicroflowRiskPriority(rows, limit = 18) {
   return (Array.isArray(rows) ? rows : [])
     .map((row) => ({
-      district_key: String(row?.district_key || "unknown"),
-      loop_family_key: normalizeSceneLoopMicroflowFamilyKey(row?.loop_family_key ?? row?.loop_microflow_key),
-      loop_microflow_key: normalizeSceneLoopMicroflowKey(row?.loop_microflow_key),
-      focus_key: `${String(row?.district_key || "unknown")}:${normalizeSceneLoopMicroflowFamilyKey(
-        row?.loop_family_key ?? row?.loop_microflow_key
-      )}:${normalizeSceneLoopMicroflowKey(row?.loop_microflow_key)}`,
-      risk_key: String(row?.risk_key || "no_data:no_data:no_data"),
-      risk_focus_key: `${String(row?.district_key || "unknown")}:${normalizeSceneLoopMicroflowFamilyKey(
-        row?.loop_family_key ?? row?.loop_microflow_key
-      )}:${normalizeSceneLoopMicroflowKey(row?.loop_microflow_key)}|${String(row?.risk_key || "no_data:no_data:no_data")}`,
-      latest_health_band: String(row?.latest_health_band || row?.health_band || "no_data"),
-      attention_band: String(row?.attention_band || "no_data"),
-      trend_direction: String(row?.trend_direction || "no_data"),
+      ...buildSceneLoopRiskContext(row),
       trend_delta: Math.floor(toNum(row?.trend_delta, 0)),
       total_count: Math.max(0, Math.floor(toNum(row?.total_count, 0))),
       live_count: Math.max(0, Math.floor(toNum(row?.live_count, 0))),
@@ -1373,19 +1494,7 @@ function buildSceneLoopDistrictMicroflowRiskPriorityDaily(rows, limit = 24) {
   return (Array.isArray(rows) ? rows : [])
     .map((row) => ({
       day: String(row?.day || ""),
-      district_key: String(row?.district_key || "unknown"),
-      loop_family_key: normalizeSceneLoopMicroflowFamilyKey(row?.loop_family_key ?? row?.loop_microflow_key),
-      loop_microflow_key: normalizeSceneLoopMicroflowKey(row?.loop_microflow_key),
-      focus_key: `${String(row?.district_key || "unknown")}:${normalizeSceneLoopMicroflowFamilyKey(
-        row?.loop_family_key ?? row?.loop_microflow_key
-      )}:${normalizeSceneLoopMicroflowKey(row?.loop_microflow_key)}`,
-      risk_key: String(row?.risk_key || "no_data:no_data:no_data"),
-      risk_focus_key: `${String(row?.district_key || "unknown")}:${normalizeSceneLoopMicroflowFamilyKey(
-        row?.loop_family_key ?? row?.loop_microflow_key
-      )}:${normalizeSceneLoopMicroflowKey(row?.loop_microflow_key)}|${String(row?.risk_key || "no_data:no_data:no_data")}`,
-      latest_health_band: String(row?.latest_health_band || row?.health_band || "no_data"),
-      attention_band: String(row?.attention_band || "no_data"),
-      trend_direction: String(row?.trend_direction || "no_data"),
+      ...buildSceneLoopRiskContext(row),
       trend_delta: Math.floor(toNum(row?.trend_delta, 0)),
       total_count: Math.max(0, Math.floor(toNum(row?.total_count, 0))),
       live_count: Math.max(0, Math.floor(toNum(row?.live_count, 0))),
@@ -1411,19 +1520,7 @@ function buildSceneLoopDistrictMicroflowRiskPriorityDaily(rows, limit = 24) {
 function buildSceneLoopDistrictMicroflowRiskFocus(rows, limit = 12) {
   return (Array.isArray(rows) ? rows : [])
     .map((row) => ({
-      district_key: String(row?.district_key || "unknown"),
-      loop_family_key: normalizeSceneLoopMicroflowFamilyKey(row?.loop_family_key ?? row?.loop_microflow_key),
-      loop_microflow_key: normalizeSceneLoopMicroflowKey(row?.loop_microflow_key),
-      focus_key: `${String(row?.district_key || "unknown")}:${normalizeSceneLoopMicroflowFamilyKey(
-        row?.loop_family_key ?? row?.loop_microflow_key
-      )}:${normalizeSceneLoopMicroflowKey(row?.loop_microflow_key)}`,
-      risk_key: String(row?.risk_key || "no_data:no_data:no_data"),
-      risk_focus_key: `${String(row?.district_key || "unknown")}:${normalizeSceneLoopMicroflowFamilyKey(
-        row?.loop_family_key ?? row?.loop_microflow_key
-      )}:${normalizeSceneLoopMicroflowKey(row?.loop_microflow_key)}|${String(row?.risk_key || "no_data:no_data:no_data")}`,
-      latest_health_band: String(row?.latest_health_band || row?.health_band || "no_data"),
-      attention_band: String(row?.attention_band || "no_data"),
-      trend_direction: String(row?.trend_direction || "no_data"),
+      ...buildSceneLoopRiskContext(row),
       trend_delta: Math.floor(toNum(row?.trend_delta, 0)),
       total_count: Math.max(0, Math.floor(toNum(row?.total_count, 0))),
       live_count: Math.max(0, Math.floor(toNum(row?.live_count, 0))),
@@ -1449,16 +1546,7 @@ function buildSceneLoopDistrictMicroflowRiskFocusDaily(rows, limit = 18) {
   return (Array.isArray(rows) ? rows : [])
     .map((row) => ({
       day: String(row?.day || ""),
-      district_key: String(row?.district_key || "unknown"),
-      loop_family_key: normalizeSceneLoopMicroflowFamilyKey(row?.loop_family_key ?? row?.loop_microflow_key),
-      loop_microflow_key: normalizeSceneLoopMicroflowKey(row?.loop_microflow_key),
-      focus_key: `${String(row?.district_key || "unknown")}:${normalizeSceneLoopMicroflowFamilyKey(
-        row?.loop_family_key ?? row?.loop_microflow_key
-      )}:${normalizeSceneLoopMicroflowKey(row?.loop_microflow_key)}`,
-      risk_key: String(row?.risk_key || "no_data:no_data:no_data"),
-      latest_health_band: String(row?.latest_health_band || row?.health_band || "no_data"),
-      attention_band: String(row?.attention_band || "no_data"),
-      trend_direction: String(row?.trend_direction || "no_data"),
+      ...buildSceneLoopRiskContext(row),
       trend_delta: Math.floor(toNum(row?.trend_delta, 0)),
       total_count: Math.max(0, Math.floor(toNum(row?.total_count, 0))),
       live_count: Math.max(0, Math.floor(toNum(row?.live_count, 0))),
@@ -2038,6 +2126,38 @@ function enrichWebappRevenueMetrics(rawMetrics = {}) {
   metrics.scene_loop_district_microflow_risk_focus_key_matrix_daily_7d = buildSceneLoopDimensionRiskMatrixDaily(
     metrics.scene_loop_district_microflow_risk_rows_daily_7d,
     "focus_key"
+  );
+  metrics.scene_loop_district_microflow_risk_entry_kind_breakdown_7d = buildSceneLoopDimensionBreakdown(
+    metrics.scene_loop_district_microflow_risk_rows_7d,
+    "entry_kind_key"
+  );
+  metrics.scene_loop_district_microflow_risk_entry_kind_breakdown_daily_7d = buildSceneLoopDimensionBreakdownDaily(
+    metrics.scene_loop_district_microflow_risk_rows_daily_7d,
+    "entry_kind_key"
+  );
+  metrics.scene_loop_district_microflow_risk_entry_kind_matrix_7d = buildSceneLoopDimensionRiskMatrix(
+    metrics.scene_loop_district_microflow_risk_rows_daily_7d,
+    "entry_kind_key"
+  );
+  metrics.scene_loop_district_microflow_risk_entry_kind_matrix_daily_7d = buildSceneLoopDimensionRiskMatrixDaily(
+    metrics.scene_loop_district_microflow_risk_rows_daily_7d,
+    "entry_kind_key"
+  );
+  metrics.scene_loop_district_microflow_risk_sequence_kind_breakdown_7d = buildSceneLoopDimensionBreakdown(
+    metrics.scene_loop_district_microflow_risk_rows_7d,
+    "sequence_kind_key"
+  );
+  metrics.scene_loop_district_microflow_risk_sequence_kind_breakdown_daily_7d = buildSceneLoopDimensionBreakdownDaily(
+    metrics.scene_loop_district_microflow_risk_rows_daily_7d,
+    "sequence_kind_key"
+  );
+  metrics.scene_loop_district_microflow_risk_sequence_kind_matrix_7d = buildSceneLoopDimensionRiskMatrix(
+    metrics.scene_loop_district_microflow_risk_rows_daily_7d,
+    "sequence_kind_key"
+  );
+  metrics.scene_loop_district_microflow_risk_sequence_kind_matrix_daily_7d = buildSceneLoopDimensionRiskMatrixDaily(
+    metrics.scene_loop_district_microflow_risk_rows_daily_7d,
+    "sequence_kind_key"
   );
   metrics.scene_loop_district_microflow_risk_latest_band_breakdown_7d = buildSceneLoopDistrictFamilyLatestBandBreakdown(
     metrics.scene_loop_district_microflow_risk_matrix_7d

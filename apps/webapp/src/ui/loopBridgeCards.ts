@@ -8,6 +8,8 @@ export type LoopBridgeCard = {
   risk_focus_key?: string;
   family_key?: string;
   microflow_key?: string;
+  entry_kind_key?: string;
+  sequence_kind_key?: string;
 };
 
 export type LoopBridgeBlock = {
@@ -21,6 +23,8 @@ export type LoopBridgeBlock = {
   risk_focus_key?: string;
   family_key?: string;
   microflow_key?: string;
+  entry_kind_key?: string;
+  sequence_kind_key?: string;
 };
 
 export type LoopBridgePanel = {
@@ -33,6 +37,8 @@ export type LoopBridgePanel = {
   risk_focus_key?: string;
   family_key?: string;
   microflow_key?: string;
+  entry_kind_key?: string;
+  sequence_kind_key?: string;
 };
 
 function safeText(value: unknown, fallback = ""): string {
@@ -56,6 +62,8 @@ type LoopBridgeMeta = {
   risk_focus_key?: string;
   family_key?: string;
   microflow_key?: string;
+  entry_kind_key?: string;
+  sequence_kind_key?: string;
 };
 
 function applyBridgeMeta(article: HTMLElement, meta: LoopBridgeMeta): void {
@@ -64,6 +72,8 @@ function applyBridgeMeta(article: HTMLElement, meta: LoopBridgeMeta): void {
   const riskFocusKey = safeText(meta.risk_focus_key);
   const familyKey = safeText(meta.family_key);
   const microflowKey = safeText(meta.microflow_key);
+  const entryKindKey = safeText(meta.entry_kind_key);
+  const sequenceKindKey = safeText(meta.sequence_kind_key);
   if (focusKey) {
     article.dataset.focusKey = focusKey;
   }
@@ -78,6 +88,12 @@ function applyBridgeMeta(article: HTMLElement, meta: LoopBridgeMeta): void {
   }
   if (microflowKey) {
     article.dataset.microflowKey = microflowKey;
+  }
+  if (entryKindKey) {
+    article.dataset.entryKindKey = entryKindKey;
+  }
+  if (sequenceKindKey) {
+    article.dataset.sequenceKindKey = sequenceKindKey;
   }
 }
 

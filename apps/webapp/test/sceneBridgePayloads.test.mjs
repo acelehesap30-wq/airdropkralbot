@@ -347,6 +347,8 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
   assert.match(payloads.combatHud.loopDuelFlowCards?.[0]?.value || "", /DUEL CONSOLE|DUEL FLOW/i);
   assert.match(payloads.combatHud.loopDuelFlowCards?.[0]?.hint || "", /FOCUS arena_prime:duel:duel_flow/i);
   assert.equal(payloads.combatHud.loopDuelFlowCards?.[0]?.focus_key, "arena_prime:duel:duel_flow");
+  assert.equal(payloads.combatHud.loopDuelFlowCards?.[0]?.entry_kind_key, "world_entry_kind_duel_console");
+  assert.equal(payloads.combatHud.loopDuelFlowCards?.[0]?.sequence_kind_key, "world_modal_kind_duel_sequence");
   assert.match(payloads.combatHud.loopDuelFlowCards?.[0]?.risk_key || "", /^[a-z_]+:[a-z_]+:[a-z_]+$/i);
   assert.match(
     payloads.combatHud.loopDuelFlowCards?.[0]?.risk_focus_key || "",
@@ -1066,6 +1068,8 @@ test("buildPlayerBridgePayloads surfaces active tasks loop micro panels from sel
   assert.equal(payloads.operations.loop.lootFlowPanels?.[1]?.title, "STATE");
   assert.equal(payloads.operations.loop.lootFlowPanels?.[2]?.title, "REVEAL");
   assert.equal(payloads.operations.loop.lootFlowPanels?.[0]?.focus_key, "mission_quarter:loot:claim_flow");
+  assert.equal(payloads.operations.loop.lootFlowPanels?.[0]?.entry_kind_key, "world_entry_kind_claim_terminal");
+  assert.equal(payloads.operations.loop.lootFlowPanels?.[0]?.sequence_kind_key, "world_modal_kind_contract_sequence");
   assert.equal(payloads.operations.loop.lootRiskCards?.length, 4);
   assert.equal(payloads.operations.loop.lootRiskCards?.[0]?.title, "HEALTH");
   assert.equal(payloads.operations.loop.lootRiskCards?.[1]?.title, "ATTN");
@@ -1284,6 +1288,8 @@ test("buildAdminBridgePayloads produces runtime, asset and audit cards from admi
   assert.equal(payloads.runtime.loopDispatchFlowCards?.[0]?.title, "QUEUE");
   assert.match(payloads.runtime.loopDispatchFlowCards?.[0]?.value || "", /DISPATCH CONSOLE|DISPATCH FLOW/i);
   assert.equal(payloads.runtime.loopDispatchFlowCards?.[0]?.focus_key, "ops_citadel:dispatch:dispatch_flow");
+  assert.equal(payloads.runtime.loopDispatchFlowCards?.[0]?.entry_kind_key, "world_entry_kind_dispatch_console");
+  assert.equal(payloads.runtime.loopDispatchFlowCards?.[0]?.sequence_kind_key, "world_modal_kind_dispatch_sequence");
   assert.match(
     payloads.runtime.loopDispatchFlowCards?.[0]?.risk_focus_key || "",
     /^ops_citadel:dispatch:dispatch_flow\|[a-z_]+:[a-z_]+:[a-z_]+$/i
