@@ -1029,10 +1029,26 @@ function buildSceneLoopDistrictMicroflowMatrix(rows, limit = 18) {
       const blockedShare = toRate(blockedCount, totalCount);
       const latestRow = sortedRows[0] || null;
       const earliestRow = sortedRows[sortedRows.length - 1] || null;
+      const latestHealthBand = String(latestRow?.health_band || "no_data");
+      const trendDirection = resolveSceneLoopTrendDirection(
+        latestRow?.total_count,
+        earliestRow?.total_count,
+        sortedRows.length
+      );
       const greenDays = sortedRows.filter((row) => String(row?.health_band || "") === "green").length;
       const yellowDays = sortedRows.filter((row) => String(row?.health_band || "") === "yellow").length;
       const redDays = sortedRows.filter((row) => String(row?.health_band || "") === "red").length;
+      const attentionBand = resolveSceneLoopDistrictAttentionBand(latestHealthBand, trendDirection, blockedShare);
+      const context = buildSceneLoopRiskContext({
+        district_key: districtKey,
+        loop_family_key: loopFamilyKey,
+        loop_microflow_key: loopMicroflowKey,
+        latest_health_band: latestHealthBand,
+        attention_band: attentionBand,
+        trend_direction: trendDirection
+      });
       return {
+        ...context,
         district_key: districtKey,
         loop_family_key: loopFamilyKey,
         loop_microflow_key: loopMicroflowKey,
@@ -1044,21 +1060,13 @@ function buildSceneLoopDistrictMicroflowMatrix(rows, limit = 18) {
         day_count: sortedRows.length,
         latest_day: latestRow?.day || null,
         latest_total_count: Math.max(0, Math.floor(toNum(latestRow?.total_count, 0))),
-        latest_health_band: String(latestRow?.health_band || "no_data"),
+        latest_health_band: latestHealthBand,
         green_days: greenDays,
         yellow_days: yellowDays,
         red_days: redDays,
         health_band: resolveSceneLoopDistrictHealthBand(totalCount, liveShare, blockedShare),
-        attention_band: resolveSceneLoopDistrictAttentionBand(
-          String(latestRow?.health_band || "no_data"),
-          resolveSceneLoopTrendDirection(latestRow?.total_count, earliestRow?.total_count, sortedRows.length),
-          blockedShare
-        ),
-        trend_direction: resolveSceneLoopTrendDirection(
-          latestRow?.total_count,
-          earliestRow?.total_count,
-          sortedRows.length
-        ),
+        attention_band: attentionBand,
+        trend_direction: trendDirection,
         trend_delta: Math.max(
           -9999,
           Math.min(9999, Math.floor(toNum(latestRow?.total_count, 0) - toNum(earliestRow?.total_count, 0)))
@@ -1100,7 +1108,16 @@ function buildSceneLoopDistrictMicroflowHealthAttentionTrendMatrix(rows, limit =
       const latestHealthBand = String(row?.latest_health_band || row?.health_band || "no_data");
       const attentionBand = String(row?.attention_band || "no_data");
       const trendDirection = String(row?.trend_direction || "no_data");
+      const context = buildSceneLoopRiskContext({
+        district_key: row?.district_key,
+        loop_family_key: row?.loop_family_key,
+        loop_microflow_key: row?.loop_microflow_key,
+        latest_health_band: latestHealthBand,
+        attention_band: attentionBand,
+        trend_direction: trendDirection
+      });
       return {
+        ...context,
         district_key: String(row?.district_key || "unknown"),
         loop_family_key: normalizeSceneLoopMicroflowFamilyKey(row?.loop_family_key ?? row?.loop_microflow_key),
         loop_microflow_key: normalizeSceneLoopMicroflowKey(row?.loop_microflow_key),
@@ -1158,7 +1175,16 @@ function buildSceneLoopDistrictMicroflowHealthAttentionTrendDailyBreakdown(rows,
       const trendDirection = resolveSceneLoopTrendDirection(totalCount, olderRow?.total_count, olderRow ? 2 : 1);
       const latestHealthBand = resolveSceneLoopDistrictHealthBand(totalCount, liveShare, blockedShare);
       const attentionBand = resolveSceneLoopDistrictAttentionBand(latestHealthBand, trendDirection, blockedShare);
+      const context = buildSceneLoopRiskContext({
+        district_key: districtKey,
+        loop_family_key: loopFamilyKey,
+        loop_microflow_key: loopMicroflowKey,
+        latest_health_band: latestHealthBand,
+        attention_band: attentionBand,
+        trend_direction: trendDirection
+      });
       output.push({
+        ...context,
         day: String(row?.day || ""),
         district_key: districtKey,
         loop_family_key: loopFamilyKey,
@@ -1203,7 +1229,16 @@ function buildSceneLoopDistrictMicroflowHealthAttentionTrendDailyMatrix(rows, li
       const latestHealthBand = String(row?.latest_health_band || row?.health_band || "no_data");
       const attentionBand = String(row?.attention_band || "no_data");
       const trendDirection = String(row?.trend_direction || "no_data");
+      const context = buildSceneLoopRiskContext({
+        district_key: row?.district_key,
+        loop_family_key: row?.loop_family_key,
+        loop_microflow_key: row?.loop_microflow_key,
+        latest_health_band: latestHealthBand,
+        attention_band: attentionBand,
+        trend_direction: trendDirection
+      });
       return {
+        ...context,
         day: String(row?.day || ""),
         district_key: String(row?.district_key || "unknown"),
         loop_family_key: normalizeSceneLoopMicroflowFamilyKey(row?.loop_family_key ?? row?.loop_microflow_key),
@@ -1244,11 +1279,20 @@ function buildSceneLoopDistrictMicroflowAttentionPriority(rows, limit = 18) {
       const latestHealthBand = String(row?.latest_health_band || row?.health_band || "no_data");
       const attentionBand = String(row?.attention_band || "no_data");
       const trendDirection = String(row?.trend_direction || "no_data");
+      const context = buildSceneLoopRiskContext({
+        district_key: row?.district_key,
+        loop_family_key: row?.loop_family_key,
+        loop_microflow_key: row?.loop_microflow_key,
+        latest_health_band: latestHealthBand,
+        attention_band: attentionBand,
+        trend_direction: trendDirection
+      });
       const attentionRank = rankSceneLoopAttentionBand(attentionBand);
       const healthRank = rankSceneLoopHealthBand(latestHealthBand);
       const trendRank = rankSceneLoopTrendDirection(trendDirection);
       const totalCount = Math.max(0, Math.floor(toNum(row?.total_count, 0)));
       return {
+        ...context,
         district_key: String(row?.district_key || "unknown"),
         loop_family_key: normalizeSceneLoopMicroflowFamilyKey(row?.loop_family_key ?? row?.loop_microflow_key),
         loop_microflow_key: normalizeSceneLoopMicroflowKey(row?.loop_microflow_key),
@@ -1283,12 +1327,21 @@ function buildSceneLoopDistrictMicroflowAttentionPriorityDaily(rows, limit = 24)
       const latestHealthBand = String(row?.latest_health_band || row?.health_band || "no_data");
       const attentionBand = String(row?.attention_band || "no_data");
       const trendDirection = String(row?.trend_direction || "no_data");
+      const context = buildSceneLoopRiskContext({
+        district_key: row?.district_key,
+        loop_family_key: row?.loop_family_key,
+        loop_microflow_key: row?.loop_microflow_key,
+        latest_health_band: latestHealthBand,
+        attention_band: attentionBand,
+        trend_direction: trendDirection
+      });
       const attentionRank = rankSceneLoopAttentionBand(attentionBand);
       const healthRank = rankSceneLoopHealthBand(latestHealthBand);
       const trendRank = rankSceneLoopTrendDirection(trendDirection);
       const totalCount = Math.max(0, Math.floor(toNum(row?.total_count, 0)));
       return {
         day: String(row?.day || ""),
+        ...context,
         district_key: String(row?.district_key || "unknown"),
         loop_family_key: normalizeSceneLoopMicroflowFamilyKey(row?.loop_family_key ?? row?.loop_microflow_key),
         loop_microflow_key: normalizeSceneLoopMicroflowKey(row?.loop_microflow_key),

@@ -6353,6 +6353,67 @@ export function buildDistrictWorldState(input = {}) {
         action_items: enrichInteractionActionItems(interactionModal.action_items, actionContextLookup)
       }
     : interactionModal;
+  const primarySurfaceAction = asRecord(asList(enrichedInteractionSurface?.action_items)[0]);
+  const primarySurfaceContext = asRecord(primarySurfaceAction.action_context);
+  const rootInteractionContext = {
+    family_key: toText(primarySurfaceContext.family_key || primarySurfaceAction.family_key, ""),
+    flow_key: toText(primarySurfaceContext.flow_key || primarySurfaceAction.flow_key, ""),
+    microflow_key: toText(primarySurfaceContext.microflow_key || primarySurfaceAction.microflow_key, ""),
+    focus_key: toText(primarySurfaceContext.focus_key || primarySurfaceAction.focus_key, ""),
+    risk_key: toText(primarySurfaceContext.risk_key || primarySurfaceAction.risk_key, ""),
+    risk_focus_key: toText(primarySurfaceContext.risk_focus_key || primarySurfaceAction.risk_focus_key, ""),
+    risk_health_band_key: toText(
+      primarySurfaceContext.risk_health_band_key || primarySurfaceAction.risk_health_band_key,
+      ""
+    ),
+    risk_attention_band_key: toText(
+      primarySurfaceContext.risk_attention_band_key || primarySurfaceAction.risk_attention_band_key,
+      ""
+    ),
+    risk_trend_direction_key: toText(
+      primarySurfaceContext.risk_trend_direction_key || primarySurfaceAction.risk_trend_direction_key,
+      ""
+    ),
+    entry_kind_key: toText(
+      interactionEntry?.entry_kind_key || primarySurfaceContext.entry_kind_key || primarySurfaceAction.entry_kind_key,
+      ""
+    ),
+    sequence_kind_key: toText(
+      enrichedInteractionModal?.modal_kind_key ||
+        primarySurfaceContext.sequence_kind_key ||
+        primarySurfaceAction.sequence_kind_key,
+      ""
+    )
+  };
+  const finalInteractionSurface = enrichedInteractionSurface
+    ? {
+        ...enrichedInteractionSurface,
+        ...rootInteractionContext
+      }
+    : enrichedInteractionSurface;
+  const finalInteractionFlow = interactionFlow
+    ? {
+        ...interactionFlow,
+        ...rootInteractionContext
+      }
+    : interactionFlow;
+  const finalInteractionEntry = interactionEntry
+    ? {
+        ...interactionEntry,
+        ...rootInteractionContext,
+        entry_kind_key: toText(interactionEntry.entry_kind_key || rootInteractionContext.entry_kind_key, "")
+      }
+    : interactionEntry;
+  const finalInteractionTerminal = enrichedInteractionTerminal
+    ? {
+        ...enrichedInteractionTerminal,
+        ...rootInteractionContext,
+        entry_kind_key: toText(
+          enrichedInteractionTerminal.entry_kind_key || rootInteractionContext.entry_kind_key,
+          ""
+        )
+      }
+    : enrichedInteractionTerminal;
 
   return {
     world_key: `${workspace}:${tab}:${districtKey}`,
@@ -6405,10 +6466,10 @@ export function buildDistrictWorldState(input = {}) {
     active_cluster_actions: asList(enrichedActiveCluster?.action_items),
     active_cluster_slot_count: toNum(enrichedActiveCluster?.intent_slots?.length, 0),
     interaction_sheet: interactionSheet,
-    interaction_surface: enrichedInteractionSurface,
-    interaction_flow: interactionFlow,
-    interaction_entry: interactionEntry,
-    interaction_terminal: enrichedInteractionTerminal,
+    interaction_surface: finalInteractionSurface,
+    interaction_flow: finalInteractionFlow,
+    interaction_entry: finalInteractionEntry,
+    interaction_terminal: finalInteractionTerminal,
     interaction_modal: enrichedInteractionModal,
     theme: districtTheme,
     actors,
