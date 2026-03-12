@@ -161,11 +161,20 @@ type ProtocolCardFlowPod = {
     chrome_band_key?: string;
     composition_profile_key?: string;
     camera_frame_key?: string;
+    hud_anchor_key?: string;
+    rail_anchor_key?: string;
+    sheet_anchor_key?: string;
+    entry_anchor_key?: string;
+    console_anchor_key?: string;
+    modal_anchor_key?: string;
     hud_density_profile_key?: string;
     rail_layout_key?: string;
     console_layout_key?: string;
     modal_layout_key?: string;
     focus_hold_scalar?: number;
+    camera_heading_offset?: number;
+    camera_target_x_offset?: number;
+    camera_bank_scalar?: number;
     camera_fov_scalar?: number;
     focus_spread_scalar?: number;
     hud_width_scalar?: number;
@@ -1237,6 +1246,15 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           const microflowFocusHoldScalar = Number.isFinite(Number(microflowFocus?.focus_hold_scalar))
             ? Number(microflowFocus?.focus_hold_scalar)
             : 1;
+          const microflowCameraHeadingOffset = Number.isFinite(Number(microflowFocus?.camera_heading_offset))
+            ? Number(microflowFocus?.camera_heading_offset)
+            : 0;
+          const microflowCameraTargetXOffset = Number.isFinite(Number(microflowFocus?.camera_target_x_offset))
+            ? Number(microflowFocus?.camera_target_x_offset)
+            : 0;
+          const microflowCameraBankScalar = Number.isFinite(Number(microflowFocus?.camera_bank_scalar))
+            ? Number(microflowFocus?.camera_bank_scalar)
+            : 1;
           const microflowCameraFovScalar = Number.isFinite(Number(microflowFocus?.camera_fov_scalar))
             ? Number(microflowFocus?.camera_fov_scalar)
             : 1;
@@ -1310,11 +1328,13 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
             now * worldState.orbit_speed * cameraProfile.orbit_scalar * microflowCameraOrbitBiasScalar +
             Math.sin(now * 0.27) * 0.018 * cameraProfile.sway_scalar * motionScalar * microflowCameraDriftScalar +
             (focusHotspot?.camera_alpha_offset || 0) +
+            microflowCameraHeadingOffset +
             microflowAlphaOffset;
           const targetBeta =
             cameraProfile.beta_base +
             Math.sin(now * 0.32) * 0.03 * cameraProfile.sway_scalar * motionScalar * microflowSwayScalar * microflowCameraTiltScalar +
             Math.cos(now * 0.23) * 0.014 * motionScalar * microflowCameraTiltScalar +
+            (microflowCameraBankScalar - 1) * 0.028 +
             (focusHotspot?.camera_beta_offset || 0) +
             microflowBetaOffset;
           camera.alpha +=
@@ -1331,7 +1351,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
             microflowFocusHoldScalar;
           if (focusHotspot) {
             camera.target.x +=
-              (focusHotspot.x - camera.target.x) *
+              (focusHotspot.x + microflowCameraTargetXOffset - camera.target.x) *
               cameraProfile.focus_lerp *
               microflowFocusLerpScalar *
               microflowFocusHoldScalar;
@@ -1460,6 +1480,12 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
       data-chrome-band={selectedMicroflow?.chrome_band_key || ""}
       data-composition-profile={selectedMicroflow?.composition_profile_key || ""}
       data-camera-frame={selectedMicroflow?.camera_frame_key || ""}
+      data-hud-anchor={selectedMicroflow?.hud_anchor_key || ""}
+      data-rail-anchor={selectedMicroflow?.rail_anchor_key || ""}
+      data-sheet-anchor={selectedMicroflow?.sheet_anchor_key || ""}
+      data-entry-anchor={selectedMicroflow?.entry_anchor_key || ""}
+      data-console-anchor={selectedMicroflow?.console_anchor_key || ""}
+      data-modal-anchor={selectedMicroflow?.modal_anchor_key || ""}
       data-hud-layout={selectedMicroflow?.hud_layout_key || worldState.hud_profile.hud_profile_key}
       data-hud-emphasis={selectedMicroflow?.hud_emphasis_band_key || ""}
       data-hud-density={selectedMicroflow?.hud_density_profile_key || ""}
@@ -1492,6 +1518,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
         data-surface-glow={selectedMicroflow?.surface_glow_band_key || ""}
         data-chrome-band={selectedMicroflow?.chrome_band_key || ""}
         data-composition-profile={selectedMicroflow?.composition_profile_key || ""}
+        data-hud-anchor={selectedMicroflow?.hud_anchor_key || ""}
         data-hud-layout={selectedMicroflow?.hud_layout_key || worldState.hud_profile.hud_profile_key}
         data-hud-emphasis={selectedMicroflow?.hud_emphasis_band_key || ""}
         data-hud-density={selectedMicroflow?.hud_density_profile_key || ""}
@@ -1574,6 +1601,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           data-surface-glow={selectedMicroflow?.surface_glow_band_key || ""}
           data-chrome-band={selectedMicroflow?.chrome_band_key || ""}
           data-composition-profile={selectedMicroflow?.composition_profile_key || ""}
+          data-rail-anchor={selectedMicroflow?.rail_anchor_key || ""}
         >
           <div className="akrSceneWorldRailHeader">
             <strong>
@@ -1636,6 +1664,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           data-surface-glow={selectedMicroflow?.surface_glow_band_key || ""}
           data-chrome-band={selectedMicroflow?.chrome_band_key || ""}
           data-composition-profile={selectedMicroflow?.composition_profile_key || ""}
+          data-sheet-anchor={selectedMicroflow?.sheet_anchor_key || ""}
         >
           <div className="akrSceneWorldSheetHeader">
             <strong>
@@ -1676,6 +1705,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           data-surface-glow={selectedMicroflow?.surface_glow_band_key || ""}
           data-chrome-band={selectedMicroflow?.chrome_band_key || ""}
           data-composition-profile={selectedMicroflow?.composition_profile_key || ""}
+          data-entry-anchor={selectedMicroflow?.entry_anchor_key || ""}
         >
           <div className="akrSceneEntrySurfaceHeader">
             <span>{t(props.lang, worldState.interaction_surface.surface_kind_key as never)}</span>
@@ -1795,6 +1825,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           data-surface-glow={selectedMicroflow?.surface_glow_band_key || ""}
           data-chrome-band={selectedMicroflow?.chrome_band_key || ""}
           data-composition-profile={selectedMicroflow?.composition_profile_key || ""}
+          data-console-anchor={selectedMicroflow?.console_anchor_key || ""}
         >
           <div className="akrSceneTerminalConsoleHeader">
             <div className="akrSceneTerminalConsoleTitle">
@@ -1932,6 +1963,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           data-surface-glow={selectedMicroflow?.surface_glow_band_key || ""}
           data-chrome-band={selectedMicroflow?.chrome_band_key || ""}
           data-composition-profile={selectedMicroflow?.composition_profile_key || ""}
+          data-modal-anchor={selectedMicroflow?.modal_anchor_key || ""}
         >
           <div className="akrSceneInteractionModalHeader">
             <div className="akrSceneInteractionModalTitle">

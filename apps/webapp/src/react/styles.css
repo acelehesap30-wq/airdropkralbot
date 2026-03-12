@@ -255,6 +255,22 @@ body {
   align-items: stretch;
 }
 
+.akrSceneWorldHud[data-hud-anchor="center"] {
+  left: 50%;
+  right: auto;
+  transform:
+    translateX(-50%)
+    translateY(calc((1 - var(--akr-scene-surface-stack-scale)) * 12px))
+    scale(calc(0.98 + ((var(--akr-scene-surface-stack-scale) - 1) * 0.14)));
+  transform-origin: center bottom;
+}
+
+.akrSceneWorldHud[data-hud-anchor="right"] {
+  left: auto;
+  right: max(16px, calc((100vw - 1180px) / 2 + 16px));
+  transform-origin: right bottom;
+}
+
 .akrSceneWorldHud[data-hud-emphasis="hot"] {
   box-shadow: 0 18px 42px rgba(88, 18, 28, 0.34);
 }
@@ -381,6 +397,22 @@ body {
 .akrSceneWorldRail[data-composition-profile="arena_scope"],
 .akrSceneWorldRail[data-composition-profile="ops_scope"] {
   border-radius: 14px;
+}
+
+.akrSceneWorldRail[data-rail-anchor="center"] {
+  left: 50%;
+  right: auto;
+  transform:
+    translateX(-50%)
+    translateY(calc((1 - var(--akr-scene-surface-stack-scale)) * 10px))
+    scale(calc(0.98 + ((var(--akr-scene-surface-stack-scale) - 1) * 0.12)));
+  transform-origin: center bottom;
+}
+
+.akrSceneWorldRail[data-rail-anchor="left"] {
+  left: max(16px, calc((100vw - 1180px) / 2 + 16px));
+  right: auto;
+  transform-origin: left bottom;
 }
 
 .akrSceneWorldRailHeader {
@@ -531,6 +563,22 @@ body {
   background: linear-gradient(180deg, rgba(10, 14, 30, 0.94), rgba(8, 12, 22, 0.86));
 }
 
+.akrSceneWorldSheet[data-sheet-anchor="center"] {
+  left: 50%;
+  right: auto;
+  transform:
+    translateX(-50%)
+    translateY(calc((1 - var(--akr-scene-surface-stack-scale)) * 8px))
+    scale(calc(0.98 + ((var(--akr-scene-surface-stack-scale) - 1) * 0.1)));
+  transform-origin: center top;
+}
+
+.akrSceneWorldSheet[data-sheet-anchor="right"] {
+  left: auto;
+  right: max(16px, calc((100vw - 1180px) / 2 + 16px));
+  transform-origin: right top;
+}
+
 .akrSceneWorldSheetHeader {
   display: flex;
   justify-content: space-between;
@@ -648,6 +696,22 @@ body {
 .akrSceneEntrySurface[data-surface-layout="ops_console"],
 .akrSceneEntrySurface[data-surface-layout="ops_dispatch"] {
   background: linear-gradient(180deg, rgba(12, 18, 34, 0.94), rgba(8, 12, 24, 0.86));
+}
+
+.akrSceneEntrySurface[data-entry-anchor="center"] {
+  left: 50%;
+  right: auto;
+  transform:
+    translateX(-50%)
+    translateY(calc((1 - var(--akr-scene-surface-stack-scale)) * 10px))
+    scale(calc(0.98 + ((var(--akr-scene-surface-stack-scale) - 1) * 0.12)));
+  transform-origin: center top;
+}
+
+.akrSceneEntrySurface[data-entry-anchor="right"] {
+  left: auto;
+  right: max(16px, calc((100vw - 1180px) / 2 + 16px));
+  transform-origin: right top;
 }
 
 .akrSceneEntrySurfaceHeader,
@@ -944,6 +1008,22 @@ body {
   background: linear-gradient(180deg, rgba(12, 18, 34, 0.96), rgba(8, 12, 24, 0.9));
 }
 
+.akrSceneTerminalConsole[data-console-anchor="center"] {
+  left: 50%;
+  right: auto;
+  transform:
+    translateX(-50%)
+    translateY(calc((1 - var(--akr-scene-surface-stack-scale)) * 8px))
+    scale(calc(0.98 + ((var(--akr-scene-surface-stack-scale) - 1) * 0.12)));
+  transform-origin: center top;
+}
+
+.akrSceneTerminalConsole[data-console-anchor="left"] {
+  left: max(16px, calc((100vw - 1180px) / 2 + 16px));
+  right: auto;
+  transform-origin: left top;
+}
+
 .akrSceneTerminalConsoleHeader,
 .akrSceneTerminalConsoleMeta,
 .akrSceneTerminalConsoleSectionHeader {
@@ -1171,6 +1251,22 @@ body {
 .akrSceneInteractionModal[data-modal-layout="ops_console"],
 .akrSceneInteractionModal[data-modal-layout="ops_dispatch"] {
   background: linear-gradient(180deg, rgba(12, 18, 34, 0.96), rgba(8, 12, 24, 0.92));
+}
+
+.akrSceneInteractionModal[data-modal-anchor="center"] {
+  left: 50%;
+  right: auto;
+  transform:
+    translateX(-50%)
+    translateY(calc((1 - var(--akr-scene-surface-stack-scale)) * 6px))
+    scale(calc(0.98 + ((var(--akr-scene-surface-stack-scale) - 1) * 0.14)));
+  transform-origin: center top;
+}
+
+.akrSceneInteractionModal[data-modal-anchor="left"] {
+  left: max(16px, calc((100vw - 1180px) / 2 + 16px));
+  right: auto;
+  transform-origin: left top;
 }
 
 .akrSceneInteractionModalHeader,
