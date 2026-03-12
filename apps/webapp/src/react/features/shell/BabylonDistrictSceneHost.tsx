@@ -156,6 +156,11 @@ type ProtocolCardFlowPod = {
     personality_caption_key?: string;
     personality_band_key?: string;
     density_label_key?: string;
+    hud_density_profile_key?: string;
+    rail_layout_key?: string;
+    console_layout_key?: string;
+    modal_layout_key?: string;
+    focus_hold_scalar?: number;
     camera_radius_scale?: number;
     camera_focus_y_offset?: number;
     motion_scalar?: number;
@@ -1196,6 +1201,9 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           const microflowCameraOrbitBiasScalar = Number.isFinite(Number(microflowFocus?.camera_orbit_bias_scalar))
             ? Number(microflowFocus?.camera_orbit_bias_scalar)
             : 1;
+          const microflowFocusHoldScalar = Number.isFinite(Number(microflowFocus?.focus_hold_scalar))
+            ? Number(microflowFocus?.focus_hold_scalar)
+            : 1;
           const motionScalar =
             (worldState.reduced_motion ? 0.22 : 1) *
             directorProfile.motion_scalar *
@@ -1244,19 +1252,40 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
             (focusHotspot?.camera_beta_offset || 0) +
             microflowBetaOffset;
           camera.alpha +=
-            (targetAlpha - camera.alpha) * cameraProfile.alpha_lerp * microflowFocusLerpScalar * microflowAlphaLerpScalar;
+            (targetAlpha - camera.alpha) *
+            cameraProfile.alpha_lerp *
+            microflowFocusLerpScalar *
+            microflowAlphaLerpScalar *
+            microflowFocusHoldScalar;
           camera.beta +=
-            (targetBeta - camera.beta) * cameraProfile.beta_lerp * microflowFocusLerpScalar * microflowBetaLerpScalar;
+            (targetBeta - camera.beta) *
+            cameraProfile.beta_lerp *
+            microflowFocusLerpScalar *
+            microflowBetaLerpScalar *
+            microflowFocusHoldScalar;
           if (focusHotspot) {
-            camera.target.x += (focusHotspot.x - camera.target.x) * cameraProfile.focus_lerp * microflowFocusLerpScalar;
+            camera.target.x +=
+              (focusHotspot.x - camera.target.x) *
+              cameraProfile.focus_lerp *
+              microflowFocusLerpScalar *
+              microflowFocusHoldScalar;
             camera.target.y +=
               (focusHotspot.focus_y * microflowCameraTargetLiftScalar + podFocusYOffset + microflowFocusYOffset - camera.target.y) *
               cameraProfile.focus_lerp *
-              microflowFocusLerpScalar;
-            camera.target.z += (focusHotspot.z - camera.target.z) * cameraProfile.focus_lerp * microflowFocusLerpScalar;
+              microflowFocusLerpScalar *
+              microflowFocusHoldScalar;
+            camera.target.z +=
+              (focusHotspot.z - camera.target.z) *
+              cameraProfile.focus_lerp *
+              microflowFocusLerpScalar *
+              microflowFocusHoldScalar;
             const desiredRadius =
               cameraProfile.radius * focusHotspot.camera_radius_scale * podRadiusScale * microflowRadiusScale * microflowCameraOrbitBiasScalar;
-            camera.radius += (desiredRadius - camera.radius) * cameraProfile.radius_lerp * microflowRadiusLerpScalar;
+            camera.radius +=
+              (desiredRadius - camera.radius) *
+              cameraProfile.radius_lerp *
+              microflowRadiusLerpScalar *
+              microflowFocusHoldScalar;
           }
           satellites.forEach((entry, index) => {
             const radiusPulse =
@@ -1356,6 +1385,10 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
       data-personality-band={selectedMicroflow?.personality_band_key || ""}
       data-hud-layout={selectedMicroflow?.hud_layout_key || worldState.hud_profile.hud_profile_key}
       data-hud-emphasis={selectedMicroflow?.hud_emphasis_band_key || ""}
+      data-hud-density={selectedMicroflow?.hud_density_profile_key || ""}
+      data-rail-layout={selectedMicroflow?.rail_layout_key || worldState.rail_profile.rail_layout_key}
+      data-modal-layout={selectedMicroflow?.modal_layout_key || ""}
+      data-console-layout={selectedMicroflow?.console_layout_key || ""}
     >
       <canvas
         ref={canvasRef}
@@ -1367,6 +1400,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
         data-tone={selectedMicroflow?.personality_band_key || ""}
         data-hud-layout={selectedMicroflow?.hud_layout_key || worldState.hud_profile.hud_profile_key}
         data-hud-emphasis={selectedMicroflow?.hud_emphasis_band_key || ""}
+        data-hud-density={selectedMicroflow?.hud_density_profile_key || ""}
       >
         <strong>{t(props.lang, worldState.district_label_key as never)}</strong>
         <span>{t(props.lang, worldState.mode_label_key as never)}</span>
@@ -1440,6 +1474,8 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
       {focusedClusterActions.length ? (
         <div
           className={`akrSceneWorldRail akrGlass is-${worldState.rail_profile.rail_profile_key} is-${worldState.rail_profile.rail_layout_key}`}
+          data-rail-layout={selectedMicroflow?.rail_layout_key || worldState.rail_profile.rail_layout_key}
+          data-emphasis={selectedMicroflow?.hud_emphasis_band_key || ""}
         >
           <div className="akrSceneWorldRailHeader">
             <strong>
@@ -1494,7 +1530,11 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
         </div>
       ) : null}
       {worldState.interaction_sheet?.rows?.length ? (
-        <div className={`akrSceneWorldSheet akrGlass is-${worldState.interaction_sheet.variant_key}`}>
+        <div
+          className={`akrSceneWorldSheet akrGlass is-${worldState.interaction_sheet.variant_key}`}
+          data-sheet-layout={selectedMicroflow?.rail_layout_key || ""}
+          data-emphasis={selectedMicroflow?.hud_emphasis_band_key || ""}
+        >
           <div className="akrSceneWorldSheetHeader">
             <strong>
               {worldState.interaction_sheet.title_key
@@ -1526,7 +1566,11 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
         </div>
       ) : null}
       {worldState.interaction_surface?.action_items?.length ? (
-        <div className={`akrSceneEntrySurface akrGlass is-${worldState.interaction_surface.surface_class_key}`}>
+        <div
+          className={`akrSceneEntrySurface akrGlass is-${worldState.interaction_surface.surface_class_key}`}
+          data-surface-layout={selectedMicroflow?.modal_layout_key || ""}
+          data-emphasis={selectedMicroflow?.hud_emphasis_band_key || ""}
+        >
           <div className="akrSceneEntrySurfaceHeader">
             <span>{t(props.lang, worldState.interaction_surface.surface_kind_key as never)}</span>
             {worldState.interaction_surface.intent_label_key ? (
@@ -1637,7 +1681,11 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
         </div>
       ) : null}
       {terminalOpen && worldState.interaction_terminal ? (
-        <div className={`akrSceneTerminalConsole akrGlass is-${worldState.interaction_terminal.terminal_class_key}`}>
+        <div
+          className={`akrSceneTerminalConsole akrGlass is-${worldState.interaction_terminal.terminal_class_key}`}
+          data-console-layout={selectedMicroflow?.console_layout_key || ""}
+          data-emphasis={selectedMicroflow?.hud_emphasis_band_key || ""}
+        >
           <div className="akrSceneTerminalConsoleHeader">
             <div className="akrSceneTerminalConsoleTitle">
               <span>{t(props.lang, worldState.interaction_terminal.terminal_kind_key as never)}</span>
@@ -1766,7 +1814,11 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
         </div>
       ) : null}
       {modalOpen && worldState.interaction_modal ? (
-        <div className={`akrSceneInteractionModal akrGlass is-${worldState.interaction_modal.modal_class_key}`}>
+        <div
+          className={`akrSceneInteractionModal akrGlass is-${worldState.interaction_modal.modal_class_key}`}
+          data-modal-layout={selectedMicroflow?.modal_layout_key || ""}
+          data-emphasis={selectedMicroflow?.hud_emphasis_band_key || ""}
+        >
           <div className="akrSceneInteractionModalHeader">
             <div className="akrSceneInteractionModalTitle">
               <span>{t(props.lang, worldState.interaction_modal.modal_kind_key as never)}</span>
