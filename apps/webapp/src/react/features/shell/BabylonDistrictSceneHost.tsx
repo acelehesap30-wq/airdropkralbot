@@ -156,11 +156,18 @@ type ProtocolCardFlowPod = {
     personality_caption_key?: string;
     personality_band_key?: string;
     density_label_key?: string;
+    light_profile_key?: string;
+    surface_glow_band_key?: string;
+    chrome_band_key?: string;
     hud_density_profile_key?: string;
     rail_layout_key?: string;
     console_layout_key?: string;
     modal_layout_key?: string;
     focus_hold_scalar?: number;
+    light_intensity_scalar?: number;
+    glow_intensity_scalar?: number;
+    surface_glow_scalar?: number;
+    chrome_opacity_scalar?: number;
     camera_radius_scale?: number;
     camera_focus_y_offset?: number;
     motion_scalar?: number;
@@ -620,18 +627,23 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
         camera.panningSensibility = 0;
 
         const hemi = new HemisphericLight("akrDistrictHemi", new Vector3(0, 1, 0), scene);
-        hemi.intensity = worldState.low_end_mode ? 0.7 : 0.92;
+        const hemiBaseIntensity = worldState.low_end_mode ? 0.7 : 0.92;
+        hemi.intensity = hemiBaseIntensity;
 
         const point = new PointLight("akrDistrictPoint", new Vector3(0, 3.2, 0), scene);
-        point.intensity = 1.2 + worldState.ambient_energy * 0.6;
+        const pointBaseIntensity = 1.2 + worldState.ambient_energy * 0.6;
+        point.intensity = pointBaseIntensity;
         point.diffuse = Color3.FromHexString(theme.light_hex);
+        const pointDiffuseBase = Color3.FromHexString(theme.light_hex);
 
+        let glow: any = null;
+        const glowBaseIntensity = worldState.effective_quality === "high" ? 0.48 : 0.22;
         if (!worldState.low_end_mode) {
-          const glow = new GlowLayer("akrDistrictGlow", scene, {
+          glow = new GlowLayer("akrDistrictGlow", scene, {
             mainTextureFixedSize: worldState.effective_quality === "high" ? 1024 : 512,
             blurKernelSize: 32
           });
-          glow.intensity = worldState.effective_quality === "high" ? 0.48 : 0.22;
+          glow.intensity = glowBaseIntensity;
         }
 
         const ground = CreateDisc(
@@ -646,7 +658,8 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
         const groundMaterial = new StandardMaterial("akrDistrictGroundMaterial", scene);
         groundMaterial.alpha = 0.86;
         groundMaterial.diffuseColor = Color3.FromHexString(theme.ground_hex);
-        groundMaterial.emissiveColor = Color3.FromHexString(theme.ground_glow_hex);
+        const groundEmissiveBase = Color3.FromHexString(theme.ground_glow_hex);
+        groundMaterial.emissiveColor = groundEmissiveBase;
         ground.material = groundMaterial;
 
         const ring = CreateTorus(
@@ -661,10 +674,13 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
         ring.rotation.x = Math.PI / 2;
         const ringMaterial = new StandardMaterial("akrDistrictRingMaterial", scene);
         ringMaterial.diffuseColor = Color3.FromHexString(theme.ground_glow_hex);
-        ringMaterial.emissiveColor = Color3.FromHexString(theme.ring_hex);
+        const ringEmissiveBase = Color3.FromHexString(theme.ring_hex);
+        ringMaterial.emissiveColor = ringEmissiveBase;
         ring.material = ringMaterial;
 
         let outerRing: any = null;
+        let outerRingMaterial: any = null;
+        let outerRingEmissiveBase: any = null;
         if (!worldState.low_end_mode) {
           outerRing = CreateTorus(
             "akrDistrictOuterRing",
@@ -677,9 +693,10 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           );
           outerRing.rotation.x = Math.PI / 2.4;
           outerRing.rotation.z = districtTilt(theme.theme_key);
-          const outerRingMaterial = new StandardMaterial("akrDistrictOuterRingMaterial", scene);
+          outerRingMaterial = new StandardMaterial("akrDistrictOuterRingMaterial", scene);
           outerRingMaterial.diffuseColor = Color3.FromHexString(theme.ring_secondary_hex);
-          outerRingMaterial.emissiveColor = Color3.FromHexString(theme.ring_secondary_hex);
+          outerRingEmissiveBase = Color3.FromHexString(theme.ring_secondary_hex);
+          outerRingMaterial.emissiveColor = outerRingEmissiveBase;
           outerRing.material = outerRingMaterial;
         }
 
@@ -691,7 +708,8 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
         coreColumn.position.y = 0.52;
         const coreColumnMaterial = new StandardMaterial("akrDistrictCoreColumnMaterial", scene);
         coreColumnMaterial.diffuseColor = Color3.FromHexString(theme.ground_glow_hex);
-        coreColumnMaterial.emissiveColor = Color3.FromHexString(theme.ring_secondary_hex);
+        const coreColumnEmissiveBase = Color3.FromHexString(theme.ring_secondary_hex);
+        coreColumnMaterial.emissiveColor = coreColumnEmissiveBase;
         coreColumn.material = coreColumnMaterial;
 
         const coreOrb = CreateSphere(
@@ -705,7 +723,8 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
         coreOrb.position.y = 1.35;
         const coreOrbMaterial = new StandardMaterial("akrDistrictCoreOrbMaterial", scene);
         coreOrbMaterial.diffuseColor = Color3.FromHexString(theme.ground_glow_hex);
-        coreOrbMaterial.emissiveColor = Color3.FromHexString(theme.core_hex);
+        const coreOrbEmissiveBase = Color3.FromHexString(theme.core_hex);
+        coreOrbMaterial.emissiveColor = coreOrbEmissiveBase;
         coreOrb.material = coreOrbMaterial;
 
         const satellites = Array.from({ length: theme.satellite_count }, (_, index) => {
@@ -725,9 +744,10 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           );
           const material = new StandardMaterial(`akrDistrictSatelliteMaterial-${index}`, scene);
           material.diffuseColor = Color3.FromHexString(theme.satellite_hex);
-          material.emissiveColor = Color3.FromHexString(theme.satellite_hex);
+          const emissiveBase = Color3.FromHexString(theme.satellite_hex);
+          material.emissiveColor = emissiveBase;
           orb.material = material;
-          return { orb, baseAngle: angle };
+          return { orb, baseAngle: angle, material, emissiveBase };
         });
 
         const actorHandles = worldState.actors.flatMap((actor) =>
@@ -1204,6 +1224,18 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           const microflowFocusHoldScalar = Number.isFinite(Number(microflowFocus?.focus_hold_scalar))
             ? Number(microflowFocus?.focus_hold_scalar)
             : 1;
+          const microflowLightIntensityScalar = Number.isFinite(Number(microflowFocus?.light_intensity_scalar))
+            ? Number(microflowFocus?.light_intensity_scalar)
+            : 1;
+          const microflowGlowIntensityScalar = Number.isFinite(Number(microflowFocus?.glow_intensity_scalar))
+            ? Number(microflowFocus?.glow_intensity_scalar)
+            : 1;
+          const microflowSurfaceGlowScalar = Number.isFinite(Number(microflowFocus?.surface_glow_scalar))
+            ? Number(microflowFocus?.surface_glow_scalar)
+            : 1;
+          const microflowChromeOpacityScalar = Number.isFinite(Number(microflowFocus?.chrome_opacity_scalar))
+            ? Number(microflowFocus?.chrome_opacity_scalar)
+            : 1;
           const motionScalar =
             (worldState.reduced_motion ? 0.22 : 1) *
             directorProfile.motion_scalar *
@@ -1236,9 +1268,21 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
             Math.sin(now * 1.7) * 0.04 * motionScalar * directorProfile.node_pulse_scalar * microflowHudEmphasisScalar * microflowRingPulseScalar;
           coreOrb.scaling.setAll(orbScale);
           point.intensity =
-            1.1 +
-            worldState.ambient_energy * 0.6 +
-            Math.sin(now) * 0.08 * motionScalar * microflowHudEmphasisScalar * microflowRingPulseScalar;
+            pointBaseIntensity * microflowLightIntensityScalar +
+            Math.sin(now) * 0.08 * motionScalar * microflowHudEmphasisScalar * microflowRingPulseScalar * microflowSurfaceGlowScalar;
+          point.diffuse = pointDiffuseBase.scale(Math.max(0.84, microflowLightIntensityScalar));
+          hemi.intensity = hemiBaseIntensity * (0.9 + (microflowChromeOpacityScalar - 1) * 0.38) * (0.96 + microflowLightIntensityScalar * 0.06);
+          if (glow) {
+            glow.intensity = glowBaseIntensity * microflowGlowIntensityScalar * microflowSurfaceGlowScalar;
+          }
+          groundMaterial.alpha = Math.min(0.98, 0.84 * microflowChromeOpacityScalar);
+          groundMaterial.emissiveColor = groundEmissiveBase.scale(microflowSurfaceGlowScalar);
+          ringMaterial.emissiveColor = ringEmissiveBase.scale(microflowSurfaceGlowScalar);
+          coreColumnMaterial.emissiveColor = coreColumnEmissiveBase.scale(microflowSurfaceGlowScalar);
+          coreOrbMaterial.emissiveColor = coreOrbEmissiveBase.scale(Math.max(microflowSurfaceGlowScalar, microflowLightIntensityScalar));
+          if (outerRing && outerRingMaterial && outerRingEmissiveBase) {
+            outerRingMaterial.emissiveColor = outerRingEmissiveBase.scale(microflowSurfaceGlowScalar);
+          }
           const targetAlpha =
             cameraProfile.alpha_base +
             now * worldState.orbit_speed * cameraProfile.orbit_scalar * microflowCameraOrbitBiasScalar +
@@ -1288,6 +1332,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
               microflowFocusHoldScalar;
           }
           satellites.forEach((entry, index) => {
+            entry.material.emissiveColor = entry.emissiveBase.scale(microflowSurfaceGlowScalar);
             const radiusPulse =
               theme.satellite_radius +
               Math.sin(now * (0.8 + index * 0.07)) * 0.06 * motionScalar * microflowSatelliteOrbitScalar;
@@ -1383,12 +1428,20 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
       data-district={worldState.district_key}
       data-personality={selectedMicroflow?.personality_key || ""}
       data-personality-band={selectedMicroflow?.personality_band_key || ""}
+      data-light-profile={selectedMicroflow?.light_profile_key || ""}
+      data-surface-glow={selectedMicroflow?.surface_glow_band_key || ""}
+      data-chrome-band={selectedMicroflow?.chrome_band_key || ""}
       data-hud-layout={selectedMicroflow?.hud_layout_key || worldState.hud_profile.hud_profile_key}
       data-hud-emphasis={selectedMicroflow?.hud_emphasis_band_key || ""}
       data-hud-density={selectedMicroflow?.hud_density_profile_key || ""}
       data-rail-layout={selectedMicroflow?.rail_layout_key || worldState.rail_profile.rail_layout_key}
       data-modal-layout={selectedMicroflow?.modal_layout_key || ""}
       data-console-layout={selectedMicroflow?.console_layout_key || ""}
+      style={
+        {
+          "--akr-scene-chrome-opacity": String(selectedMicroflow?.chrome_opacity_scalar || 1)
+        } as React.CSSProperties
+      }
     >
       <canvas
         ref={canvasRef}
@@ -1398,6 +1451,9 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
       <div
         className="akrSceneWorldHud akrGlass"
         data-tone={selectedMicroflow?.personality_band_key || ""}
+        data-light-profile={selectedMicroflow?.light_profile_key || ""}
+        data-surface-glow={selectedMicroflow?.surface_glow_band_key || ""}
+        data-chrome-band={selectedMicroflow?.chrome_band_key || ""}
         data-hud-layout={selectedMicroflow?.hud_layout_key || worldState.hud_profile.hud_profile_key}
         data-hud-emphasis={selectedMicroflow?.hud_emphasis_band_key || ""}
         data-hud-density={selectedMicroflow?.hud_density_profile_key || ""}
@@ -1476,6 +1532,9 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           className={`akrSceneWorldRail akrGlass is-${worldState.rail_profile.rail_profile_key} is-${worldState.rail_profile.rail_layout_key}`}
           data-rail-layout={selectedMicroflow?.rail_layout_key || worldState.rail_profile.rail_layout_key}
           data-emphasis={selectedMicroflow?.hud_emphasis_band_key || ""}
+          data-light-profile={selectedMicroflow?.light_profile_key || ""}
+          data-surface-glow={selectedMicroflow?.surface_glow_band_key || ""}
+          data-chrome-band={selectedMicroflow?.chrome_band_key || ""}
         >
           <div className="akrSceneWorldRailHeader">
             <strong>
@@ -1534,6 +1593,9 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           className={`akrSceneWorldSheet akrGlass is-${worldState.interaction_sheet.variant_key}`}
           data-sheet-layout={selectedMicroflow?.rail_layout_key || ""}
           data-emphasis={selectedMicroflow?.hud_emphasis_band_key || ""}
+          data-light-profile={selectedMicroflow?.light_profile_key || ""}
+          data-surface-glow={selectedMicroflow?.surface_glow_band_key || ""}
+          data-chrome-band={selectedMicroflow?.chrome_band_key || ""}
         >
           <div className="akrSceneWorldSheetHeader">
             <strong>
@@ -1570,6 +1632,9 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           className={`akrSceneEntrySurface akrGlass is-${worldState.interaction_surface.surface_class_key}`}
           data-surface-layout={selectedMicroflow?.modal_layout_key || ""}
           data-emphasis={selectedMicroflow?.hud_emphasis_band_key || ""}
+          data-light-profile={selectedMicroflow?.light_profile_key || ""}
+          data-surface-glow={selectedMicroflow?.surface_glow_band_key || ""}
+          data-chrome-band={selectedMicroflow?.chrome_band_key || ""}
         >
           <div className="akrSceneEntrySurfaceHeader">
             <span>{t(props.lang, worldState.interaction_surface.surface_kind_key as never)}</span>
@@ -1685,6 +1750,9 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           className={`akrSceneTerminalConsole akrGlass is-${worldState.interaction_terminal.terminal_class_key}`}
           data-console-layout={selectedMicroflow?.console_layout_key || ""}
           data-emphasis={selectedMicroflow?.hud_emphasis_band_key || ""}
+          data-light-profile={selectedMicroflow?.light_profile_key || ""}
+          data-surface-glow={selectedMicroflow?.surface_glow_band_key || ""}
+          data-chrome-band={selectedMicroflow?.chrome_band_key || ""}
         >
           <div className="akrSceneTerminalConsoleHeader">
             <div className="akrSceneTerminalConsoleTitle">
@@ -1818,6 +1886,9 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           className={`akrSceneInteractionModal akrGlass is-${worldState.interaction_modal.modal_class_key}`}
           data-modal-layout={selectedMicroflow?.modal_layout_key || ""}
           data-emphasis={selectedMicroflow?.hud_emphasis_band_key || ""}
+          data-light-profile={selectedMicroflow?.light_profile_key || ""}
+          data-surface-glow={selectedMicroflow?.surface_glow_band_key || ""}
+          data-chrome-band={selectedMicroflow?.chrome_band_key || ""}
         >
           <div className="akrSceneInteractionModalHeader">
             <div className="akrSceneInteractionModalTitle">

@@ -97,6 +97,7 @@ body {
   pointer-events: none;
   overflow: hidden;
   opacity: 0.96;
+  --akr-scene-chrome-opacity: 1;
 }
 
 .akrSceneWorldCanvas {
@@ -106,6 +107,31 @@ body {
   pointer-events: auto;
   filter: saturate(1.08) contrast(1.03);
   mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.16), rgba(0, 0, 0, 0.92) 18%, rgba(0, 0, 0, 1) 84%, rgba(0, 0, 0, 0.4));
+}
+
+.akrSceneWorldLayer[data-light-profile="arena_flare"] .akrSceneWorldCanvas {
+  filter: saturate(1.16) contrast(1.06) brightness(1.04);
+}
+
+.akrSceneWorldLayer[data-light-profile="arena_scope"] .akrSceneWorldCanvas {
+  filter: saturate(1.08) contrast(1.08) brightness(0.98);
+}
+
+.akrSceneWorldLayer[data-light-profile="mission_stack"] .akrSceneWorldCanvas,
+.akrSceneWorldLayer[data-light-profile="mission_sync"] .akrSceneWorldCanvas {
+  filter: saturate(1.06) contrast(1.03) brightness(1.01);
+}
+
+.akrSceneWorldLayer[data-light-profile="exchange_ledger"] .akrSceneWorldCanvas {
+  filter: saturate(1.1) contrast(1.04) brightness(1.02);
+}
+
+.akrSceneWorldLayer[data-light-profile="ops_console"] .akrSceneWorldCanvas {
+  filter: saturate(1) contrast(1.08) brightness(0.97);
+}
+
+.akrSceneWorldLayer[data-light-profile="hub_glide"] .akrSceneWorldCanvas {
+  filter: saturate(1.08) contrast(1.03) brightness(1);
 }
 
 .akrSceneWorldHud {
@@ -123,6 +149,23 @@ body {
   font-size: 0.74rem;
   color: #dff6ff;
   background: linear-gradient(135deg, rgba(8, 21, 44, 0.68), rgba(9, 30, 54, 0.52));
+  filter: saturate(calc(1 * var(--akr-scene-chrome-opacity))) contrast(calc(0.98 + (var(--akr-scene-chrome-opacity) * 0.06)));
+}
+
+.akrSceneWorldHud[data-light-profile="arena_flare"] {
+  box-shadow: 0 18px 46px rgba(88, 18, 28, 0.34);
+}
+
+.akrSceneWorldHud[data-light-profile="arena_scope"] {
+  box-shadow: 0 18px 44px rgba(8, 30, 54, 0.3);
+}
+
+.akrSceneWorldHud[data-light-profile="exchange_ledger"] {
+  box-shadow: 0 18px 42px rgba(64, 38, 10, 0.28);
+}
+
+.akrSceneWorldHud[data-light-profile="ops_console"] {
+  box-shadow: 0 18px 42px rgba(10, 16, 34, 0.32);
 }
 
 .akrSceneWorldHud[data-tone="aggressive"] {
@@ -216,6 +259,22 @@ body {
   gap: 9px;
 }
 
+.akrSceneWorldHud[data-surface-glow="hot"] {
+  border-color: rgba(255, 117, 149, 0.32);
+}
+
+.akrSceneWorldHud[data-surface-glow="warm"] {
+  border-color: rgba(255, 190, 102, 0.28);
+}
+
+.akrSceneWorldHud[data-surface-glow="cool"] {
+  border-color: rgba(102, 222, 255, 0.26);
+}
+
+.akrSceneWorldHud[data-surface-glow="low"] {
+  border-color: rgba(116, 140, 188, 0.24);
+}
+
 .akrSceneWorldHud strong {
   color: var(--akr-accent-2);
   text-transform: uppercase;
@@ -233,6 +292,29 @@ body {
   border-radius: 16px;
   display: grid;
   gap: 10px;
+  filter: saturate(calc(1 * var(--akr-scene-chrome-opacity)));
+}
+
+.akrSceneWorldRail[data-chrome-band="strike"] {
+  border-color: rgba(255, 100, 145, 0.28);
+}
+
+.akrSceneWorldRail[data-chrome-band="scope"] {
+  border-color: rgba(102, 222, 255, 0.24);
+}
+
+.akrSceneWorldRail[data-chrome-band="stack"] {
+  border-color: rgba(102, 255, 179, 0.22);
+}
+
+.akrSceneWorldRail[data-chrome-band="ledger"],
+.akrSceneWorldRail[data-chrome-band="premium"] {
+  border-color: rgba(255, 198, 102, 0.24);
+}
+
+.akrSceneWorldRail[data-chrome-band="console"],
+.akrSceneWorldRail[data-chrome-band="dispatch"] {
+  border-color: rgba(129, 162, 255, 0.24);
 }
 
 .akrSceneWorldRail[data-rail-layout="arena_strike"] {
@@ -379,6 +461,7 @@ body {
   display: grid;
   gap: 10px;
   pointer-events: auto;
+  filter: saturate(calc(1 * var(--akr-scene-chrome-opacity)));
 }
 
 .akrSceneWorldSheet[data-sheet-layout="arena_strike"],
@@ -473,6 +556,30 @@ body {
   display: grid;
   gap: 10px;
   pointer-events: auto;
+}
+
+.akrSceneEntrySurface[data-light-profile="arena_flare"],
+.akrSceneTerminalConsole[data-light-profile="arena_flare"],
+.akrSceneInteractionModal[data-light-profile="arena_flare"] {
+  box-shadow: 0 22px 54px rgba(74, 16, 28, 0.34);
+}
+
+.akrSceneEntrySurface[data-light-profile="arena_scope"],
+.akrSceneTerminalConsole[data-light-profile="arena_scope"],
+.akrSceneInteractionModal[data-light-profile="arena_scope"] {
+  box-shadow: 0 22px 54px rgba(8, 26, 48, 0.32);
+}
+
+.akrSceneEntrySurface[data-light-profile="exchange_ledger"],
+.akrSceneTerminalConsole[data-light-profile="exchange_ledger"],
+.akrSceneInteractionModal[data-light-profile="exchange_ledger"] {
+  box-shadow: 0 22px 54px rgba(62, 38, 10, 0.3);
+}
+
+.akrSceneEntrySurface[data-light-profile="ops_console"],
+.akrSceneTerminalConsole[data-light-profile="ops_console"],
+.akrSceneInteractionModal[data-light-profile="ops_console"] {
+  box-shadow: 0 22px 54px rgba(10, 16, 34, 0.34);
 }
 
 .akrSceneEntrySurface[data-surface-layout="arena_focus"],
