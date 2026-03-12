@@ -347,6 +347,13 @@ function buildLoopTrendText(source) {
   return toText(row.cadenceText || row.responseText || row.windowText, "TREND --");
 }
 
+function buildLoopRiskSummaryText(source) {
+  const healthText = buildLoopHealthText(source);
+  const attentionText = buildLoopAttentionText(source);
+  const trendText = buildLoopTrendText(source);
+  return `HEALTH ${healthText} | ATTN ${attentionText} | TREND ${trendText}`;
+}
+
 function buildLoopBridgeCard(title, value, tone, hint = "") {
   return {
     title: toText(title, "FLOW"),
@@ -382,32 +389,34 @@ function buildLoopBridgeBlocks(...blocks) {
 
 function buildLoopFamilyBridgeBundle(tone, rails) {
   const source = asRecord(rails);
+  const riskSummaryText = buildLoopRiskSummaryText(source);
   return {
     cards: buildLoopBridgeCards(
       buildLoopBridgeCard("SUMMARY", source.summaryText, tone, source.familyText),
       buildLoopBridgeCard("GATE", source.gateText, tone, source.flowText),
-      buildLoopBridgeCard("ATTN", source.attentionText || source.cadenceText, tone, source.pressureText || source.responseText)
+      buildLoopBridgeCard("RISK", riskSummaryText, tone, source.pressureText || source.responseText)
     ),
     blocks: buildLoopBridgeBlocks(
       buildLoopBridgeBlock("FLOW", source.familyText, source.flowText, tone, source.summaryText),
       buildLoopBridgeBlock("GATE", source.summaryText, source.gateText, tone, source.windowText),
-      buildLoopBridgeBlock("PULSE", source.attentionText || "ATTN --", source.cadenceText || "CADENCE --", tone, source.responseText || source.pressureText)
+      buildLoopBridgeBlock("RISK", buildLoopHealthText(source), buildLoopAttentionText(source), tone, buildLoopTrendText(source))
     )
   };
 }
 
 function buildLoopFlowFamilyBridgeBundle(tone, rails) {
   const source = asRecord(rails);
+  const riskSummaryText = buildLoopRiskSummaryText(source);
   return {
     cards: buildLoopBridgeCards(
       buildLoopBridgeCard("ENTRY", source.leadText || source.flowText, tone, source.gateText || source.summaryText),
       buildLoopBridgeCard("STATE", source.stateText || source.summaryText, tone, source.stageText || source.detailText),
-      buildLoopBridgeCard("PULSE", source.pressureText || source.responseText, tone, source.attentionText || source.cadenceText)
+      buildLoopBridgeCard("RISK", riskSummaryText, tone, source.attentionText || source.cadenceText)
     ),
     blocks: buildLoopBridgeBlocks(
       buildLoopBridgeBlock("FOCUS", source.focusText || source.familyText, source.flowText || source.summaryText, tone, source.gateText || source.detailText),
       buildLoopBridgeBlock("WINDOW", source.windowText || source.summaryText, source.summaryText || source.stateText, tone, source.attentionText || source.cadenceText),
-      buildLoopBridgeBlock("DETAIL", source.detailText || source.opsText, source.opsText || source.signalText, tone, source.responseText || source.pressureText)
+      buildLoopBridgeBlock("RISK", riskSummaryText, source.signalText || source.pressureText, tone, source.detailText || source.opsText)
     )
   };
 }
@@ -442,7 +451,8 @@ function buildLoopFlowFamilyPanels(tone, rails) {
       lines: [
         toText(source.pressureText, "PRESSURE --"),
         buildLoopAttentionText(source),
-        buildLoopTrendText(source)
+        buildLoopTrendText(source),
+        buildLoopRiskSummaryText(source)
       ]
     }
   ];
@@ -478,7 +488,8 @@ function buildLoopSubflowPanels(tone, rails) {
       lines: [
         toText(source.opsText, "OPS --"),
         toText(source.signalText || source.pressureText, "SIGNAL --"),
-        buildLoopTrendText(source)
+        buildLoopTrendText(source),
+        buildLoopRiskSummaryText(source)
       ]
     }
   ];
