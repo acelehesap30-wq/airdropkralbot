@@ -662,6 +662,9 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
                   <div id="combatLoopLadderFlowCards" className="akrBridgeFocusCards hidden" />
                   <div id="combatLoopLadderFlowBlocks" className="akrBridgeFlowBlocks hidden" />
                   <div id="combatLoopLadderFlowPanels" className="akrBridgeFlowPanels hidden" />
+                  <div id="combatLoopLadderRiskCards" className="akrBridgeFocusCards hidden" />
+                  <div id="combatLoopLadderRiskBlocks" className="akrBridgeFlowBlocks hidden" />
+                  <div id="combatLoopLadderRiskPanels" className="akrBridgeFlowPanels hidden" />
                   <div id="combatLoopLadderSubflowCards" className="akrBridgeFocusCards hidden" />
                   <div id="combatLoopLadderSubflowBlocks" className="akrBridgeFlowBlocks hidden" />
                   <div id="combatLoopLadderSubflowPanels" className="akrBridgeFlowPanels hidden" />
@@ -716,6 +719,9 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
                   <div id="combatLoopTelemetryFlowCards" className="akrBridgeFocusCards hidden" />
                   <div id="combatLoopTelemetryFlowBlocks" className="akrBridgeFlowBlocks hidden" />
                   <div id="combatLoopTelemetryFlowPanels" className="akrBridgeFlowPanels hidden" />
+                  <div id="combatLoopTelemetryRiskCards" className="akrBridgeFocusCards hidden" />
+                  <div id="combatLoopTelemetryRiskBlocks" className="akrBridgeFlowBlocks hidden" />
+                  <div id="combatLoopTelemetryRiskPanels" className="akrBridgeFlowPanels hidden" />
                   <div id="combatLoopTelemetrySubflowCards" className="akrBridgeFocusCards hidden" />
                   <div id="combatLoopTelemetrySubflowBlocks" className="akrBridgeFlowBlocks hidden" />
                   <div id="combatLoopTelemetrySubflowPanels" className="akrBridgeFlowPanels hidden" />
@@ -864,6 +870,9 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
               <div id="tasksLoopOfferFlowCards" className="akrBridgeFocusCards hidden" />
               <div id="tasksLoopOfferFlowBlocks" className="akrBridgeFlowBlocks hidden" />
               <div id="tasksLoopOfferFlowPanels" className="akrBridgeFlowPanels hidden" />
+              <div id="tasksLoopOfferRiskCards" className="akrBridgeFocusCards hidden" />
+              <div id="tasksLoopOfferRiskBlocks" className="akrBridgeFlowBlocks hidden" />
+              <div id="tasksLoopOfferRiskPanels" className="akrBridgeFlowPanels hidden" />
               <div id="tasksLoopOfferSubflowCards" className="akrBridgeFocusCards hidden" />
               <div id="tasksLoopOfferSubflowBlocks" className="akrBridgeFlowBlocks hidden" />
               <div id="tasksLoopOfferSubflowPanels" className="akrBridgeFlowPanels hidden" />
@@ -918,6 +927,9 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
               <div id="tasksLoopClaimFlowCards" className="akrBridgeFocusCards hidden" />
               <div id="tasksLoopClaimFlowBlocks" className="akrBridgeFlowBlocks hidden" />
               <div id="tasksLoopClaimFlowPanels" className="akrBridgeFlowPanels hidden" />
+              <div id="tasksLoopClaimRiskCards" className="akrBridgeFocusCards hidden" />
+              <div id="tasksLoopClaimRiskBlocks" className="akrBridgeFlowBlocks hidden" />
+              <div id="tasksLoopClaimRiskPanels" className="akrBridgeFlowPanels hidden" />
               <div id="tasksLoopClaimSubflowCards" className="akrBridgeFocusCards hidden" />
               <div id="tasksLoopClaimSubflowBlocks" className="akrBridgeFlowBlocks hidden" />
               <div id="tasksLoopClaimSubflowPanels" className="akrBridgeFlowPanels hidden" />
@@ -972,6 +984,9 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
               <div id="tasksLoopStreakFlowCards" className="akrBridgeFocusCards hidden" />
               <div id="tasksLoopStreakFlowBlocks" className="akrBridgeFlowBlocks hidden" />
               <div id="tasksLoopStreakFlowPanels" className="akrBridgeFlowPanels hidden" />
+              <div id="tasksLoopStreakRiskCards" className="akrBridgeFocusCards hidden" />
+              <div id="tasksLoopStreakRiskBlocks" className="akrBridgeFlowBlocks hidden" />
+              <div id="tasksLoopStreakRiskPanels" className="akrBridgeFlowPanels hidden" />
               <div id="tasksLoopStreakSubflowCards" className="akrBridgeFocusCards hidden" />
               <div id="tasksLoopStreakSubflowBlocks" className="akrBridgeFlowBlocks hidden" />
               <div id="tasksLoopStreakSubflowPanels" className="akrBridgeFlowPanels hidden" />
@@ -1193,14 +1208,17 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
                 <p className="akrBridgeHint" id="tokenLoopPayout">
                   -
                 </p>
-                <div id="tokenLoopPayoutCards" className="akrBridgeFocusCards hidden" />
-                <div id="tokenLoopPayoutBlocks" className="akrBridgeFlowBlocks hidden" />
-                <div id="tokenLoopPayoutFlowCards" className="akrBridgeFocusCards hidden" />
-                <div id="tokenLoopPayoutFlowBlocks" className="akrBridgeFlowBlocks hidden" />
-                <div id="tokenLoopPayoutFlowPanels" className="akrBridgeFlowPanels hidden" />
-                <div id="tokenLoopPayoutSubflowCards" className="akrBridgeFocusCards hidden" />
-                <div id="tokenLoopPayoutSubflowBlocks" className="akrBridgeFlowBlocks hidden" />
-                <div id="tokenLoopPayoutSubflowPanels" className="akrBridgeFlowPanels hidden" />
+              <div id="tokenLoopPayoutCards" className="akrBridgeFocusCards hidden" />
+              <div id="tokenLoopPayoutBlocks" className="akrBridgeFlowBlocks hidden" />
+              <div id="tokenLoopPayoutFlowCards" className="akrBridgeFocusCards hidden" />
+              <div id="tokenLoopPayoutFlowBlocks" className="akrBridgeFlowBlocks hidden" />
+              <div id="tokenLoopPayoutFlowPanels" className="akrBridgeFlowPanels hidden" />
+              <div id="tokenLoopPayoutRiskCards" className="akrBridgeFocusCards hidden" />
+              <div id="tokenLoopPayoutRiskBlocks" className="akrBridgeFlowBlocks hidden" />
+              <div id="tokenLoopPayoutRiskPanels" className="akrBridgeFlowPanels hidden" />
+              <div id="tokenLoopPayoutSubflowCards" className="akrBridgeFocusCards hidden" />
+              <div id="tokenLoopPayoutSubflowBlocks" className="akrBridgeFlowBlocks hidden" />
+              <div id="tokenLoopPayoutSubflowPanels" className="akrBridgeFlowPanels hidden" />
                 <div className="akrChipRow">
                   <BridgeChip id="tokenLoopPayoutFamily" className="combatAlertChip neutral tone-neutral" />
                   <BridgeChip id="tokenLoopPayoutFlow" className="combatAlertChip neutral tone-neutral" />
@@ -1247,14 +1265,17 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
                 <p className="akrBridgeHint" id="tokenLoopRoute">
                   -
                 </p>
-                <div id="tokenLoopRouteCards" className="akrBridgeFocusCards hidden" />
-                <div id="tokenLoopRouteBlocks" className="akrBridgeFlowBlocks hidden" />
-                <div id="tokenLoopRouteFlowCards" className="akrBridgeFocusCards hidden" />
-                <div id="tokenLoopRouteFlowBlocks" className="akrBridgeFlowBlocks hidden" />
-                <div id="tokenLoopRouteFlowPanels" className="akrBridgeFlowPanels hidden" />
-                <div id="tokenLoopRouteSubflowCards" className="akrBridgeFocusCards hidden" />
-                <div id="tokenLoopRouteSubflowBlocks" className="akrBridgeFlowBlocks hidden" />
-                <div id="tokenLoopRouteSubflowPanels" className="akrBridgeFlowPanels hidden" />
+              <div id="tokenLoopRouteCards" className="akrBridgeFocusCards hidden" />
+              <div id="tokenLoopRouteBlocks" className="akrBridgeFlowBlocks hidden" />
+              <div id="tokenLoopRouteFlowCards" className="akrBridgeFocusCards hidden" />
+              <div id="tokenLoopRouteFlowBlocks" className="akrBridgeFlowBlocks hidden" />
+              <div id="tokenLoopRouteFlowPanels" className="akrBridgeFlowPanels hidden" />
+              <div id="tokenLoopRouteRiskCards" className="akrBridgeFocusCards hidden" />
+              <div id="tokenLoopRouteRiskBlocks" className="akrBridgeFlowBlocks hidden" />
+              <div id="tokenLoopRouteRiskPanels" className="akrBridgeFlowPanels hidden" />
+              <div id="tokenLoopRouteSubflowCards" className="akrBridgeFocusCards hidden" />
+              <div id="tokenLoopRouteSubflowBlocks" className="akrBridgeFlowBlocks hidden" />
+              <div id="tokenLoopRouteSubflowPanels" className="akrBridgeFlowPanels hidden" />
                 <div className="akrChipRow">
                   <BridgeChip id="tokenLoopRouteFamily" className="combatAlertChip neutral tone-neutral" />
                   <BridgeChip id="tokenLoopRouteFlow" className="combatAlertChip neutral tone-neutral" />
@@ -1301,14 +1322,17 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
                 <p className="akrBridgeHint" id="tokenLoopPremium">
                   -
                 </p>
-                <div id="tokenLoopPremiumCards" className="akrBridgeFocusCards hidden" />
-                <div id="tokenLoopPremiumBlocks" className="akrBridgeFlowBlocks hidden" />
-                <div id="tokenLoopPremiumFlowCards" className="akrBridgeFocusCards hidden" />
-                <div id="tokenLoopPremiumFlowBlocks" className="akrBridgeFlowBlocks hidden" />
-                <div id="tokenLoopPremiumFlowPanels" className="akrBridgeFlowPanels hidden" />
-                <div id="tokenLoopPremiumSubflowCards" className="akrBridgeFocusCards hidden" />
-                <div id="tokenLoopPremiumSubflowBlocks" className="akrBridgeFlowBlocks hidden" />
-                <div id="tokenLoopPremiumSubflowPanels" className="akrBridgeFlowPanels hidden" />
+              <div id="tokenLoopPremiumCards" className="akrBridgeFocusCards hidden" />
+              <div id="tokenLoopPremiumBlocks" className="akrBridgeFlowBlocks hidden" />
+              <div id="tokenLoopPremiumFlowCards" className="akrBridgeFocusCards hidden" />
+              <div id="tokenLoopPremiumFlowBlocks" className="akrBridgeFlowBlocks hidden" />
+              <div id="tokenLoopPremiumFlowPanels" className="akrBridgeFlowPanels hidden" />
+              <div id="tokenLoopPremiumRiskCards" className="akrBridgeFocusCards hidden" />
+              <div id="tokenLoopPremiumRiskBlocks" className="akrBridgeFlowBlocks hidden" />
+              <div id="tokenLoopPremiumRiskPanels" className="akrBridgeFlowPanels hidden" />
+              <div id="tokenLoopPremiumSubflowCards" className="akrBridgeFocusCards hidden" />
+              <div id="tokenLoopPremiumSubflowBlocks" className="akrBridgeFlowBlocks hidden" />
+              <div id="tokenLoopPremiumSubflowPanels" className="akrBridgeFlowPanels hidden" />
                 <div className="akrChipRow">
                   <BridgeChip id="tokenLoopPremiumFamily" className="combatAlertChip neutral tone-neutral" />
                   <BridgeChip id="tokenLoopPremiumFlow" className="combatAlertChip neutral tone-neutral" />
@@ -1510,14 +1534,17 @@ function AdminBridgeCards(props: { lang: Lang }) {
             <p id="adminRuntimeLoopQueue" className="akrBridgeHint">
               -
             </p>
-            <div id="adminRuntimeLoopQueueCards" className="akrBridgeFocusCards hidden" />
-            <div id="adminRuntimeLoopQueueBlocks" className="akrBridgeFlowBlocks hidden" />
-            <div id="adminRuntimeLoopQueueFlowCards" className="akrBridgeFocusCards hidden" />
-            <div id="adminRuntimeLoopQueueFlowBlocks" className="akrBridgeFlowBlocks hidden" />
-            <div id="adminRuntimeLoopQueueFlowPanels" className="akrBridgeFlowPanels hidden" />
-            <div id="adminRuntimeLoopQueueSubflowCards" className="akrBridgeFocusCards hidden" />
-            <div id="adminRuntimeLoopQueueSubflowBlocks" className="akrBridgeFlowBlocks hidden" />
-            <div id="adminRuntimeLoopQueueSubflowPanels" className="akrBridgeFlowPanels hidden" />
+              <div id="adminRuntimeLoopQueueCards" className="akrBridgeFocusCards hidden" />
+              <div id="adminRuntimeLoopQueueBlocks" className="akrBridgeFlowBlocks hidden" />
+              <div id="adminRuntimeLoopQueueFlowCards" className="akrBridgeFocusCards hidden" />
+              <div id="adminRuntimeLoopQueueFlowBlocks" className="akrBridgeFlowBlocks hidden" />
+              <div id="adminRuntimeLoopQueueFlowPanels" className="akrBridgeFlowPanels hidden" />
+              <div id="adminRuntimeLoopQueueRiskCards" className="akrBridgeFocusCards hidden" />
+              <div id="adminRuntimeLoopQueueRiskBlocks" className="akrBridgeFlowBlocks hidden" />
+              <div id="adminRuntimeLoopQueueRiskPanels" className="akrBridgeFlowPanels hidden" />
+              <div id="adminRuntimeLoopQueueSubflowCards" className="akrBridgeFocusCards hidden" />
+              <div id="adminRuntimeLoopQueueSubflowBlocks" className="akrBridgeFlowBlocks hidden" />
+              <div id="adminRuntimeLoopQueueSubflowPanels" className="akrBridgeFlowPanels hidden" />
             <div className="akrChipRow">
               <BridgeChip id="adminRuntimeLoopQueueFamily" className="combatAlertChip neutral tone-neutral" />
               <BridgeChip id="adminRuntimeLoopQueueFlow" className="combatAlertChip neutral tone-neutral" />
@@ -1564,14 +1591,17 @@ function AdminBridgeCards(props: { lang: Lang }) {
             <p id="adminRuntimeLoopRuntime" className="akrBridgeHint">
               -
             </p>
-            <div id="adminRuntimeLoopRuntimeCards" className="akrBridgeFocusCards hidden" />
-            <div id="adminRuntimeLoopRuntimeBlocks" className="akrBridgeFlowBlocks hidden" />
-            <div id="adminRuntimeLoopRuntimeFlowCards" className="akrBridgeFocusCards hidden" />
-            <div id="adminRuntimeLoopRuntimeFlowBlocks" className="akrBridgeFlowBlocks hidden" />
-            <div id="adminRuntimeLoopRuntimeFlowPanels" className="akrBridgeFlowPanels hidden" />
-            <div id="adminRuntimeLoopRuntimeSubflowCards" className="akrBridgeFocusCards hidden" />
-            <div id="adminRuntimeLoopRuntimeSubflowBlocks" className="akrBridgeFlowBlocks hidden" />
-            <div id="adminRuntimeLoopRuntimeSubflowPanels" className="akrBridgeFlowPanels hidden" />
+              <div id="adminRuntimeLoopRuntimeCards" className="akrBridgeFocusCards hidden" />
+              <div id="adminRuntimeLoopRuntimeBlocks" className="akrBridgeFlowBlocks hidden" />
+              <div id="adminRuntimeLoopRuntimeFlowCards" className="akrBridgeFocusCards hidden" />
+              <div id="adminRuntimeLoopRuntimeFlowBlocks" className="akrBridgeFlowBlocks hidden" />
+              <div id="adminRuntimeLoopRuntimeFlowPanels" className="akrBridgeFlowPanels hidden" />
+              <div id="adminRuntimeLoopRuntimeRiskCards" className="akrBridgeFocusCards hidden" />
+              <div id="adminRuntimeLoopRuntimeRiskBlocks" className="akrBridgeFlowBlocks hidden" />
+              <div id="adminRuntimeLoopRuntimeRiskPanels" className="akrBridgeFlowPanels hidden" />
+              <div id="adminRuntimeLoopRuntimeSubflowCards" className="akrBridgeFocusCards hidden" />
+              <div id="adminRuntimeLoopRuntimeSubflowBlocks" className="akrBridgeFlowBlocks hidden" />
+              <div id="adminRuntimeLoopRuntimeSubflowPanels" className="akrBridgeFlowPanels hidden" />
             <div className="akrChipRow">
               <BridgeChip id="adminRuntimeLoopRuntimeFamily" className="combatAlertChip neutral tone-neutral" />
               <BridgeChip id="adminRuntimeLoopRuntimeFlow" className="combatAlertChip neutral tone-neutral" />

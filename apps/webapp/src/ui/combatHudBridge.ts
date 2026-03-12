@@ -148,6 +148,9 @@ type CombatHudPayload = {
   loopLadderFlowCards?: LoopBridgeCard[];
   loopLadderFlowBlocks?: LoopBridgeBlock[];
   loopLadderFlowPanels?: LoopBridgePanel[];
+  loopLadderRiskCards?: LoopBridgeCard[];
+  loopLadderRiskBlocks?: LoopBridgeBlock[];
+  loopLadderRiskPanels?: LoopBridgePanel[];
   loopLadderSubflowCards?: LoopBridgeCard[];
   loopLadderSubflowBlocks?: LoopBridgeBlock[];
   loopLadderSubflowPanels?: LoopBridgePanel[];
@@ -178,6 +181,9 @@ type CombatHudPayload = {
   loopTelemetryFlowCards?: LoopBridgeCard[];
   loopTelemetryFlowBlocks?: LoopBridgeBlock[];
   loopTelemetryFlowPanels?: LoopBridgePanel[];
+  loopTelemetryRiskCards?: LoopBridgeCard[];
+  loopTelemetryRiskBlocks?: LoopBridgeBlock[];
+  loopTelemetryRiskPanels?: LoopBridgePanel[];
   loopTelemetrySubflowCards?: LoopBridgeCard[];
   loopTelemetrySubflowBlocks?: LoopBridgeBlock[];
   loopTelemetrySubflowPanels?: LoopBridgePanel[];
@@ -384,6 +390,9 @@ function render(payload: CombatHudPayload): boolean {
   const loopLadderFlowCards = byId("combatLoopLadderFlowCards");
   const loopLadderFlowBlocks = byId("combatLoopLadderFlowBlocks");
   const loopLadderFlowPanels = byId("combatLoopLadderFlowPanels");
+  const loopLadderRiskCards = byId("combatLoopLadderRiskCards");
+  const loopLadderRiskBlocks = byId("combatLoopLadderRiskBlocks");
+  const loopLadderRiskPanels = byId("combatLoopLadderRiskPanels");
   const loopLadderSubflowCards = byId("combatLoopLadderSubflowCards");
   const loopLadderSubflowBlocks = byId("combatLoopLadderSubflowBlocks");
   const loopLadderSubflowPanels = byId("combatLoopLadderSubflowPanels");
@@ -392,6 +401,9 @@ function render(payload: CombatHudPayload): boolean {
   const loopTelemetryFlowCards = byId("combatLoopTelemetryFlowCards");
   const loopTelemetryFlowBlocks = byId("combatLoopTelemetryFlowBlocks");
   const loopTelemetryFlowPanels = byId("combatLoopTelemetryFlowPanels");
+  const loopTelemetryRiskCards = byId("combatLoopTelemetryRiskCards");
+  const loopTelemetryRiskBlocks = byId("combatLoopTelemetryRiskBlocks");
+  const loopTelemetryRiskPanels = byId("combatLoopTelemetryRiskPanels");
   const loopTelemetrySubflowCards = byId("combatLoopTelemetrySubflowCards");
   const loopTelemetrySubflowBlocks = byId("combatLoopTelemetrySubflowBlocks");
   const loopTelemetrySubflowPanels = byId("combatLoopTelemetrySubflowPanels");
@@ -709,6 +721,9 @@ function render(payload: CombatHudPayload): boolean {
   renderLoopBridgeCards(loopLadderFlowCards, payload.loopLadderFlowCards);
   renderLoopBridgeBlocks(loopLadderFlowBlocks, payload.loopLadderFlowBlocks);
   renderLoopBridgePanels(loopLadderFlowPanels, payload.loopLadderFlowPanels);
+  renderLoopBridgeCards(loopLadderRiskCards, payload.loopLadderRiskCards);
+  renderLoopBridgeBlocks(loopLadderRiskBlocks, payload.loopLadderRiskBlocks);
+  renderLoopBridgePanels(loopLadderRiskPanels, payload.loopLadderRiskPanels);
   renderLoopBridgeCards(loopLadderSubflowCards, payload.loopLadderSubflowCards);
   renderLoopBridgeBlocks(loopLadderSubflowBlocks, payload.loopLadderSubflowBlocks);
   renderLoopBridgePanels(loopLadderSubflowPanels, payload.loopLadderSubflowPanels);
@@ -717,6 +732,9 @@ function render(payload: CombatHudPayload): boolean {
   renderLoopBridgeCards(loopTelemetryFlowCards, payload.loopTelemetryFlowCards);
   renderLoopBridgeBlocks(loopTelemetryFlowBlocks, payload.loopTelemetryFlowBlocks);
   renderLoopBridgePanels(loopTelemetryFlowPanels, payload.loopTelemetryFlowPanels);
+  renderLoopBridgeCards(loopTelemetryRiskCards, payload.loopTelemetryRiskCards);
+  renderLoopBridgeBlocks(loopTelemetryRiskBlocks, payload.loopTelemetryRiskBlocks);
+  renderLoopBridgePanels(loopTelemetryRiskPanels, payload.loopTelemetryRiskPanels);
   renderLoopBridgeCards(loopTelemetrySubflowCards, payload.loopTelemetrySubflowCards);
   renderLoopBridgeBlocks(loopTelemetrySubflowBlocks, payload.loopTelemetrySubflowBlocks);
   renderLoopBridgePanels(loopTelemetrySubflowPanels, payload.loopTelemetrySubflowPanels);

@@ -93,6 +93,9 @@ export type TokenOverviewBridgePayload = {
   loopPayoutFlowCards?: LoopBridgeCard[];
   loopPayoutFlowBlocks?: LoopBridgeBlock[];
   loopPayoutFlowPanels?: LoopBridgePanel[];
+  loopPayoutRiskCards?: LoopBridgeCard[];
+  loopPayoutRiskBlocks?: LoopBridgeBlock[];
+  loopPayoutRiskPanels?: LoopBridgePanel[];
   loopPayoutSubflowCards?: LoopBridgeCard[];
   loopPayoutSubflowBlocks?: LoopBridgeBlock[];
   loopPayoutSubflowPanels?: LoopBridgePanel[];
@@ -123,6 +126,9 @@ export type TokenOverviewBridgePayload = {
   loopRouteFlowCards?: LoopBridgeCard[];
   loopRouteFlowBlocks?: LoopBridgeBlock[];
   loopRouteFlowPanels?: LoopBridgePanel[];
+  loopRouteRiskCards?: LoopBridgeCard[];
+  loopRouteRiskBlocks?: LoopBridgeBlock[];
+  loopRouteRiskPanels?: LoopBridgePanel[];
   loopRouteSubflowCards?: LoopBridgeCard[];
   loopRouteSubflowBlocks?: LoopBridgeBlock[];
   loopRouteSubflowPanels?: LoopBridgePanel[];
@@ -142,6 +148,9 @@ export type TokenOverviewBridgePayload = {
   loopPremiumFlowCards?: LoopBridgeCard[];
   loopPremiumFlowBlocks?: LoopBridgeBlock[];
   loopPremiumFlowPanels?: LoopBridgePanel[];
+  loopPremiumRiskCards?: LoopBridgeCard[];
+  loopPremiumRiskBlocks?: LoopBridgeBlock[];
+  loopPremiumRiskPanels?: LoopBridgePanel[];
   loopPremiumSubflowCards?: LoopBridgeCard[];
   loopPremiumSubflowBlocks?: LoopBridgeBlock[];
   loopPremiumSubflowPanels?: LoopBridgePanel[];
@@ -226,6 +235,9 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   const loopPayoutFlowCards = byId<HTMLElement>("tokenLoopPayoutFlowCards");
   const loopPayoutFlowBlocks = byId<HTMLElement>("tokenLoopPayoutFlowBlocks");
   const loopPayoutFlowPanels = byId<HTMLElement>("tokenLoopPayoutFlowPanels");
+  const loopPayoutRiskCards = byId<HTMLElement>("tokenLoopPayoutRiskCards");
+  const loopPayoutRiskBlocks = byId<HTMLElement>("tokenLoopPayoutRiskBlocks");
+  const loopPayoutRiskPanels = byId<HTMLElement>("tokenLoopPayoutRiskPanels");
   const loopPayoutSubflowCards = byId<HTMLElement>("tokenLoopPayoutSubflowCards");
   const loopPayoutSubflowBlocks = byId<HTMLElement>("tokenLoopPayoutSubflowBlocks");
   const loopPayoutSubflowPanels = byId<HTMLElement>("tokenLoopPayoutSubflowPanels");
@@ -238,6 +250,9 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   const loopRouteFlowCards = byId<HTMLElement>("tokenLoopRouteFlowCards");
   const loopRouteFlowBlocks = byId<HTMLElement>("tokenLoopRouteFlowBlocks");
   const loopRouteFlowPanels = byId<HTMLElement>("tokenLoopRouteFlowPanels");
+  const loopRouteRiskCards = byId<HTMLElement>("tokenLoopRouteRiskCards");
+  const loopRouteRiskBlocks = byId<HTMLElement>("tokenLoopRouteRiskBlocks");
+  const loopRouteRiskPanels = byId<HTMLElement>("tokenLoopRouteRiskPanels");
   const loopRouteSubflowCards = byId<HTMLElement>("tokenLoopRouteSubflowCards");
   const loopRouteSubflowBlocks = byId<HTMLElement>("tokenLoopRouteSubflowBlocks");
   const loopRouteSubflowPanels = byId<HTMLElement>("tokenLoopRouteSubflowPanels");
@@ -250,6 +265,9 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   const loopPremiumFlowCards = byId<HTMLElement>("tokenLoopPremiumFlowCards");
   const loopPremiumFlowBlocks = byId<HTMLElement>("tokenLoopPremiumFlowBlocks");
   const loopPremiumFlowPanels = byId<HTMLElement>("tokenLoopPremiumFlowPanels");
+  const loopPremiumRiskCards = byId<HTMLElement>("tokenLoopPremiumRiskCards");
+  const loopPremiumRiskBlocks = byId<HTMLElement>("tokenLoopPremiumRiskBlocks");
+  const loopPremiumRiskPanels = byId<HTMLElement>("tokenLoopPremiumRiskPanels");
   const loopPremiumSubflowCards = byId<HTMLElement>("tokenLoopPremiumSubflowCards");
   const loopPremiumSubflowBlocks = byId<HTMLElement>("tokenLoopPremiumSubflowBlocks");
   const loopPremiumSubflowPanels = byId<HTMLElement>("tokenLoopPremiumSubflowPanels");
@@ -466,6 +484,9 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   renderLoopBridgeCards(loopPayoutFlowCards, payload.loopPayoutFlowCards);
   renderLoopBridgeBlocks(loopPayoutFlowBlocks, payload.loopPayoutFlowBlocks);
   renderLoopBridgePanels(loopPayoutFlowPanels, payload.loopPayoutFlowPanels);
+  renderLoopBridgeCards(loopPayoutRiskCards, payload.loopPayoutRiskCards);
+  renderLoopBridgeBlocks(loopPayoutRiskBlocks, payload.loopPayoutRiskBlocks);
+  renderLoopBridgePanels(loopPayoutRiskPanels, payload.loopPayoutRiskPanels);
   renderLoopBridgeCards(loopPayoutSubflowCards, payload.loopPayoutSubflowCards);
   renderLoopBridgeBlocks(loopPayoutSubflowBlocks, payload.loopPayoutSubflowBlocks);
   renderLoopBridgePanels(loopPayoutSubflowPanels, payload.loopPayoutSubflowPanels);
@@ -474,6 +495,9 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   renderLoopBridgeCards(loopRouteFlowCards, payload.loopRouteFlowCards);
   renderLoopBridgeBlocks(loopRouteFlowBlocks, payload.loopRouteFlowBlocks);
   renderLoopBridgePanels(loopRouteFlowPanels, payload.loopRouteFlowPanels);
+  renderLoopBridgeCards(loopRouteRiskCards, payload.loopRouteRiskCards);
+  renderLoopBridgeBlocks(loopRouteRiskBlocks, payload.loopRouteRiskBlocks);
+  renderLoopBridgePanels(loopRouteRiskPanels, payload.loopRouteRiskPanels);
   renderLoopBridgeCards(loopRouteSubflowCards, payload.loopRouteSubflowCards);
   renderLoopBridgeBlocks(loopRouteSubflowBlocks, payload.loopRouteSubflowBlocks);
   renderLoopBridgePanels(loopRouteSubflowPanels, payload.loopRouteSubflowPanels);
@@ -482,6 +506,9 @@ function render(payload: TokenOverviewBridgePayload): boolean {
   renderLoopBridgeCards(loopPremiumFlowCards, payload.loopPremiumFlowCards);
   renderLoopBridgeBlocks(loopPremiumFlowBlocks, payload.loopPremiumFlowBlocks);
   renderLoopBridgePanels(loopPremiumFlowPanels, payload.loopPremiumFlowPanels);
+  renderLoopBridgeCards(loopPremiumRiskCards, payload.loopPremiumRiskCards);
+  renderLoopBridgeBlocks(loopPremiumRiskBlocks, payload.loopPremiumRiskBlocks);
+  renderLoopBridgePanels(loopPremiumRiskPanels, payload.loopPremiumRiskPanels);
   renderLoopBridgeCards(loopPremiumSubflowCards, payload.loopPremiumSubflowCards);
   renderLoopBridgeBlocks(loopPremiumSubflowBlocks, payload.loopPremiumSubflowBlocks);
   renderLoopBridgePanels(loopPremiumSubflowPanels, payload.loopPremiumSubflowPanels);

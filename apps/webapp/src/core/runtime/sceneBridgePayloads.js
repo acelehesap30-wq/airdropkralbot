@@ -766,7 +766,43 @@ function buildPvpLoopMicroPanels(loopDeck, active) {
     panels.telemetryBlocks = telemetryBundle.blocks;
     panels.ladderFlowCards = ladderFlowBundle.cards;
     panels.ladderFlowBlocks = ladderFlowBundle.blocks;
+    const ladderRiskBundle = buildLoopRiskBridgeBundle(panels.ladderTone, {
+      familyText: panels.ladderFamilyText,
+      flowText: panels.ladderFlowText,
+      summaryText: panels.ladderSummaryText,
+      gateText: panels.ladderGateText,
+      leadText: panels.ladderLeadText,
+      windowText: panels.ladderWindowText,
+      pressureText: panels.ladderPressureText,
+      responseText: panels.ladderResponseText,
+      attentionText: panels.ladderAttentionText,
+      cadenceText: panels.ladderCadenceText,
+      stateText: panels.ladderStateText,
+      stageText: panels.ladderStageText,
+      opsText: panels.ladderOpsText,
+      signalText: panels.ladderSignalText,
+      detailText: panels.ladderDetailText
+    });
+    panels.ladderRiskCards = ladderRiskBundle.cards;
+    panels.ladderRiskBlocks = ladderRiskBundle.blocks;
     panels.ladderFlowPanels = buildLoopFlowFamilyPanels(panels.ladderTone, {
+      familyText: panels.ladderFamilyText,
+      flowText: panels.ladderFlowText,
+      summaryText: panels.ladderSummaryText,
+      gateText: panels.ladderGateText,
+      leadText: panels.ladderLeadText,
+      windowText: panels.ladderWindowText,
+      pressureText: panels.ladderPressureText,
+      responseText: panels.ladderResponseText,
+      attentionText: panels.ladderAttentionText,
+      cadenceText: panels.ladderCadenceText,
+      stateText: panels.ladderStateText,
+      stageText: panels.ladderStageText,
+      opsText: panels.ladderOpsText,
+      signalText: panels.ladderSignalText,
+      detailText: panels.ladderDetailText
+    });
+    panels.ladderRiskPanels = buildLoopRiskPanels(panels.ladderTone, {
       familyText: panels.ladderFamilyText,
       flowText: panels.ladderFlowText,
       summaryText: panels.ladderSummaryText,
@@ -806,7 +842,43 @@ function buildPvpLoopMicroPanels(loopDeck, active) {
     panels.ladderSubflowPanels = ladderSubflowBundle.panels;
     panels.telemetryFlowCards = telemetryFlowBundle.cards;
     panels.telemetryFlowBlocks = telemetryFlowBundle.blocks;
+    const telemetryRiskBundle = buildLoopRiskBridgeBundle(panels.telemetryTone, {
+      familyText: panels.telemetryFamilyText,
+      flowText: panels.telemetryFlowText,
+      summaryText: panels.telemetrySummaryText,
+      gateText: panels.telemetryGateText,
+      leadText: panels.telemetryLeadText,
+      windowText: panels.telemetryWindowText,
+      pressureText: panels.telemetryPressureText,
+      responseText: panels.telemetryResponseText,
+      attentionText: panels.telemetryAttentionText,
+      cadenceText: panels.telemetryCadenceText,
+      stateText: panels.telemetryStateText,
+      stageText: panels.telemetryStageText,
+      opsText: panels.telemetryOpsText,
+      signalText: panels.telemetrySignalText,
+      detailText: panels.telemetryDetailText
+    });
+    panels.telemetryRiskCards = telemetryRiskBundle.cards;
+    panels.telemetryRiskBlocks = telemetryRiskBundle.blocks;
     panels.telemetryFlowPanels = buildLoopFlowFamilyPanels(panels.telemetryTone, {
+      familyText: panels.telemetryFamilyText,
+      flowText: panels.telemetryFlowText,
+      summaryText: panels.telemetrySummaryText,
+      gateText: panels.telemetryGateText,
+      leadText: panels.telemetryLeadText,
+      windowText: panels.telemetryWindowText,
+      pressureText: panels.telemetryPressureText,
+      responseText: panels.telemetryResponseText,
+      attentionText: panels.telemetryAttentionText,
+      cadenceText: panels.telemetryCadenceText,
+      stateText: panels.telemetryStateText,
+      stageText: panels.telemetryStageText,
+      opsText: panels.telemetryOpsText,
+      signalText: panels.telemetrySignalText,
+      detailText: panels.telemetryDetailText
+    });
+    panels.telemetryRiskPanels = buildLoopRiskPanels(panels.telemetryTone, {
       familyText: panels.telemetryFamilyText,
       flowText: panels.telemetryFlowText,
       summaryText: panels.telemetrySummaryText,
@@ -2111,6 +2183,114 @@ function buildVaultLoopMicroPanels(loopDeck, active) {
   panels.walletSubflowCards = walletSubflowBundle.cards;
   panels.walletSubflowBlocks = walletSubflowBundle.blocks;
   panels.walletSubflowPanels = walletSubflowBundle.panels;
+  const payoutRiskBundle = buildLoopRiskBridgeBundle(panels.payoutTone, {
+    familyText: panels.payoutFamilyText,
+    flowText: panels.payoutFlowText,
+    summaryText: panels.payoutSummaryText,
+    gateText: panels.payoutGateText,
+    leadText: panels.payoutLeadText,
+    windowText: panels.payoutWindowText,
+    pressureText: panels.payoutPressureText,
+    responseText: panels.payoutResponseText,
+    attentionText: panels.payoutAttentionText,
+    cadenceText: panels.payoutCadenceText,
+    stateText: panels.payoutStateText,
+    stageText: panels.payoutStageText,
+    opsText: panels.payoutOpsText,
+    signalText: panels.payoutSignalText,
+    detailText: panels.payoutDetailText
+  });
+  panels.payoutRiskCards = payoutRiskBundle.cards;
+  panels.payoutRiskBlocks = payoutRiskBundle.blocks;
+  panels.payoutRiskPanels = buildLoopRiskPanels(panels.payoutTone, {
+    familyText: panels.payoutFamilyText,
+    flowText: panels.payoutFlowText,
+    summaryText: panels.payoutSummaryText,
+    gateText: panels.payoutGateText,
+    leadText: panels.payoutLeadText,
+    windowText: panels.payoutWindowText,
+    pressureText: panels.payoutPressureText,
+    responseText: panels.payoutResponseText,
+    attentionText: panels.payoutAttentionText,
+    cadenceText: panels.payoutCadenceText,
+    stateText: panels.payoutStateText,
+    stageText: panels.payoutStageText,
+    opsText: panels.payoutOpsText,
+    signalText: panels.payoutSignalText,
+    detailText: panels.payoutDetailText
+  });
+  const routeRiskBundle = buildLoopRiskBridgeBundle(panels.routeTone, {
+    familyText: panels.routeFamilyText,
+    flowText: panels.routeFlowText,
+    summaryText: panels.routeSummaryText,
+    gateText: panels.routeGateText,
+    leadText: panels.routeLeadText,
+    windowText: panels.routeWindowText,
+    pressureText: panels.routePressureText,
+    responseText: panels.routeResponseText,
+    attentionText: panels.routeAttentionText,
+    cadenceText: panels.routeCadenceText,
+    stateText: panels.routeStateText,
+    stageText: panels.routeStageText,
+    opsText: panels.routeOpsText,
+    signalText: panels.routeSignalText,
+    detailText: panels.routeDetailText
+  });
+  panels.routeRiskCards = routeRiskBundle.cards;
+  panels.routeRiskBlocks = routeRiskBundle.blocks;
+  panels.routeRiskPanels = buildLoopRiskPanels(panels.routeTone, {
+    familyText: panels.routeFamilyText,
+    flowText: panels.routeFlowText,
+    summaryText: panels.routeSummaryText,
+    gateText: panels.routeGateText,
+    leadText: panels.routeLeadText,
+    windowText: panels.routeWindowText,
+    pressureText: panels.routePressureText,
+    responseText: panels.routeResponseText,
+    attentionText: panels.routeAttentionText,
+    cadenceText: panels.routeCadenceText,
+    stateText: panels.routeStateText,
+    stageText: panels.routeStageText,
+    opsText: panels.routeOpsText,
+    signalText: panels.routeSignalText,
+    detailText: panels.routeDetailText
+  });
+  const premiumRiskBundle = buildLoopRiskBridgeBundle(panels.premiumTone, {
+    familyText: panels.premiumFamilyText,
+    flowText: panels.premiumFlowText,
+    summaryText: panels.premiumSummaryText,
+    gateText: panels.premiumGateText,
+    leadText: panels.premiumLeadText,
+    windowText: panels.premiumWindowText,
+    pressureText: panels.premiumPressureText,
+    responseText: panels.premiumResponseText,
+    attentionText: panels.premiumAttentionText,
+    cadenceText: panels.premiumCadenceText,
+    stateText: panels.premiumStateText,
+    stageText: panels.premiumStageText,
+    opsText: panels.premiumOpsText,
+    signalText: panels.premiumSignalText,
+    detailText: panels.premiumDetailText
+  });
+  panels.premiumRiskCards = premiumRiskBundle.cards;
+  panels.premiumRiskBlocks = premiumRiskBundle.blocks;
+  panels.premiumRiskPanels = buildLoopRiskPanels(panels.premiumTone, {
+    familyText: panels.premiumFamilyText,
+    flowText: panels.premiumFlowText,
+    summaryText: panels.premiumSummaryText,
+    gateText: panels.premiumGateText,
+    leadText: panels.premiumLeadText,
+    windowText: panels.premiumWindowText,
+    pressureText: panels.premiumPressureText,
+    responseText: panels.premiumResponseText,
+    attentionText: panels.premiumAttentionText,
+    cadenceText: panels.premiumCadenceText,
+    stateText: panels.premiumStateText,
+    stageText: panels.premiumStageText,
+    opsText: panels.premiumOpsText,
+    signalText: panels.premiumSignalText,
+    detailText: panels.premiumDetailText
+  });
   return panels;
 }
 
@@ -2673,6 +2853,78 @@ function buildAdminLoopMicroPanels(loopDeck, active) {
   panels.runtimeSubflowCards = runtimeSubflowBundle.cards;
   panels.runtimeSubflowBlocks = runtimeSubflowBundle.blocks;
   panels.runtimeSubflowPanels = runtimeSubflowBundle.panels;
+  const queueRiskBundle = buildLoopRiskBridgeBundle(panels.queueTone, {
+    familyText: panels.queueFamilyText,
+    flowText: panels.queueFlowText,
+    summaryText: panels.queueSummaryText,
+    gateText: panels.queueGateText,
+    leadText: panels.queueLeadText,
+    windowText: panels.queueWindowText,
+    pressureText: panels.queuePressureText,
+    responseText: panels.queueResponseText,
+    attentionText: panels.queueAttentionText,
+    cadenceText: panels.queueCadenceText,
+    stateText: panels.queueStateText,
+    stageText: panels.queueStageText,
+    opsText: panels.queueOpsText,
+    signalText: panels.queueSignalText,
+    detailText: panels.queueDetailText
+  });
+  panels.queueRiskCards = queueRiskBundle.cards;
+  panels.queueRiskBlocks = queueRiskBundle.blocks;
+  panels.queueRiskPanels = buildLoopRiskPanels(panels.queueTone, {
+    familyText: panels.queueFamilyText,
+    flowText: panels.queueFlowText,
+    summaryText: panels.queueSummaryText,
+    gateText: panels.queueGateText,
+    leadText: panels.queueLeadText,
+    windowText: panels.queueWindowText,
+    pressureText: panels.queuePressureText,
+    responseText: panels.queueResponseText,
+    attentionText: panels.queueAttentionText,
+    cadenceText: panels.queueCadenceText,
+    stateText: panels.queueStateText,
+    stageText: panels.queueStageText,
+    opsText: panels.queueOpsText,
+    signalText: panels.queueSignalText,
+    detailText: panels.queueDetailText
+  });
+  const runtimeRiskBundle = buildLoopRiskBridgeBundle(panels.runtimeTone, {
+    familyText: panels.runtimeFamilyText,
+    flowText: panels.runtimeFlowText,
+    summaryText: panels.runtimeSummaryText,
+    gateText: panels.runtimeGateText,
+    leadText: panels.runtimeLeadText,
+    windowText: panels.runtimeWindowText,
+    pressureText: panels.runtimePressureText,
+    responseText: panels.runtimeResponseText,
+    attentionText: panels.runtimeAttentionText,
+    cadenceText: panels.runtimeCadenceText,
+    stateText: panels.runtimeStateText,
+    stageText: panels.runtimeStageText,
+    opsText: panels.runtimeOpsText,
+    signalText: panels.runtimeSignalText,
+    detailText: panels.runtimeDetailText
+  });
+  panels.runtimeRiskCards = runtimeRiskBundle.cards;
+  panels.runtimeRiskBlocks = runtimeRiskBundle.blocks;
+  panels.runtimeRiskPanels = buildLoopRiskPanels(panels.runtimeTone, {
+    familyText: panels.runtimeFamilyText,
+    flowText: panels.runtimeFlowText,
+    summaryText: panels.runtimeSummaryText,
+    gateText: panels.runtimeGateText,
+    leadText: panels.runtimeLeadText,
+    windowText: panels.runtimeWindowText,
+    pressureText: panels.runtimePressureText,
+    responseText: panels.runtimeResponseText,
+    attentionText: panels.runtimeAttentionText,
+    cadenceText: panels.runtimeCadenceText,
+    stateText: panels.runtimeStateText,
+    stageText: panels.runtimeStageText,
+    opsText: panels.runtimeOpsText,
+    signalText: panels.runtimeSignalText,
+    detailText: panels.runtimeDetailText
+  });
   panels.dispatchFlowCards = dispatchFlowBundle.cards;
   panels.dispatchFlowBlocks = dispatchFlowBundle.blocks;
   const dispatchRiskBundle = buildLoopRiskBridgeBundle(panels.dispatchTone, {
@@ -3509,6 +3761,114 @@ function buildOperationsLoopMicroPanels(loopDeck, active) {
   panels.streakSubflowCards = streakSubflowBundle.cards;
   panels.streakSubflowBlocks = streakSubflowBundle.blocks;
   panels.streakSubflowPanels = streakSubflowBundle.panels;
+  const offerRiskBundle = buildLoopRiskBridgeBundle(panels.offerTone, {
+    familyText: panels.offerFamilyText,
+    flowText: panels.offerFlowText,
+    summaryText: panels.offerSummaryText,
+    gateText: panels.offerGateText,
+    leadText: panels.offerLeadText,
+    windowText: panels.offerWindowText,
+    pressureText: panels.offerPressureText,
+    responseText: panels.offerResponseText,
+    attentionText: panels.offerAttentionText,
+    cadenceText: panels.offerCadenceText,
+    stateText: panels.offerStateText,
+    stageText: panels.offerStageText,
+    opsText: panels.offerOpsText,
+    signalText: panels.offerSignalText,
+    detailText: panels.offerDetailText
+  });
+  panels.offerRiskCards = offerRiskBundle.cards;
+  panels.offerRiskBlocks = offerRiskBundle.blocks;
+  panels.offerRiskPanels = buildLoopRiskPanels(panels.offerTone, {
+    familyText: panels.offerFamilyText,
+    flowText: panels.offerFlowText,
+    summaryText: panels.offerSummaryText,
+    gateText: panels.offerGateText,
+    leadText: panels.offerLeadText,
+    windowText: panels.offerWindowText,
+    pressureText: panels.offerPressureText,
+    responseText: panels.offerResponseText,
+    attentionText: panels.offerAttentionText,
+    cadenceText: panels.offerCadenceText,
+    stateText: panels.offerStateText,
+    stageText: panels.offerStageText,
+    opsText: panels.offerOpsText,
+    signalText: panels.offerSignalText,
+    detailText: panels.offerDetailText
+  });
+  const claimRiskBundle = buildLoopRiskBridgeBundle(panels.claimTone, {
+    familyText: panels.claimFamilyText,
+    flowText: panels.claimFlowText,
+    summaryText: panels.claimSummaryText,
+    gateText: panels.claimGateText,
+    leadText: panels.claimLeadText,
+    windowText: panels.claimWindowText,
+    pressureText: panels.claimPressureText,
+    responseText: panels.claimResponseText,
+    attentionText: panels.claimAttentionText,
+    cadenceText: panels.claimCadenceText,
+    stateText: panels.claimStateText,
+    stageText: panels.claimStageText,
+    opsText: panels.claimOpsText,
+    signalText: panels.claimSignalText,
+    detailText: panels.claimDetailText
+  });
+  panels.claimRiskCards = claimRiskBundle.cards;
+  panels.claimRiskBlocks = claimRiskBundle.blocks;
+  panels.claimRiskPanels = buildLoopRiskPanels(panels.claimTone, {
+    familyText: panels.claimFamilyText,
+    flowText: panels.claimFlowText,
+    summaryText: panels.claimSummaryText,
+    gateText: panels.claimGateText,
+    leadText: panels.claimLeadText,
+    windowText: panels.claimWindowText,
+    pressureText: panels.claimPressureText,
+    responseText: panels.claimResponseText,
+    attentionText: panels.claimAttentionText,
+    cadenceText: panels.claimCadenceText,
+    stateText: panels.claimStateText,
+    stageText: panels.claimStageText,
+    opsText: panels.claimOpsText,
+    signalText: panels.claimSignalText,
+    detailText: panels.claimDetailText
+  });
+  const streakRiskBundle = buildLoopRiskBridgeBundle(panels.streakTone, {
+    familyText: panels.streakFamilyText,
+    flowText: panels.streakFlowText,
+    summaryText: panels.streakSummaryText,
+    gateText: panels.streakGateText,
+    leadText: panels.streakLeadText,
+    windowText: panels.streakWindowText,
+    pressureText: panels.streakPressureText,
+    responseText: panels.streakResponseText,
+    attentionText: panels.streakAttentionText,
+    cadenceText: panels.streakCadenceText,
+    stateText: panels.streakStateText,
+    stageText: panels.streakStageText,
+    opsText: panels.streakOpsText,
+    signalText: panels.streakSignalText,
+    detailText: panels.streakDetailText
+  });
+  panels.streakRiskCards = streakRiskBundle.cards;
+  panels.streakRiskBlocks = streakRiskBundle.blocks;
+  panels.streakRiskPanels = buildLoopRiskPanels(panels.streakTone, {
+    familyText: panels.streakFamilyText,
+    flowText: panels.streakFlowText,
+    summaryText: panels.streakSummaryText,
+    gateText: panels.streakGateText,
+    leadText: panels.streakLeadText,
+    windowText: panels.streakWindowText,
+    pressureText: panels.streakPressureText,
+    responseText: panels.streakResponseText,
+    attentionText: panels.streakAttentionText,
+    cadenceText: panels.streakCadenceText,
+    stateText: panels.streakStateText,
+    stageText: panels.streakStageText,
+    opsText: panels.streakOpsText,
+    signalText: panels.streakSignalText,
+    detailText: panels.streakDetailText
+  });
   panels.lootFlowCards = lootFlowBundle.cards;
   panels.lootFlowBlocks = lootFlowBundle.blocks;
   const lootRiskBundle = buildLoopRiskBridgeBundle(panels.lootTone, {
@@ -4398,6 +4758,9 @@ function buildPvpRuntimePayload(rawRuntime, rawLive, pvpView, scene, assetMetric
       loopLadderFlowCards: loopMicro.ladderFlowCards,
       loopLadderFlowBlocks: loopMicro.ladderFlowBlocks,
       loopLadderFlowPanels: loopMicro.ladderFlowPanels,
+      loopLadderRiskCards: loopMicro.ladderRiskCards,
+      loopLadderRiskBlocks: loopMicro.ladderRiskBlocks,
+      loopLadderRiskPanels: loopMicro.ladderRiskPanels,
       loopLadderSubflowCards: loopMicro.ladderSubflowCards,
       loopLadderSubflowBlocks: loopMicro.ladderSubflowBlocks,
       loopLadderSubflowPanels: loopMicro.ladderSubflowPanels,
@@ -4417,6 +4780,9 @@ function buildPvpRuntimePayload(rawRuntime, rawLive, pvpView, scene, assetMetric
       loopTelemetryFlowCards: loopMicro.telemetryFlowCards,
       loopTelemetryFlowBlocks: loopMicro.telemetryFlowBlocks,
       loopTelemetryFlowPanels: loopMicro.telemetryFlowPanels,
+      loopTelemetryRiskCards: loopMicro.telemetryRiskCards,
+      loopTelemetryRiskBlocks: loopMicro.telemetryRiskBlocks,
+      loopTelemetryRiskPanels: loopMicro.telemetryRiskPanels,
       loopTelemetrySubflowCards: loopMicro.telemetrySubflowCards,
       loopTelemetrySubflowBlocks: loopMicro.telemetrySubflowBlocks,
       loopTelemetrySubflowPanels: loopMicro.telemetrySubflowPanels
@@ -4674,6 +5040,9 @@ function buildOperationsDeckPayload(data, taskResult, homeFeed, scene) {
         offerFlowCards: loopMicro.offerFlowCards,
         offerFlowBlocks: loopMicro.offerFlowBlocks,
         offerFlowPanels: loopMicro.offerFlowPanels,
+        offerRiskCards: loopMicro.offerRiskCards,
+        offerRiskBlocks: loopMicro.offerRiskBlocks,
+        offerRiskPanels: loopMicro.offerRiskPanels,
         offerSubflowCards: loopMicro.offerSubflowCards,
         offerSubflowBlocks: loopMicro.offerSubflowBlocks,
         offerSubflowPanels: loopMicro.offerSubflowPanels,
@@ -4693,6 +5062,9 @@ function buildOperationsDeckPayload(data, taskResult, homeFeed, scene) {
         claimFlowCards: loopMicro.claimFlowCards,
         claimFlowBlocks: loopMicro.claimFlowBlocks,
         claimFlowPanels: loopMicro.claimFlowPanels,
+        claimRiskCards: loopMicro.claimRiskCards,
+        claimRiskBlocks: loopMicro.claimRiskBlocks,
+        claimRiskPanels: loopMicro.claimRiskPanels,
         claimSubflowCards: loopMicro.claimSubflowCards,
         claimSubflowBlocks: loopMicro.claimSubflowBlocks,
         claimSubflowPanels: loopMicro.claimSubflowPanels,
@@ -4712,6 +5084,9 @@ function buildOperationsDeckPayload(data, taskResult, homeFeed, scene) {
         streakFlowCards: loopMicro.streakFlowCards,
         streakFlowBlocks: loopMicro.streakFlowBlocks,
         streakFlowPanels: loopMicro.streakFlowPanels,
+        streakRiskCards: loopMicro.streakRiskCards,
+        streakRiskBlocks: loopMicro.streakRiskBlocks,
+        streakRiskPanels: loopMicro.streakRiskPanels,
         streakSubflowCards: loopMicro.streakSubflowCards,
         streakSubflowBlocks: loopMicro.streakSubflowBlocks,
         streakSubflowPanels: loopMicro.streakSubflowPanels,
@@ -4891,18 +5266,27 @@ function buildTokenOverviewPayload(vaultRoot, vaultView, scene) {
     loopPayoutFlowCards: loopMicro.payoutFlowCards,
     loopPayoutFlowBlocks: loopMicro.payoutFlowBlocks,
     loopPayoutFlowPanels: loopMicro.payoutFlowPanels,
+    loopPayoutRiskCards: loopMicro.payoutRiskCards,
+    loopPayoutRiskBlocks: loopMicro.payoutRiskBlocks,
+    loopPayoutRiskPanels: loopMicro.payoutRiskPanels,
     loopPayoutSubflowCards: loopMicro.payoutSubflowCards,
     loopPayoutSubflowBlocks: loopMicro.payoutSubflowBlocks,
     loopPayoutSubflowPanels: loopMicro.payoutSubflowPanels,
     loopRouteFlowCards: loopMicro.routeFlowCards,
     loopRouteFlowBlocks: loopMicro.routeFlowBlocks,
     loopRouteFlowPanels: loopMicro.routeFlowPanels,
+    loopRouteRiskCards: loopMicro.routeRiskCards,
+    loopRouteRiskBlocks: loopMicro.routeRiskBlocks,
+    loopRouteRiskPanels: loopMicro.routeRiskPanels,
     loopRouteSubflowCards: loopMicro.routeSubflowCards,
     loopRouteSubflowBlocks: loopMicro.routeSubflowBlocks,
     loopRouteSubflowPanels: loopMicro.routeSubflowPanels,
     loopPremiumFlowCards: loopMicro.premiumFlowCards,
     loopPremiumFlowBlocks: loopMicro.premiumFlowBlocks,
     loopPremiumFlowPanels: loopMicro.premiumFlowPanels,
+    loopPremiumRiskCards: loopMicro.premiumRiskCards,
+    loopPremiumRiskBlocks: loopMicro.premiumRiskBlocks,
+    loopPremiumRiskPanels: loopMicro.premiumRiskPanels,
     loopPremiumSubflowCards: loopMicro.premiumSubflowCards,
     loopPremiumSubflowBlocks: loopMicro.premiumSubflowBlocks,
     loopPremiumSubflowPanels: loopMicro.premiumSubflowPanels,
@@ -5256,6 +5640,9 @@ function buildAdminRuntimePayload(adminRuntime, adminPanels, scene) {
     loopQueueFlowCards: loopMicro.queueFlowCards,
     loopQueueFlowBlocks: loopMicro.queueFlowBlocks,
     loopQueueFlowPanels: loopMicro.queueFlowPanels,
+    loopQueueRiskCards: loopMicro.queueRiskCards,
+    loopQueueRiskBlocks: loopMicro.queueRiskBlocks,
+    loopQueueRiskPanels: loopMicro.queueRiskPanels,
     loopQueueSubflowCards: loopMicro.queueSubflowCards,
     loopQueueSubflowBlocks: loopMicro.queueSubflowBlocks,
     loopQueueSubflowPanels: loopMicro.queueSubflowPanels,
@@ -5275,6 +5662,9 @@ function buildAdminRuntimePayload(adminRuntime, adminPanels, scene) {
     loopRuntimeFlowCards: loopMicro.runtimeFlowCards,
     loopRuntimeFlowBlocks: loopMicro.runtimeFlowBlocks,
     loopRuntimeFlowPanels: loopMicro.runtimeFlowPanels,
+    loopRuntimeRiskCards: loopMicro.runtimeRiskCards,
+    loopRuntimeRiskBlocks: loopMicro.runtimeRiskBlocks,
+    loopRuntimeRiskPanels: loopMicro.runtimeRiskPanels,
     loopRuntimeSubflowCards: loopMicro.runtimeSubflowCards,
     loopRuntimeSubflowBlocks: loopMicro.runtimeSubflowBlocks,
     loopRuntimeSubflowPanels: loopMicro.runtimeSubflowPanels,
