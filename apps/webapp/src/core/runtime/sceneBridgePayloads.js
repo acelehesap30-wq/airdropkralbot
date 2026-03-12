@@ -580,14 +580,26 @@ function buildLoopFamilyBridgeBundle(tone, rails) {
   const source = { ...asRecord(rails), tone };
   const riskSummaryText = buildLoopRiskSummaryText(source);
   const riskKeyText = buildLoopRiskKeyText(source);
+  const focusKeyText = buildLoopFocusKeyText(source);
   return {
     cards: buildLoopBridgeCards(
-      buildLoopBridgeCard("SUMMARY", source.summaryText, tone, source.familyText),
+      buildLoopBridgeCard(
+        "SUMMARY",
+        source.summaryText,
+        tone,
+        buildLoopMicroDetail(source.familyText, focusKeyText ? `FOCUS ${focusKeyText}` : "")
+      ),
       buildLoopBridgeCard("GATE", source.gateText, tone, source.flowText),
       buildLoopBridgeCard("RISK", riskSummaryText, tone, riskKeyText)
     ),
     blocks: buildLoopBridgeBlocks(
-      buildLoopBridgeBlock("FLOW", source.familyText, source.flowText, tone, source.summaryText),
+      buildLoopBridgeBlock(
+        "FLOW",
+        source.familyText,
+        source.flowText,
+        tone,
+        buildLoopMicroDetail(source.summaryText, focusKeyText ? `FOCUS ${focusKeyText}` : "")
+      ),
       buildLoopBridgeBlock("GATE", source.summaryText, source.gateText, tone, source.windowText),
       buildLoopBridgeBlock("RISK", buildLoopHealthText(source), buildLoopAttentionText(source), tone, riskKeyText)
     )
@@ -598,15 +610,27 @@ function buildLoopFlowFamilyBridgeBundle(tone, rails, titles) {
   const source = { ...asRecord(rails), tone };
   const riskSummaryText = buildLoopRiskSummaryText(source);
   const riskKeyText = buildLoopRiskKeyText(source);
+  const focusKeyText = buildLoopFocusKeyText(source);
   const [entryTitle, stateTitle, resolveTitle] = normalizeLoopFlowPanelTitles(titles);
   return {
     cards: buildLoopBridgeCards(
-      buildLoopBridgeCard(entryTitle, source.leadText || source.flowText, tone, source.gateText || source.summaryText),
+      buildLoopBridgeCard(
+        entryTitle,
+        source.leadText || source.flowText,
+        tone,
+        buildLoopMicroDetail(source.gateText || source.summaryText, focusKeyText ? `FOCUS ${focusKeyText}` : "")
+      ),
       buildLoopBridgeCard(stateTitle, source.stateText || source.summaryText, tone, source.stageText || source.detailText),
       buildLoopBridgeCard("RISK", riskSummaryText, tone, riskKeyText)
     ),
     blocks: buildLoopBridgeBlocks(
-      buildLoopBridgeBlock(entryTitle, source.focusText || source.familyText, source.flowText || source.summaryText, tone, source.gateText || source.detailText),
+      buildLoopBridgeBlock(
+        entryTitle,
+        source.focusText || source.familyText,
+        source.flowText || source.summaryText,
+        tone,
+        buildLoopMicroDetail(source.gateText || source.detailText, focusKeyText ? `FOCUS ${focusKeyText}` : "")
+      ),
       buildLoopBridgeBlock(resolveTitle, source.windowText || source.summaryText, source.summaryText || source.stateText, tone, source.attentionText || source.cadenceText),
       buildLoopBridgeBlock("RISK", riskSummaryText, source.signalText || source.pressureText, tone, riskKeyText)
     )
@@ -793,15 +817,27 @@ function buildLoopSubflowPanels(tone, rails, titles) {
 
 function buildLoopSubflowBundle(tone, rails, titles) {
   const source = asRecord(rails);
+  const focusKeyText = buildLoopFocusKeyText(source);
   const [entryTitle, stateTitle, opsTitle] = normalizeLoopSubflowPanelTitles(titles);
   return {
     cards: buildLoopBridgeCards(
-      buildLoopBridgeCard(entryTitle, source.leadText || source.flowText, tone, source.focusText || source.gateText),
+      buildLoopBridgeCard(
+        entryTitle,
+        source.leadText || source.flowText,
+        tone,
+        buildLoopMicroDetail(source.focusText || source.gateText, focusKeyText ? `FOCUS ${focusKeyText}` : "")
+      ),
       buildLoopBridgeCard(stateTitle, source.stateText || source.summaryText, tone, source.stageText || source.windowText),
       buildLoopBridgeCard("PRESS", source.pressureText || source.signalText, tone, source.responseText || source.attentionText)
     ),
     blocks: buildLoopBridgeBlocks(
-      buildLoopBridgeBlock(entryTitle, source.flowText || source.familyText, source.gateText || source.summaryText, tone, source.focusText),
+      buildLoopBridgeBlock(
+        entryTitle,
+        source.flowText || source.familyText,
+        source.gateText || source.summaryText,
+        tone,
+        buildLoopMicroDetail(source.focusText, focusKeyText ? `FOCUS ${focusKeyText}` : "")
+      ),
       buildLoopBridgeBlock(opsTitle, source.windowText || source.summaryText, source.responseText || source.attentionText, tone, source.stageText),
       buildLoopBridgeBlock("OPS", source.opsText || source.detailText, source.signalText || source.pressureText, tone, source.detailText)
     ),
