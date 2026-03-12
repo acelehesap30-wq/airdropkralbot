@@ -167,6 +167,12 @@ type ProtocolCardFlowPod = {
     entry_anchor_key?: string;
     console_anchor_key?: string;
     modal_anchor_key?: string;
+    hud_focus_mode_key?: string;
+    rail_presence_key?: string;
+    sheet_presence_key?: string;
+    entry_presence_key?: string;
+    console_presence_key?: string;
+    modal_presence_key?: string;
     hud_density_profile_key?: string;
     rail_layout_key?: string;
     console_layout_key?: string;
@@ -1486,6 +1492,12 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
       data-entry-anchor={selectedMicroflow?.entry_anchor_key || ""}
       data-console-anchor={selectedMicroflow?.console_anchor_key || ""}
       data-modal-anchor={selectedMicroflow?.modal_anchor_key || ""}
+      data-hud-focus-mode={selectedMicroflow?.hud_focus_mode_key || ""}
+      data-rail-presence={selectedMicroflow?.rail_presence_key || ""}
+      data-sheet-presence={selectedMicroflow?.sheet_presence_key || ""}
+      data-entry-presence={selectedMicroflow?.entry_presence_key || ""}
+      data-console-presence={selectedMicroflow?.console_presence_key || ""}
+      data-modal-presence={selectedMicroflow?.modal_presence_key || ""}
       data-hud-layout={selectedMicroflow?.hud_layout_key || worldState.hud_profile.hud_profile_key}
       data-hud-emphasis={selectedMicroflow?.hud_emphasis_band_key || ""}
       data-hud-density={selectedMicroflow?.hud_density_profile_key || ""}
@@ -1519,6 +1531,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
         data-chrome-band={selectedMicroflow?.chrome_band_key || ""}
         data-composition-profile={selectedMicroflow?.composition_profile_key || ""}
         data-hud-anchor={selectedMicroflow?.hud_anchor_key || ""}
+        data-hud-focus-mode={selectedMicroflow?.hud_focus_mode_key || ""}
         data-hud-layout={selectedMicroflow?.hud_layout_key || worldState.hud_profile.hud_profile_key}
         data-hud-emphasis={selectedMicroflow?.hud_emphasis_band_key || ""}
         data-hud-density={selectedMicroflow?.hud_density_profile_key || ""}
@@ -1602,6 +1615,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           data-chrome-band={selectedMicroflow?.chrome_band_key || ""}
           data-composition-profile={selectedMicroflow?.composition_profile_key || ""}
           data-rail-anchor={selectedMicroflow?.rail_anchor_key || ""}
+          data-rail-presence={selectedMicroflow?.rail_presence_key || ""}
         >
           <div className="akrSceneWorldRailHeader">
             <strong>
@@ -1665,6 +1679,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           data-chrome-band={selectedMicroflow?.chrome_band_key || ""}
           data-composition-profile={selectedMicroflow?.composition_profile_key || ""}
           data-sheet-anchor={selectedMicroflow?.sheet_anchor_key || ""}
+          data-sheet-presence={selectedMicroflow?.sheet_presence_key || ""}
         >
           <div className="akrSceneWorldSheetHeader">
             <strong>
@@ -1706,6 +1721,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           data-chrome-band={selectedMicroflow?.chrome_band_key || ""}
           data-composition-profile={selectedMicroflow?.composition_profile_key || ""}
           data-entry-anchor={selectedMicroflow?.entry_anchor_key || ""}
+          data-entry-presence={selectedMicroflow?.entry_presence_key || ""}
         >
           <div className="akrSceneEntrySurfaceHeader">
             <span>{t(props.lang, worldState.interaction_surface.surface_kind_key as never)}</span>
@@ -1826,6 +1842,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           data-chrome-band={selectedMicroflow?.chrome_band_key || ""}
           data-composition-profile={selectedMicroflow?.composition_profile_key || ""}
           data-console-anchor={selectedMicroflow?.console_anchor_key || ""}
+          data-console-presence={selectedMicroflow?.console_presence_key || ""}
         >
           <div className="akrSceneTerminalConsoleHeader">
             <div className="akrSceneTerminalConsoleTitle">
@@ -1964,6 +1981,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           data-chrome-band={selectedMicroflow?.chrome_band_key || ""}
           data-composition-profile={selectedMicroflow?.composition_profile_key || ""}
           data-modal-anchor={selectedMicroflow?.modal_anchor_key || ""}
+          data-modal-presence={selectedMicroflow?.modal_presence_key || ""}
         >
           <div className="akrSceneInteractionModalHeader">
             <div className="akrSceneInteractionModalTitle">

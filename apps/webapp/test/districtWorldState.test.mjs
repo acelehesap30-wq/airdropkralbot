@@ -95,6 +95,9 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].camera_frame_key, "hub_glide");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].hud_anchor_key, "center");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].rail_anchor_key, "right");
+  assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].hud_focus_mode_key, "glide");
+  assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].entry_presence_key, "lead");
+  assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].console_presence_key, "ambient");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].hud_density_profile_key, "spread");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].rail_layout_key, "hub_glide");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].modal_layout_key, "hub_glide");
@@ -227,6 +230,9 @@ test("buildDistrictWorldState trims pvp nodes on low-end profile", () => {
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].camera_frame_key, "arena_press");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].hud_anchor_key, "center");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].modal_anchor_key, "right");
+  assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].hud_focus_mode_key, "duel");
+  assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].entry_presence_key, "lead");
+  assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].sheet_presence_key, "ambient");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].hud_density_profile_key, "focus");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].rail_layout_key, "arena_strike");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].modal_layout_key, "arena_focus");
@@ -336,6 +342,9 @@ test("buildDistrictWorldState maps admin runtime into ops citadel", () => {
   assert.equal(state.interaction_modal.protocol_cards[2].flow_pods[0].microflow_cards[0].camera_frame_key, "ops_dispatch");
   assert.equal(state.interaction_modal.protocol_cards[2].flow_pods[0].microflow_cards[0].hud_anchor_key, "right");
   assert.equal(state.interaction_modal.protocol_cards[2].flow_pods[0].microflow_cards[0].console_anchor_key, "right");
+  assert.equal(state.interaction_modal.protocol_cards[2].flow_pods[0].microflow_cards[0].hud_focus_mode_key, "dispatch");
+  assert.equal(state.interaction_modal.protocol_cards[2].flow_pods[0].microflow_cards[0].rail_presence_key, "lead");
+  assert.equal(state.interaction_modal.protocol_cards[2].flow_pods[0].microflow_cards[0].sheet_presence_key, "ambient");
   assert.equal(state.interaction_modal.protocol_cards[2].flow_pods[0].microflow_cards[0].hud_density_profile_key, "console");
   assert.equal(state.interaction_modal.protocol_cards[2].flow_pods[0].microflow_cards[0].rail_layout_key, "ops_dispatch");
   assert.equal(state.interaction_modal.protocol_cards[2].flow_pods[0].microflow_cards[0].modal_layout_key, "ops_dispatch");

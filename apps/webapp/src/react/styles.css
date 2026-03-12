@@ -271,6 +271,23 @@ body {
   transform-origin: right bottom;
 }
 
+.akrSceneWorldHud[data-hud-focus-mode="duel"],
+.akrSceneWorldHud[data-hud-focus-mode="dispatch"] {
+  letter-spacing: 0.02em;
+}
+
+.akrSceneWorldHud[data-hud-focus-mode="scope"] {
+  justify-content: flex-start;
+}
+
+.akrSceneWorldHud[data-hud-focus-mode="mission"] {
+  align-items: stretch;
+}
+
+.akrSceneWorldHud[data-hud-focus-mode="ledger"] {
+  justify-content: center;
+}
+
 .akrSceneWorldHud[data-hud-emphasis="hot"] {
   box-shadow: 0 18px 42px rgba(88, 18, 28, 0.34);
 }
@@ -413,6 +430,22 @@ body {
   left: max(16px, calc((100vw - 1180px) / 2 + 16px));
   right: auto;
   transform-origin: left bottom;
+}
+
+.akrSceneWorldRail[data-rail-presence="lead"] {
+  opacity: 1;
+  box-shadow: 0 18px 38px rgba(8, 18, 30, 0.34);
+}
+
+.akrSceneWorldRail[data-rail-presence="support"] {
+  opacity: 0.94;
+}
+
+.akrSceneWorldRail[data-rail-presence="ambient"] {
+  opacity: 0.82;
+  transform:
+    translateY(calc((1 - var(--akr-scene-surface-stack-scale)) * 10px))
+    scale(calc(0.96 + ((var(--akr-scene-surface-stack-scale) - 1) * 0.1)));
 }
 
 .akrSceneWorldRailHeader {
@@ -579,6 +612,19 @@ body {
   transform-origin: right top;
 }
 
+.akrSceneWorldSheet[data-sheet-presence="lead"] {
+  opacity: 1;
+  box-shadow: 0 18px 40px rgba(8, 18, 30, 0.3);
+}
+
+.akrSceneWorldSheet[data-sheet-presence="support"] {
+  opacity: 0.94;
+}
+
+.akrSceneWorldSheet[data-sheet-presence="ambient"] {
+  opacity: 0.82;
+}
+
 .akrSceneWorldSheetHeader {
   display: flex;
   justify-content: space-between;
@@ -712,6 +758,19 @@ body {
   left: auto;
   right: max(16px, calc((100vw - 1180px) / 2 + 16px));
   transform-origin: right top;
+}
+
+.akrSceneEntrySurface[data-entry-presence="lead"] {
+  opacity: 1;
+  box-shadow: 0 20px 42px rgba(8, 18, 30, 0.3);
+}
+
+.akrSceneEntrySurface[data-entry-presence="support"] {
+  opacity: 0.94;
+}
+
+.akrSceneEntrySurface[data-entry-presence="ambient"] {
+  opacity: 0.8;
 }
 
 .akrSceneEntrySurfaceHeader,
@@ -1024,6 +1083,19 @@ body {
   transform-origin: left top;
 }
 
+.akrSceneTerminalConsole[data-console-presence="lead"] {
+  opacity: 1;
+  box-shadow: 0 22px 46px rgba(8, 16, 28, 0.34);
+}
+
+.akrSceneTerminalConsole[data-console-presence="support"] {
+  opacity: 0.94;
+}
+
+.akrSceneTerminalConsole[data-console-presence="ambient"] {
+  opacity: 0.82;
+}
+
 .akrSceneTerminalConsoleHeader,
 .akrSceneTerminalConsoleMeta,
 .akrSceneTerminalConsoleSectionHeader {
@@ -1267,6 +1339,19 @@ body {
   left: max(16px, calc((100vw - 1180px) / 2 + 16px));
   right: auto;
   transform-origin: left top;
+}
+
+.akrSceneInteractionModal[data-modal-presence="lead"] {
+  opacity: 1;
+  box-shadow: 0 24px 52px rgba(8, 16, 28, 0.36);
+}
+
+.akrSceneInteractionModal[data-modal-presence="support"] {
+  opacity: 0.94;
+}
+
+.akrSceneInteractionModal[data-modal-presence="ambient"] {
+  opacity: 0.82;
 }
 
 .akrSceneInteractionModalHeader,
