@@ -561,6 +561,12 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
   const sceneLoopDistrictMicroflowAttentionPriorityDaily = asRows(
     props.metricsData?.scene_loop_district_microflow_attention_priority_daily_7d
   );
+  const sceneLoopDistrictMicroflowRiskRows = asRows(
+    props.metricsData?.scene_loop_district_microflow_risk_rows_7d
+  );
+  const sceneLoopDistrictMicroflowRiskRowsDaily = asRows(
+    props.metricsData?.scene_loop_district_microflow_risk_rows_daily_7d
+  );
   const liveOpsKpi = asRecord((props.opsKpiRunData as Record<string, unknown> | null)?.live_ops_campaign) ||
     asRecord((props.opsKpiData as Record<string, unknown> | null)?.live_ops_campaign);
   const liveOpsSceneRuntime = asRecord(liveOpsKpi?.scene_runtime);
@@ -897,6 +903,16 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
         <SceneLoopDistrictFamilyPriorityList
           title={t(props.lang, "admin_runtime_scene_loop_district_microflow_attention_priority_daily_title")}
           rows={sceneLoopDistrictMicroflowAttentionPriorityDaily}
+          loopKeyField="loop_microflow_key"
+        />
+        <SceneLoopDistrictFamilyPriorityList
+          title={t(props.lang, "admin_runtime_scene_loop_district_microflow_risk_rows_title")}
+          rows={sceneLoopDistrictMicroflowRiskRows}
+          loopKeyField="loop_microflow_key"
+        />
+        <SceneLoopDistrictFamilyPriorityList
+          title={t(props.lang, "admin_runtime_scene_loop_district_microflow_risk_rows_daily_title")}
+          rows={sceneLoopDistrictMicroflowRiskRowsDaily}
           loopKeyField="loop_microflow_key"
         />
         <AlarmReasonList title={t(props.lang, "admin_runtime_scene_loop_alarm_reasons_7d")} rows={sceneLoopAlarmReasons7d} />

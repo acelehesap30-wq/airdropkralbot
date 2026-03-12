@@ -1138,6 +1138,89 @@ function buildSceneLoopDistrictMicroflowAttentionPriorityDaily(rows, limit = 24)
     .slice(0, Math.max(1, Math.floor(toNum(limit, 24))));
 }
 
+function buildSceneLoopDistrictMicroflowRiskRows(rows, limit = 18) {
+  return (Array.isArray(rows) ? rows : [])
+    .map((row) => {
+      const latestHealthBand = String(row?.latest_health_band || row?.health_band || "no_data");
+      const attentionBand = String(row?.attention_band || "no_data");
+      const trendDirection = String(row?.trend_direction || "no_data");
+      const attentionRank = rankSceneLoopAttentionBand(attentionBand);
+      const healthRank = rankSceneLoopHealthBand(latestHealthBand);
+      const trendRank = rankSceneLoopTrendDirection(trendDirection);
+      const totalCount = Math.max(0, Math.floor(toNum(row?.total_count, 0)));
+      return {
+        district_key: String(row?.district_key || "unknown"),
+        loop_family_key: normalizeSceneLoopMicroflowFamilyKey(row?.loop_family_key ?? row?.loop_microflow_key),
+        loop_microflow_key: normalizeSceneLoopMicroflowKey(row?.loop_microflow_key),
+        latest_health_band: latestHealthBand,
+        attention_band: attentionBand,
+        trend_direction: trendDirection,
+        trend_delta: Math.floor(toNum(row?.trend_delta, 0)),
+        total_count: totalCount,
+        live_count: Math.max(0, Math.floor(toNum(row?.live_count, 0))),
+        blocked_count: Math.max(0, Math.floor(toNum(row?.blocked_count, 0))),
+        risk_key: `${latestHealthBand}:${attentionBand}:${trendDirection}`,
+        priority_score: buildSceneLoopPriorityScore(attentionRank, healthRank, trendRank, totalCount),
+        attention_rank: attentionRank,
+        health_rank: healthRank,
+        trend_rank: trendRank
+      };
+    })
+    .sort((left, right) => {
+      const priorityGap = toNum(right.priority_score, 0) - toNum(left.priority_score, 0);
+      if (Math.abs(priorityGap) > 0.0001) return priorityGap;
+      const totalGap = toNum(right.total_count, 0) - toNum(left.total_count, 0);
+      if (Math.abs(totalGap) > 0.0001) return totalGap;
+      return `${String(left.district_key || "")}:${String(left.loop_microflow_key || "")}`.localeCompare(
+        `${String(right.district_key || "")}:${String(right.loop_microflow_key || "")}`
+      );
+    })
+    .slice(0, Math.max(1, Math.floor(toNum(limit, 18))));
+}
+
+function buildSceneLoopDistrictMicroflowRiskRowsDaily(rows, limit = 24) {
+  return (Array.isArray(rows) ? rows : [])
+    .map((row) => {
+      const latestHealthBand = String(row?.latest_health_band || row?.health_band || "no_data");
+      const attentionBand = String(row?.attention_band || "no_data");
+      const trendDirection = String(row?.trend_direction || "no_data");
+      const attentionRank = rankSceneLoopAttentionBand(attentionBand);
+      const healthRank = rankSceneLoopHealthBand(latestHealthBand);
+      const trendRank = rankSceneLoopTrendDirection(trendDirection);
+      const totalCount = Math.max(0, Math.floor(toNum(row?.total_count, 0)));
+      return {
+        day: String(row?.day || ""),
+        district_key: String(row?.district_key || "unknown"),
+        loop_family_key: normalizeSceneLoopMicroflowFamilyKey(row?.loop_family_key ?? row?.loop_microflow_key),
+        loop_microflow_key: normalizeSceneLoopMicroflowKey(row?.loop_microflow_key),
+        latest_health_band: latestHealthBand,
+        attention_band: attentionBand,
+        trend_direction: trendDirection,
+        trend_delta: Math.floor(toNum(row?.trend_delta, 0)),
+        total_count: totalCount,
+        live_count: Math.max(0, Math.floor(toNum(row?.live_count, 0))),
+        blocked_count: Math.max(0, Math.floor(toNum(row?.blocked_count, 0))),
+        risk_key: `${latestHealthBand}:${attentionBand}:${trendDirection}`,
+        priority_score: buildSceneLoopPriorityScore(attentionRank, healthRank, trendRank, totalCount),
+        attention_rank: attentionRank,
+        health_rank: healthRank,
+        trend_rank: trendRank
+      };
+    })
+    .sort((left, right) => {
+      const dayOrder = String(right.day || "").localeCompare(String(left.day || ""));
+      if (dayOrder !== 0) return dayOrder;
+      const priorityGap = toNum(right.priority_score, 0) - toNum(left.priority_score, 0);
+      if (Math.abs(priorityGap) > 0.0001) return priorityGap;
+      const totalGap = toNum(right.total_count, 0) - toNum(left.total_count, 0);
+      if (Math.abs(totalGap) > 0.0001) return totalGap;
+      return `${String(left.district_key || "")}:${String(left.loop_microflow_key || "")}`.localeCompare(
+        `${String(right.district_key || "")}:${String(right.loop_microflow_key || "")}`
+      );
+    })
+    .slice(0, Math.max(1, Math.floor(toNum(limit, 24))));
+}
+
 function resolveSceneLoopDistrictAttentionBand(latestHealthBand, trendDirection, blockedShare) {
   const latestBand = String(latestHealthBand || "no_data");
   const trend = String(trendDirection || "no_data");
@@ -1488,6 +1571,12 @@ function enrichWebappRevenueMetrics(rawMetrics = {}) {
     metrics.scene_loop_district_microflow_health_attention_trend_matrix_7d
   );
   metrics.scene_loop_district_microflow_attention_priority_daily_7d = buildSceneLoopDistrictMicroflowAttentionPriorityDaily(
+    metrics.scene_loop_district_microflow_health_attention_trend_daily_matrix_7d
+  );
+  metrics.scene_loop_district_microflow_risk_rows_7d = buildSceneLoopDistrictMicroflowRiskRows(
+    metrics.scene_loop_district_microflow_health_attention_trend_matrix_7d
+  );
+  metrics.scene_loop_district_microflow_risk_rows_daily_7d = buildSceneLoopDistrictMicroflowRiskRowsDaily(
     metrics.scene_loop_district_microflow_health_attention_trend_daily_matrix_7d
   );
   metrics.scene_runtime_daily_breakdown_7d = normalizeSceneDailyRows(metrics.scene_runtime_daily_breakdown_7d);
