@@ -322,6 +322,22 @@ function buildSceneLoopRiskContext(row) {
   const trendDirection = String(row?.trend_direction || "no_data");
   const focusKey = `${districtKey}:${loopFamilyKey}:${loopMicroflowKey}`;
   const riskKey = String(row?.risk_key || `${latestHealthBand}:${attentionBand}:${trendDirection}`);
+  const entryKindKey = resolveSceneLoopMicroflowEntryKindKey(loopMicroflowKey, loopFamilyKey);
+  const sequenceKindKey = resolveSceneLoopMicroflowSequenceKindKey(loopMicroflowKey, loopFamilyKey);
+  const riskFocusKey = `${focusKey}|${riskKey}`;
+  const riskContext = {
+    district_key: districtKey,
+    family_key: loopFamilyKey,
+    microflow_key: loopMicroflowKey,
+    focus_key: focusKey,
+    risk_key: riskKey,
+    risk_focus_key: riskFocusKey,
+    risk_health_band_key: latestHealthBand,
+    risk_attention_band_key: attentionBand,
+    risk_trend_direction_key: trendDirection,
+    entry_kind_key: entryKindKey,
+    sequence_kind_key: sequenceKindKey
+  };
   return {
     district_key: districtKey,
     loop_family_key: loopFamilyKey,
@@ -336,9 +352,10 @@ function buildSceneLoopRiskContext(row) {
     risk_attention_band_key: attentionBand,
     risk_trend_direction_key: trendDirection,
     risk_key: riskKey,
-    risk_focus_key: `${focusKey}|${riskKey}`,
-    entry_kind_key: resolveSceneLoopMicroflowEntryKindKey(loopMicroflowKey, loopFamilyKey),
-    sequence_kind_key: resolveSceneLoopMicroflowSequenceKindKey(loopMicroflowKey, loopFamilyKey)
+    risk_focus_key: riskFocusKey,
+    entry_kind_key: entryKindKey,
+    sequence_kind_key: sequenceKindKey,
+    risk_context: riskContext
   };
 }
 

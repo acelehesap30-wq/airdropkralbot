@@ -51,21 +51,22 @@ function formatStamp(value: unknown): string {
 }
 
 function renderRiskContextSuffix(row: Record<string, unknown>): string {
+  const riskContext = asRecord(row.risk_context) || row;
   const parts: string[] = [];
-  if (row.focus_key) {
-    parts.push(`focus ${String(row.focus_key)}`);
+  if (riskContext.focus_key) {
+    parts.push(`focus ${String(riskContext.focus_key)}`);
   }
-  if (row.entry_kind_key) {
-    parts.push(`entry ${String(row.entry_kind_key)}`);
+  if (riskContext.entry_kind_key) {
+    parts.push(`entry ${String(riskContext.entry_kind_key)}`);
   }
-  if (row.sequence_kind_key) {
-    parts.push(`sequence ${String(row.sequence_kind_key)}`);
+  if (riskContext.sequence_kind_key) {
+    parts.push(`sequence ${String(riskContext.sequence_kind_key)}`);
   }
-  if (row.risk_key) {
-    parts.push(`risk ${String(row.risk_key)}`);
+  if (riskContext.risk_key) {
+    parts.push(`risk ${String(riskContext.risk_key)}`);
   }
-  if (row.risk_focus_key) {
-    parts.push(`risk-focus ${String(row.risk_focus_key)}`);
+  if (riskContext.risk_focus_key) {
+    parts.push(`risk-focus ${String(riskContext.risk_focus_key)}`);
   }
   return parts.length ? ` | ${parts.join(" | ")}` : "";
 }
