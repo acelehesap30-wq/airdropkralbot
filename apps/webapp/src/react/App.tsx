@@ -580,6 +580,8 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
       riskHealthBandKey?: string;
       riskAttentionBandKey?: string;
       riskTrendDirectionKey?: string;
+      entryKindKey?: string;
+      sequenceKindKey?: string;
       sourceType?: string;
       actorKey?: string;
       interactionKind?: string;
@@ -655,6 +657,8 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
           source_risk_health_band_key: String(payload.riskHealthBandKey || ""),
           source_risk_attention_band_key: String(payload.riskAttentionBandKey || ""),
           source_risk_trend_direction_key: String(payload.riskTrendDirectionKey || ""),
+          source_entry_kind_key: String(payload.entryKindKey || ""),
+          source_sequence_kind_key: String(payload.sequenceKindKey || ""),
           node_label: payload.label,
           node_label_key: String(payload.labelKey || ""),
           target_workspace: target.workspace,

@@ -71,6 +71,8 @@ type BabylonDistrictSceneHostProps = {
     riskHealthBandKey?: string;
     riskAttentionBandKey?: string;
     riskTrendDirectionKey?: string;
+    entryKindKey?: string;
+    sequenceKindKey?: string;
     sourceType?: string;
     actorKey?: string;
     interactionKind?: string;
@@ -561,6 +563,12 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
       focusKey: String(selectedMicroflow?.action_context?.focus_key || selectedMicroflow?.focus_key || ""),
       riskKey: String(selectedMicroflow?.action_context?.risk_key || selectedMicroflow?.risk_key || ""),
       riskFocusKey: String(selectedMicroflow?.action_context?.risk_focus_key || selectedMicroflow?.risk_focus_key || ""),
+      entryKindKey: String(
+        selectedMicroflow?.action_context?.entry_kind_key || selectedMicroflow?.entry_kind_key || ""
+      ),
+      sequenceKindKey: String(
+        selectedMicroflow?.action_context?.sequence_kind_key || selectedMicroflow?.sequence_kind_key || ""
+      ),
       riskHealthBandKey: String(
         selectedMicroflow?.action_context?.risk_health_band_key || selectedMicroflow?.risk_health_band_key || ""
       ),
@@ -584,6 +592,8 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
             focus_key?: string;
             risk_key?: string;
             risk_focus_key?: string;
+            entry_kind_key?: string;
+            sequence_kind_key?: string;
             risk_health_band_key?: string;
             risk_attention_band_key?: string;
             risk_trend_direction_key?: string;
@@ -598,6 +608,8 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
             focus_key?: string;
             risk_key?: string;
             risk_focus_key?: string;
+            entry_kind_key?: string;
+            sequence_kind_key?: string;
             risk_health_band_key?: string;
             risk_attention_band_key?: string;
             risk_trend_direction_key?: string;
@@ -650,6 +662,22 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           fallback?.action_context?.risk_focus_key ||
           fallback?.risk_focus_key ||
           selectedLoopActionContext.riskFocusKey ||
+          ""
+      ),
+      entryKindKey: String(
+        action?.action_context?.entry_kind_key ||
+          action?.entry_kind_key ||
+          fallback?.action_context?.entry_kind_key ||
+          fallback?.entry_kind_key ||
+          selectedLoopActionContext.entryKindKey ||
+          ""
+      ),
+      sequenceKindKey: String(
+        action?.action_context?.sequence_kind_key ||
+          action?.sequence_kind_key ||
+          fallback?.action_context?.sequence_kind_key ||
+          fallback?.sequence_kind_key ||
+          selectedLoopActionContext.sequenceKindKey ||
           ""
       ),
       riskHealthBandKey: String(
@@ -732,6 +760,8 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
         "data-focus-key": context.focusKey || "",
         "data-risk-key": context.riskKey || "",
         "data-risk-focus-key": context.riskFocusKey || "",
+        "data-entry-kind-key": context.entryKindKey || "",
+        "data-sequence-kind-key": context.sequenceKindKey || "",
         "data-risk-health-band": context.riskHealthBandKey || "",
         "data-risk-attention-band": context.riskAttentionBandKey || "",
         "data-risk-trend-direction": context.riskTrendDirectionKey || ""
@@ -747,6 +777,8 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
             family_key?: string;
             microflow_key?: string;
             risk_focus_key?: string;
+            entry_kind_key?: string;
+            sequence_kind_key?: string;
           }
         | null,
       fallback?:
@@ -755,6 +787,8 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
             family_key?: string;
             microflow_key?: string;
             risk_focus_key?: string;
+            entry_kind_key?: string;
+            sequence_kind_key?: string;
           }
         | null
     ) => {
@@ -765,6 +799,12 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
       }
       if (context.microflowKey) {
         parts.push(`MICRO ${context.microflowKey}`);
+      }
+      if (context.entryKindKey) {
+        parts.push(`ENTRY ${context.entryKindKey}`);
+      }
+      if (context.sequenceKindKey) {
+        parts.push(`SEQ ${context.sequenceKindKey}`);
       }
       if (context.riskFocusKey) {
         parts.push(`RFK ${context.riskFocusKey}`);
