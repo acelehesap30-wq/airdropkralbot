@@ -459,6 +459,10 @@ const DICT = {
     admin_runtime_scene_loop_district_microflow_latest_band_title: "District x Mikroakis Son Band",
     admin_runtime_scene_loop_district_microflow_trend_title: "District x Mikroakis Trend",
     admin_runtime_scene_loop_district_microflow_attention_title: "District x Mikroakis Attention",
+    admin_runtime_scene_loop_district_microflow_health_attention_title: "District x Mikroakis Health x Attention",
+    admin_runtime_scene_loop_district_microflow_attention_trend_title: "District x Mikroakis Attention x Trend",
+    admin_runtime_scene_loop_district_microflow_health_attention_trend_title:
+      "District x Mikroakis Health x Attention x Trend",
     admin_runtime_scene_loop_district_microflow_health_attention_trend_matrix_title:
       "District x Mikroakis Risk Matrisi",
     admin_runtime_scene_loop_district_microflow_health_attention_trend_daily_matrix_title:
@@ -1419,6 +1423,10 @@ const DICT = {
     admin_runtime_scene_loop_district_microflow_latest_band_title: "District x Microflow Latest Band",
     admin_runtime_scene_loop_district_microflow_trend_title: "District x Microflow Trend",
     admin_runtime_scene_loop_district_microflow_attention_title: "District x Microflow Attention",
+    admin_runtime_scene_loop_district_microflow_health_attention_title: "District x Microflow Health x Attention",
+    admin_runtime_scene_loop_district_microflow_attention_trend_title: "District x Microflow Attention x Trend",
+    admin_runtime_scene_loop_district_microflow_health_attention_trend_title:
+      "District x Microflow Health x Attention x Trend",
     admin_runtime_scene_loop_district_microflow_health_attention_trend_matrix_title:
       "District x Microflow Risk Matrix",
     admin_runtime_scene_loop_district_microflow_health_attention_trend_daily_matrix_title:

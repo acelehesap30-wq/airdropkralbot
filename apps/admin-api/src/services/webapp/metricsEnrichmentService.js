@@ -818,6 +818,25 @@ function buildSceneLoopDistrictMicroflowMatrix(rows, limit = 18) {
   );
 }
 
+function buildSceneLoopDistrictMicroflowHealthAttentionBreakdown(rows, limit = 18) {
+  return buildSceneLoopDistrictFamilyHealthAttentionBreakdown(toSceneLoopFamilyRowsFromMicroflow(rows), limit).map(
+    mapSceneLoopFamilyRowToMicroflow
+  );
+}
+
+function buildSceneLoopDistrictMicroflowAttentionTrendBreakdown(rows, limit = 18) {
+  return buildSceneLoopDistrictFamilyAttentionTrendBreakdown(toSceneLoopFamilyRowsFromMicroflow(rows), limit).map(
+    mapSceneLoopFamilyRowToMicroflow
+  );
+}
+
+function buildSceneLoopDistrictMicroflowHealthAttentionTrendBreakdown(rows, limit = 18) {
+  return buildSceneLoopDistrictFamilyHealthAttentionTrendBreakdown(
+    toSceneLoopFamilyRowsFromMicroflow(rows),
+    limit
+  ).map(mapSceneLoopFamilyRowToMicroflow);
+}
+
 function buildSceneLoopDistrictMicroflowHealthAttentionTrendMatrix(rows, limit = 18) {
   return buildSceneLoopDistrictFamilyHealthAttentionTrendMatrix(toSceneLoopFamilyRowsFromMicroflow(rows), limit).map(
     mapSceneLoopFamilyRowToMicroflow
@@ -1180,6 +1199,12 @@ function enrichWebappRevenueMetrics(rawMetrics = {}) {
   metrics.scene_loop_district_microflow_attention_breakdown_7d = buildSceneLoopDistrictFamilyAttentionBreakdown(
     metrics.scene_loop_district_microflow_matrix_7d
   );
+  metrics.scene_loop_district_microflow_health_attention_breakdown_7d =
+    buildSceneLoopDistrictMicroflowHealthAttentionBreakdown(metrics.scene_loop_district_microflow_matrix_7d);
+  metrics.scene_loop_district_microflow_attention_trend_breakdown_7d =
+    buildSceneLoopDistrictMicroflowAttentionTrendBreakdown(metrics.scene_loop_district_microflow_matrix_7d);
+  metrics.scene_loop_district_microflow_health_attention_trend_breakdown_7d =
+    buildSceneLoopDistrictMicroflowHealthAttentionTrendBreakdown(metrics.scene_loop_district_microflow_matrix_7d);
   metrics.scene_loop_district_microflow_health_attention_trend_matrix_7d =
     buildSceneLoopDistrictMicroflowHealthAttentionTrendMatrix(metrics.scene_loop_district_microflow_matrix_7d);
   metrics.scene_loop_district_microflow_health_attention_trend_daily_breakdown_7d =
@@ -1301,6 +1326,9 @@ module.exports = {
   buildSceneLoopDistrictFamilyAttentionPriority,
   buildSceneLoopDistrictFamilyAttentionPriorityDaily,
   buildSceneLoopDistrictMicroflowMatrix,
+  buildSceneLoopDistrictMicroflowHealthAttentionBreakdown,
+  buildSceneLoopDistrictMicroflowAttentionTrendBreakdown,
+  buildSceneLoopDistrictMicroflowHealthAttentionTrendBreakdown,
   buildSceneLoopDistrictMicroflowHealthAttentionTrendMatrix,
   buildSceneLoopDistrictMicroflowHealthAttentionTrendDailyBreakdown,
   buildSceneLoopDistrictMicroflowHealthAttentionTrendDailyMatrix,

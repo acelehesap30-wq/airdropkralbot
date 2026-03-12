@@ -534,6 +534,15 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
   const sceneLoopDistrictMicroflowAttentionBreakdown = asRows(
     props.metricsData?.scene_loop_district_microflow_attention_breakdown_7d
   );
+  const sceneLoopDistrictMicroflowHealthAttentionBreakdown = asRows(
+    props.metricsData?.scene_loop_district_microflow_health_attention_breakdown_7d
+  );
+  const sceneLoopDistrictMicroflowAttentionTrendBreakdown = asRows(
+    props.metricsData?.scene_loop_district_microflow_attention_trend_breakdown_7d
+  );
+  const sceneLoopDistrictMicroflowHealthAttentionTrendBreakdown = asRows(
+    props.metricsData?.scene_loop_district_microflow_health_attention_trend_breakdown_7d
+  );
   const sceneLoopDistrictMicroflowHealthAttentionTrendMatrix = asRows(
     props.metricsData?.scene_loop_district_microflow_health_attention_trend_matrix_7d
   );
@@ -851,6 +860,18 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
         <BreakdownList
           title={t(props.lang, "admin_runtime_scene_loop_district_microflow_attention_title")}
           rows={sceneLoopDistrictMicroflowAttentionBreakdown}
+        />
+        <BreakdownList
+          title={t(props.lang, "admin_runtime_scene_loop_district_microflow_health_attention_title")}
+          rows={sceneLoopDistrictMicroflowHealthAttentionBreakdown}
+        />
+        <BreakdownList
+          title={t(props.lang, "admin_runtime_scene_loop_district_microflow_attention_trend_title")}
+          rows={sceneLoopDistrictMicroflowAttentionTrendBreakdown}
+        />
+        <BreakdownList
+          title={t(props.lang, "admin_runtime_scene_loop_district_microflow_health_attention_trend_title")}
+          rows={sceneLoopDistrictMicroflowHealthAttentionTrendBreakdown}
         />
         <SceneLoopDistrictFamilyMatrixList
           title={t(props.lang, "admin_runtime_scene_loop_district_microflow_health_attention_trend_matrix_title")}

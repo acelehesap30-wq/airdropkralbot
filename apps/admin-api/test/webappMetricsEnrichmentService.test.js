@@ -280,6 +280,9 @@ test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
   assert.equal(enriched.scene_loop_district_microflow_latest_band_breakdown_7d[0].bucket_key, "yellow");
   assert.equal(enriched.scene_loop_district_microflow_trend_breakdown_7d[0].bucket_key, "no_data");
   assert.equal(enriched.scene_loop_district_microflow_attention_breakdown_7d[0].bucket_key, "watch");
+  assert.equal(enriched.scene_loop_district_microflow_health_attention_breakdown_7d[0].bucket_key, "yellow:watch");
+  assert.equal(enriched.scene_loop_district_microflow_attention_trend_breakdown_7d[0].bucket_key, "alert:no_data");
+  assert.equal(enriched.scene_loop_district_microflow_health_attention_trend_breakdown_7d[0].bucket_key, "red:alert:no_data");
   assert.equal(enriched.scene_loop_district_microflow_health_attention_trend_matrix_7d[0].district_key, "exchange_district");
   assert.equal(enriched.scene_loop_district_microflow_health_attention_trend_matrix_7d[0].loop_microflow_key, "wallet");
   assert.equal(enriched.scene_loop_district_microflow_health_attention_trend_matrix_7d[0].attention_band, "alert");
