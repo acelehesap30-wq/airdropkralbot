@@ -458,6 +458,45 @@ function buildLoopFlowFamilyPanels(tone, rails) {
   ];
 }
 
+function buildLoopRiskPanels(tone, rails) {
+  const source = asRecord(rails);
+  return [
+    {
+      title: "HEALTH",
+      tone,
+      hint: toText(source.stateText || source.summaryText, ""),
+      lines: [
+        buildLoopHealthText(source),
+        toText(source.stateText || source.summaryText, "STATE --"),
+        toText(source.gateText || source.leadText, "GATE --"),
+        buildLoopRiskSummaryText(source)
+      ]
+    },
+    {
+      title: "ATTN",
+      tone,
+      hint: toText(source.pressureText || source.signalText, ""),
+      lines: [
+        buildLoopAttentionText(source),
+        toText(source.pressureText || source.signalText, "PRESSURE --"),
+        toText(source.responseText || source.opsText, "RESPONSE --"),
+        buildLoopRiskSummaryText(source)
+      ]
+    },
+    {
+      title: "TREND",
+      tone,
+      hint: toText(source.cadenceText || source.windowText, ""),
+      lines: [
+        buildLoopTrendText(source),
+        toText(source.windowText || source.flowText, "WINDOW --"),
+        toText(source.detailText || source.stageText, "DETAIL --"),
+        buildLoopRiskSummaryText(source)
+      ]
+    }
+  ];
+}
+
 function buildLoopSubflowPanels(tone, rails) {
   const source = asRecord(rails);
   return [
@@ -1151,6 +1190,23 @@ function buildPvpLoopMicroPanels(loopDeck, active) {
   panels.duelFlowCards = duelFlowBundle.cards;
   panels.duelFlowBlocks = duelFlowBundle.blocks;
   panels.duelFlowPanels = buildLoopFlowFamilyPanels(panels.duelTone, {
+    familyText: panels.duelFamilyText,
+    flowText: panels.duelFlowText,
+    summaryText: panels.duelSummaryText,
+    gateText: panels.duelGateText,
+    leadText: panels.duelLeadText,
+    windowText: panels.duelWindowText,
+    pressureText: panels.duelPressureText,
+    responseText: panels.duelResponseText,
+    attentionText: panels.duelAttentionText,
+    cadenceText: panels.duelCadenceText,
+    stateText: panels.duelStateText,
+    stageText: panels.duelStageText,
+    opsText: panels.duelOpsText,
+    signalText: panels.duelSignalText,
+    detailText: panels.duelDetailText
+  });
+  panels.duelRiskPanels = buildLoopRiskPanels(panels.duelTone, {
     familyText: panels.duelFamilyText,
     flowText: panels.duelFlowText,
     summaryText: panels.duelSummaryText,
@@ -1962,6 +2018,23 @@ function buildVaultLoopMicroPanels(loopDeck, active) {
     signalText: panels.walletSignalText,
     detailText: panels.walletDetailText
   });
+  panels.walletRiskPanels = buildLoopRiskPanels(panels.walletTone, {
+    familyText: panels.walletFamilyText,
+    flowText: panels.walletFlowText,
+    summaryText: panels.walletSummaryText,
+    gateText: panels.walletGateText,
+    leadText: panels.walletLeadText,
+    windowText: panels.walletWindowText,
+    pressureText: panels.walletPressureText,
+    responseText: panels.walletResponseText,
+    attentionText: panels.walletAttentionText,
+    cadenceText: panels.walletCadenceText,
+    stateText: panels.walletStateText,
+    stageText: panels.walletStageText,
+    opsText: panels.walletOpsText,
+    signalText: panels.walletSignalText,
+    detailText: panels.walletDetailText
+  });
   const walletSubflowBundle = buildLoopSubflowBundle(panels.walletTone, {
     familyText: panels.walletFamilyText,
     flowText: panels.walletFlowText,
@@ -2564,6 +2637,23 @@ function buildAdminLoopMicroPanels(loopDeck, active) {
     signalText: panels.dispatchSignalText,
     detailText: panels.dispatchDetailText
   });
+  panels.dispatchRiskPanels = buildLoopRiskPanels(panels.dispatchTone, {
+    familyText: panels.dispatchFamilyText,
+    flowText: panels.dispatchFlowText,
+    summaryText: panels.dispatchSummaryText,
+    gateText: panels.dispatchGateText,
+    leadText: panels.dispatchLeadText,
+    windowText: panels.dispatchWindowText,
+    pressureText: panels.dispatchPressureText,
+    responseText: panels.dispatchResponseText,
+    attentionText: panels.dispatchAttentionText,
+    cadenceText: panels.dispatchCadenceText,
+    stateText: panels.dispatchStateText,
+    stageText: panels.dispatchStageText,
+    opsText: panels.dispatchOpsText,
+    signalText: panels.dispatchSignalText,
+    detailText: panels.dispatchDetailText
+  });
   const dispatchSubflowBundle = buildLoopSubflowBundle(panels.dispatchTone, {
     familyText: panels.dispatchFamilyText,
     flowText: panels.dispatchFlowText,
@@ -2912,6 +3002,23 @@ function buildOperationsLoopMicroPanels(loopDeck, active) {
     panels.lootFlowCards = lootFlowBundle.cards;
     panels.lootFlowBlocks = lootFlowBundle.blocks;
     panels.lootFlowPanels = buildLoopFlowFamilyPanels(panels.lootTone, {
+      familyText: panels.lootFamilyText,
+      flowText: panels.lootFlowText,
+      summaryText: panels.lootSummaryText,
+      gateText: panels.lootGateText,
+      leadText: panels.lootLeadText,
+      windowText: panels.lootWindowText,
+      pressureText: panels.lootPressureText,
+      responseText: panels.lootResponseText,
+      attentionText: panels.lootAttentionText,
+      cadenceText: panels.lootCadenceText,
+      stateText: panels.lootStateText,
+      stageText: panels.lootStageText,
+      opsText: panels.lootOpsText,
+      signalText: panels.lootSignalText,
+      detailText: panels.lootDetailText
+    });
+    panels.lootRiskPanels = buildLoopRiskPanels(panels.lootTone, {
       familyText: panels.lootFamilyText,
       flowText: panels.lootFlowText,
       summaryText: panels.lootSummaryText,
@@ -3331,6 +3438,23 @@ function buildOperationsLoopMicroPanels(loopDeck, active) {
   panels.lootFlowCards = lootFlowBundle.cards;
   panels.lootFlowBlocks = lootFlowBundle.blocks;
   panels.lootFlowPanels = buildLoopFlowFamilyPanels(panels.lootTone, {
+    familyText: panels.lootFamilyText,
+    flowText: panels.lootFlowText,
+    summaryText: panels.lootSummaryText,
+    gateText: panels.lootGateText,
+    leadText: panels.lootLeadText,
+    windowText: panels.lootWindowText,
+    pressureText: panels.lootPressureText,
+    responseText: panels.lootResponseText,
+    attentionText: panels.lootAttentionText,
+    cadenceText: panels.lootCadenceText,
+    stateText: panels.lootStateText,
+    stageText: panels.lootStageText,
+    opsText: panels.lootOpsText,
+    signalText: panels.lootSignalText,
+    detailText: panels.lootDetailText
+  });
+  panels.lootRiskPanels = buildLoopRiskPanels(panels.lootTone, {
     familyText: panels.lootFamilyText,
     flowText: panels.lootFlowText,
     summaryText: panels.lootSummaryText,
@@ -4159,6 +4283,7 @@ function buildPvpRuntimePayload(rawRuntime, rawLive, pvpView, scene, assetMetric
       loopDuelFlowCards: loopMicro.duelFlowCards,
       loopDuelFlowBlocks: loopMicro.duelFlowBlocks,
       loopDuelFlowPanels: loopMicro.duelFlowPanels,
+      loopDuelRiskPanels: loopMicro.duelRiskPanels,
       loopDuelSubflowCards: loopMicro.duelSubflowCards,
       loopDuelSubflowBlocks: loopMicro.duelSubflowBlocks,
       loopDuelSubflowPanels: loopMicro.duelSubflowPanels,
@@ -4511,6 +4636,7 @@ function buildOperationsDeckPayload(data, taskResult, homeFeed, scene) {
         lootFlowCards: loopMicro.lootFlowCards,
         lootFlowBlocks: loopMicro.lootFlowBlocks,
         lootFlowPanels: loopMicro.lootFlowPanels,
+        lootRiskPanels: loopMicro.lootRiskPanels,
         lootSubflowCards: loopMicro.lootSubflowCards,
         lootSubflowBlocks: loopMicro.lootSubflowBlocks,
         lootSubflowPanels: loopMicro.lootSubflowPanels
@@ -4620,6 +4746,7 @@ function buildTokenOverviewPayload(vaultRoot, vaultView, scene) {
     loopWalletFlowCards: loopMicro.walletFlowCards,
     loopWalletFlowBlocks: loopMicro.walletFlowBlocks,
     loopWalletFlowPanels: loopMicro.walletFlowPanels,
+    loopWalletRiskPanels: loopMicro.walletRiskPanels,
     loopWalletSubflowCards: loopMicro.walletSubflowCards,
     loopWalletSubflowBlocks: loopMicro.walletSubflowBlocks,
     loopWalletSubflowPanels: loopMicro.walletSubflowPanels,
@@ -5068,6 +5195,7 @@ function buildAdminRuntimePayload(adminRuntime, adminPanels, scene) {
     loopDispatchFlowCards: loopMicro.dispatchFlowCards,
     loopDispatchFlowBlocks: loopMicro.dispatchFlowBlocks,
     loopDispatchFlowPanels: loopMicro.dispatchFlowPanels,
+    loopDispatchRiskPanels: loopMicro.dispatchRiskPanels,
     loopDispatchSubflowCards: loopMicro.dispatchSubflowCards,
     loopDispatchSubflowBlocks: loopMicro.dispatchSubflowBlocks,
     loopDispatchSubflowPanels: loopMicro.dispatchSubflowPanels

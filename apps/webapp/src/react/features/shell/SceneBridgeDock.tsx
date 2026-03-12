@@ -605,6 +605,7 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
                   <div id="combatLoopDuelFlowCards" className="akrBridgeFocusCards hidden" />
                   <div id="combatLoopDuelFlowBlocks" className="akrBridgeFlowBlocks hidden" />
                   <div id="combatLoopDuelFlowPanels" className="akrBridgeFlowPanels hidden" />
+                  <div id="combatLoopDuelRiskPanels" className="akrBridgeFlowPanels hidden" />
                   <div id="combatLoopDuelSubflowCards" className="akrBridgeFocusCards hidden" />
                   <div id="combatLoopDuelSubflowBlocks" className="akrBridgeFlowBlocks hidden" />
                   <div id="combatLoopDuelSubflowPanels" className="akrBridgeFlowPanels hidden" />
@@ -1023,6 +1024,7 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
               <div id="tasksLoopLootFlowCards" className="akrBridgeFocusCards hidden" />
               <div id="tasksLoopLootFlowBlocks" className="akrBridgeFlowBlocks hidden" />
               <div id="tasksLoopLootFlowPanels" className="akrBridgeFlowPanels hidden" />
+              <div id="tasksLoopLootRiskPanels" className="akrBridgeFlowPanels hidden" />
               <div id="tasksLoopLootSubflowCards" className="akrBridgeFocusCards hidden" />
               <div id="tasksLoopLootSubflowBlocks" className="akrBridgeFlowBlocks hidden" />
               <div id="tasksLoopLootSubflowPanels" className="akrBridgeFlowPanels hidden" />
@@ -1135,6 +1137,7 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
                 <div id="tokenLoopWalletFlowCards" className="akrBridgeFocusCards hidden" />
                 <div id="tokenLoopWalletFlowBlocks" className="akrBridgeFlowBlocks hidden" />
                 <div id="tokenLoopWalletFlowPanels" className="akrBridgeFlowPanels hidden" />
+                <div id="tokenLoopWalletRiskPanels" className="akrBridgeFlowPanels hidden" />
                 <div id="tokenLoopWalletSubflowCards" className="akrBridgeFocusCards hidden" />
                 <div id="tokenLoopWalletSubflowBlocks" className="akrBridgeFlowBlocks hidden" />
                 <div id="tokenLoopWalletSubflowPanels" className="akrBridgeFlowPanels hidden" />
@@ -1614,6 +1617,7 @@ function AdminBridgeCards(props: { lang: Lang }) {
             <div id="adminRuntimeLoopDispatchFlowCards" className="akrBridgeFocusCards hidden" />
             <div id="adminRuntimeLoopDispatchFlowBlocks" className="akrBridgeFlowBlocks hidden" />
             <div id="adminRuntimeLoopDispatchFlowPanels" className="akrBridgeFlowPanels hidden" />
+            <div id="adminRuntimeLoopDispatchRiskPanels" className="akrBridgeFlowPanels hidden" />
             <div id="adminRuntimeLoopDispatchSubflowCards" className="akrBridgeFocusCards hidden" />
             <div id="adminRuntimeLoopDispatchSubflowBlocks" className="akrBridgeFlowBlocks hidden" />
             <div id="adminRuntimeLoopDispatchSubflowPanels" className="akrBridgeFlowPanels hidden" />

@@ -349,6 +349,12 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
   assert.equal(payloads.combatHud.loopDuelFlowBlocks?.[2]?.title, "RISK");
   assert.equal(payloads.combatHud.loopDuelFlowPanels?.length, 3);
   assert.equal(payloads.combatHud.loopDuelFlowPanels?.[0]?.title, "COMMAND");
+  assert.equal(payloads.combatHud.loopDuelRiskPanels?.length, 3);
+  assert.equal(payloads.combatHud.loopDuelRiskPanels?.[0]?.title, "HEALTH");
+  assert.equal(payloads.combatHud.loopDuelRiskPanels?.[1]?.title, "ATTN");
+  assert.equal(payloads.combatHud.loopDuelRiskPanels?.[2]?.title, "TREND");
+  assert.match(payloads.combatHud.loopDuelRiskPanels?.[0]?.lines?.[0] || "", /WATCH|ACTIVE|HEALTH/i);
+  assert.match(payloads.combatHud.loopDuelRiskPanels?.[2]?.lines?.[3] || "", /HEALTH .*ATTN .*TREND /i);
   assert.match(payloads.combatHud.loopDuelFlowPanels?.[1]?.lines?.[1] || "", /HEALTH|ENTRY|FLOW/i);
   assert.match(payloads.combatHud.loopDuelFlowPanels?.[2]?.lines?.[1] || "", /ATTN|ENGAGE|WATCH|FLOW/i);
   assert.match(payloads.combatHud.loopDuelFlowPanels?.[2]?.lines?.[2] || "", /TREND|SEQ|FLOW|HEALTH/i);
@@ -665,6 +671,12 @@ test("buildPlayerBridgePayloads surfaces active vault loop micro panels from sel
   assert.equal(payloads.tokenOverview.loopWalletFlowBlocks?.length, 3);
   assert.equal(payloads.tokenOverview.loopWalletFlowPanels?.length, 3);
   assert.equal(payloads.tokenOverview.loopWalletFlowPanels?.[0]?.title, "COMMAND");
+  assert.equal(payloads.tokenOverview.loopWalletRiskPanels?.length, 3);
+  assert.equal(payloads.tokenOverview.loopWalletRiskPanels?.[0]?.title, "HEALTH");
+  assert.equal(payloads.tokenOverview.loopWalletRiskPanels?.[1]?.title, "ATTN");
+  assert.equal(payloads.tokenOverview.loopWalletRiskPanels?.[2]?.title, "TREND");
+  assert.match(payloads.tokenOverview.loopWalletRiskPanels?.[1]?.lines?.[1] || "", /ROUTE|APPROVED|OPEN|PRESSURE/i);
+  assert.match(payloads.tokenOverview.loopWalletRiskPanels?.[2]?.lines?.[3] || "", /HEALTH .*ATTN .*TREND /i);
   assert.equal(payloads.tokenOverview.loopWalletSubflowCards?.length, 3);
   assert.equal(payloads.tokenOverview.loopWalletSubflowCards?.[0]?.title, "ENTRY");
   assert.equal(payloads.tokenOverview.loopWalletSubflowBlocks?.length, 3);
@@ -854,6 +866,12 @@ test("buildPlayerBridgePayloads surfaces active tasks loop micro panels from sel
   assert.equal(payloads.operations.loop.lootFlowBlocks?.length, 3);
   assert.equal(payloads.operations.loop.lootFlowPanels?.length, 3);
   assert.equal(payloads.operations.loop.lootFlowPanels?.[0]?.title, "COMMAND");
+  assert.equal(payloads.operations.loop.lootRiskPanels?.length, 3);
+  assert.equal(payloads.operations.loop.lootRiskPanels?.[0]?.title, "HEALTH");
+  assert.equal(payloads.operations.loop.lootRiskPanels?.[1]?.title, "ATTN");
+  assert.equal(payloads.operations.loop.lootRiskPanels?.[2]?.title, "TREND");
+  assert.match(payloads.operations.loop.lootRiskPanels?.[0]?.lines?.[0] || "", /READY|WATCH|HEALTH/i);
+  assert.match(payloads.operations.loop.lootRiskPanels?.[2]?.lines?.[3] || "", /HEALTH .*ATTN .*TREND /i);
   assert.equal(payloads.operations.loop.lootFlowCards?.[2]?.title, "RISK");
   assert.equal(payloads.operations.loop.lootFlowBlocks?.[2]?.title, "RISK");
   assert.match(payloads.operations.loop.lootFlowPanels?.[2]?.lines?.[3] || "", /HEALTH .*ATTN .*TREND /i);
@@ -1014,6 +1032,15 @@ test("buildAdminBridgePayloads produces runtime, asset and audit cards from admi
   assert.equal(payloads.runtime.loopDispatchFlowBlocks?.length, 3);
   assert.equal(payloads.runtime.loopDispatchFlowPanels?.length, 3);
   assert.equal(payloads.runtime.loopDispatchFlowPanels?.[0]?.title, "COMMAND");
+  assert.equal(payloads.runtime.loopDispatchRiskPanels?.length, 3);
+  assert.equal(payloads.runtime.loopDispatchRiskPanels?.[0]?.title, "HEALTH");
+  assert.equal(payloads.runtime.loopDispatchRiskPanels?.[1]?.title, "ATTN");
+  assert.equal(payloads.runtime.loopDispatchRiskPanels?.[2]?.title, "TREND");
+  assert.match(
+    payloads.runtime.loopDispatchRiskPanels?.[0]?.lines?.[0] || "",
+    /SENT 12|ALERT|WATCH|HEALTH|ENTRY DISPATCH CONSOLE/i,
+  );
+  assert.match(payloads.runtime.loopDispatchRiskPanels?.[2]?.lines?.[3] || "", /HEALTH .*ATTN .*TREND /i);
   assert.match(payloads.runtime.loopDispatchFlowPanels?.[1]?.lines?.[1] || "", /HEALTH WATCH|FLOW DISPATCH FLOW|ENTRY DISPATCH CONSOLE/i);
   assert.match(payloads.runtime.loopDispatchFlowPanels?.[2]?.lines?.[1] || "", /HEALTH WATCH|ALERT 3|FLOW DISPATCH FLOW/i);
   assert.match(payloads.runtime.loopDispatchFlowPanels?.[2]?.lines?.[2] || "", /SEQ DISPATCH SEQUENCE|FLOW DISPATCH FLOW|HEALTH WATCH/i);

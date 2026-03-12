@@ -137,6 +137,7 @@ type CombatHudPayload = {
   loopDuelFlowCards?: LoopBridgeCard[];
   loopDuelFlowBlocks?: LoopBridgeBlock[];
   loopDuelFlowPanels?: LoopBridgePanel[];
+  loopDuelRiskPanels?: LoopBridgePanel[];
   loopDuelSubflowCards?: LoopBridgeCard[];
   loopDuelSubflowBlocks?: LoopBridgeBlock[];
   loopDuelSubflowPanels?: LoopBridgePanel[];
@@ -370,6 +371,7 @@ function render(payload: CombatHudPayload): boolean {
   const loopDuelFlowCards = byId("combatLoopDuelFlowCards");
   const loopDuelFlowBlocks = byId("combatLoopDuelFlowBlocks");
   const loopDuelFlowPanels = byId("combatLoopDuelFlowPanels");
+  const loopDuelRiskPanels = byId("combatLoopDuelRiskPanels");
   const loopDuelSubflowCards = byId("combatLoopDuelSubflowCards");
   const loopDuelSubflowBlocks = byId("combatLoopDuelSubflowBlocks");
   const loopDuelSubflowPanels = byId("combatLoopDuelSubflowPanels");
@@ -692,6 +694,7 @@ function render(payload: CombatHudPayload): boolean {
   renderLoopBridgeCards(loopDuelFlowCards, payload.loopDuelFlowCards);
   renderLoopBridgeBlocks(loopDuelFlowBlocks, payload.loopDuelFlowBlocks);
   renderLoopBridgePanels(loopDuelFlowPanels, payload.loopDuelFlowPanels);
+  renderLoopBridgePanels(loopDuelRiskPanels, payload.loopDuelRiskPanels);
   renderLoopBridgeCards(loopDuelSubflowCards, payload.loopDuelSubflowCards);
   renderLoopBridgeBlocks(loopDuelSubflowBlocks, payload.loopDuelSubflowBlocks);
   renderLoopBridgePanels(loopDuelSubflowPanels, payload.loopDuelSubflowPanels);
