@@ -388,6 +388,23 @@ type ProtocolCard = {
   action_items?: ProtocolCardActionItem[];
 };
 
+type SceneActionLike = {
+  [key: string]: unknown;
+  risk_context?: RiskContext;
+  action_context?: ClusterActionItem["action_context"];
+  family_key?: string;
+  flow_key?: string;
+  microflow_key?: string;
+  focus_key?: string;
+  risk_key?: string;
+  risk_focus_key?: string;
+  risk_health_band_key?: string;
+  risk_attention_band_key?: string;
+  risk_trend_direction_key?: string;
+  entry_kind_key?: string;
+  sequence_kind_key?: string;
+};
+
 function asRiskContext(value: unknown): RiskContext {
   return value && typeof value === "object" && !Array.isArray(value) ? (value as RiskContext) : {};
 }
@@ -642,42 +659,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
     [selectedMicroflow]
   );
   const resolveSceneActionContext = useCallback(
-    (
-      action?:
-        | {
-            risk_context?: RiskContext;
-            action_context?: ClusterActionItem["action_context"];
-            family_key?: string;
-            flow_key?: string;
-            microflow_key?: string;
-            focus_key?: string;
-            risk_key?: string;
-            risk_focus_key?: string;
-            entry_kind_key?: string;
-            sequence_kind_key?: string;
-            risk_health_band_key?: string;
-            risk_attention_band_key?: string;
-            risk_trend_direction_key?: string;
-          }
-        | null,
-      fallback?:
-        | {
-            risk_context?: RiskContext;
-            action_context?: ClusterActionItem["action_context"];
-            family_key?: string;
-            flow_key?: string;
-            microflow_key?: string;
-            focus_key?: string;
-            risk_key?: string;
-            risk_focus_key?: string;
-            entry_kind_key?: string;
-            sequence_kind_key?: string;
-            risk_health_band_key?: string;
-            risk_attention_band_key?: string;
-            risk_trend_direction_key?: string;
-          }
-        | null
-    ) => {
+    (action?: SceneActionLike | null, fallback?: SceneActionLike | null) => {
       const actionRiskContext = asRiskContext(action?.risk_context);
       const actionContext = asRiskContext(action?.action_context);
       const fallbackRiskContext = asRiskContext(fallback?.risk_context);
@@ -812,36 +794,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
     }
   }, []);
   const buildSceneActionDataAttrs = useCallback(
-    (
-      action?:
-        | {
-            action_context?: ClusterActionItem["action_context"];
-            family_key?: string;
-            flow_key?: string;
-            microflow_key?: string;
-            focus_key?: string;
-            risk_key?: string;
-            risk_focus_key?: string;
-            risk_health_band_key?: string;
-            risk_attention_band_key?: string;
-            risk_trend_direction_key?: string;
-          }
-        | null,
-      fallback?:
-        | {
-            action_context?: ClusterActionItem["action_context"];
-            family_key?: string;
-            flow_key?: string;
-            microflow_key?: string;
-            focus_key?: string;
-            risk_key?: string;
-            risk_focus_key?: string;
-            risk_health_band_key?: string;
-            risk_attention_band_key?: string;
-            risk_trend_direction_key?: string;
-          }
-        | null
-    ) => {
+    (action?: SceneActionLike | null, fallback?: SceneActionLike | null) => {
       const context = resolveSceneActionContext(action, fallback);
       return {
         "data-family-key": context.familyKey || "",
@@ -860,28 +813,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
     [resolveSceneActionContext]
   );
   const renderSceneActionContextMeta = useCallback(
-    (
-      action?:
-        | {
-            action_context?: ClusterActionItem["action_context"];
-            family_key?: string;
-            microflow_key?: string;
-            risk_focus_key?: string;
-            entry_kind_key?: string;
-            sequence_kind_key?: string;
-          }
-        | null,
-      fallback?:
-        | {
-            action_context?: ClusterActionItem["action_context"];
-            family_key?: string;
-            microflow_key?: string;
-            risk_focus_key?: string;
-            entry_kind_key?: string;
-            sequence_kind_key?: string;
-          }
-        | null
-    ) => {
+    (action?: SceneActionLike | null, fallback?: SceneActionLike | null) => {
       const context = resolveSceneActionContext(action, fallback);
       const parts = [];
       if (context.familyKey) {
@@ -2160,11 +2092,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           data-composition-profile={selectedMicroflow?.composition_profile_key || ""}
           data-sheet-anchor={selectedMicroflow?.sheet_anchor_key || ""}
           data-sheet-presence={selectedMicroflow?.sheet_presence_key || ""}
-          data-focus-key={worldState.interaction_sheet.focus_key || ""}
-          data-risk-key={worldState.interaction_sheet.risk_key || ""}
-          data-risk-focus-key={worldState.interaction_sheet.risk_focus_key || ""}
-          data-entry-kind-key={worldState.interaction_sheet.entry_kind_key || ""}
-          data-sequence-kind-key={worldState.interaction_sheet.sequence_kind_key || ""}
+          {...buildSceneActionDataAttrs(worldState.interaction_sheet)}
         >
           <div className="akrSceneWorldSheetHeader">
             <strong>
@@ -2215,11 +2143,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           data-composition-profile={selectedMicroflow?.composition_profile_key || ""}
           data-entry-anchor={selectedMicroflow?.entry_anchor_key || ""}
           data-entry-presence={selectedMicroflow?.entry_presence_key || ""}
-          data-focus-key={worldState.interaction_surface.focus_key || ""}
-          data-risk-key={worldState.interaction_surface.risk_key || ""}
-          data-risk-focus-key={worldState.interaction_surface.risk_focus_key || ""}
-          data-entry-kind-key={worldState.interaction_surface.entry_kind_key || ""}
-          data-sequence-kind-key={worldState.interaction_surface.sequence_kind_key || ""}
+          {...buildSceneActionDataAttrs(worldState.interaction_surface)}
         >
           <div className="akrSceneEntrySurfaceHeader">
             <span>{t(props.lang, worldState.interaction_surface.surface_kind_key as never)}</span>
@@ -2272,11 +2196,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           {worldState.interaction_entry ? (
             <div
               className={`akrSceneEntrySurfaceMode is-${worldState.interaction_entry.entry_class_key} is-${worldState.interaction_entry.status_key}`}
-              data-focus-key={worldState.interaction_entry.focus_key || ""}
-              data-risk-key={worldState.interaction_entry.risk_key || ""}
-              data-risk-focus-key={worldState.interaction_entry.risk_focus_key || ""}
-              data-entry-kind-key={worldState.interaction_entry.entry_kind_key || ""}
-              data-sequence-kind-key={worldState.interaction_entry.sequence_kind_key || ""}
+              {...buildSceneActionDataAttrs(worldState.interaction_entry)}
             >
               <div className="akrSceneEntrySurfaceModeHeader">
                 <span>{t(props.lang, worldState.interaction_entry.entry_kind_key as never)}</span>
@@ -2371,11 +2291,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           data-composition-profile={selectedMicroflow?.composition_profile_key || ""}
           data-console-anchor={selectedMicroflow?.console_anchor_key || ""}
           data-console-presence={selectedMicroflow?.console_presence_key || ""}
-          data-focus-key={worldState.interaction_terminal.focus_key || ""}
-          data-risk-key={worldState.interaction_terminal.risk_key || ""}
-          data-risk-focus-key={worldState.interaction_terminal.risk_focus_key || ""}
-          data-entry-kind-key={worldState.interaction_terminal.entry_kind_key || ""}
-          data-sequence-kind-key={worldState.interaction_terminal.sequence_kind_key || ""}
+          {...buildSceneActionDataAttrs(worldState.interaction_terminal)}
         >
           <div className="akrSceneTerminalConsoleHeader">
             <div className="akrSceneTerminalConsoleTitle">
@@ -2528,11 +2444,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           data-composition-profile={selectedMicroflow?.composition_profile_key || ""}
           data-modal-anchor={selectedMicroflow?.modal_anchor_key || ""}
           data-modal-presence={selectedMicroflow?.modal_presence_key || ""}
-          data-focus-key={worldState.interaction_modal.focus_key || ""}
-          data-risk-key={worldState.interaction_modal.risk_key || ""}
-          data-risk-focus-key={worldState.interaction_modal.risk_focus_key || ""}
-          data-entry-kind-key={worldState.interaction_modal.entry_kind_key || ""}
-          data-sequence-kind-key={worldState.interaction_modal.sequence_kind_key || ""}
+          {...buildSceneActionDataAttrs(worldState.interaction_modal)}
         >
           <div className="akrSceneInteractionModalHeader">
             <div className="akrSceneInteractionModalTitle">
@@ -2613,11 +2525,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                     className={`akrSceneInteractionModalLane is-${card.status_key} ${
                       selectedModalLane?.card_key === card.card_key ? "is-selected" : ""
                     } ${card.protocol_card_key || card.protocol_pod_key ? "is-actionable" : "is-passive"}`}
-                    data-focus-key={card.focus_key || ""}
-                    data-risk-key={card.risk_key || ""}
-                    data-risk-focus-key={card.risk_focus_key || ""}
-                    data-family-key={card.family_key || ""}
-                    data-microflow-key={card.microflow_key || ""}
+                    {...buildSceneActionDataAttrs(card)}
                     onMouseEnter={() => activateModalLane(card)}
                     onFocus={() => activateModalLane(card)}
                     onClick={() => activateModalLane(card)}
