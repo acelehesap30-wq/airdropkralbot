@@ -78,6 +78,14 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
   );
   assert.equal(state.interaction_surface.risk_context?.entry_kind_key, "world_entry_kind_hub_portal");
   assert.equal(state.interaction_surface.risk_context?.sequence_kind_key, "world_modal_kind_travel_gate");
+  assert.equal(
+    state.interaction_surface.risk_context_signature,
+    "travel_flow|central_hub:travel:travel_flow|green:stable:flat|world_entry_kind_hub_portal|world_modal_kind_travel_gate"
+  );
+  assert.equal(
+    state.interaction_surface.risk_context?.risk_context_signature,
+    "travel_flow|central_hub:travel:travel_flow|green:stable:flat|world_entry_kind_hub_portal|world_modal_kind_travel_gate"
+  );
   assert.equal(state.interaction_surface.action_items[0].action_key, SHELL_ACTION_KEY.PLAYER_SEASON_HALL);
   assert.equal(state.interaction_surface.action_items[0].family_key, "travel");
   assert.equal(state.interaction_surface.action_items[0].flow_key, "travel_flow");
@@ -156,6 +164,14 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
   assert.equal(
     state.interaction_modal.modal_cards[0].risk_context?.risk_focus_key,
     "central_hub:travel:travel_flow|green:stable:flat"
+  );
+  assert.equal(
+    state.interaction_modal.modal_cards[0].risk_context_signature,
+    "travel_flow|central_hub:travel:travel_flow|green:stable:flat|world_entry_kind_hub_portal|world_modal_kind_travel_gate"
+  );
+  assert.equal(
+    state.interaction_modal.modal_cards[0].risk_context?.risk_context_signature,
+    "travel_flow|central_hub:travel:travel_flow|green:stable:flat|world_entry_kind_hub_portal|world_modal_kind_travel_gate"
   );
   assert.equal(state.interaction_modal.modal_cards[0].protocol_card_key, state.interaction_modal.protocol_cards[0].card_key);
   assert.equal(state.interaction_modal.modal_cards[0].protocol_pod_key, state.interaction_modal.protocol_cards[0].flow_pods[0].pod_key);
@@ -473,6 +489,14 @@ test("buildDistrictWorldState trims pvp nodes on low-end profile", () => {
     state.interaction_modal.protocol_cards[0].risk_context?.risk_focus_key,
     "arena_prime:duel:duel_flow|green:stable:flat"
   );
+  assert.equal(
+    state.interaction_modal.protocol_cards[0].risk_context_signature,
+    "duel_flow|arena_prime:duel:duel_flow|green:stable:flat|world_entry_kind_duel_console|world_modal_kind_duel_sequence"
+  );
+  assert.equal(
+    state.interaction_modal.protocol_cards[0].risk_context?.risk_context_signature,
+    "duel_flow|arena_prime:duel:duel_flow|green:stable:flat|world_entry_kind_duel_console|world_modal_kind_duel_sequence"
+  );
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].focus_key, "arena_prime:duel:duel_flow");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].risk_focus_key, "arena_prime:duel:duel_flow|green:stable:flat");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].risk_health_band_key, "green");
@@ -488,6 +512,10 @@ test("buildDistrictWorldState trims pvp nodes on low-end profile", () => {
   assert.equal(
     state.interaction_modal.protocol_cards[0].flow_pods[0].risk_context?.risk_focus_key,
     "arena_prime:duel:duel_flow|green:stable:flat"
+  );
+  assert.equal(
+    state.interaction_modal.protocol_cards[0].flow_pods[0].risk_context_signature,
+    "duel_flow|arena_prime:duel:duel_flow|green:stable:flat|world_entry_kind_duel_console|world_modal_kind_duel_sequence"
   );
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].focus_key, "arena_prime:duel:duel_flow");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].risk_key, "green:stable:flat");
@@ -731,6 +759,14 @@ test("buildDistrictWorldState maps admin runtime into ops citadel", () => {
   assert.equal(state.interaction_modal.protocol_cards[2].flow_pods[0].microflow_cards[0].risk_attention_band_key, "watch");
   assert.equal(state.interaction_modal.protocol_cards[2].flow_pods[0].microflow_cards[0].risk_trend_direction_key, "flat");
   assert.equal(state.interaction_modal.protocol_cards[2].flow_pods[0].microflow_cards[0].entry_kind_key, "world_entry_kind_dispatch_console");
+  assert.equal(
+    state.interaction_modal.protocol_cards[2].flow_pods[0].microflow_cards[0].risk_context_signature,
+    "dispatch_flow|ops_citadel:dispatch:dispatch_flow|yellow:watch:flat|world_entry_kind_dispatch_console|world_modal_kind_dispatch_sequence"
+  );
+  assert.equal(
+    state.interaction_modal.protocol_cards[2].flow_pods[0].microflow_cards[0].risk_context?.risk_context_signature,
+    "dispatch_flow|ops_citadel:dispatch:dispatch_flow|yellow:watch:flat|world_entry_kind_dispatch_console|world_modal_kind_dispatch_sequence"
+  );
   assert.equal(state.interaction_modal.protocol_cards[2].flow_pods[0].microflow_cards[0].hud_tone_label_key, "world_hud_tone_ops_citadel");
   assert.equal(state.interaction_modal.protocol_cards[2].flow_pods[0].microflow_cards[0].personality_label_key, "world_personality_dispatch");
   assert.equal(state.interaction_modal.protocol_cards[2].flow_pods[0].microflow_cards[0].personality_band_key, "overwatch");

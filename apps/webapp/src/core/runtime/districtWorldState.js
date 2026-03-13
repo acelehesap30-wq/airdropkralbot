@@ -194,9 +194,21 @@ function buildProtocolMicroFlowRiskKey(loopState, microflow) {
   return [bands.risk_health_band_key, bands.risk_attention_band_key, bands.risk_trend_direction_key].filter(Boolean).join(":");
 }
 
+function buildRiskContextSignature(source, fallback = {}) {
+  const primary = asRecord(source);
+  const secondary = asRecord(fallback);
+  const flowKey = toText(primary.flow_key, toText(secondary.flow_key, ""));
+  const focusKey = toText(primary.focus_key, toText(secondary.focus_key, ""));
+  const riskKey = toText(primary.risk_key, toText(secondary.risk_key, ""));
+  const entryKindKey = toText(primary.entry_kind_key, toText(secondary.entry_kind_key, ""));
+  const sequenceKindKey = toText(primary.sequence_kind_key, toText(secondary.sequence_kind_key, ""));
+  return [flowKey, focusKey, riskKey, entryKindKey, sequenceKindKey].filter(Boolean).join("|");
+}
+
 function buildRiskContextShape(source, fallback = {}) {
   const primary = asRecord(source);
   const secondary = asRecord(fallback);
+  const riskContextSignature = buildRiskContextSignature(primary, secondary);
   return {
     district_key: toText(primary.district_key, toText(secondary.district_key, "")),
     family_key: toText(primary.family_key, toText(secondary.family_key, "")),
@@ -221,7 +233,8 @@ function buildRiskContextShape(source, fallback = {}) {
     sequence_kind_key: toText(
       primary.sequence_kind_key,
       toText(secondary.sequence_kind_key, "")
-    )
+    ),
+    risk_context_signature: riskContextSignature
   };
 }
 
@@ -5923,6 +5936,7 @@ function enrichDistrictInteractionModal(interactionModal, input) {
         ...item,
         action_context: actionContext ? { ...actionContext } : undefined,
         risk_context: riskContext,
+        risk_context_signature: riskContext.risk_context_signature || "",
         family_key: actionContext?.family_key || "",
         flow_key: actionContext?.flow_key || "",
         microflow_key: actionContext?.microflow_key || "",
@@ -5989,6 +6003,7 @@ function enrichDistrictInteractionModal(interactionModal, input) {
           focus_key: focusKey,
           risk_key: riskKey,
           risk_focus_key: riskFocusKey,
+          risk_context_signature: buildRiskContextSignature(actionContext),
           action_context: actionContext,
           risk_context: buildRiskContextShape(actionContext),
           risk_health_band_key: riskBands.risk_health_band_key,
@@ -6101,6 +6116,7 @@ function enrichDistrictInteractionModal(interactionModal, input) {
       ),
       action_context: podActionContext,
       risk_context: podRiskContext,
+      risk_context_signature: podRiskContext.risk_context_signature || "",
       microflow_cards: enrichedMicroflows,
       action_items: buildContextActionItems(flowPod.action_items, podActionContext)
     };
@@ -6129,6 +6145,7 @@ function enrichDistrictInteractionModal(interactionModal, input) {
     sequence_kind_key: toText(primaryPod.sequence_kind_key, toText(cardActionContext.sequence_kind_key, "")),
     action_context: cardActionContext,
     risk_context: cardRiskContext,
+    risk_context_signature: cardRiskContext.risk_context_signature || "",
     flow_pods: enrichedFlowPods,
     action_items: buildContextActionItems(protocolCard.action_items, cardActionContext)
   };
@@ -6188,7 +6205,8 @@ function enrichDistrictInteractionModal(interactionModal, input) {
       entry_kind_key: toText(modalActionContext.entry_kind_key, toText(microflow.entry_kind_key, "")),
       sequence_kind_key: toText(modalActionContext.sequence_kind_key, toText(microflow.sequence_kind_key, "")),
       action_context: modalActionContext,
-      risk_context: modalRiskContext
+      risk_context: modalRiskContext,
+      risk_context_signature: modalRiskContext.risk_context_signature || ""
     };
   });
   return {
@@ -6270,6 +6288,32 @@ function buildInteractionActionContextLookup(interactionModal) {
         },
         item
       ),
+      risk_context_signature: buildRiskContextSignature(
+        {
+          district_key: toText(actionContext.district_key || item.district_key, ""),
+          family_key: familyKey,
+          flow_key: flowKey,
+          microflow_key: microflowKey,
+          focus_key: focusKey,
+          risk_key: riskKey,
+          risk_focus_key: riskFocusKey,
+          risk_health_band_key: toText(
+            actionContext.risk_health_band_key || item.risk_health_band_key,
+            ""
+          ),
+          risk_attention_band_key: toText(
+            actionContext.risk_attention_band_key || item.risk_attention_band_key,
+            ""
+          ),
+          risk_trend_direction_key: toText(
+            actionContext.risk_trend_direction_key || item.risk_trend_direction_key,
+            ""
+          ),
+          entry_kind_key: toText(actionContext.entry_kind_key || item.entry_kind_key, ""),
+          sequence_kind_key: toText(actionContext.sequence_kind_key || item.sequence_kind_key, "")
+        },
+        item
+      ),
       family_key: familyKey,
       flow_key: flowKey,
       microflow_key: microflowKey,
@@ -6318,6 +6362,7 @@ function enrichInteractionActionItems(items, actionContextLookup) {
       ...item,
       action_context: meta.action_context ? { ...meta.action_context } : record.action_context,
       risk_context: buildRiskContextShape(meta.risk_context || meta, record),
+      risk_context_signature: buildRiskContextSignature(meta.risk_context || meta, record),
       family_key: toText(meta.family_key, ""),
       flow_key: toText(meta.flow_key, ""),
       microflow_key: toText(meta.microflow_key, ""),
@@ -6465,7 +6510,8 @@ export function buildDistrictWorldState(input = {}) {
         ...interactionSheet,
         ...rootInteractionContext,
         action_context: { ...rootInteractionActionContext },
-        risk_context: rootRiskContext
+        risk_context: rootRiskContext,
+        risk_context_signature: rootRiskContext.risk_context_signature || ""
       }
     : interactionSheet;
   const finalInteractionSurface = enrichedInteractionSurface
@@ -6481,7 +6527,8 @@ export function buildDistrictWorldState(input = {}) {
           ""
         ),
         action_context: { ...rootInteractionActionContext },
-        risk_context: rootRiskContext
+        risk_context: rootRiskContext,
+        risk_context_signature: rootRiskContext.risk_context_signature || ""
       }
     : enrichedInteractionSurface;
   const finalInteractionFlow = interactionFlow
@@ -6494,7 +6541,8 @@ export function buildDistrictWorldState(input = {}) {
           ""
         ),
         action_context: { ...rootInteractionActionContext },
-        risk_context: rootRiskContext
+        risk_context: rootRiskContext,
+        risk_context_signature: rootRiskContext.risk_context_signature || ""
       }
     : interactionFlow;
   const finalInteractionEntry = interactionEntry
@@ -6507,7 +6555,8 @@ export function buildDistrictWorldState(input = {}) {
           ""
         ),
         action_context: { ...rootInteractionActionContext },
-        risk_context: rootRiskContext
+        risk_context: rootRiskContext,
+        risk_context_signature: rootRiskContext.risk_context_signature || ""
       }
     : interactionEntry;
   const finalInteractionTerminal = enrichedInteractionTerminal
@@ -6519,7 +6568,8 @@ export function buildDistrictWorldState(input = {}) {
           ""
         ),
         action_context: { ...rootInteractionActionContext },
-        risk_context: rootRiskContext
+        risk_context: rootRiskContext,
+        risk_context_signature: rootRiskContext.risk_context_signature || ""
       }
     : enrichedInteractionTerminal;
   const finalInteractionModal = enrichedInteractionModal
@@ -6535,7 +6585,8 @@ export function buildDistrictWorldState(input = {}) {
           ""
         ),
         action_context: { ...rootInteractionActionContext },
-        risk_context: rootRiskContext
+        risk_context: rootRiskContext,
+        risk_context_signature: rootRiskContext.risk_context_signature || ""
       }
     : enrichedInteractionModal;
 

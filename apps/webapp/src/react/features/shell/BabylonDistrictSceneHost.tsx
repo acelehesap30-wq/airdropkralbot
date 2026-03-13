@@ -35,6 +35,7 @@ type BabylonDistrictSceneHostProps = {
     focusKey?: string;
     riskKey?: string;
     riskFocusKey?: string;
+    riskContextSignature?: string;
     entryKindKey: string;
     sequenceKindKey: string;
     loopStatusKey: string;
@@ -71,6 +72,7 @@ type BabylonDistrictSceneHostProps = {
     riskHealthBandKey?: string;
     riskAttentionBandKey?: string;
     riskTrendDirectionKey?: string;
+    riskContextSignature?: string;
     entryKindKey?: string;
     sequenceKindKey?: string;
     sourceType?: string;
@@ -112,6 +114,7 @@ type RiskContext = {
   risk_trend_direction_key?: string;
   entry_kind_key?: string;
   sequence_kind_key?: string;
+  risk_context_signature?: string;
 };
 
 type ClusterActionItem = {
@@ -143,6 +146,7 @@ type ClusterActionItem = {
   risk_trend_direction_key?: string;
   entry_kind_key?: string;
   sequence_kind_key?: string;
+  risk_context_signature?: string;
   risk_context?: RiskContext;
   action_context?: {
     district_key?: string;
@@ -157,6 +161,7 @@ type ClusterActionItem = {
     risk_trend_direction_key?: string;
     entry_kind_key?: string;
     sequence_kind_key?: string;
+    risk_context_signature?: string;
   };
 };
 
@@ -176,6 +181,7 @@ type ProtocolCardActionItem = {
   risk_health_band_key?: string;
   risk_attention_band_key?: string;
   risk_trend_direction_key?: string;
+  risk_context_signature?: string;
   risk_context?: RiskContext;
   action_context?: ClusterActionItem["action_context"];
 };
@@ -202,6 +208,7 @@ type InteractionModalLaneCard = {
   risk_trend_direction_key?: string;
   entry_kind_key?: string;
   sequence_kind_key?: string;
+  risk_context_signature?: string;
   risk_context?: RiskContext;
   action_context?: ClusterActionItem["action_context"];
 };
@@ -233,6 +240,7 @@ type ProtocolCardFlowPod = {
   risk_health_band_key?: string;
   risk_attention_band_key?: string;
   risk_trend_direction_key?: string;
+  risk_context_signature?: string;
   action_context?: ClusterActionItem["action_context"];
   rows?: Array<{ label_key: string; value: string; status_key: string }>;
   signal_rows?: Array<{ label_key: string; value: string; status_key: string }>;
@@ -255,6 +263,7 @@ type ProtocolCardFlowPod = {
     risk_health_band_key?: string;
     risk_attention_band_key?: string;
     risk_trend_direction_key?: string;
+    risk_context_signature?: string;
     risk_context?: RiskContext;
     action_context?: {
       district_key?: string;
@@ -265,10 +274,11 @@ type ProtocolCardFlowPod = {
       risk_key?: string;
       risk_focus_key?: string;
       risk_health_band_key?: string;
-      risk_attention_band_key?: string;
-      risk_trend_direction_key?: string;
-      entry_kind_key?: string;
-      sequence_kind_key?: string;
+    risk_attention_band_key?: string;
+    risk_trend_direction_key?: string;
+    risk_context_signature?: string;
+    entry_kind_key?: string;
+    sequence_kind_key?: string;
     };
     entry_kind_key?: string;
     sequence_kind_key?: string;
@@ -378,6 +388,7 @@ type ProtocolCard = {
   risk_trend_direction_key?: string;
   entry_kind_key?: string;
   sequence_kind_key?: string;
+  risk_context_signature?: string;
   risk_context?: RiskContext;
   action_context?: ClusterActionItem["action_context"];
   preview_rows?: Array<{ label_key: string; value: string; status_key: string }>;
@@ -403,6 +414,7 @@ type SceneActionLike = {
   risk_trend_direction_key?: string;
   entry_kind_key?: string;
   sequence_kind_key?: string;
+  risk_context_signature?: string;
 };
 
 function asRiskContext(value: unknown): RiskContext {
@@ -624,6 +636,12 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
         riskFocusKey: String(
           riskContext.risk_focus_key || actionContext.risk_focus_key || selectedMicroflow?.risk_focus_key || ""
         ),
+        riskContextSignature: String(
+          riskContext.risk_context_signature ||
+            actionContext.risk_context_signature ||
+            selectedMicroflow?.risk_context_signature ||
+            ""
+        ),
         entryKindKey: String(
           riskContext.entry_kind_key ||
             actionContext.entry_kind_key ||
@@ -725,6 +743,16 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
             selectedLoopActionContext.riskFocusKey ||
             ""
         ),
+        riskContextSignature: String(
+          actionRiskContext.risk_context_signature ||
+            actionContext.risk_context_signature ||
+            action?.risk_context_signature ||
+            fallbackRiskContext.risk_context_signature ||
+            fallbackContext.risk_context_signature ||
+            fallback?.risk_context_signature ||
+            selectedLoopActionContext.riskContextSignature ||
+            ""
+        ),
         entryKindKey: String(
           actionRiskContext.entry_kind_key ||
             actionContext.entry_kind_key ||
@@ -803,6 +831,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
         "data-focus-key": context.focusKey || "",
         "data-risk-key": context.riskKey || "",
         "data-risk-focus-key": context.riskFocusKey || "",
+        "data-risk-context-signature": context.riskContextSignature || "",
         "data-entry-kind-key": context.entryKindKey || "",
         "data-sequence-kind-key": context.sequenceKindKey || "",
         "data-risk-health-band": context.riskHealthBandKey || "",
@@ -830,6 +859,9 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
       }
       if (context.riskFocusKey) {
         parts.push(`RFK ${context.riskFocusKey}`);
+      }
+      if (context.riskContextSignature) {
+        parts.push(`RCS ${context.riskContextSignature}`);
       }
       if (!parts.length) {
         return null;
@@ -910,6 +942,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
       focus_key: selectedMicroflow.focus_key || "",
       risk_key: selectedMicroflow.risk_key || "",
       risk_focus_key: selectedMicroflow.risk_focus_key || "",
+      risk_context_signature: selectedMicroflow.risk_context_signature || "",
       loop_status_key: selectedMicroflow.loop_status_key || selectedMicroflow.status_key || "",
       loop_stage_value: selectedMicroflow.loop_stage_value || selectedMicroflow.stage_value || "",
       sequence_kind_key: selectedMicroflow.sequence_kind_key || "",
@@ -936,6 +969,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
       focusKey: selectedMicroflow.focus_key || undefined,
       riskKey: selectedMicroflow.risk_key || undefined,
       riskFocusKey: selectedMicroflow.risk_focus_key || undefined,
+      riskContextSignature: selectedMicroflow.risk_context_signature || undefined,
       entryKindKey: String(selectedMicroflow.entry_kind_key || ""),
       sequenceKindKey: String(selectedMicroflow.sequence_kind_key || ""),
       loopStatusKey: String(selectedMicroflow.loop_status_key || selectedMicroflow.status_key || ""),
@@ -976,9 +1010,18 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
       laneKey: string;
       label: string;
       labelKey?: string;
+      familyKey?: string;
+      flowKey?: string;
+      microflowKey?: string;
       focusKey?: string;
       riskKey?: string;
       riskFocusKey?: string;
+      riskHealthBandKey?: string;
+      riskAttentionBandKey?: string;
+      riskTrendDirectionKey?: string;
+      riskContextSignature?: string;
+      entryKindKey?: string;
+      sequenceKindKey?: string;
       sourceType?: string;
       actorKey?: string;
       interactionKind?: string;

@@ -20,6 +20,32 @@ export type SceneStatusDeckBridgePayload = {
   profileLine?: string;
   loopLine?: string;
   liteBadge?: SceneLiteBadgePayload;
+  riskContextSignature?: string;
+  focusKey?: string;
+  riskKey?: string;
+  riskFocusKey?: string;
+  familyKey?: string;
+  flowKey?: string;
+  microflowKey?: string;
+  entryKindKey?: string;
+  sequenceKindKey?: string;
+  riskHealthBandKey?: string;
+  riskAttentionBandKey?: string;
+  riskTrendDirectionKey?: string;
+  loopContext?: {
+    family_key?: string;
+    flow_key?: string;
+    microflow_key?: string;
+    focus_key?: string;
+    risk_key?: string;
+    risk_focus_key?: string;
+    risk_context_signature?: string;
+    risk_health_band_key?: string;
+    risk_attention_band_key?: string;
+    risk_trend_direction_key?: string;
+    entry_kind_key?: string;
+    sequence_kind_key?: string;
+  } | null;
 };
 
 type SceneStatusDeckBridge = {
@@ -81,6 +107,32 @@ function render(payload: SceneStatusDeckBridgePayload): boolean {
   if (!deck || !payload || !Array.isArray(payload.chips)) {
     return false;
   }
+  const loopContext = payload.loopContext || {};
+  const riskContextSignature = String(payload.riskContextSignature || loopContext.risk_context_signature || "").trim();
+  const focusKey = String(payload.focusKey || loopContext.focus_key || "").trim();
+  const riskKey = String(payload.riskKey || loopContext.risk_key || "").trim();
+  const riskFocusKey = String(payload.riskFocusKey || loopContext.risk_focus_key || "").trim();
+  const familyKey = String(payload.familyKey || loopContext.family_key || "").trim();
+  const flowKey = String(payload.flowKey || loopContext.flow_key || "").trim();
+  const microflowKey = String(payload.microflowKey || loopContext.microflow_key || "").trim();
+  const entryKindKey = String(payload.entryKindKey || loopContext.entry_kind_key || "").trim();
+  const sequenceKindKey = String(payload.sequenceKindKey || loopContext.sequence_kind_key || "").trim();
+  const riskHealthBandKey = String(payload.riskHealthBandKey || loopContext.risk_health_band_key || "").trim();
+  const riskAttentionBandKey = String(payload.riskAttentionBandKey || loopContext.risk_attention_band_key || "").trim();
+  const riskTrendDirectionKey = String(payload.riskTrendDirectionKey || loopContext.risk_trend_direction_key || "").trim();
+
+  deck.dataset.riskContextSignature = riskContextSignature;
+  deck.dataset.focusKey = focusKey;
+  deck.dataset.riskKey = riskKey;
+  deck.dataset.riskFocusKey = riskFocusKey;
+  deck.dataset.familyKey = familyKey;
+  deck.dataset.flowKey = flowKey;
+  deck.dataset.microflowKey = microflowKey;
+  deck.dataset.entryKindKey = entryKindKey;
+  deck.dataset.sequenceKindKey = sequenceKindKey;
+  deck.dataset.riskHealthBandKey = riskHealthBandKey;
+  deck.dataset.riskAttentionBandKey = riskAttentionBandKey;
+  deck.dataset.riskTrendDirectionKey = riskTrendDirectionKey;
   payload.chips.forEach(renderChip);
   const profileLineNode = byId<HTMLElement>("sceneProfileLine");
   if (profileLineNode && payload.profileLine) {
@@ -89,6 +141,19 @@ function render(payload: SceneStatusDeckBridgePayload): boolean {
   const loopLineNode = byId<HTMLElement>("sceneLoopLine");
   if (loopLineNode) {
     loopLineNode.textContent = String(payload.loopLine || "Loop state bekleniyor.");
+    loopLineNode.dataset.riskContextSignature = riskContextSignature;
+    loopLineNode.dataset.focusKey = focusKey;
+    loopLineNode.dataset.riskKey = riskKey;
+    loopLineNode.dataset.riskFocusKey = riskFocusKey;
+    loopLineNode.dataset.familyKey = familyKey;
+    loopLineNode.dataset.flowKey = flowKey;
+    loopLineNode.dataset.microflowKey = microflowKey;
+    loopLineNode.dataset.entryKindKey = entryKindKey;
+    loopLineNode.dataset.sequenceKindKey = sequenceKindKey;
+    loopLineNode.dataset.riskHealthBandKey = riskHealthBandKey;
+    loopLineNode.dataset.riskAttentionBandKey = riskAttentionBandKey;
+    loopLineNode.dataset.riskTrendDirectionKey = riskTrendDirectionKey;
+    loopLineNode.title = riskContextSignature ? `RCS ${riskContextSignature}` : "";
   }
   renderLiteBadge(payload.liteBadge);
   return true;

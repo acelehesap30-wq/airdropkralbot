@@ -228,6 +228,32 @@ function formatLoopRows(rows, fallback = "") {
     .join(" | ");
 }
 
+function resolveSelectedLoopFamilyKey(selectedLoop) {
+  const row = asRecord(selectedLoop);
+  const explicitFamilyKey = toText(row.familyKey || row.family_key, "").toLowerCase();
+  if (explicitFamilyKey) {
+    return explicitFamilyKey;
+  }
+  const explicitFocusKey = toText(row.focusKey || row.focus_key, "").toLowerCase();
+  if (explicitFocusKey.split(":").length >= 3) {
+    return toText(explicitFocusKey.split(":")[1], "").toLowerCase();
+  }
+  switch (toText(row.districtKey || row.district_key, "").toLowerCase()) {
+    case "arena_prime":
+      return "duel";
+    case "mission_quarter":
+      return "loot";
+    case "exchange_district":
+      return "wallet";
+    case "ops_citadel":
+      return "queue";
+    case "central_hub":
+      return "travel";
+    default:
+      return "";
+  }
+}
+
 function buildSceneLoopDeckPayload(scene) {
   const selectedLoop = asRecord(scene?.selectedLoop);
   if (!selectedLoop) {
@@ -244,9 +270,16 @@ function buildSceneLoopDeckPayload(scene) {
       riskKey: "",
       riskFocusKey: "",
       protocolPodKey: "",
+      familyKey: "",
+      flowKey: "",
       personalityLabel: "",
       personalityCaption: "",
       densityLabel: "",
+      riskHealthBandKey: "",
+      riskAttentionBandKey: "",
+      riskTrendDirectionKey: "",
+      riskContextSignature: "",
+      riskContext: null,
       loopRows: [],
       loopSignalRows: [],
       sequenceRows: [],
@@ -267,22 +300,53 @@ function buildSceneLoopDeckPayload(scene) {
   const personalityLabel = formatRuntimeKeyLabel(selectedLoop.personalityLabelKey || selectedLoop.personalityKey, "");
   const personalityCaption = formatRuntimeKeyLabel(selectedLoop.personalityCaptionKey, "");
   const densityLabel = formatRuntimeKeyLabel(selectedLoop.densityLabelKey, "");
+  const selectedLoopFamilyKey = resolveSelectedLoopFamilyKey(selectedLoop);
+  const loopMeta = buildLoopBridgeMeta(
+    {
+      ...selectedLoop,
+      family_key: selectedLoopFamilyKey
+    },
+    selectedLoopFamilyKey
+  );
+  const providedRiskContext = asRecord(selectedLoop.riskContext || selectedLoop.risk_context);
   return {
     lineText: `${districtLabel} | ${entryLabel} | ${statusLabel}${personalityLabel ? ` | ${personalityLabel}` : ""} | ${sequenceLabel} ${stageLabel} | ${microflowLabel}`,
     districtKey: toText(selectedLoop.districtKey, ""),
     loopStatusKey: toText(selectedLoop.loopStatusKey, ""),
     loopStatusLabel: statusLabel,
     stageValue: stageLabel,
-    entryKindKey: toText(selectedLoop.entryKindKey, ""),
-    sequenceKindKey: toText(selectedLoop.sequenceKindKey, ""),
-    microflowKey: toText(selectedLoop.microflowKey, ""),
-    focusKey: toText(selectedLoop.focusKey || selectedLoop.focus_key, ""),
-    riskKey: toText(selectedLoop.riskKey || selectedLoop.risk_key, ""),
-    riskFocusKey: toText(selectedLoop.riskFocusKey || selectedLoop.risk_focus_key, ""),
+    entryKindKey: toText(selectedLoop.entryKindKey || selectedLoop.entry_kind_key || loopMeta.entry_kind_key, ""),
+    sequenceKindKey: toText(
+      selectedLoop.sequenceKindKey || selectedLoop.sequence_kind_key || loopMeta.sequence_kind_key,
+      ""
+    ),
+    microflowKey: toText(selectedLoop.microflowKey || selectedLoop.microflow_key || loopMeta.microflow_key, ""),
+    focusKey: toText(selectedLoop.focusKey || selectedLoop.focus_key || loopMeta.focus_key, ""),
+    riskKey: toText(selectedLoop.riskKey || selectedLoop.risk_key || loopMeta.risk_key, ""),
+    riskFocusKey: toText(selectedLoop.riskFocusKey || selectedLoop.risk_focus_key || loopMeta.risk_focus_key, ""),
     protocolPodKey: toText(selectedLoop.protocolPodKey, ""),
+    familyKey: toText(selectedLoop.familyKey || selectedLoop.family_key || selectedLoopFamilyKey || loopMeta.family_key, ""),
+    flowKey: toText(selectedLoop.flowKey || selectedLoop.flow_key || loopMeta.flow_key, ""),
     personalityLabel,
     personalityCaption,
     densityLabel,
+    riskHealthBandKey: toText(
+      selectedLoop.riskHealthBandKey || selectedLoop.risk_health_band_key || loopMeta.risk_health_band_key,
+      ""
+    ),
+    riskAttentionBandKey: toText(
+      selectedLoop.riskAttentionBandKey || selectedLoop.risk_attention_band_key || loopMeta.risk_attention_band_key,
+      ""
+    ),
+    riskTrendDirectionKey: toText(
+      selectedLoop.riskTrendDirectionKey || selectedLoop.risk_trend_direction_key || loopMeta.risk_trend_direction_key,
+      ""
+    ),
+    riskContextSignature: toText(
+      selectedLoop.riskContextSignature || selectedLoop.risk_context_signature || loopMeta.risk_context_signature,
+      ""
+    ),
+    riskContext: Object.keys(providedRiskContext).length ? providedRiskContext : loopMeta.risk_context || null,
     loopRows: asArray(selectedLoop.loopRows).slice(0, 3),
     loopSignalRows: asArray(selectedLoop.loopSignalRows).slice(0, 3),
     sequenceRows: asArray(selectedLoop.sequenceRows).slice(0, 3),
@@ -757,16 +821,15 @@ function buildLoopBridgeMeta(source, familyKey = "") {
   const risk_health_band_key = inferLoopHealthBandKey(row);
   const risk_attention_band_key = inferLoopAttentionBandKey(row);
   const risk_trend_direction_key = inferLoopTrendDirectionKey(row);
-  const risk_context_signature = buildLoopRiskContextSignatureText(
-    {
-      ...row,
-      family_key,
-      microflow_key,
-      entry_kind_key,
-      sequence_kind_key
-    },
-    familyKey
-  );
+  const risk_context_signature = [
+    flow_key,
+    focus_key,
+    `${risk_health_band_key}:${risk_attention_band_key}:${risk_trend_direction_key}`,
+    entry_kind_key,
+    sequence_kind_key
+  ]
+    .filter(Boolean)
+    .join("|");
   const risk_context = {
     family_key,
     flow_key,
@@ -6632,10 +6695,24 @@ function buildPlayerBridgePayloads(options = {}) {
     nowMs: Date.now()
   };
 
+  const sceneLoopDeck = buildSceneLoopDeckPayload(scene);
   return {
     sceneStatus: {
       ...(buildSceneStatusPayload(profileMetrics) || {}),
-      loopLine: buildSceneLoopDeckPayload(scene).lineText
+      loopLine: sceneLoopDeck.lineText,
+      loopContext: sceneLoopDeck.riskContext,
+      riskContextSignature: sceneLoopDeck.riskContextSignature,
+      focusKey: sceneLoopDeck.focusKey,
+      riskKey: sceneLoopDeck.riskKey,
+      riskFocusKey: sceneLoopDeck.riskFocusKey,
+      familyKey: sceneLoopDeck.familyKey,
+      flowKey: sceneLoopDeck.flowKey,
+      microflowKey: sceneLoopDeck.microflowKey,
+      entryKindKey: sceneLoopDeck.entryKindKey,
+      sequenceKindKey: sceneLoopDeck.sequenceKindKey,
+      riskHealthBandKey: sceneLoopDeck.riskHealthBandKey,
+      riskAttentionBandKey: sceneLoopDeck.riskAttentionBandKey,
+      riskTrendDirectionKey: sceneLoopDeck.riskTrendDirectionKey
     },
     sceneTelemetry: buildSceneTelemetryPayload(mutators, telemetryInput),
     publicTelemetry: {

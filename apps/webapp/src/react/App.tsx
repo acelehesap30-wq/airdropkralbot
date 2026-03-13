@@ -577,6 +577,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
       focusKey?: string;
       riskKey?: string;
       riskFocusKey?: string;
+      riskContextSignature?: string;
       riskHealthBandKey?: string;
       riskAttentionBandKey?: string;
       riskTrendDirectionKey?: string;
@@ -654,6 +655,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
           source_focus_key: String(payload.focusKey || ""),
           source_risk_key: String(payload.riskKey || ""),
           source_risk_focus_key: String(payload.riskFocusKey || ""),
+          source_risk_context_signature: String(payload.riskContextSignature || ""),
           source_risk_health_band_key: String(payload.riskHealthBandKey || ""),
           source_risk_attention_band_key: String(payload.riskAttentionBandKey || ""),
           source_risk_trend_direction_key: String(payload.riskTrendDirectionKey || ""),
@@ -682,6 +684,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
       focusKey?: string;
       riskKey?: string;
       riskFocusKey?: string;
+      riskContextSignature?: string;
       entryKindKey: string;
       sequenceKindKey: string;
       loopStatusKey: string;
@@ -726,6 +729,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
           focus_key: String(payload.focusKey || ""),
           risk_key: String(payload.riskKey || ""),
           risk_focus_key: String(payload.riskFocusKey || ""),
+          risk_context_signature: String(payload.riskContextSignature || ""),
           entry_kind_key: payload.entryKindKey,
           sequence_kind_key: payload.sequenceKindKey,
           loop_status_key: payload.loopStatusKey,

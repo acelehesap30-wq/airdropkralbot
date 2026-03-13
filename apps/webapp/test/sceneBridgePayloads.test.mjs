@@ -321,6 +321,36 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
 
   assert.equal(payloads.sceneStatus.profileLine, "Profile online");
   assert.match(payloads.sceneStatus.loopLine, /ARENA PRIME/);
+  assert.equal(payloads.sceneStatus.focusKey, "arena_prime:duel:duel_flow");
+  assert.equal(payloads.sceneStatus.riskKey, "no_data:no_data:no_data");
+  assert.equal(payloads.sceneStatus.riskFocusKey, "arena_prime:duel:duel_flow|no_data:no_data:no_data");
+  assert.equal(payloads.sceneStatus.familyKey, "duel");
+  assert.equal(payloads.sceneStatus.flowKey, "duel:duel_flow");
+  assert.equal(payloads.sceneStatus.microflowKey, "duel_flow");
+  assert.equal(payloads.sceneStatus.entryKindKey, "world_entry_kind_duel_console");
+  assert.equal(payloads.sceneStatus.sequenceKindKey, "world_modal_kind_duel_sequence");
+  assert.equal(payloads.sceneStatus.riskHealthBandKey, "no_data");
+  assert.equal(payloads.sceneStatus.riskAttentionBandKey, "no_data");
+  assert.equal(payloads.sceneStatus.riskTrendDirectionKey, "no_data");
+  assert.equal(
+    payloads.sceneStatus.riskContextSignature,
+    "duel:duel_flow|arena_prime:duel:duel_flow|no_data:no_data:no_data|world_entry_kind_duel_console|world_modal_kind_duel_sequence"
+  );
+  assert.deepEqual(payloads.sceneStatus.loopContext, {
+    family_key: "duel",
+    flow_key: "duel:duel_flow",
+    microflow_key: "duel_flow",
+    focus_key: "arena_prime:duel:duel_flow",
+    risk_key: "no_data:no_data:no_data",
+    risk_focus_key: "arena_prime:duel:duel_flow|no_data:no_data:no_data",
+    risk_health_band_key: "no_data",
+    risk_attention_band_key: "no_data",
+    risk_trend_direction_key: "no_data",
+    entry_kind_key: "world_entry_kind_duel_console",
+    sequence_kind_key: "world_modal_kind_duel_sequence",
+    risk_context_signature:
+      "duel:duel_flow|arena_prime:duel:duel_flow|no_data:no_data:no_data|world_entry_kind_duel_console|world_modal_kind_duel_sequence"
+  });
   assert.equal(payloads.sceneTelemetry.alarm.badgeText, "SCENE WARN");
   assert.equal(payloads.publicTelemetry.assetManifest.badgeText, "ASSET 3/4");
   assert.equal(payloads.publicTelemetry.pvpLeaderboard.badgeText, "TOP 2");
@@ -515,9 +545,9 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
   assert.match(payloads.combatHud.loopLadderRiskPanels?.[2]?.lines?.[5] || "", /^RISK [a-z_]+:[a-z_]+:[a-z_]+$/i);
   assert.equal(payloads.combatHud.loopLadderSubflowCards?.length, 3);
   assert.equal(payloads.combatHud.loopLadderSubflowCards?.[0]?.title, "RANK");
-  assert.equal(payloads.combatHud.loopLadderSubflowCards?.[0]?.focus_key, "arena_prime:ladder:duel_flow");
-  assert.equal(payloads.combatHud.loopLadderSubflowCards?.[0]?.flow_key, "ladder:duel_flow");
-  assert.equal(payloads.combatHud.loopLadderSubflowCards?.[0]?.risk_context?.flow_key, "ladder:duel_flow");
+  assert.equal(payloads.combatHud.loopLadderSubflowCards?.[0]?.focus_key, "arena_prime:duel:duel_flow");
+  assert.equal(payloads.combatHud.loopLadderSubflowCards?.[0]?.flow_key, "duel:duel_flow");
+  assert.equal(payloads.combatHud.loopLadderSubflowCards?.[0]?.risk_context?.flow_key, "duel:duel_flow");
   assert.equal(payloads.combatHud.loopLadderSubflowBlocks?.length, 3);
   assert.equal(payloads.combatHud.loopLadderSubflowBlocks?.[0]?.title, "RANK");
   assert.equal(payloads.combatHud.loopLadderSubflowPanels?.length, 3);
@@ -526,7 +556,7 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
   assert.equal(payloads.combatHud.loopLadderSubflowPanels?.[2]?.title, "PUSH");
   assert.match(
     payloads.combatHud.loopLadderSubflowPanels?.[2]?.risk_focus_key || "",
-    /^arena_prime:ladder:duel_flow\|[a-z_]+:[a-z_]+:[a-z_]+$/i
+    /^arena_prime:duel:duel_flow\|[a-z_]+:[a-z_]+:[a-z_]+$/i
   );
   assert.match(payloads.combatHud.loopTelemetryFamilyText, /FLOW DUEL FLOW \| STATUS ACTIVE \| DIAG HOT/i);
   assert.match(payloads.combatHud.loopTelemetryFlowText, /PERSONA (WORLD )?PERSONALITY ASSAULT \| SEQ DUEL SEQUENCE \| FLOW DUEL FLOW/i);
@@ -722,7 +752,7 @@ test("buildPlayerBridgePayloads surfaces active vault loop micro panels from sel
   assert.equal(payloads.tokenOverview.loopPayoutFlowBlocks?.length, 3);
   assert.equal(payloads.tokenOverview.loopPayoutFlowPanels?.length, 3);
   assert.equal(payloads.tokenOverview.loopPayoutFlowPanels?.[0]?.title, "REQUEST");
-  assert.match(payloads.tokenOverview.loopPayoutFlowCards?.[0]?.hint || "", /FOCUS exchange_district:payout:payout_flow/i);
+  assert.match(payloads.tokenOverview.loopPayoutFlowCards?.[0]?.hint || "", /FOCUS exchange_district:wallet:payout_flow/i);
   assert.equal(payloads.tokenOverview.loopPayoutFlowPanels?.[1]?.title, "STATE");
   assert.equal(payloads.tokenOverview.loopPayoutFlowPanels?.[2]?.title, "PROOF");
   assert.equal(payloads.tokenOverview.loopPayoutRiskCards?.length, 4);
@@ -842,11 +872,11 @@ test("buildPlayerBridgePayloads surfaces active vault loop micro panels from sel
   );
   assert.equal(
     payloads.tokenOverview.loopWalletFlowCards?.[0]?.risk_context_signature,
-    "wallet:payout_flow|exchange_district:wallet:payout_flow|red:alert:no_data|world_entry_kind_payout_terminal|world_modal_kind_payout_route"
+    "wallet:payout_flow|exchange_district:wallet:payout_flow|green:stable:flat|world_entry_kind_payout_terminal|world_modal_kind_payout_route"
   );
   assert.equal(
     payloads.tokenOverview.loopWalletFlowCards?.[0]?.risk_context?.risk_context_signature,
-    "wallet:payout_flow|exchange_district:wallet:payout_flow|red:alert:no_data|world_entry_kind_payout_terminal|world_modal_kind_payout_route"
+    "wallet:payout_flow|exchange_district:wallet:payout_flow|green:stable:flat|world_entry_kind_payout_terminal|world_modal_kind_payout_route"
   );
   assert.equal(payloads.tokenOverview.loopWalletFlowBlocks?.length, 3);
   assert.equal(payloads.tokenOverview.loopWalletFlowPanels?.length, 3);
@@ -1003,7 +1033,7 @@ test("buildPlayerBridgePayloads surfaces active tasks loop micro panels from sel
   assert.equal(payloads.operations.loop.offerFlowBlocks?.length, 3);
   assert.equal(payloads.operations.loop.offerFlowPanels?.length, 3);
   assert.equal(payloads.operations.loop.offerFlowPanels?.[0]?.title, "OFFER");
-  assert.match(payloads.operations.loop.offerFlowCards?.[0]?.hint || "", /FOCUS mission_quarter:offer:claim_flow/i);
+  assert.match(payloads.operations.loop.offerFlowCards?.[0]?.hint || "", /FOCUS mission_quarter:loot:claim_flow/i);
   assert.equal(payloads.operations.loop.offerFlowPanels?.[1]?.title, "STATUS");
   assert.equal(payloads.operations.loop.offerFlowPanels?.[2]?.title, "STACK");
   assert.equal(payloads.operations.loop.offerRiskCards?.length, 4);
@@ -1332,8 +1362,8 @@ test("buildAdminBridgePayloads produces runtime, asset and audit cards from admi
   assert.equal(payloads.runtime.loopDispatchFlowCards?.length, 3);
   assert.equal(payloads.runtime.loopDispatchFlowCards?.[0]?.title, "QUEUE");
   assert.match(payloads.runtime.loopDispatchFlowCards?.[0]?.value || "", /DISPATCH CONSOLE|DISPATCH FLOW/i);
-  assert.equal(payloads.runtime.loopDispatchFlowCards?.[0]?.focus_key, "ops_citadel:dispatch:dispatch_flow");
-  assert.equal(payloads.runtime.loopDispatchFlowCards?.[0]?.flow_key, "dispatch:dispatch_flow");
+  assert.equal(payloads.runtime.loopDispatchFlowCards?.[0]?.focus_key, "ops_citadel:queue:dispatch_flow");
+  assert.equal(payloads.runtime.loopDispatchFlowCards?.[0]?.flow_key, "queue:dispatch_flow");
   assert.equal(payloads.runtime.loopDispatchFlowCards?.[0]?.entry_kind_key, "world_entry_kind_dispatch_console");
   assert.equal(payloads.runtime.loopDispatchFlowCards?.[0]?.sequence_kind_key, "world_modal_kind_dispatch_sequence");
   assert.equal(payloads.runtime.loopDispatchFlowCards?.[0]?.risk_health_band_key, "red");
@@ -1341,10 +1371,10 @@ test("buildAdminBridgePayloads produces runtime, asset and audit cards from admi
   assert.equal(payloads.runtime.loopDispatchFlowCards?.[0]?.risk_trend_direction_key, "degrading");
   assert.match(
     payloads.runtime.loopDispatchFlowCards?.[0]?.risk_focus_key || "",
-    /^ops_citadel:dispatch:dispatch_flow\|[a-z_]+:[a-z_]+:[a-z_]+$/i
+    /^ops_citadel:queue:dispatch_flow\|[a-z_]+:[a-z_]+:[a-z_]+$/i
   );
-  assert.equal(payloads.runtime.loopDispatchFlowCards?.[0]?.risk_context?.flow_key, "dispatch:dispatch_flow");
-  assert.equal(payloads.runtime.loopDispatchFlowCards?.[0]?.risk_context?.focus_key, "ops_citadel:dispatch:dispatch_flow");
+  assert.equal(payloads.runtime.loopDispatchFlowCards?.[0]?.risk_context?.flow_key, "queue:dispatch_flow");
+  assert.equal(payloads.runtime.loopDispatchFlowCards?.[0]?.risk_context?.focus_key, "ops_citadel:queue:dispatch_flow");
   assert.equal(
     payloads.runtime.loopDispatchFlowCards?.[0]?.risk_context?.entry_kind_key,
     "world_entry_kind_dispatch_console"
@@ -1355,11 +1385,11 @@ test("buildAdminBridgePayloads produces runtime, asset and audit cards from admi
   );
   assert.equal(
     payloads.runtime.loopDispatchFlowCards?.[0]?.risk_context_signature,
-    "dispatch:dispatch_flow|ops_citadel:dispatch:dispatch_flow|red:alert:no_data|world_entry_kind_dispatch_console|world_modal_kind_dispatch_sequence"
+    "queue:dispatch_flow|ops_citadel:queue:dispatch_flow|red:alert:degrading|world_entry_kind_dispatch_console|world_modal_kind_dispatch_sequence"
   );
   assert.equal(
     payloads.runtime.loopDispatchFlowCards?.[0]?.risk_context?.risk_context_signature,
-    "dispatch:dispatch_flow|ops_citadel:dispatch:dispatch_flow|red:alert:no_data|world_entry_kind_dispatch_console|world_modal_kind_dispatch_sequence"
+    "queue:dispatch_flow|ops_citadel:queue:dispatch_flow|red:alert:degrading|world_entry_kind_dispatch_console|world_modal_kind_dispatch_sequence"
   );
   assert.equal(payloads.runtime.loopDispatchFlowBlocks?.length, 3);
   assert.equal(payloads.runtime.loopDispatchFlowPanels?.length, 3);

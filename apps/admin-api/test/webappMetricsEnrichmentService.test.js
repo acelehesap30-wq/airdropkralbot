@@ -448,6 +448,14 @@ test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
   assert.equal(enriched.scene_loop_district_microflow_risk_matrix_daily_7d[0].loop_family_key, "payout_lane");
   assert.equal(enriched.scene_loop_district_microflow_risk_matrix_daily_7d[0].loop_microflow_key, "payout");
   assert.equal(enriched.scene_loop_district_microflow_risk_matrix_daily_7d[0].risk_key, "yellow:watch:no_data");
+  assert.equal(
+    enriched.scene_loop_district_microflow_risk_matrix_daily_7d[0].risk_context_signature,
+    "payout_lane:payout|exchange_district:payout_lane:payout|yellow:watch:no_data|world_entry_kind_payout_terminal|world_modal_kind_payout_route"
+  );
+  assert.equal(
+    enriched.scene_loop_district_microflow_risk_matrix_daily_7d[0].risk_context?.risk_context_signature,
+    "payout_lane:payout|exchange_district:payout_lane:payout|yellow:watch:no_data|world_entry_kind_payout_terminal|world_modal_kind_payout_route"
+  );
   assert.ok(
     enriched.scene_loop_district_microflow_risk_priority_7d.some(
       (row) =>
@@ -508,6 +516,8 @@ test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
         row.bucket_key === "yellow:watch:no_data" &&
         row.focus_key === "exchange_district:payout_lane:payout" &&
         row.risk_context?.flow_key === "payout_lane:payout" &&
+        row.risk_context_signature ===
+          "payout_lane:payout|exchange_district:payout_lane:payout|yellow:watch:no_data|world_entry_kind_payout_terminal|world_modal_kind_payout_route" &&
         row.entry_kind_key === "world_entry_kind_payout_terminal" &&
         row.sequence_kind_key === "world_modal_kind_payout_route"
     )
@@ -560,7 +570,9 @@ test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
       (row) =>
         row.day === "2026-03-08" &&
         row.bucket_key === "exchange_district:payout_lane:payout" &&
-        row.risk_key === "yellow:watch:no_data"
+        row.risk_key === "yellow:watch:no_data" &&
+        row.risk_context_signature ===
+          "payout_lane:payout|exchange_district:payout_lane:payout|yellow:watch:no_data|world_entry_kind_payout_terminal|world_modal_kind_payout_route"
     )
   );
   assert.ok(
