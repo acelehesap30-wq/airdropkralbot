@@ -6503,11 +6503,20 @@ export function buildDistrictWorldState(input = {}) {
     input
   );
   const actionContextLookup = buildInteractionActionContextLookup(interactionModal);
+  const enrichedNodes = enrichInteractionActionItems(nodes, actionContextLookup).map((node) => ({
+    ...node,
+    is_active: node.key === activeNodeKey
+  }));
+  const enrichedHotspots = enrichInteractionActionItems(hotspots, actionContextLookup).map((hotspot) => ({
+    ...hotspot,
+    is_active: hotspot.key === activeHotspotKey
+  }));
   const enrichedInteractionClusters = interactionClusters.map((cluster) => ({
     ...cluster,
     action_items: enrichInteractionActionItems(cluster.action_items, actionContextLookup),
     intent_slots: enrichInteractionActionItems(cluster.intent_slots, actionContextLookup)
   }));
+  const enrichedActiveHotspot = enrichedHotspots.find((hotspot) => hotspot.key === activeHotspotKey) || null;
   const enrichedActiveCluster = enrichedInteractionClusters.find((cluster) => cluster.is_active) || null;
   const enrichedInteractionSurface = interactionSurface
     ? {
@@ -6689,15 +6698,15 @@ export function buildDistrictWorldState(input = {}) {
     rail_profile_key: railProfile.rail_profile_key,
     rail_profile: railProfile,
     active_hotspot_key: activeHotspotKey,
-    active_hotspot_label: toText(activeHotspot?.label, ""),
-    active_hotspot_label_key: toText(activeHotspot?.label_key, ""),
-    active_hotspot_hint_key: toText(activeHotspot?.hint_label_key, ""),
-    active_hotspot_interaction_kind: toText(activeHotspot?.interaction_kind, ""),
-    active_hotspot_intent_profile_key: toText(activeHotspot?.intent_profile_key, ""),
-    active_hotspot_intent_label_key: toText(activeHotspot?.intent_profile?.intent_label_key, ""),
-    active_hotspot_intent_tone_key: toText(activeHotspot?.intent_profile?.intent_tone_key, ""),
-    active_hotspot_cluster_key: toText(activeHotspot?.cluster_key, ""),
-    active_hotspot_is_secondary: Boolean(activeHotspot?.is_secondary),
+    active_hotspot_label: toText(enrichedActiveHotspot?.label, ""),
+    active_hotspot_label_key: toText(enrichedActiveHotspot?.label_key, ""),
+    active_hotspot_hint_key: toText(enrichedActiveHotspot?.hint_label_key, ""),
+    active_hotspot_interaction_kind: toText(enrichedActiveHotspot?.interaction_kind, ""),
+    active_hotspot_intent_profile_key: toText(enrichedActiveHotspot?.intent_profile_key, ""),
+    active_hotspot_intent_label_key: toText(enrichedActiveHotspot?.intent_profile?.intent_label_key, ""),
+    active_hotspot_intent_tone_key: toText(enrichedActiveHotspot?.intent_profile?.intent_tone_key, ""),
+    active_hotspot_cluster_key: toText(enrichedActiveHotspot?.cluster_key, ""),
+    active_hotspot_is_secondary: Boolean(enrichedActiveHotspot?.is_secondary),
     active_cluster_key: toText(enrichedActiveCluster?.cluster_key, ""),
     active_cluster_label_key: toText(enrichedActiveCluster?.label_key, ""),
     active_cluster_label: toText(enrichedActiveCluster?.label, ""),
@@ -6716,10 +6725,7 @@ export function buildDistrictWorldState(input = {}) {
     actors,
     interaction_cluster_count: enrichedInteractionClusters.length,
     interaction_clusters: enrichedInteractionClusters,
-    hotspots: hotspots.map((hotspot) => ({
-      ...hotspot,
-      is_active: hotspot.key === activeHotspotKey
-    })),
-    nodes
+    hotspots: enrichedHotspots,
+    nodes: enrichedNodes
   };
 }

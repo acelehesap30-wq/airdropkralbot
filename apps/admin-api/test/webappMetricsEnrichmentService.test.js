@@ -106,6 +106,67 @@ test("resolveSceneLoopHealthBand and alarm state reflect loop coverage quality",
   );
 });
 
+test("buildSceneLoopRiskContext preserves explicit nested context over derived fallbacks", () => {
+  const context = service.buildSceneLoopRiskContext({
+    district_key: "exchange_district",
+    loop_family_key: "wallet_link",
+    loop_microflow_key: "wallet",
+    latest_health_band: "yellow",
+    attention_band: "watch",
+    trend_direction: "degrading",
+    action_context: {
+      district_key: "ops_citadel",
+      family_key: "dispatch_gate",
+      flow_key: "dispatch_gate:dispatch",
+      microflow_key: "dispatch",
+      focus_key: "ops_citadel:dispatch_gate:dispatch",
+      risk_key: "red:alert:degrading",
+      risk_focus_key: "ops_citadel:dispatch_gate:dispatch|red:alert:degrading",
+      entry_kind_key: "world_entry_kind_dispatch_console",
+      sequence_kind_key: "world_modal_kind_dispatch_sequence",
+      action_context_signature:
+        "dispatch_gate:dispatch|ops_citadel:dispatch_gate:dispatch|world_entry_kind_dispatch_console|world_modal_kind_dispatch_sequence"
+    },
+    risk_context: {
+      district_key: "ops_citadel",
+      family_key: "dispatch_gate",
+      flow_key: "dispatch_gate:dispatch",
+      microflow_key: "dispatch",
+      focus_key: "ops_citadel:dispatch_gate:dispatch",
+      risk_key: "red:alert:degrading",
+      risk_focus_key: "ops_citadel:dispatch_gate:dispatch|red:alert:degrading",
+      risk_health_band_key: "red",
+      risk_attention_band_key: "alert",
+      risk_trend_direction_key: "degrading",
+      entry_kind_key: "world_entry_kind_dispatch_console",
+      sequence_kind_key: "world_modal_kind_dispatch_sequence",
+      risk_context_signature:
+        "dispatch_gate:dispatch|ops_citadel:dispatch_gate:dispatch|red:alert:degrading|world_entry_kind_dispatch_console|world_modal_kind_dispatch_sequence"
+    }
+  });
+
+  assert.equal(context.district_key, "ops_citadel");
+  assert.equal(context.loop_family_key, "dispatch_gate");
+  assert.equal(context.flow_key, "dispatch_gate:dispatch");
+  assert.equal(context.loop_microflow_key, "dispatch");
+  assert.equal(context.focus_key, "ops_citadel:dispatch_gate:dispatch");
+  assert.equal(context.risk_key, "red:alert:degrading");
+  assert.equal(context.risk_health_band_key, "red");
+  assert.equal(context.risk_attention_band_key, "alert");
+  assert.equal(context.entry_kind_key, "world_entry_kind_dispatch_console");
+  assert.equal(context.sequence_kind_key, "world_modal_kind_dispatch_sequence");
+  assert.equal(
+    context.action_context_signature,
+    "dispatch_gate:dispatch|ops_citadel:dispatch_gate:dispatch|world_entry_kind_dispatch_console|world_modal_kind_dispatch_sequence"
+  );
+  assert.equal(
+    context.risk_context_signature,
+    "dispatch_gate:dispatch|ops_citadel:dispatch_gate:dispatch|red:alert:degrading|world_entry_kind_dispatch_console|world_modal_kind_dispatch_sequence"
+  );
+  assert.equal(context.action_context?.microflow_key, "dispatch");
+  assert.equal(context.risk_context?.risk_attention_band_key, "alert");
+});
+
 test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
   const enriched = service.enrichWebappRevenueMetrics({
     ui_events_ingested_24h: 100,

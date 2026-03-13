@@ -638,7 +638,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
         focus_key: String(launchContext.focus_key || ""),
         funnel_key: resolveWorkspaceFunnelKey(target.workspace as "player" | "admin", nextTab),
         surface_key: UI_SURFACE_KEY.SHELL,
-        payload_json: {
+      payload_json: {
           source: String(payload.sourceType || "district_scene_node"),
           source_panel_key: "scene_world",
           shell_action_key: String(launchContext.shell_action_key || actionKey),
@@ -660,6 +660,8 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
           source_risk_focus_key: String(payload.riskFocusKey || ""),
           source_action_context_signature: String(payload.actionContextSignature || ""),
           source_risk_context_signature: String(payload.riskContextSignature || ""),
+          source_action_context: payload.actionContext || null,
+          source_risk_context: payload.riskContext || null,
           source_risk_health_band_key: String(payload.riskHealthBandKey || ""),
           source_risk_attention_band_key: String(payload.riskAttentionBandKey || ""),
           source_risk_trend_direction_key: String(payload.riskTrendDirectionKey || ""),

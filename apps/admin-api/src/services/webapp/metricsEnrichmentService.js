@@ -5,6 +5,15 @@ function toNum(value, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function toText(value, fallback = "") {
+  const normalized = String(value ?? "").trim();
+  return normalized || String(fallback ?? "").trim();
+}
+
+function asRecord(value) {
+  return value && typeof value === "object" && !Array.isArray(value) ? value : null;
+}
+
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, Number(value)));
 }
@@ -342,18 +351,74 @@ function buildSceneLoopActionContextSignature(flowKey, focusKey, entryKindKey, s
 }
 
 function buildSceneLoopRiskContext(row) {
-  const districtKey = String(row?.district_key || "unknown");
-  const loopFamilyKey = normalizeSceneLoopMicroflowFamilyKey(row?.loop_family_key ?? row?.loop_microflow_key);
-  const loopMicroflowKey = normalizeSceneLoopMicroflowKey(row?.loop_microflow_key);
-  const flowKey = resolveSceneLoopMicroflowFlowKey(loopMicroflowKey, loopFamilyKey);
-  const latestHealthBand = String(row?.latest_health_band || row?.health_band || "no_data");
-  const attentionBand = String(row?.attention_band || "no_data");
-  const trendDirection = String(row?.trend_direction || "no_data");
-  const focusKey = `${districtKey}:${loopFamilyKey}:${loopMicroflowKey}`;
-  const riskKey = String(row?.risk_key || `${latestHealthBand}:${attentionBand}:${trendDirection}`);
-  const entryKindKey = resolveSceneLoopMicroflowEntryKindKey(loopMicroflowKey, loopFamilyKey);
-  const sequenceKindKey = resolveSceneLoopMicroflowSequenceKindKey(loopMicroflowKey, loopFamilyKey);
-  const riskFocusKey = `${focusKey}|${riskKey}`;
+  const source = row && typeof row === "object" ? row : {};
+  const actionContextSource = asRecord(source.action_context);
+  const riskContextSource = asRecord(source.risk_context);
+  const districtKey = toText(
+    riskContextSource?.district_key,
+    toText(actionContextSource?.district_key, String(source?.district_key || "unknown"))
+  );
+  const loopFamilyKey = normalizeSceneLoopMicroflowFamilyKey(
+    riskContextSource?.family_key ??
+      actionContextSource?.family_key ??
+      source?.loop_family_key ??
+      source?.family_key ??
+      source?.loop_microflow_key
+  );
+  const loopMicroflowKey = normalizeSceneLoopMicroflowKey(
+    riskContextSource?.microflow_key ??
+      actionContextSource?.microflow_key ??
+      source?.loop_microflow_key ??
+      source?.microflow_key
+  );
+  const flowKey = toText(
+    riskContextSource?.flow_key,
+    toText(
+      actionContextSource?.flow_key,
+      toText(source?.flow_key, resolveSceneLoopMicroflowFlowKey(loopMicroflowKey, loopFamilyKey))
+    )
+  );
+  const latestHealthBand = toText(
+    riskContextSource?.risk_health_band_key,
+    toText(
+      actionContextSource?.risk_health_band_key,
+      String(source?.latest_health_band || source?.health_band || "no_data")
+    )
+  );
+  const attentionBand = toText(
+    riskContextSource?.risk_attention_band_key,
+    toText(actionContextSource?.risk_attention_band_key, String(source?.attention_band || "no_data"))
+  );
+  const trendDirection = toText(
+    riskContextSource?.risk_trend_direction_key,
+    toText(actionContextSource?.risk_trend_direction_key, String(source?.trend_direction || "no_data"))
+  );
+  const focusKey = toText(
+    riskContextSource?.focus_key,
+    toText(actionContextSource?.focus_key, toText(source?.focus_key, `${districtKey}:${loopFamilyKey}:${loopMicroflowKey}`))
+  );
+  const riskKey = toText(
+    riskContextSource?.risk_key,
+    toText(actionContextSource?.risk_key, String(source?.risk_key || `${latestHealthBand}:${attentionBand}:${trendDirection}`))
+  );
+  const entryKindKey = toText(
+    riskContextSource?.entry_kind_key,
+    toText(
+      actionContextSource?.entry_kind_key,
+      toText(source?.entry_kind_key, resolveSceneLoopMicroflowEntryKindKey(loopMicroflowKey, loopFamilyKey))
+    )
+  );
+  const sequenceKindKey = toText(
+    riskContextSource?.sequence_kind_key,
+    toText(
+      actionContextSource?.sequence_kind_key,
+      toText(source?.sequence_kind_key, resolveSceneLoopMicroflowSequenceKindKey(loopMicroflowKey, loopFamilyKey))
+    )
+  );
+  const riskFocusKey = toText(
+    riskContextSource?.risk_focus_key,
+    toText(actionContextSource?.risk_focus_key, toText(source?.risk_focus_key, `${focusKey}|${riskKey}`))
+  );
   const riskContextSignature = buildSceneLoopRiskContextSignature(
     flowKey,
     riskFocusKey,
@@ -379,11 +444,17 @@ function buildSceneLoopRiskContext(row) {
     risk_trend_direction_key: trendDirection,
     entry_kind_key: entryKindKey,
     sequence_kind_key: sequenceKindKey,
-    action_context_signature: actionContextSignature
+    action_context_signature: toText(
+      actionContextSource?.action_context_signature,
+      toText(riskContextSource?.action_context_signature, toText(source?.action_context_signature, actionContextSignature))
+    )
   };
   const riskContext = {
     ...actionContext,
-    risk_context_signature: riskContextSignature
+    risk_context_signature: toText(
+      riskContextSource?.risk_context_signature,
+      toText(actionContextSource?.risk_context_signature, toText(source?.risk_context_signature, riskContextSignature))
+    )
   };
   return {
     district_key: districtKey,
@@ -401,8 +472,8 @@ function buildSceneLoopRiskContext(row) {
     risk_trend_direction_key: trendDirection,
     risk_key: riskKey,
     risk_focus_key: riskFocusKey,
-    action_context_signature: actionContextSignature,
-    risk_context_signature: riskContextSignature,
+    action_context_signature: actionContext.action_context_signature,
+    risk_context_signature: riskContext.risk_context_signature,
     entry_kind_key: entryKindKey,
     sequence_kind_key: sequenceKindKey,
     action_context: actionContext,
@@ -2704,6 +2775,7 @@ module.exports = {
   normalizeSceneLoopFamilyKey,
   normalizeSceneLoopMicroflowKey,
   normalizeSceneLoopMicroflowFamilyKey,
+  buildSceneLoopRiskContext,
   resolveSceneLoopHealthBand,
   resolveSceneLoopDistrictHealthBand,
   resolveSceneLoopDistrictAttentionBand,

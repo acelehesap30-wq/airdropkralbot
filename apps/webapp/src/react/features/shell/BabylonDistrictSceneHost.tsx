@@ -72,10 +72,13 @@ type BabylonDistrictSceneHostProps = {
     focusKey?: string;
     riskKey?: string;
     riskFocusKey?: string;
+    actionContext?: RiskContext | null;
     riskHealthBandKey?: string;
     riskAttentionBandKey?: string;
     riskTrendDirectionKey?: string;
+    actionContextSignature?: string;
     riskContextSignature?: string;
+    riskContext?: RiskContext | null;
     entryKindKey?: string;
     sequenceKindKey?: string;
     sourceType?: string;
@@ -444,6 +447,8 @@ type ResolvedSceneActionContext = {
   riskHealthBandKey: string;
   riskAttentionBandKey: string;
   riskTrendDirectionKey: string;
+  actionContext: RiskContext | null;
+  riskContext: RiskContext | null;
 };
 
 function asRiskContext(value: unknown): RiskContext {
@@ -518,6 +523,42 @@ function normalizeSceneActionContext(source?: SceneActionLike | Record<string, u
       actionContext.risk_context_signature,
       primary.risk_context_signature
     ) || buildSceneRiskContextSignature(flowKey, riskFocusKey, entryKindKey, sequenceKindKey);
+  const resolvedActionContext: RiskContext | null = familyKey || flowKey || microflowKey || focusKey || riskKey || riskFocusKey
+    ? {
+        district_key: readSceneActionText(actionContext.district_key, riskContext.district_key, primary.district_key),
+        family_key: familyKey,
+        flow_key: flowKey,
+        microflow_key: microflowKey,
+        focus_key: focusKey,
+        risk_key: riskKey,
+        risk_focus_key: riskFocusKey,
+        risk_health_band_key: readSceneActionText(
+          riskContext.risk_health_band_key,
+          actionContext.risk_health_band_key,
+          primary.risk_health_band_key
+        ),
+        risk_attention_band_key: readSceneActionText(
+          riskContext.risk_attention_band_key,
+          actionContext.risk_attention_band_key,
+          primary.risk_attention_band_key
+        ),
+        risk_trend_direction_key: readSceneActionText(
+          riskContext.risk_trend_direction_key,
+          actionContext.risk_trend_direction_key,
+          primary.risk_trend_direction_key
+        ),
+        entry_kind_key: entryKindKey,
+        sequence_kind_key: sequenceKindKey,
+        action_context_signature: actionContextSignature
+      }
+    : null;
+  const resolvedRiskContext: RiskContext | null =
+    resolvedActionContext || riskContext.risk_context_signature || primary.risk_context_signature
+      ? {
+          ...(resolvedActionContext || {}),
+          risk_context_signature: riskContextSignature
+        }
+      : null;
   return {
     familyKey,
     flowKey,
@@ -543,7 +584,9 @@ function normalizeSceneActionContext(source?: SceneActionLike | Record<string, u
       riskContext.risk_trend_direction_key,
       actionContext.risk_trend_direction_key,
       primary.risk_trend_direction_key
-    )
+    ),
+    actionContext: resolvedActionContext,
+    riskContext: resolvedRiskContext
   };
 }
 
@@ -572,7 +615,11 @@ function mergeSceneActionContexts(...contexts: Array<ResolvedSceneActionContext 
     sequenceKindKey,
     riskHealthBandKey: pick((context) => context.riskHealthBandKey),
     riskAttentionBandKey: pick((context) => context.riskAttentionBandKey),
-    riskTrendDirectionKey: pick((context) => context.riskTrendDirectionKey)
+    riskTrendDirectionKey: pick((context) => context.riskTrendDirectionKey),
+    actionContext:
+      contexts.map((context) => context?.actionContext).find((context) => Boolean(context)) || null,
+    riskContext:
+      contexts.map((context) => context?.riskContext).find((context) => Boolean(context)) || null
   };
 }
 
@@ -825,6 +872,30 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
     },
     [resolveSceneActionContext]
   );
+  const buildMeshActionMetadata = useCallback(
+    (action: Record<string, any>, patch: Record<string, any>) => {
+      const context = resolveSceneActionContext(action);
+      return {
+        ...patch,
+        familyKey: context.familyKey || "",
+        flowKey: context.flowKey || "",
+        microflowKey: context.microflowKey || "",
+        focusKey: context.focusKey || "",
+        riskKey: context.riskKey || "",
+        riskFocusKey: context.riskFocusKey || "",
+        actionContextSignature: context.actionContextSignature || "",
+        riskContextSignature: context.riskContextSignature || "",
+        actionContext: context.actionContext || null,
+        riskContext: context.riskContext || null,
+        riskHealthBandKey: context.riskHealthBandKey || "",
+        riskAttentionBandKey: context.riskAttentionBandKey || "",
+        riskTrendDirectionKey: context.riskTrendDirectionKey || "",
+        entryKindKey: context.entryKindKey || "",
+        sequenceKindKey: context.sequenceKindKey || ""
+      };
+    },
+    [resolveSceneActionContext]
+  );
   const renderSceneActionContextMeta = useCallback(
     (action?: SceneActionLike | null, fallback?: SceneActionLike | null) => {
       const context = resolveSceneActionContext(action, fallback);
@@ -1013,10 +1084,13 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
       focusKey?: string;
       riskKey?: string;
       riskFocusKey?: string;
+      actionContextSignature?: string;
+      actionContext?: RiskContext | null;
       riskHealthBandKey?: string;
       riskAttentionBandKey?: string;
       riskTrendDirectionKey?: string;
       riskContextSignature?: string;
+      riskContext?: RiskContext | null;
       entryKindKey?: string;
       sequenceKindKey?: string;
       sourceType?: string;
@@ -1326,7 +1400,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
               orbMaterial.emissiveColor = Color3.FromHexString(hotspot.is_active ? theme.core_hex : hotspot.accent_hex);
               orb.material = orbMaterial;
 
-              const metadata = {
+              const metadata = buildMeshActionMetadata(slot, {
                 actionKey: slot.action_key,
                 nodeKey: slot.key,
                 laneKey: cluster.actor_key,
@@ -1340,7 +1414,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                 interactionKind: slot.interaction_kind,
                 clusterKey: slot.cluster_key,
                 isSecondary: slot.is_secondary
-              };
+              });
               [ring, pad, orb].forEach((mesh) => {
                 mesh.isPickable = true;
                 mesh.metadata = metadata;
@@ -1447,7 +1521,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           beaconMaterial.emissiveColor = Color3.FromHexString(hotspot.is_active ? theme.core_hex : hotspot.accent_hex);
           beacon.material = beaconMaterial;
 
-          const metadata = {
+          const metadata = buildMeshActionMetadata(hotspot, {
             actionKey: hotspot.action_key,
             nodeKey: hotspot.key,
             laneKey: hotspot.actor_key,
@@ -1461,7 +1535,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
             interactionKind: hotspot.interaction_kind,
             clusterKey: hotspot.cluster_key,
             isSecondary: hotspot.is_secondary
-          };
+          });
           [ring, pad, beacon].forEach((mesh) => {
             mesh.isPickable = Boolean(hotspot.action_key);
             mesh.metadata = metadata;
@@ -1537,7 +1611,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           }
 
           const interactiveMeshes = [pillar, orb, halo].filter(Boolean);
-          const metadata = {
+          const metadata = buildMeshActionMetadata(node, {
             actionKey: node.action_key,
             nodeKey: node.key,
             laneKey: node.laneKey,
@@ -1551,7 +1625,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
             interactionKind: "open",
             clusterKey: node.key,
             isSecondary: false
-          };
+          });
           interactiveMeshes.forEach((mesh) => {
             mesh.isPickable = Boolean(node.action_key);
             mesh.metadata = metadata;
@@ -1626,6 +1700,27 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
             interactionKind: String(metadata?.interactionKind || "open"),
             clusterKey: String(metadata?.clusterKey || ""),
             isSecondary: Boolean(metadata?.isSecondary),
+            familyKey: String(metadata?.familyKey || ""),
+            flowKey: String(metadata?.flowKey || ""),
+            microflowKey: String(metadata?.microflowKey || ""),
+            focusKey: String(metadata?.focusKey || ""),
+            riskKey: String(metadata?.riskKey || ""),
+            riskFocusKey: String(metadata?.riskFocusKey || ""),
+            actionContext:
+              metadata?.actionContext && typeof metadata.actionContext === "object"
+                ? (metadata.actionContext as RiskContext)
+                : null,
+            riskHealthBandKey: String(metadata?.riskHealthBandKey || ""),
+            riskAttentionBandKey: String(metadata?.riskAttentionBandKey || ""),
+            riskTrendDirectionKey: String(metadata?.riskTrendDirectionKey || ""),
+            actionContextSignature: String(metadata?.actionContextSignature || ""),
+            riskContextSignature: String(metadata?.riskContextSignature || ""),
+            riskContext:
+              metadata?.riskContext && typeof metadata.riskContext === "object"
+                ? (metadata.riskContext as RiskContext)
+                : null,
+            entryKindKey: String(metadata?.entryKindKey || ""),
+            sequenceKindKey: String(metadata?.sequenceKindKey || ""),
             workspace: props.workspace,
             tab: props.tab,
             districtKey: worldState.district_key

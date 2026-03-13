@@ -44,6 +44,42 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
   assert.equal(state.active_hotspot_hint_key, "world_hotspot_hint_travel");
   assert.equal(state.active_hotspot_intent_profile_key, "travel_primary");
   assert.equal(state.active_hotspot_intent_label_key, "world_intent_travel");
+  assert.equal(state.nodes[0].family_key, "travel");
+  assert.equal(state.nodes[0].flow_key, "travel_flow");
+  assert.equal(state.nodes[0].microflow_key, "world_modal_lane_season_arc:travel");
+  assert.equal(state.nodes[0].focus_key, "central_hub:travel:travel_flow");
+  assert.equal(state.nodes[0].risk_key, "green:stable:flat");
+  assert.equal(state.nodes[0].risk_focus_key, "central_hub:travel:travel_flow|green:stable:flat");
+  assert.equal(state.nodes[0].entry_kind_key, "world_entry_kind_hub_portal");
+  assert.equal(state.nodes[0].sequence_kind_key, "world_modal_kind_travel_gate");
+  assert.equal(state.nodes[0].action_context?.focus_key, "central_hub:travel:travel_flow");
+  assert.equal(state.nodes[0].risk_context?.risk_focus_key, "central_hub:travel:travel_flow|green:stable:flat");
+  assert.equal(
+    state.nodes[0].action_context_signature,
+    "travel_flow|central_hub:travel:travel_flow|world_entry_kind_hub_portal|world_modal_kind_travel_gate"
+  );
+  assert.equal(
+    state.nodes[0].risk_context_signature,
+    "travel_flow|central_hub:travel:travel_flow|green:stable:flat|world_entry_kind_hub_portal|world_modal_kind_travel_gate"
+  );
+  assert.equal(state.hotspots[0].family_key, "travel");
+  assert.equal(state.hotspots[0].flow_key, "travel_flow");
+  assert.equal(state.hotspots[0].microflow_key, "world_modal_lane_season_arc:travel");
+  assert.equal(state.hotspots[0].focus_key, "central_hub:travel:travel_flow");
+  assert.equal(state.hotspots[0].risk_key, "green:stable:flat");
+  assert.equal(state.hotspots[0].risk_focus_key, "central_hub:travel:travel_flow|green:stable:flat");
+  assert.equal(state.hotspots[0].entry_kind_key, "world_entry_kind_hub_portal");
+  assert.equal(state.hotspots[0].sequence_kind_key, "world_modal_kind_travel_gate");
+  assert.equal(state.hotspots[0].action_context?.focus_key, "central_hub:travel:travel_flow");
+  assert.equal(state.hotspots[0].risk_context?.risk_focus_key, "central_hub:travel:travel_flow|green:stable:flat");
+  assert.equal(
+    state.hotspots[0].action_context_signature,
+    "travel_flow|central_hub:travel:travel_flow|world_entry_kind_hub_portal|world_modal_kind_travel_gate"
+  );
+  assert.equal(
+    state.hotspots[0].risk_context_signature,
+    "travel_flow|central_hub:travel:travel_flow|green:stable:flat|world_entry_kind_hub_portal|world_modal_kind_travel_gate"
+  );
   assert.equal(state.interaction_sheet.title_key, "world_hotspot_season_gate");
   assert.equal(state.interaction_sheet.rows.length, 4);
   assert.equal(state.interaction_sheet.rows[0].label_key, "world_sheet_metric_progress");
@@ -696,6 +732,17 @@ test("buildDistrictWorldState maps admin runtime into ops citadel", () => {
   assert.equal(state.nodes[0].metric, "3");
   assert.equal(state.nodes[0].action_key, SHELL_ACTION_KEY.ADMIN_QUEUE_PANEL);
   assert.equal(state.nodes[1].status_key, "warn");
+  assert.equal(state.nodes[0].family_key, "queue");
+  assert.equal(state.nodes[0].flow_key, "queue_flow");
+  assert.equal(state.nodes[0].microflow_key, "world_modal_lane_queue_review:queue");
+  assert.equal(state.nodes[0].focus_key, "ops_citadel:queue:queue_flow");
+  assert.equal(state.nodes[0].entry_kind_key, "world_entry_kind_queue_console");
+  assert.equal(state.nodes[0].sequence_kind_key, "world_modal_kind_queue_review");
+  assert.equal(state.nodes[0].action_context?.focus_key, "ops_citadel:queue:queue_flow");
+  assert.equal(
+    state.nodes[0].action_context_signature,
+    "queue_flow|ops_citadel:queue:queue_flow|world_entry_kind_queue_console|world_modal_kind_queue_review"
+  );
   assert.equal(state.district_theme_key, "ops_citadel");
   assert.equal(state.camera_profile_key, "ops_overwatch");
   assert.equal(state.hud_profile_key, "ops_citadel");
