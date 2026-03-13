@@ -549,6 +549,26 @@ function buildLoopRiskFocusKeyText(source, familyKey = "") {
   return focusKeyText || riskKeyText || "";
 }
 
+function buildLoopRiskContextSignatureText(source, familyKey = "") {
+  const row = asRecord(source);
+  const flowKeyText = buildLoopFlowKeyText(row, familyKey);
+  const riskFocusKeyText = buildLoopRiskFocusKeyText(row, familyKey);
+  const family_key =
+    toText(row.familyKey || row.family_key, "").toLowerCase() ||
+    toText(buildLoopFocusKeyText(row, familyKey).split(":")[1], "").toLowerCase() ||
+    toText(familyKey, "").toLowerCase();
+  const microflow_key =
+    toText(row.microflowKey || row.microflow_key, "").toLowerCase() ||
+    toText(buildLoopFocusKeyText(row, familyKey).split(":")[2], "").toLowerCase();
+  const entryKindKeyText =
+    toText(row.entryKindKey || row.entry_kind_key, "").toLowerCase() ||
+    resolveLoopBridgeEntryKindKey(family_key, microflow_key);
+  const sequenceKindKeyText =
+    toText(row.sequenceKindKey || row.sequence_kind_key, "").toLowerCase() ||
+    resolveLoopBridgeSequenceKindKey(family_key, microflow_key);
+  return [flowKeyText, riskFocusKeyText, entryKindKeyText, sequenceKindKeyText].filter(Boolean).join("|");
+}
+
 function buildLoopFlowKeyText(source, familyKey = "") {
   const row = asRecord(source);
   const focusKeyText = buildLoopFocusKeyText(row, familyKey);
@@ -737,6 +757,16 @@ function buildLoopBridgeMeta(source, familyKey = "") {
   const risk_health_band_key = inferLoopHealthBandKey(row);
   const risk_attention_band_key = inferLoopAttentionBandKey(row);
   const risk_trend_direction_key = inferLoopTrendDirectionKey(row);
+  const risk_context_signature = buildLoopRiskContextSignatureText(
+    {
+      ...row,
+      family_key,
+      microflow_key,
+      entry_kind_key,
+      sequence_kind_key
+    },
+    familyKey
+  );
   const risk_context = {
     family_key,
     flow_key,
@@ -748,7 +778,8 @@ function buildLoopBridgeMeta(source, familyKey = "") {
     risk_attention_band_key,
     risk_trend_direction_key,
     entry_kind_key,
-    sequence_kind_key
+    sequence_kind_key,
+    risk_context_signature
   };
   return {
     focus_key,
@@ -762,6 +793,7 @@ function buildLoopBridgeMeta(source, familyKey = "") {
     risk_trend_direction_key,
     entry_kind_key,
     sequence_kind_key,
+    risk_context_signature,
     risk_context
   };
 }

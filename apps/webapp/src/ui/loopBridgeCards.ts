@@ -3,6 +3,7 @@ export type LoopBridgeCard = {
   value: string;
   hint?: string;
   tone?: string;
+  risk_context_signature?: string;
   focus_key?: string;
   risk_key?: string;
   risk_focus_key?: string;
@@ -23,6 +24,7 @@ export type LoopBridgeBlock = {
   gate: string;
   hint?: string;
   tone?: string;
+  risk_context_signature?: string;
   focus_key?: string;
   risk_key?: string;
   risk_focus_key?: string;
@@ -42,6 +44,7 @@ export type LoopBridgePanel = {
   lines: string[];
   hint?: string;
   tone?: string;
+  risk_context_signature?: string;
   focus_key?: string;
   risk_key?: string;
   risk_focus_key?: string;
@@ -63,6 +66,7 @@ export type LoopBridgeRiskContext = {
   focus_key?: string;
   risk_key?: string;
   risk_focus_key?: string;
+  risk_context_signature?: string;
   risk_health_band_key?: string;
   risk_attention_band_key?: string;
   risk_trend_direction_key?: string;
@@ -86,6 +90,7 @@ function normalizeTone(value: unknown): string {
 }
 
 type LoopBridgeMeta = {
+  risk_context_signature?: string;
   focus_key?: string;
   risk_key?: string;
   risk_focus_key?: string;
@@ -102,6 +107,7 @@ type LoopBridgeMeta = {
 
 function applyBridgeMeta(article: HTMLElement, meta: LoopBridgeMeta): void {
   const riskContext = meta.risk_context ?? {};
+  const riskContextSignature = safeText(meta.risk_context_signature || riskContext.risk_context_signature);
   const focusKey = safeText(meta.focus_key || riskContext.focus_key);
   const riskKey = safeText(meta.risk_key || riskContext.risk_key);
   const riskFocusKey = safeText(meta.risk_focus_key || riskContext.risk_focus_key);
@@ -113,6 +119,9 @@ function applyBridgeMeta(article: HTMLElement, meta: LoopBridgeMeta): void {
   const riskTrendDirectionKey = safeText(meta.risk_trend_direction_key || riskContext.risk_trend_direction_key);
   const entryKindKey = safeText(meta.entry_kind_key || riskContext.entry_kind_key);
   const sequenceKindKey = safeText(meta.sequence_kind_key || riskContext.sequence_kind_key);
+  if (riskContextSignature) {
+    article.dataset.riskContextSignature = riskContextSignature;
+  }
   if (focusKey) {
     article.dataset.focusKey = focusKey;
   }

@@ -383,6 +383,14 @@ test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
     enriched.scene_loop_district_microflow_risk_rows_7d[0].risk_context?.sequence_kind_key,
     "world_modal_kind_wallet_terminal"
   );
+  assert.equal(
+    enriched.scene_loop_district_microflow_risk_rows_7d[0].risk_context_signature,
+    "wallet_link:wallet|exchange_district:wallet_link:wallet|red:alert:no_data|world_entry_kind_wallet_terminal|world_modal_kind_wallet_terminal"
+  );
+  assert.equal(
+    enriched.scene_loop_district_microflow_risk_rows_7d[0].risk_context?.risk_context_signature,
+    "wallet_link:wallet|exchange_district:wallet_link:wallet|red:alert:no_data|world_entry_kind_wallet_terminal|world_modal_kind_wallet_terminal"
+  );
   assert.ok(enriched.scene_loop_district_microflow_risk_rows_7d[0].priority_score > 3000);
   assert.equal(enriched.scene_loop_district_microflow_risk_rows_daily_7d[0].day, "2026-03-08");
   assert.equal(enriched.scene_loop_district_microflow_risk_rows_daily_7d[0].district_key, "exchange_district");
@@ -416,6 +424,14 @@ test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
   assert.equal(
     enriched.scene_loop_district_microflow_risk_rows_daily_7d[0].risk_context?.sequence_kind_key,
     "world_modal_kind_payout_route"
+  );
+  assert.equal(
+    enriched.scene_loop_district_microflow_risk_rows_daily_7d[0].risk_context_signature,
+    "payout_lane:payout|exchange_district:payout_lane:payout|yellow:watch:no_data|world_entry_kind_payout_terminal|world_modal_kind_payout_route"
+  );
+  assert.equal(
+    enriched.scene_loop_district_microflow_risk_rows_daily_7d[0].risk_context?.risk_context_signature,
+    "payout_lane:payout|exchange_district:payout_lane:payout|yellow:watch:no_data|world_entry_kind_payout_terminal|world_modal_kind_payout_route"
   );
   assert.ok(enriched.scene_loop_district_microflow_risk_rows_daily_7d[0].priority_score > 2000);
   assert.ok(

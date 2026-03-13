@@ -367,6 +367,14 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
     payloads.combatHud.loopDuelFlowCards?.[0]?.risk_context?.sequence_kind_key,
     "world_modal_kind_duel_sequence"
   );
+  assert.equal(
+    payloads.combatHud.loopDuelFlowCards?.[0]?.risk_context_signature,
+    "duel:duel_flow|arena_prime:duel:duel_flow|yellow:watch:no_data|world_entry_kind_duel_console|world_modal_kind_duel_sequence"
+  );
+  assert.equal(
+    payloads.combatHud.loopDuelFlowCards?.[0]?.risk_context?.risk_context_signature,
+    "duel:duel_flow|arena_prime:duel:duel_flow|yellow:watch:no_data|world_entry_kind_duel_console|world_modal_kind_duel_sequence"
+  );
   assert.equal(payloads.combatHud.loopDuelFlowCards?.[2]?.title, "RISK");
   assert.equal(payloads.combatHud.loopDuelFlowBlocks?.length, 3);
   assert.equal(payloads.combatHud.loopDuelFlowBlocks?.[2]?.title, "RISK");
@@ -831,6 +839,14 @@ test("buildPlayerBridgePayloads surfaces active vault loop micro panels from sel
   assert.equal(
     payloads.tokenOverview.loopWalletFlowCards?.[0]?.risk_context?.sequence_kind_key,
     "world_modal_kind_payout_route"
+  );
+  assert.equal(
+    payloads.tokenOverview.loopWalletFlowCards?.[0]?.risk_context_signature,
+    "wallet:payout_flow|exchange_district:wallet:payout_flow|red:alert:no_data|world_entry_kind_payout_terminal|world_modal_kind_payout_route"
+  );
+  assert.equal(
+    payloads.tokenOverview.loopWalletFlowCards?.[0]?.risk_context?.risk_context_signature,
+    "wallet:payout_flow|exchange_district:wallet:payout_flow|red:alert:no_data|world_entry_kind_payout_terminal|world_modal_kind_payout_route"
   );
   assert.equal(payloads.tokenOverview.loopWalletFlowBlocks?.length, 3);
   assert.equal(payloads.tokenOverview.loopWalletFlowPanels?.length, 3);
@@ -1336,6 +1352,14 @@ test("buildAdminBridgePayloads produces runtime, asset and audit cards from admi
   assert.equal(
     payloads.runtime.loopDispatchFlowCards?.[0]?.risk_context?.sequence_kind_key,
     "world_modal_kind_dispatch_sequence"
+  );
+  assert.equal(
+    payloads.runtime.loopDispatchFlowCards?.[0]?.risk_context_signature,
+    "dispatch:dispatch_flow|ops_citadel:dispatch:dispatch_flow|red:alert:no_data|world_entry_kind_dispatch_console|world_modal_kind_dispatch_sequence"
+  );
+  assert.equal(
+    payloads.runtime.loopDispatchFlowCards?.[0]?.risk_context?.risk_context_signature,
+    "dispatch:dispatch_flow|ops_citadel:dispatch:dispatch_flow|red:alert:no_data|world_entry_kind_dispatch_console|world_modal_kind_dispatch_sequence"
   );
   assert.equal(payloads.runtime.loopDispatchFlowBlocks?.length, 3);
   assert.equal(payloads.runtime.loopDispatchFlowPanels?.length, 3);

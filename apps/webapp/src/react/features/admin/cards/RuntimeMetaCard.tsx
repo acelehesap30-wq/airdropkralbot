@@ -71,6 +71,9 @@ function renderRiskContextSuffix(row: Record<string, unknown>): string {
   if (riskContext.risk_focus_key) {
     parts.push(`risk-focus ${String(riskContext.risk_focus_key)}`);
   }
+  if (riskContext.risk_context_signature) {
+    parts.push(`sig ${String(riskContext.risk_context_signature)}`);
+  }
   return parts.length ? ` | ${parts.join(" | ")}` : "";
 }
 
