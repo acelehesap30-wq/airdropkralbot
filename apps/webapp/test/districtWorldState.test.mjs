@@ -223,6 +223,20 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
   assert.equal(state.interaction_terminal.signal_rows[2].label_key, "world_terminal_signal_actions");
   assert.equal(state.interaction_terminal.preview_rows[0].label_key, "world_sheet_metric_progress");
   assert.equal(state.interaction_terminal.flow_rows[0].label_key, "world_sheet_metric_progress");
+  assert.equal(state.interaction_terminal.action_items[0].focus_key, "central_hub:travel:travel_flow");
+  assert.equal(
+    state.interaction_terminal.action_items[0].risk_focus_key,
+    "central_hub:travel:travel_flow|green:stable:flat"
+  );
+  assert.equal(state.interaction_terminal.action_items[0].contract_ready, true);
+  assert.equal(
+    state.interaction_terminal.action_items[0].action_context?.action_context_signature,
+    "travel_flow|central_hub:travel:travel_flow|world_entry_kind_hub_portal|world_modal_kind_travel_gate"
+  );
+  assert.equal(
+    state.interaction_terminal.action_items[0].risk_context?.risk_context_signature,
+    "travel_flow|central_hub:travel:travel_flow|green:stable:flat|world_entry_kind_hub_portal|world_modal_kind_travel_gate"
+  );
   assert.equal(state.interaction_modal.modal_kind_key, "world_modal_kind_travel_gate");
   assert.equal(state.interaction_modal.modal_class_key, "travel_gate");
   assert.equal(state.interaction_modal.family_key, "travel");
@@ -243,6 +257,20 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
     "travel_flow|central_hub:travel:travel_flow|green:stable:flat|world_entry_kind_hub_portal|world_modal_kind_travel_gate"
   );
   assert.equal(state.interaction_modal.signal_rows[2].label_key, "world_terminal_signal_actions");
+  assert.equal(state.interaction_modal.action_items[0].focus_key, "central_hub:travel:travel_flow");
+  assert.equal(
+    state.interaction_modal.action_items[0].risk_focus_key,
+    "central_hub:travel:travel_flow|green:stable:flat"
+  );
+  assert.equal(state.interaction_modal.action_items[0].contract_ready, true);
+  assert.equal(
+    state.interaction_modal.action_items[0].action_context?.action_context_signature,
+    "travel_flow|central_hub:travel:travel_flow|world_entry_kind_hub_portal|world_modal_kind_travel_gate"
+  );
+  assert.equal(
+    state.interaction_modal.action_items[0].risk_context?.risk_context_signature,
+    "travel_flow|central_hub:travel:travel_flow|green:stable:flat|world_entry_kind_hub_portal|world_modal_kind_travel_gate"
+  );
   assert.equal(state.interaction_modal.modal_cards[0].label_key, "world_modal_lane_season_arc");
   assert.equal(state.interaction_modal.modal_cards[1].label_key, "world_modal_lane_mission_queue");
   assert.equal(state.interaction_modal.modal_cards[0].focus_key, "central_hub:travel:travel_flow");
@@ -863,6 +891,20 @@ test("buildDistrictWorldState maps admin runtime into ops citadel", () => {
     "queue_flow|ops_citadel:queue:queue_flow|yellow:watch:flat|world_entry_kind_queue_console|world_modal_kind_queue_review"
   );
   assert.equal(state.interaction_terminal.signal_rows[1].label_key, "world_sheet_metric_scene_health");
+  assert.equal(state.interaction_terminal.action_items[0].focus_key, "ops_citadel:queue:queue_flow");
+  assert.equal(
+    state.interaction_terminal.action_items[0].risk_focus_key,
+    "ops_citadel:queue:queue_flow|yellow:watch:flat"
+  );
+  assert.equal(state.interaction_terminal.action_items[0].contract_ready, true);
+  assert.equal(
+    state.interaction_terminal.action_items[0].action_context?.action_context_signature,
+    "queue_flow|ops_citadel:queue:queue_flow|world_entry_kind_queue_console|world_modal_kind_queue_review"
+  );
+  assert.equal(
+    state.interaction_terminal.action_items[0].risk_context?.risk_context_signature,
+    "queue_flow|ops_citadel:queue:queue_flow|yellow:watch:flat|world_entry_kind_queue_console|world_modal_kind_queue_review"
+  );
   assert.equal(state.interaction_modal.modal_kind_key, "world_modal_kind_queue_review");
   assert.equal(state.interaction_modal.modal_class_key, "queue_review");
   assert.equal(state.interaction_modal.family_key, "queue");
@@ -879,6 +921,20 @@ test("buildDistrictWorldState maps admin runtime into ops citadel", () => {
   );
   assert.equal(
     state.interaction_modal.risk_context_signature,
+    "queue_flow|ops_citadel:queue:queue_flow|yellow:watch:flat|world_entry_kind_queue_console|world_modal_kind_queue_review"
+  );
+  assert.equal(state.interaction_modal.action_items[0].focus_key, "ops_citadel:queue:queue_flow");
+  assert.equal(
+    state.interaction_modal.action_items[0].risk_focus_key,
+    "ops_citadel:queue:queue_flow|yellow:watch:flat"
+  );
+  assert.equal(state.interaction_modal.action_items[0].contract_ready, true);
+  assert.equal(
+    state.interaction_modal.action_items[0].action_context?.action_context_signature,
+    "queue_flow|ops_citadel:queue:queue_flow|world_entry_kind_queue_console|world_modal_kind_queue_review"
+  );
+  assert.equal(
+    state.interaction_modal.action_items[0].risk_context?.risk_context_signature,
     "queue_flow|ops_citadel:queue:queue_flow|yellow:watch:flat|world_entry_kind_queue_console|world_modal_kind_queue_review"
   );
   assert.equal(state.interaction_modal.modal_cards[0].label_key, "world_modal_lane_queue_review");

@@ -6476,49 +6476,45 @@ function buildInteractionActionContextLookup(interactionModal) {
 }
 
 function enrichInteractionActionItems(items, actionContextLookup) {
-  if (!(actionContextLookup instanceof Map) || !actionContextLookup.size) {
-    return asList(items);
-  }
   return asList(items).map((item) => {
     const record = asRecord(item);
     const actionKey = toText(record.action_key, "");
-    const meta = actionContextLookup.get(actionKey);
-    if (!meta) {
-      return item;
-    }
-    const actionContext = meta.action_context ? buildActionContextShape(meta.action_context, record) : record.action_context;
-    const riskContext = buildRiskContextShape(meta.risk_context || meta, record);
-    const resolved = {
-      ...item,
-      action_context: actionContext,
+    const meta =
+      actionContextLookup instanceof Map && actionContextLookup.size ? actionContextLookup.get(actionKey) : null;
+    const contextSource = meta || record.action_context || record.risk_context || record;
+    const enriched = applyResolvedActionRiskMeta(item, contextSource, record, {
+      family_key: toText(meta?.family_key, toText(record.family_key, "")),
+      flow_key: toText(meta?.flow_key, toText(record.flow_key, "")),
+      microflow_key: toText(meta?.microflow_key, toText(record.microflow_key, "")),
+      focus_key: toText(meta?.focus_key, toText(record.focus_key, "")),
+      risk_key: toText(meta?.risk_key, toText(record.risk_key, "")),
+      risk_focus_key: toText(meta?.risk_focus_key, toText(record.risk_focus_key, "")),
+      risk_health_band_key: toText(meta?.risk_health_band_key, toText(record.risk_health_band_key, "")),
+      risk_attention_band_key: toText(meta?.risk_attention_band_key, toText(record.risk_attention_band_key, "")),
+      risk_trend_direction_key: toText(
+        meta?.risk_trend_direction_key,
+        toText(record.risk_trend_direction_key, "")
+      ),
+      entry_kind_key: toText(meta?.entry_kind_key, toText(record.entry_kind_key, "")),
+      sequence_kind_key: toText(meta?.sequence_kind_key, toText(record.sequence_kind_key, "")),
       action_context_signature: toText(
-        meta.action_context_signature,
+        meta?.action_context_signature,
         toText(record.action_context_signature, "")
       ),
-      risk_context: riskContext,
-      risk_context_signature: buildRiskContextSignature(meta.risk_context || meta, record),
-      family_key: toText(meta.family_key, ""),
-      flow_key: toText(meta.flow_key, ""),
-      microflow_key: toText(meta.microflow_key, ""),
-      focus_key: toText(meta.focus_key, ""),
-      risk_key: toText(meta.risk_key, ""),
-      risk_focus_key: toText(meta.risk_focus_key, ""),
-      risk_health_band_key: toText(meta.risk_health_band_key, ""),
-      risk_attention_band_key: toText(meta.risk_attention_band_key, ""),
-      risk_trend_direction_key: toText(meta.risk_trend_direction_key, ""),
-      entry_kind_key: toText(meta.entry_kind_key, ""),
-      sequence_kind_key: toText(meta.sequence_kind_key, ""),
-      contract_ready:
-        typeof meta.contract_ready === "boolean" ? meta.contract_ready : record.contract_ready,
-      contract_missing_keys: Array.isArray(meta.contract_missing_keys)
-        ? meta.contract_missing_keys
-        : Array.isArray(record.contract_missing_keys)
-          ? record.contract_missing_keys
-          : []
-    };
+      risk_context_signature: toText(
+        meta?.risk_context_signature,
+        toText(record.risk_context_signature, "")
+      )
+    });
     return {
-      ...resolved,
-      ...buildSceneContractMeta(resolved, record)
+      ...enriched,
+      contract_ready:
+        typeof meta?.contract_ready === "boolean" ? meta.contract_ready : enriched.contract_ready,
+      contract_missing_keys: Array.isArray(meta?.contract_missing_keys)
+        ? meta.contract_missing_keys
+        : Array.isArray(enriched.contract_missing_keys)
+          ? enriched.contract_missing_keys
+          : []
     };
   });
 }
