@@ -495,6 +495,14 @@ const DICT = {
       "District x Mikroakis Risk Focus Key Matrisi",
     admin_runtime_scene_loop_district_microflow_risk_focus_key_matrix_daily_title:
       "District x Mikroakis Gunluk Risk Focus Key Matrisi",
+    admin_runtime_scene_loop_district_microflow_risk_flow_key_title:
+      "District x Mikroakis Risk Flow Key",
+    admin_runtime_scene_loop_district_microflow_risk_flow_key_daily_title:
+      "District x Mikroakis Gunluk Risk Flow Key",
+    admin_runtime_scene_loop_district_microflow_risk_flow_key_matrix_title:
+      "District x Mikroakis Risk Flow Key Matrisi",
+    admin_runtime_scene_loop_district_microflow_risk_flow_key_matrix_daily_title:
+      "District x Mikroakis Gunluk Risk Flow Key Matrisi",
     admin_runtime_scene_loop_district_microflow_risk_entry_kind_title:
       "District x Mikroakis Risk Entry Kind",
     admin_runtime_scene_loop_district_microflow_risk_entry_kind_daily_title:
@@ -1561,6 +1569,14 @@ const DICT = {
       "District x Microflow Risk Focus Key Matrix",
     admin_runtime_scene_loop_district_microflow_risk_focus_key_matrix_daily_title:
       "District x Microflow Daily Risk Focus Key Matrix",
+    admin_runtime_scene_loop_district_microflow_risk_flow_key_title:
+      "District x Microflow Risk Flow Key",
+    admin_runtime_scene_loop_district_microflow_risk_flow_key_daily_title:
+      "District x Microflow Daily Risk Flow Key",
+    admin_runtime_scene_loop_district_microflow_risk_flow_key_matrix_title:
+      "District x Microflow Risk Flow Key Matrix",
+    admin_runtime_scene_loop_district_microflow_risk_flow_key_matrix_daily_title:
+      "District x Microflow Daily Risk Flow Key Matrix",
     admin_runtime_scene_loop_district_microflow_risk_entry_kind_title:
       "District x Microflow Risk Entry Kind",
     admin_runtime_scene_loop_district_microflow_risk_entry_kind_daily_title:

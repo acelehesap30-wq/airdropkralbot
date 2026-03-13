@@ -2297,6 +2297,22 @@ function enrichWebappRevenueMetrics(rawMetrics = {}) {
     metrics.scene_loop_district_microflow_risk_rows_daily_7d,
     "focus_key"
   );
+  metrics.scene_loop_district_microflow_risk_flow_key_breakdown_7d = buildSceneLoopDimensionBreakdown(
+    metrics.scene_loop_district_microflow_risk_rows_7d,
+    "flow_key"
+  );
+  metrics.scene_loop_district_microflow_risk_flow_key_breakdown_daily_7d = buildSceneLoopDimensionBreakdownDaily(
+    metrics.scene_loop_district_microflow_risk_rows_daily_7d,
+    "flow_key"
+  );
+  metrics.scene_loop_district_microflow_risk_flow_key_matrix_7d = buildSceneLoopDimensionRiskMatrix(
+    metrics.scene_loop_district_microflow_risk_rows_daily_7d,
+    "flow_key"
+  );
+  metrics.scene_loop_district_microflow_risk_flow_key_matrix_daily_7d = buildSceneLoopDimensionRiskMatrixDaily(
+    metrics.scene_loop_district_microflow_risk_rows_daily_7d,
+    "flow_key"
+  );
   metrics.scene_loop_district_microflow_risk_entry_kind_breakdown_7d = buildSceneLoopDimensionBreakdown(
     metrics.scene_loop_district_microflow_risk_rows_7d,
     "entry_kind_key"
