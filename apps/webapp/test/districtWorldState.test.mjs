@@ -574,6 +574,46 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
   assert.equal(state.interaction_clusters.find((cluster) => cluster.cluster_key === "hub_gate_north")?.intent_slots.length, 2);
   assert.equal(state.interaction_clusters.find((cluster) => cluster.cluster_key === "hub_gate_north")?.intent_slots[0].band_key, "inner");
   assert.equal(state.interaction_clusters.find((cluster) => cluster.cluster_key === "hub_gate_north")?.intent_slots[1].band_key, "outer");
+  assert.equal(
+    state.interaction_clusters.find((cluster) => cluster.cluster_key === "hub_gate_north")?.action_items[0].focus_key,
+    "central_hub:travel:travel_flow"
+  );
+  assert.equal(
+    state.interaction_clusters.find((cluster) => cluster.cluster_key === "hub_gate_north")?.action_items[0].risk_focus_key,
+    "central_hub:travel:travel_flow|green:stable:flat"
+  );
+  assert.equal(
+    state.interaction_clusters.find((cluster) => cluster.cluster_key === "hub_gate_north")?.action_items[0].entry_kind_key,
+    "world_entry_kind_travel_gate"
+  );
+  assert.equal(
+    state.interaction_clusters.find((cluster) => cluster.cluster_key === "hub_gate_north")?.action_items[0].sequence_kind_key,
+    "world_modal_kind_travel_gate"
+  );
+  assert.equal(
+    state.interaction_clusters.find((cluster) => cluster.cluster_key === "hub_gate_north")?.action_items[0].action_context_signature,
+    "central_hub|travel|travel_flow|world_modal_lane_season_arc:travel|central_hub:travel:travel_flow|travel_gate|travel_gate"
+  );
+  assert.equal(
+    state.interaction_clusters.find((cluster) => cluster.cluster_key === "hub_gate_north")?.action_items[0].contract_ready,
+    true
+  );
+  assert.equal(
+    state.interaction_clusters.find((cluster) => cluster.cluster_key === "hub_gate_north")?.intent_slots[0].focus_key,
+    "central_hub:travel:travel_flow"
+  );
+  assert.equal(
+    state.interaction_clusters.find((cluster) => cluster.cluster_key === "hub_gate_north")?.intent_slots[0].entry_kind_key,
+    "world_entry_kind_travel_gate"
+  );
+  assert.equal(
+    state.interaction_clusters.find((cluster) => cluster.cluster_key === "hub_gate_north")?.intent_slots[0].sequence_kind_key,
+    "world_modal_kind_travel_gate"
+  );
+  assert.equal(
+    state.interaction_clusters.find((cluster) => cluster.cluster_key === "hub_gate_north")?.intent_slots[0].contract_ready,
+    true
+  );
 });
 
 test("buildDistrictWorldState trims pvp nodes on low-end profile", () => {

@@ -1384,7 +1384,29 @@ function buildInteractionClusters(actors, hotspots, activeHotspotKey) {
       interaction_kind: toText(hotspot.interaction_kind, "open"),
       intent_profile_key: toText(hotspot.intent_profile_key, ""),
       intent_profile: asRecord(hotspot.intent_profile),
-      is_secondary: Boolean(hotspot.is_secondary)
+      is_secondary: Boolean(hotspot.is_secondary),
+      family_key: toText(hotspot.family_key, ""),
+      flow_key: toText(hotspot.flow_key, ""),
+      microflow_key: toText(hotspot.microflow_key, ""),
+      focus_key: toText(hotspot.focus_key, ""),
+      risk_key: toText(hotspot.risk_key, ""),
+      risk_focus_key: toText(hotspot.risk_focus_key, ""),
+      risk_health_band_key: toText(hotspot.risk_health_band_key, ""),
+      risk_attention_band_key: toText(hotspot.risk_attention_band_key, ""),
+      risk_trend_direction_key: toText(hotspot.risk_trend_direction_key, ""),
+      entry_kind_key: toText(hotspot.entry_kind_key, ""),
+      sequence_kind_key: toText(hotspot.sequence_kind_key, ""),
+      context_lookup_required:
+        typeof hotspot.context_lookup_required === "boolean" ? hotspot.context_lookup_required : undefined,
+      context_lookup_resolved:
+        typeof hotspot.context_lookup_resolved === "boolean" ? hotspot.context_lookup_resolved : undefined,
+      action_context_signature: toText(hotspot.action_context_signature, ""),
+      risk_context_signature: toText(hotspot.risk_context_signature, ""),
+      contract_ready: typeof hotspot.contract_ready === "boolean" ? hotspot.contract_ready : undefined,
+      contract_state_key: toText(hotspot.contract_state_key, ""),
+      contract_missing_keys: asList(hotspot.contract_missing_keys),
+      action_context: asRecord(hotspot.action_context),
+      risk_context: asRecord(hotspot.risk_context)
     });
     current.hotspot_count += 1;
     current.secondary_count += hotspot.is_secondary ? 1 : 0;
@@ -6875,7 +6897,11 @@ export function buildDistrictWorldState(input = {}) {
     ...hotspot,
     is_active: hotspot.key === activeHotspotKey
   }));
-  const enrichedInteractionClusters = interactionClusters.map((cluster) => ({
+  const enrichedInteractionClusters = buildInteractionClusters(
+    actors,
+    enrichedHotspots.length ? enrichedHotspots : hotspots,
+    activeHotspotKey
+  ).map((cluster) => ({
     ...cluster,
     action_items: enrichInteractionActionItems(cluster.action_items, actionContextLookup),
     intent_slots: enrichInteractionActionItems(cluster.intent_slots, actionContextLookup)
