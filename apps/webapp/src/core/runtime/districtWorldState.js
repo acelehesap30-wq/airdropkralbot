@@ -281,6 +281,32 @@ function buildRiskContextShape(source, fallback = {}) {
   };
 }
 
+function applyResolvedInteractionContext(target, rootContext, actionContext, riskContext, overrides = {}) {
+  const base = asRecord(target);
+  const root = asRecord(rootContext);
+  const patch = asRecord(overrides);
+  const resolvedActionContext = asRecord(actionContext);
+  const resolvedRiskContext = asRecord(riskContext);
+  const mergedContext = {
+    ...root,
+    ...patch
+  };
+  return {
+    ...base,
+    ...mergedContext,
+    action_context: resolvedActionContext,
+    action_context_signature: toText(
+      resolvedActionContext.action_context_signature,
+      toText(base.action_context_signature, "")
+    ),
+    risk_context: resolvedRiskContext,
+    risk_context_signature: toText(
+      resolvedRiskContext.risk_context_signature,
+      toText(base.risk_context_signature, "")
+    )
+  };
+}
+
 function resolveDistrictLabelKey(districtKey) {
   switch (districtKey) {
     case "arena_prime":
@@ -6589,94 +6615,94 @@ export function buildDistrictWorldState(input = {}) {
   const rootResolvedActionContext = buildActionContextShape(rootInteractionActionContext);
   const rootRiskContext = buildRiskContextShape(rootInteractionActionContext);
   const finalInteractionSheet = interactionSheet
-    ? {
-        ...interactionSheet,
-        ...rootInteractionContext,
-        action_context: rootResolvedActionContext,
-        action_context_signature: rootResolvedActionContext.action_context_signature || "",
-        risk_context: rootRiskContext,
-        risk_context_signature: rootRiskContext.risk_context_signature || ""
-      }
+    ? applyResolvedInteractionContext(
+        interactionSheet,
+        rootInteractionContext,
+        rootResolvedActionContext,
+        rootRiskContext
+      )
     : interactionSheet;
   const finalInteractionSurface = enrichedInteractionSurface
-    ? {
-        ...enrichedInteractionSurface,
-        ...rootInteractionContext,
-        entry_kind_key: toText(
-          enrichedInteractionSurface.entry_kind_key || rootInteractionContext.entry_kind_key,
-          ""
-        ),
-        sequence_kind_key: toText(
-          enrichedInteractionSurface.sequence_kind_key || rootInteractionContext.sequence_kind_key,
-          ""
-        ),
-        action_context: rootResolvedActionContext,
-        action_context_signature: rootResolvedActionContext.action_context_signature || "",
-        risk_context: rootRiskContext,
-        risk_context_signature: rootRiskContext.risk_context_signature || ""
-      }
+    ? applyResolvedInteractionContext(
+        enrichedInteractionSurface,
+        rootInteractionContext,
+        rootResolvedActionContext,
+        rootRiskContext,
+        {
+          entry_kind_key: toText(
+            enrichedInteractionSurface.entry_kind_key || rootInteractionContext.entry_kind_key,
+            ""
+          ),
+          sequence_kind_key: toText(
+            enrichedInteractionSurface.sequence_kind_key || rootInteractionContext.sequence_kind_key,
+            ""
+          )
+        }
+      )
     : enrichedInteractionSurface;
   const finalInteractionFlow = interactionFlow
-    ? {
-        ...interactionFlow,
-        ...rootInteractionContext,
-        entry_kind_key: toText(interactionFlow.entry_kind_key || rootInteractionContext.entry_kind_key, ""),
-        sequence_kind_key: toText(
-          interactionFlow.sequence_kind_key || rootInteractionContext.sequence_kind_key,
-          ""
-        ),
-        action_context: rootResolvedActionContext,
-        action_context_signature: rootResolvedActionContext.action_context_signature || "",
-        risk_context: rootRiskContext,
-        risk_context_signature: rootRiskContext.risk_context_signature || ""
-      }
+    ? applyResolvedInteractionContext(
+        interactionFlow,
+        rootInteractionContext,
+        rootResolvedActionContext,
+        rootRiskContext,
+        {
+          entry_kind_key: toText(interactionFlow.entry_kind_key || rootInteractionContext.entry_kind_key, ""),
+          sequence_kind_key: toText(
+            interactionFlow.sequence_kind_key || rootInteractionContext.sequence_kind_key,
+            ""
+          )
+        }
+      )
     : interactionFlow;
   const finalInteractionEntry = interactionEntry
-    ? {
-        ...interactionEntry,
-        ...rootInteractionContext,
-        entry_kind_key: toText(interactionEntry.entry_kind_key || rootInteractionContext.entry_kind_key, ""),
-        sequence_kind_key: toText(
-          interactionEntry.sequence_kind_key || rootInteractionContext.sequence_kind_key,
-          ""
-        ),
-        action_context: rootResolvedActionContext,
-        action_context_signature: rootResolvedActionContext.action_context_signature || "",
-        risk_context: rootRiskContext,
-        risk_context_signature: rootRiskContext.risk_context_signature || ""
-      }
+    ? applyResolvedInteractionContext(
+        interactionEntry,
+        rootInteractionContext,
+        rootResolvedActionContext,
+        rootRiskContext,
+        {
+          entry_kind_key: toText(interactionEntry.entry_kind_key || rootInteractionContext.entry_kind_key, ""),
+          sequence_kind_key: toText(
+            interactionEntry.sequence_kind_key || rootInteractionContext.sequence_kind_key,
+            ""
+          )
+        }
+      )
     : interactionEntry;
   const finalInteractionTerminal = enrichedInteractionTerminal
-    ? {
-        ...enrichedInteractionTerminal,
-        ...rootInteractionContext,
-        entry_kind_key: toText(
-          enrichedInteractionTerminal.entry_kind_key || rootInteractionContext.entry_kind_key,
-          ""
-        ),
-        action_context: rootResolvedActionContext,
-        action_context_signature: rootResolvedActionContext.action_context_signature || "",
-        risk_context: rootRiskContext,
-        risk_context_signature: rootRiskContext.risk_context_signature || ""
-      }
+    ? applyResolvedInteractionContext(
+        enrichedInteractionTerminal,
+        rootInteractionContext,
+        rootResolvedActionContext,
+        rootRiskContext,
+        {
+          entry_kind_key: toText(
+            enrichedInteractionTerminal.entry_kind_key || rootInteractionContext.entry_kind_key,
+            ""
+          )
+        }
+      )
     : enrichedInteractionTerminal;
   const finalInteractionModal = enrichedInteractionModal
-    ? {
-        ...enrichedInteractionModal,
-        ...rootInteractionContext,
-        entry_kind_key: toText(
-          enrichedInteractionModal.entry_kind_key || rootInteractionContext.entry_kind_key,
-          ""
-        ),
-        sequence_kind_key: toText(
-          enrichedInteractionModal.modal_kind_key || enrichedInteractionModal.sequence_kind_key || rootInteractionContext.sequence_kind_key,
-          ""
-        ),
-        action_context: rootResolvedActionContext,
-        action_context_signature: rootResolvedActionContext.action_context_signature || "",
-        risk_context: rootRiskContext,
-        risk_context_signature: rootRiskContext.risk_context_signature || ""
-      }
+    ? applyResolvedInteractionContext(
+        enrichedInteractionModal,
+        rootInteractionContext,
+        rootResolvedActionContext,
+        rootRiskContext,
+        {
+          entry_kind_key: toText(
+            enrichedInteractionModal.entry_kind_key || rootInteractionContext.entry_kind_key,
+            ""
+          ),
+          sequence_kind_key: toText(
+            enrichedInteractionModal.modal_kind_key ||
+              enrichedInteractionModal.sequence_kind_key ||
+              rootInteractionContext.sequence_kind_key,
+            ""
+          )
+        }
+      )
     : enrichedInteractionModal;
 
   return {
