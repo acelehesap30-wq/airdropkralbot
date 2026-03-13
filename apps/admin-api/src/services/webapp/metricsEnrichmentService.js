@@ -2395,6 +2395,14 @@ function enrichWebappRevenueMetrics(rawMetrics = {}) {
     metrics.scene_loop_district_microflow_risk_rows_daily_7d,
     "entry_kind_key"
   );
+  metrics.scene_loop_district_microflow_risk_entry_kind_priority_7d = buildSceneLoopDimensionPriority(
+    metrics.scene_loop_district_microflow_risk_rows_7d,
+    "entry_kind_key"
+  );
+  metrics.scene_loop_district_microflow_risk_entry_kind_priority_daily_7d = buildSceneLoopDimensionPriorityDaily(
+    metrics.scene_loop_district_microflow_risk_rows_daily_7d,
+    "entry_kind_key"
+  );
   metrics.scene_loop_district_microflow_risk_sequence_kind_breakdown_7d = buildSceneLoopDimensionBreakdown(
     metrics.scene_loop_district_microflow_risk_rows_7d,
     "sequence_kind_key"
@@ -2408,6 +2416,14 @@ function enrichWebappRevenueMetrics(rawMetrics = {}) {
     "sequence_kind_key"
   );
   metrics.scene_loop_district_microflow_risk_sequence_kind_matrix_daily_7d = buildSceneLoopDimensionRiskMatrixDaily(
+    metrics.scene_loop_district_microflow_risk_rows_daily_7d,
+    "sequence_kind_key"
+  );
+  metrics.scene_loop_district_microflow_risk_sequence_kind_priority_7d = buildSceneLoopDimensionPriority(
+    metrics.scene_loop_district_microflow_risk_rows_7d,
+    "sequence_kind_key"
+  );
+  metrics.scene_loop_district_microflow_risk_sequence_kind_priority_daily_7d = buildSceneLoopDimensionPriorityDaily(
     metrics.scene_loop_district_microflow_risk_rows_daily_7d,
     "sequence_kind_key"
   );

@@ -743,6 +743,12 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
   const sceneLoopDistrictMicroflowRiskEntryKindMatrixDaily = asRows(
     props.metricsData?.scene_loop_district_microflow_risk_entry_kind_matrix_daily_7d
   );
+  const sceneLoopDistrictMicroflowRiskEntryKindPriority = asRows(
+    props.metricsData?.scene_loop_district_microflow_risk_entry_kind_priority_7d
+  );
+  const sceneLoopDistrictMicroflowRiskEntryKindPriorityDaily = asRows(
+    props.metricsData?.scene_loop_district_microflow_risk_entry_kind_priority_daily_7d
+  );
   const sceneLoopDistrictMicroflowRiskSequenceKindBreakdown = asRows(
     props.metricsData?.scene_loop_district_microflow_risk_sequence_kind_breakdown_7d
   );
@@ -754,6 +760,12 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
   );
   const sceneLoopDistrictMicroflowRiskSequenceKindMatrixDaily = asRows(
     props.metricsData?.scene_loop_district_microflow_risk_sequence_kind_matrix_daily_7d
+  );
+  const sceneLoopDistrictMicroflowRiskSequenceKindPriority = asRows(
+    props.metricsData?.scene_loop_district_microflow_risk_sequence_kind_priority_7d
+  );
+  const sceneLoopDistrictMicroflowRiskSequenceKindPriorityDaily = asRows(
+    props.metricsData?.scene_loop_district_microflow_risk_sequence_kind_priority_daily_7d
   );
   const sceneLoopDistrictMicroflowRiskLatestBandBreakdown = asRows(
     props.metricsData?.scene_loop_district_microflow_risk_latest_band_breakdown_7d
@@ -1284,6 +1296,16 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
           title={t(props.lang, "admin_runtime_scene_loop_district_microflow_risk_entry_kind_matrix_daily_title")}
           rows={sceneLoopDistrictMicroflowRiskEntryKindMatrixDaily}
         />
+        <SceneLoopDistrictFamilyPriorityList
+          title={t(props.lang, "admin_runtime_scene_loop_district_microflow_risk_entry_kind_priority_title")}
+          rows={sceneLoopDistrictMicroflowRiskEntryKindPriority}
+          loopKeyField="entry_kind_key"
+        />
+        <SceneLoopDistrictFamilyPriorityList
+          title={t(props.lang, "admin_runtime_scene_loop_district_microflow_risk_entry_kind_priority_daily_title")}
+          rows={sceneLoopDistrictMicroflowRiskEntryKindPriorityDaily}
+          loopKeyField="entry_kind_key"
+        />
         <BreakdownList
           title={t(props.lang, "admin_runtime_scene_loop_district_microflow_risk_sequence_kind_title")}
           rows={sceneLoopDistrictMicroflowRiskSequenceKindBreakdown}
@@ -1299,6 +1321,16 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
         <SceneLoopRiskDimensionDailyMatrixList
           title={t(props.lang, "admin_runtime_scene_loop_district_microflow_risk_sequence_kind_matrix_daily_title")}
           rows={sceneLoopDistrictMicroflowRiskSequenceKindMatrixDaily}
+        />
+        <SceneLoopDistrictFamilyPriorityList
+          title={t(props.lang, "admin_runtime_scene_loop_district_microflow_risk_sequence_kind_priority_title")}
+          rows={sceneLoopDistrictMicroflowRiskSequenceKindPriority}
+          loopKeyField="sequence_kind_key"
+        />
+        <SceneLoopDistrictFamilyPriorityList
+          title={t(props.lang, "admin_runtime_scene_loop_district_microflow_risk_sequence_kind_priority_daily_title")}
+          rows={sceneLoopDistrictMicroflowRiskSequenceKindPriorityDaily}
+          loopKeyField="sequence_kind_key"
         />
         <BreakdownList
           title={t(props.lang, "admin_runtime_scene_loop_district_microflow_risk_latest_band_title")}

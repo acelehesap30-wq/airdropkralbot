@@ -660,6 +660,23 @@ test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
     )
   );
   assert.ok(
+    enriched.scene_loop_district_microflow_risk_entry_kind_priority_7d.some(
+      (row) =>
+        row.entry_kind_key === "world_entry_kind_wallet_terminal" &&
+        row.risk_focus_key === "exchange_district:wallet_link:wallet|red:alert:no_data" &&
+        Number(row.priority_score || 0) >= 3000
+    )
+  );
+  assert.ok(
+    enriched.scene_loop_district_microflow_risk_entry_kind_priority_daily_7d.some(
+      (row) =>
+        row.day === "2026-03-08" &&
+        row.entry_kind_key === "world_entry_kind_payout_terminal" &&
+        row.risk_context?.sequence_kind_key === "world_modal_kind_payout_route" &&
+        Number(row.priority_score || 0) >= 2000
+    )
+  );
+  assert.ok(
     enriched.scene_loop_district_microflow_risk_matrix_daily_7d.some(
       (row) =>
         row.day === "2026-03-08" &&
@@ -729,6 +746,23 @@ test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
         row.day === "2026-03-08" &&
         row.bucket_key === "world_modal_kind_payout_route" &&
         row.risk_key === "yellow:watch:no_data"
+    )
+  );
+  assert.ok(
+    enriched.scene_loop_district_microflow_risk_sequence_kind_priority_7d.some(
+      (row) =>
+        row.sequence_kind_key === "world_modal_kind_wallet_terminal" &&
+        row.risk_focus_key === "exchange_district:wallet_link:wallet|red:alert:no_data" &&
+        Number(row.priority_score || 0) >= 3000
+    )
+  );
+  assert.ok(
+    enriched.scene_loop_district_microflow_risk_sequence_kind_priority_daily_7d.some(
+      (row) =>
+        row.day === "2026-03-08" &&
+        row.sequence_kind_key === "world_modal_kind_payout_route" &&
+        row.risk_context?.entry_kind_key === "world_entry_kind_payout_terminal" &&
+        Number(row.priority_score || 0) >= 2000
     )
   );
   assert.ok(
