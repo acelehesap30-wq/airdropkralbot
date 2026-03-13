@@ -354,6 +354,14 @@ test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
   assert.equal(enriched.scene_loop_district_microflow_trend_breakdown_7d[0].bucket_key, "no_data");
   assert.equal(enriched.scene_loop_district_microflow_attention_breakdown_7d[0].bucket_key, "watch");
   assert.equal(enriched.scene_loop_district_microflow_health_attention_breakdown_7d[0].bucket_key, "yellow:watch");
+  assert.equal(
+    enriched.scene_loop_district_microflow_health_attention_breakdown_7d[0].risk_context?.microflow_key,
+    "duel"
+  );
+  assert.equal(
+    enriched.scene_loop_district_microflow_health_attention_breakdown_7d[0].risk_context?.entry_kind_key,
+    "world_entry_kind_duel_console"
+  );
   assert.equal(enriched.scene_loop_district_microflow_attention_trend_breakdown_7d[0].bucket_key, "alert:no_data");
   assert.equal(enriched.scene_loop_district_microflow_health_attention_trend_breakdown_7d[0].bucket_key, "red:alert:no_data");
   assert.equal(enriched.scene_loop_district_microflow_health_attention_trend_matrix_7d[0].district_key, "exchange_district");
@@ -405,11 +413,27 @@ test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
     enriched.scene_loop_district_microflow_attention_priority_7d[0].risk_focus_key,
     "exchange_district:wallet_link:wallet|red:alert:no_data"
   );
+  assert.equal(
+    enriched.scene_loop_district_microflow_attention_priority_7d[0].risk_context?.microflow_key,
+    "wallet"
+  );
+  assert.equal(
+    enriched.scene_loop_district_microflow_attention_priority_7d[0].risk_context?.sequence_kind_key,
+    "world_modal_kind_wallet_terminal"
+  );
   assert.equal(enriched.scene_loop_district_microflow_attention_priority_daily_7d[0].loop_family_key, "payout_lane");
   assert.equal(enriched.scene_loop_district_microflow_attention_priority_daily_7d[0].loop_microflow_key, "payout");
   assert.equal(
     enriched.scene_loop_district_microflow_attention_priority_daily_7d[0].focus_key,
     "exchange_district:payout_lane:payout"
+  );
+  assert.equal(
+    enriched.scene_loop_district_microflow_attention_priority_daily_7d[0].risk_context?.microflow_key,
+    "payout"
+  );
+  assert.equal(
+    enriched.scene_loop_district_microflow_attention_priority_daily_7d[0].risk_context?.entry_kind_key,
+    "world_entry_kind_payout_terminal"
   );
   assert.equal(
     enriched.scene_loop_district_microflow_attention_priority_daily_7d[0].risk_focus_key,

@@ -569,12 +569,41 @@ function toSceneLoopFamilyRowsFromMicroflow(rows) {
 
 function mapSceneLoopFamilyRowToMicroflow(row) {
   const source = row && typeof row === "object" ? row : {};
-  const { loop_family_key, ...rest } = source;
-  const rawMicroflowKey = source.loop_microflow_key ?? loop_family_key;
+  const actionContextSource = asRecord(source.action_context);
+  const riskContextSource = asRecord(source.risk_context);
+  const {
+    loop_family_key,
+    action_context,
+    risk_context,
+    action_context_signature,
+    risk_context_signature,
+    focus_key,
+    risk_key,
+    risk_focus_key,
+    entry_kind_key,
+    sequence_kind_key,
+    ...rest
+  } = source;
+  const rawMicroflowKey =
+    source.loop_microflow_key ??
+    riskContextSource?.microflow_key ??
+    actionContextSource?.microflow_key ??
+    loop_family_key;
+  const loopFamilyKey = normalizeSceneLoopFamilyKey(loop_family_key);
+  const loopMicroflowKey = normalizeSceneLoopMicroflowKey(rawMicroflowKey);
+  const context = buildSceneLoopRiskContext({
+    ...rest,
+    loop_family_key: loopFamilyKey,
+    loop_microflow_key: loopMicroflowKey,
+    latest_health_band: source.latest_health_band ?? source.health_band,
+    attention_band: source.attention_band,
+    trend_direction: source.trend_direction
+  });
   return {
     ...rest,
-    loop_family_key: normalizeSceneLoopFamilyKey(loop_family_key),
-    loop_microflow_key: normalizeSceneLoopMicroflowKey(rawMicroflowKey)
+    ...context,
+    loop_family_key: loopFamilyKey,
+    loop_microflow_key: loopMicroflowKey
   };
 }
 
@@ -876,14 +905,34 @@ function buildSceneLoopDistrictFamilyHealthAttentionBreakdown(rows) {
     const latestBand = String(row?.latest_health_band || row?.health_band || "no_data");
     const attention = String(row?.attention_band || "no_data");
     const key = `${latestBand}:${attention}`;
-    counters.set(key, (counters.get(key) || 0) + 1);
+    const day = String(row?.latest_day || row?.day || "");
+    const totalCount = Math.max(0, Math.floor(toNum(row?.total_count, 0)));
+    const context = buildSceneLoopRiskContext(row);
+    if (!counters.has(key)) {
+      counters.set(key, {
+        bucket_key: key,
+        item_count: 0,
+        total_count: 0,
+        latest_day: day || null,
+        ...context
+      });
+    }
+    const current = counters.get(key);
+    current.item_count = Math.max(0, Math.floor(toNum(current.item_count, 0)) + 1);
+    current.total_count = Math.max(toNum(current.total_count, 0), totalCount);
+    const latestDay = String(current.latest_day || "");
+    const shouldReplace =
+      !latestDay ||
+      (day && day.localeCompare(latestDay) > 0) ||
+      (day === latestDay && totalCount > toNum(current.total_count, 0));
+    if (shouldReplace) {
+      Object.assign(current, context);
+      current.latest_day = day || null;
+    }
   });
-  return Array.from(counters.entries())
-    .map(([bucket_key, item_count]) => ({
-      bucket_key,
-      item_count: Math.max(0, Math.floor(toNum(item_count, 0)))
-    }))
-    .sort((left, right) => right.item_count - left.item_count || String(left.bucket_key).localeCompare(String(right.bucket_key)));
+  return Array.from(counters.values()).sort(
+    (left, right) => right.item_count - left.item_count || String(left.bucket_key).localeCompare(String(right.bucket_key))
+  );
 }
 
 function buildSceneLoopDistrictFamilyAttentionTrendBreakdown(rows) {
@@ -892,14 +941,34 @@ function buildSceneLoopDistrictFamilyAttentionTrendBreakdown(rows) {
     const attention = String(row?.attention_band || "no_data");
     const trend = String(row?.trend_direction || "no_data");
     const key = `${attention}:${trend}`;
-    counters.set(key, (counters.get(key) || 0) + 1);
+    const day = String(row?.latest_day || row?.day || "");
+    const totalCount = Math.max(0, Math.floor(toNum(row?.total_count, 0)));
+    const context = buildSceneLoopRiskContext(row);
+    if (!counters.has(key)) {
+      counters.set(key, {
+        bucket_key: key,
+        item_count: 0,
+        total_count: 0,
+        latest_day: day || null,
+        ...context
+      });
+    }
+    const current = counters.get(key);
+    current.item_count = Math.max(0, Math.floor(toNum(current.item_count, 0)) + 1);
+    current.total_count = Math.max(toNum(current.total_count, 0), totalCount);
+    const latestDay = String(current.latest_day || "");
+    const shouldReplace =
+      !latestDay ||
+      (day && day.localeCompare(latestDay) > 0) ||
+      (day === latestDay && totalCount > toNum(current.total_count, 0));
+    if (shouldReplace) {
+      Object.assign(current, context);
+      current.latest_day = day || null;
+    }
   });
-  return Array.from(counters.entries())
-    .map(([bucket_key, item_count]) => ({
-      bucket_key,
-      item_count: Math.max(0, Math.floor(toNum(item_count, 0)))
-    }))
-    .sort((left, right) => right.item_count - left.item_count || String(left.bucket_key).localeCompare(String(right.bucket_key)));
+  return Array.from(counters.values()).sort(
+    (left, right) => right.item_count - left.item_count || String(left.bucket_key).localeCompare(String(right.bucket_key))
+  );
 }
 
 function buildSceneLoopDistrictFamilyHealthAttentionTrendBreakdown(rows) {
@@ -909,14 +978,34 @@ function buildSceneLoopDistrictFamilyHealthAttentionTrendBreakdown(rows) {
     const attention = String(row?.attention_band || "no_data");
     const trend = String(row?.trend_direction || "no_data");
     const key = `${latestBand}:${attention}:${trend}`;
-    counters.set(key, (counters.get(key) || 0) + 1);
+    const day = String(row?.latest_day || row?.day || "");
+    const totalCount = Math.max(0, Math.floor(toNum(row?.total_count, 0)));
+    const context = buildSceneLoopRiskContext(row);
+    if (!counters.has(key)) {
+      counters.set(key, {
+        bucket_key: key,
+        item_count: 0,
+        total_count: 0,
+        latest_day: day || null,
+        ...context
+      });
+    }
+    const current = counters.get(key);
+    current.item_count = Math.max(0, Math.floor(toNum(current.item_count, 0)) + 1);
+    current.total_count = Math.max(toNum(current.total_count, 0), totalCount);
+    const latestDay = String(current.latest_day || "");
+    const shouldReplace =
+      !latestDay ||
+      (day && day.localeCompare(latestDay) > 0) ||
+      (day === latestDay && totalCount > toNum(current.total_count, 0));
+    if (shouldReplace) {
+      Object.assign(current, context);
+      current.latest_day = day || null;
+    }
   });
-  return Array.from(counters.entries())
-    .map(([bucket_key, item_count]) => ({
-      bucket_key,
-      item_count: Math.max(0, Math.floor(toNum(item_count, 0)))
-    }))
-    .sort((left, right) => right.item_count - left.item_count || String(left.bucket_key).localeCompare(String(right.bucket_key)));
+  return Array.from(counters.values()).sort(
+    (left, right) => right.item_count - left.item_count || String(left.bucket_key).localeCompare(String(right.bucket_key))
+  );
 }
 
 function rankSceneLoopAttentionBand(value) {
