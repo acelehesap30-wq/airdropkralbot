@@ -217,8 +217,119 @@ test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
     scene_loop_district_microflow_daily_breakdown_7d: [
       { day: "2026-03-08", district_key: "arena_prime", loop_microflow_key: "world_modal_lane_duel_sync:duel", total_count: 4, live_count: 3, blocked_count: 1 },
       { day: "2026-03-07", district_key: "arena_prime", loop_microflow_key: "world_modal_lane_duel_sync:duel", total_count: 2, live_count: 1, blocked_count: 1 },
-      { day: "2026-03-08", district_key: "exchange_district", loop_microflow_key: "world_modal_lane_payout_lane:payout", total_count: 3, live_count: 2, blocked_count: 1 },
-      { day: "2026-03-07", district_key: "exchange_district", loop_microflow_key: "world_modal_lane_wallet_link:wallet", total_count: 2, live_count: 1, blocked_count: 0 }
+      {
+        day: "2026-03-08",
+        district_key: "exchange_district",
+        loop_family_key: "payout_lane",
+        loop_microflow_key: "world_modal_lane_payout_lane:payout",
+        flow_key: "payout_lane:payout",
+        focus_key: "exchange_district:payout_lane:payout",
+        risk_key: "yellow:watch:no_data",
+        risk_focus_key: "exchange_district:payout_lane:payout|yellow:watch:no_data",
+        entry_kind_key: "world_entry_kind_payout_terminal",
+        sequence_kind_key: "world_modal_kind_payout_route",
+        action_context_signature:
+          "payout_lane:payout|exchange_district:payout_lane:payout|world_entry_kind_payout_terminal|world_modal_kind_payout_route",
+        risk_context_signature:
+          "payout_lane:payout|exchange_district:payout_lane:payout|yellow:watch:no_data|world_entry_kind_payout_terminal|world_modal_kind_payout_route",
+        contract_state_key: "ready",
+        contract_ready: true,
+        action_context: {
+          district_key: "exchange_district",
+          family_key: "payout_lane",
+          flow_key: "payout_lane:payout",
+          microflow_key: "payout",
+          focus_key: "exchange_district:payout_lane:payout",
+          entry_kind_key: "world_entry_kind_payout_terminal",
+          sequence_kind_key: "world_modal_kind_payout_route",
+          action_context_signature:
+            "payout_lane:payout|exchange_district:payout_lane:payout|world_entry_kind_payout_terminal|world_modal_kind_payout_route",
+          contract_state_key: "ready",
+          contract_ready: true,
+          contract_missing_keys: []
+        },
+        risk_context: {
+          district_key: "exchange_district",
+          family_key: "payout_lane",
+          flow_key: "payout_lane:payout",
+          microflow_key: "payout",
+          focus_key: "exchange_district:payout_lane:payout",
+          risk_key: "yellow:watch:no_data",
+          risk_focus_key: "exchange_district:payout_lane:payout|yellow:watch:no_data",
+          risk_health_band_key: "yellow",
+          risk_attention_band_key: "watch",
+          risk_trend_direction_key: "no_data",
+          entry_kind_key: "world_entry_kind_payout_terminal",
+          sequence_kind_key: "world_modal_kind_payout_route",
+          risk_context_signature:
+            "payout_lane:payout|exchange_district:payout_lane:payout|yellow:watch:no_data|world_entry_kind_payout_terminal|world_modal_kind_payout_route",
+          contract_state_key: "ready",
+          contract_ready: true,
+          contract_missing_keys: []
+        },
+        total_count: 3,
+        live_count: 2,
+        blocked_count: 1
+      },
+      {
+        day: "2026-03-07",
+        district_key: "exchange_district",
+        loop_family_key: "wallet_link",
+        loop_microflow_key: "world_modal_lane_wallet_link:wallet",
+        flow_key: "wallet_link:wallet",
+        focus_key: "exchange_district:wallet_link:wallet",
+        risk_key: "red:alert:no_data",
+        risk_focus_key: "exchange_district:wallet_link:wallet|red:alert:no_data",
+        entry_kind_key: "world_entry_kind_wallet_terminal",
+        sequence_kind_key: "world_modal_kind_wallet_terminal",
+        action_context_signature:
+          "wallet_link:wallet|exchange_district:wallet_link:wallet|world_entry_kind_wallet_terminal|world_modal_kind_wallet_terminal",
+        risk_context_signature:
+          "wallet_link:wallet|exchange_district:wallet_link:wallet|red:alert:no_data|world_entry_kind_wallet_terminal|world_modal_kind_wallet_terminal",
+        contract_state_key: "missing",
+        contract_ready: false,
+        contract_missing_keys: ["action_context_lookup"],
+        action_context: {
+          district_key: "exchange_district",
+          family_key: "wallet_link",
+          flow_key: "wallet_link:wallet",
+          microflow_key: "wallet",
+          focus_key: "exchange_district:wallet_link:wallet",
+          entry_kind_key: "world_entry_kind_wallet_terminal",
+          sequence_kind_key: "world_modal_kind_wallet_terminal",
+          action_context_signature:
+            "wallet_link:wallet|exchange_district:wallet_link:wallet|world_entry_kind_wallet_terminal|world_modal_kind_wallet_terminal",
+          contract_state_key: "missing",
+          contract_ready: false,
+          contract_missing_keys: ["action_context_lookup"],
+          context_lookup_required: true,
+          context_lookup_resolved: false
+        },
+        risk_context: {
+          district_key: "exchange_district",
+          family_key: "wallet_link",
+          flow_key: "wallet_link:wallet",
+          microflow_key: "wallet",
+          focus_key: "exchange_district:wallet_link:wallet",
+          risk_key: "red:alert:no_data",
+          risk_focus_key: "exchange_district:wallet_link:wallet|red:alert:no_data",
+          risk_health_band_key: "red",
+          risk_attention_band_key: "alert",
+          risk_trend_direction_key: "no_data",
+          entry_kind_key: "world_entry_kind_wallet_terminal",
+          sequence_kind_key: "world_modal_kind_wallet_terminal",
+          risk_context_signature:
+            "wallet_link:wallet|exchange_district:wallet_link:wallet|red:alert:no_data|world_entry_kind_wallet_terminal|world_modal_kind_wallet_terminal",
+          contract_state_key: "missing",
+          contract_ready: false,
+          contract_missing_keys: ["action_context_lookup"],
+          context_lookup_required: true,
+          context_lookup_resolved: false
+        },
+        total_count: 2,
+        live_count: 1,
+        blocked_count: 0
+      }
     ],
     scene_loop_district_breakdown_24h: [{ bucket_key: "arena_prime", item_count: 6 }],
     scene_loop_family_breakdown_24h: [{ bucket_key: "duel_flow", item_count: 4 }, { bucket_key: "payout_flow", item_count: 3 }],
@@ -349,6 +460,15 @@ test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
   );
   assert.equal(enriched.scene_loop_district_microflow_matrix_7d[0].entry_kind_key, "world_entry_kind_duel_console");
   assert.equal(enriched.scene_loop_district_microflow_matrix_7d[0].sequence_kind_key, "world_modal_kind_duel_sequence");
+  assert.equal(
+    enriched.scene_loop_district_microflow_matrix_7d[0].action_context_signature,
+    "duel_sync:duel|arena_prime:duel_sync:duel|world_entry_kind_duel_console|world_modal_kind_duel_sequence"
+  );
+  assert.equal(
+    enriched.scene_loop_district_microflow_matrix_7d[0].risk_context?.risk_context_signature,
+    "duel_sync:duel|arena_prime:duel_sync:duel|yellow:watch:improving|world_entry_kind_duel_console|world_modal_kind_duel_sequence"
+  );
+  assert.equal(enriched.scene_loop_district_microflow_matrix_7d[0].contract_ready, true);
   assert.equal(enriched.scene_loop_district_microflow_matrix_7d[0].latest_health_band, "yellow");
   assert.equal(enriched.scene_loop_district_microflow_latest_band_breakdown_7d[0].bucket_key, "yellow");
   assert.equal(enriched.scene_loop_district_microflow_trend_breakdown_7d[0].bucket_key, "no_data");
@@ -392,7 +512,10 @@ test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
         row.flow_key === "wallet_link:wallet" &&
         row.focus_key === "exchange_district:wallet_link:wallet" &&
         row.risk_focus_key === "exchange_district:wallet_link:wallet|red:alert:no_data" &&
-        row.contract_state_key === "ready"
+        row.contract_state_key === "missing" &&
+        row.contract_ready === false &&
+        row.risk_context?.context_lookup_required === true &&
+        row.risk_context?.context_lookup_resolved === false
     )
   );
   assert.equal(enriched.scene_loop_district_microflow_health_attention_trend_matrix_7d[0].district_key, "exchange_district");
@@ -452,6 +575,11 @@ test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
     enriched.scene_loop_district_microflow_attention_priority_7d[0].risk_context?.sequence_kind_key,
     "world_modal_kind_wallet_terminal"
   );
+  assert.equal(
+    enriched.scene_loop_district_microflow_attention_priority_7d[0].action_context_signature,
+    "wallet_link:wallet|exchange_district:wallet_link:wallet|world_entry_kind_wallet_terminal|world_modal_kind_wallet_terminal"
+  );
+  assert.equal(enriched.scene_loop_district_microflow_attention_priority_7d[0].contract_ready, false);
   assert.equal(enriched.scene_loop_district_microflow_attention_priority_daily_7d[0].loop_family_key, "payout_lane");
   assert.equal(enriched.scene_loop_district_microflow_attention_priority_daily_7d[0].loop_microflow_key, "payout");
   assert.equal(
@@ -470,6 +598,27 @@ test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
     enriched.scene_loop_district_microflow_attention_priority_daily_7d[0].risk_focus_key,
     "exchange_district:payout_lane:payout|yellow:watch:no_data"
   );
+  assert.equal(
+    enriched.scene_loop_district_microflow_attention_priority_daily_7d[0].action_context_signature,
+    "payout_lane:payout|exchange_district:payout_lane:payout|world_entry_kind_payout_terminal|world_modal_kind_payout_route"
+  );
+  assert.equal(
+    enriched.scene_loop_district_microflow_attention_priority_daily_7d[0].risk_context_signature,
+    "payout_lane:payout|exchange_district:payout_lane:payout|yellow:watch:no_data|world_entry_kind_payout_terminal|world_modal_kind_payout_route"
+  );
+  assert.equal(
+    enriched.scene_loop_district_microflow_attention_priority_daily_7d[0].action_context?.action_context_signature,
+    "payout_lane:payout|exchange_district:payout_lane:payout|world_entry_kind_payout_terminal|world_modal_kind_payout_route"
+  );
+  assert.equal(
+    enriched.scene_loop_district_microflow_attention_priority_daily_7d[0].risk_context?.risk_context_signature,
+    "payout_lane:payout|exchange_district:payout_lane:payout|yellow:watch:no_data|world_entry_kind_payout_terminal|world_modal_kind_payout_route"
+  );
+  assert.equal(enriched.scene_loop_district_microflow_attention_priority_daily_7d[0].contract_ready, true);
+  assert.equal(enriched.scene_loop_district_microflow_attention_priority_daily_7d[0].contract_state_key, "ready");
+  assert.deepEqual(enriched.scene_loop_district_microflow_attention_priority_daily_7d[0].contract_missing_keys, []);
+  assert.equal(enriched.scene_loop_district_microflow_attention_priority_daily_7d[0].action_context?.contract_ready, true);
+  assert.equal(enriched.scene_loop_district_microflow_attention_priority_daily_7d[0].risk_context?.contract_ready, true);
   assert.equal(enriched.scene_loop_district_microflow_risk_rows_7d[0].district_key, "exchange_district");
   assert.equal(enriched.scene_loop_district_microflow_risk_rows_7d[0].loop_family_key, "wallet_link");
   assert.equal(enriched.scene_loop_district_microflow_risk_rows_7d[0].loop_microflow_key, "wallet");
@@ -518,15 +667,15 @@ test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
     enriched.scene_loop_district_microflow_risk_rows_7d[0].risk_context?.risk_context_signature,
     "wallet_link:wallet|exchange_district:wallet_link:wallet|red:alert:no_data|world_entry_kind_wallet_terminal|world_modal_kind_wallet_terminal"
   );
-  assert.equal(enriched.scene_loop_district_microflow_risk_rows_7d[0].contract_ready, true);
-  assert.equal(enriched.scene_loop_district_microflow_risk_rows_7d[0].contract_state_key, "ready");
-  assert.deepEqual(enriched.scene_loop_district_microflow_risk_rows_7d[0].contract_missing_keys, []);
-  assert.equal(enriched.scene_loop_district_microflow_risk_rows_7d[0].action_context?.contract_ready, true);
-  assert.equal(enriched.scene_loop_district_microflow_risk_rows_7d[0].action_context?.contract_state_key, "ready");
-  assert.deepEqual(enriched.scene_loop_district_microflow_risk_rows_7d[0].action_context?.contract_missing_keys, []);
-  assert.equal(enriched.scene_loop_district_microflow_risk_rows_7d[0].risk_context?.contract_ready, true);
-  assert.equal(enriched.scene_loop_district_microflow_risk_rows_7d[0].risk_context?.contract_state_key, "ready");
-  assert.deepEqual(enriched.scene_loop_district_microflow_risk_rows_7d[0].risk_context?.contract_missing_keys, []);
+  assert.equal(enriched.scene_loop_district_microflow_risk_rows_7d[0].contract_ready, false);
+  assert.equal(enriched.scene_loop_district_microflow_risk_rows_7d[0].contract_state_key, "missing");
+  assert.deepEqual(enriched.scene_loop_district_microflow_risk_rows_7d[0].contract_missing_keys, ["action_context_lookup"]);
+  assert.equal(enriched.scene_loop_district_microflow_risk_rows_7d[0].action_context?.contract_ready, false);
+  assert.equal(enriched.scene_loop_district_microflow_risk_rows_7d[0].action_context?.contract_state_key, "missing");
+  assert.deepEqual(enriched.scene_loop_district_microflow_risk_rows_7d[0].action_context?.contract_missing_keys, ["action_context_lookup"]);
+  assert.equal(enriched.scene_loop_district_microflow_risk_rows_7d[0].risk_context?.contract_ready, false);
+  assert.equal(enriched.scene_loop_district_microflow_risk_rows_7d[0].risk_context?.contract_state_key, "missing");
+  assert.deepEqual(enriched.scene_loop_district_microflow_risk_rows_7d[0].risk_context?.contract_missing_keys, ["action_context_lookup"]);
   assert.ok(enriched.scene_loop_district_microflow_risk_rows_7d[0].priority_score > 3000);
   assert.equal(enriched.scene_loop_district_microflow_risk_rows_daily_7d[0].day, "2026-03-08");
   assert.equal(enriched.scene_loop_district_microflow_risk_rows_daily_7d[0].district_key, "exchange_district");
@@ -587,6 +736,22 @@ test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
   assert.equal(enriched.scene_loop_district_microflow_risk_rows_daily_7d[0].risk_context?.contract_state_key, "ready");
   assert.deepEqual(enriched.scene_loop_district_microflow_risk_rows_daily_7d[0].risk_context?.contract_missing_keys, []);
   assert.ok(enriched.scene_loop_district_microflow_risk_rows_daily_7d[0].priority_score > 2000);
+  const walletDailyRiskRow = enriched.scene_loop_district_microflow_risk_rows_daily_7d.find(
+    (row) =>
+      row.day === "2026-03-07" &&
+      row.loop_family_key === "wallet_link" &&
+      row.loop_microflow_key === "wallet"
+  );
+  assert.ok(walletDailyRiskRow);
+  assert.equal(walletDailyRiskRow.contract_ready, false);
+  assert.equal(walletDailyRiskRow.contract_state_key, "missing");
+  assert.deepEqual(walletDailyRiskRow.contract_missing_keys, ["action_context_lookup"]);
+  assert.equal(walletDailyRiskRow.action_context?.contract_ready, false);
+  assert.equal(walletDailyRiskRow.risk_context?.contract_ready, false);
+  assert.equal(walletDailyRiskRow.action_context?.context_lookup_required, true);
+  assert.equal(walletDailyRiskRow.action_context?.context_lookup_resolved, false);
+  assert.equal(walletDailyRiskRow.risk_context?.context_lookup_required, true);
+  assert.equal(walletDailyRiskRow.risk_context?.context_lookup_resolved, false);
   assert.ok(
     enriched.scene_loop_district_microflow_risk_matrix_7d.some(
       (row) =>
@@ -1074,8 +1239,10 @@ test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
   assert.ok(
     enriched.scene_loop_district_microflow_risk_contract_state_priority_7d.some(
       (row) =>
-        row.contract_state_key === "ready" &&
-        row.risk_focus_key === "exchange_district:wallet_link:wallet|red:alert:no_data"
+        row.contract_state_key === "missing" &&
+        row.risk_focus_key === "exchange_district:wallet_link:wallet|red:alert:no_data" &&
+        row.risk_context?.context_lookup_required === true &&
+        row.risk_context?.context_lookup_resolved === false
     )
   );
   assert.ok(

@@ -299,8 +299,14 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
   );
   assert.equal(state.interaction_modal.modal_cards[0].contract_ready, true);
   assert.deepEqual(state.interaction_modal.modal_cards[0].contract_missing_keys, []);
+  assert.equal(state.interaction_modal.modal_cards[0].context_lookup_required, true);
+  assert.equal(state.interaction_modal.modal_cards[0].context_lookup_resolved, true);
   assert.equal(state.interaction_modal.modal_cards[0].action_context?.contract_ready, true);
+  assert.equal(state.interaction_modal.modal_cards[0].action_context?.context_lookup_required, true);
+  assert.equal(state.interaction_modal.modal_cards[0].action_context?.context_lookup_resolved, true);
   assert.equal(state.interaction_modal.modal_cards[0].risk_context?.contract_ready, true);
+  assert.equal(state.interaction_modal.modal_cards[0].risk_context?.context_lookup_required, true);
+  assert.equal(state.interaction_modal.modal_cards[0].risk_context?.context_lookup_resolved, true);
   assert.equal(state.interaction_modal.modal_cards[0].protocol_card_key, state.interaction_modal.protocol_cards[0].card_key);
   assert.equal(state.interaction_modal.modal_cards[0].protocol_pod_key, state.interaction_modal.protocol_cards[0].flow_pods[0].pod_key);
   assert.equal(
@@ -337,6 +343,10 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
   assert.equal(state.interaction_modal.protocol_cards[0].action_context?.focus_key, "central_hub:travel:travel_flow");
   assert.equal(state.interaction_modal.protocol_cards[0].action_context?.entry_kind_key, "world_entry_kind_hub_portal");
   assert.equal(state.interaction_modal.protocol_cards[0].action_context?.sequence_kind_key, "world_modal_kind_travel_gate");
+  assert.equal(state.interaction_modal.protocol_cards[0].context_lookup_required, true);
+  assert.equal(state.interaction_modal.protocol_cards[0].context_lookup_resolved, true);
+  assert.equal(state.interaction_modal.protocol_cards[0].action_context?.context_lookup_required, true);
+  assert.equal(state.interaction_modal.protocol_cards[0].action_context?.context_lookup_resolved, true);
   assert.equal(state.interaction_modal.protocol_cards[0].risk_context?.district_key, "central_hub");
   assert.equal(state.interaction_modal.protocol_cards[0].risk_context?.focus_key, "central_hub:travel:travel_flow");
   assert.equal(
@@ -348,6 +358,10 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].risk_health_band_key, "green");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].risk_attention_band_key, "stable");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].risk_trend_direction_key, "flat");
+  assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].context_lookup_required, true);
+  assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].context_lookup_resolved, true);
+  assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].action_context?.context_lookup_required, true);
+  assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].action_context?.context_lookup_resolved, true);
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].action_context?.focus_key, "central_hub:travel:travel_flow");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].action_context?.entry_kind_key, "world_entry_kind_hub_portal");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].action_context?.sequence_kind_key, "world_modal_kind_travel_gate");
@@ -361,6 +375,16 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
   );
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].focus_key, "central_hub:travel:travel_flow");
   assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].risk_key, "green:stable:flat");
+  assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].context_lookup_required, true);
+  assert.equal(state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].context_lookup_resolved, true);
+  assert.equal(
+    state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].action_context?.context_lookup_required,
+    true
+  );
+  assert.equal(
+    state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].action_context?.context_lookup_resolved,
+    true
+  );
   assert.equal(
     state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].risk_focus_key,
     "central_hub:travel:travel_flow|green:stable:flat"
@@ -447,6 +471,16 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
   assert.equal(state.interaction_modal.protocol_cards[1].action_items[0].focus_key, "central_hub:travel:travel_flow");
   assert.equal(state.interaction_modal.protocol_cards[1].action_items[0].contract_ready, true);
   assert.deepEqual(state.interaction_modal.protocol_cards[1].action_items[0].contract_missing_keys, []);
+  assert.equal(state.interaction_modal.protocol_cards[1].action_items[0].context_lookup_required, true);
+  assert.equal(state.interaction_modal.protocol_cards[1].action_items[0].context_lookup_resolved, true);
+  assert.equal(
+    state.interaction_modal.protocol_cards[1].action_items[0].action_context?.context_lookup_required,
+    true
+  );
+  assert.equal(
+    state.interaction_modal.protocol_cards[1].action_items[0].action_context?.context_lookup_resolved,
+    true
+  );
   assert.equal(
     state.interaction_modal.protocol_cards[1].action_items[0].action_context_signature,
     "travel_flow|central_hub:travel:travel_flow|world_entry_kind_hub_portal|world_modal_kind_travel_gate"

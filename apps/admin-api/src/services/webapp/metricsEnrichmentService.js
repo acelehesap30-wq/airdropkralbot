@@ -396,6 +396,22 @@ function buildSceneLoopRiskContext(row) {
   const source = row && typeof row === "object" ? row : {};
   const actionContextSource = asRecord(source.action_context);
   const riskContextSource = asRecord(source.risk_context);
+  const contextLookupRequired =
+    typeof source?.context_lookup_required === "boolean"
+      ? source.context_lookup_required
+      : typeof actionContextSource?.context_lookup_required === "boolean"
+        ? actionContextSource.context_lookup_required
+        : typeof riskContextSource?.context_lookup_required === "boolean"
+          ? riskContextSource.context_lookup_required
+          : false;
+  const contextLookupResolved =
+    typeof source?.context_lookup_resolved === "boolean"
+      ? source.context_lookup_resolved
+      : typeof actionContextSource?.context_lookup_resolved === "boolean"
+        ? actionContextSource.context_lookup_resolved
+        : typeof riskContextSource?.context_lookup_resolved === "boolean"
+          ? riskContextSource.context_lookup_resolved
+          : !contextLookupRequired;
   const districtKey = toText(
     riskContextSource?.district_key,
     toText(actionContextSource?.district_key, String(source?.district_key || "unknown"))
@@ -498,21 +514,57 @@ function buildSceneLoopRiskContext(row) {
       toText(actionContextSource?.risk_context_signature, toText(source?.risk_context_signature, riskContextSignature))
     )
   };
-  const contractReady = isSceneLoopRiskContextReady({
+  actionContext.context_lookup_required = contextLookupRequired;
+  actionContext.context_lookup_resolved = contextLookupResolved;
+  riskContext.context_lookup_required = contextLookupRequired;
+  riskContext.context_lookup_resolved = contextLookupResolved;
+  const computedContractReady = isSceneLoopRiskContextReady({
     ...riskContext,
     action_context_signature: actionContext.action_context_signature
   });
-  const contractMissingKeys = buildSceneLoopRiskContextMissingKeys({
+  const computedContractMissingKeys = buildSceneLoopRiskContextMissingKeys({
     ...riskContext,
     action_context_signature: actionContext.action_context_signature
   });
-  const contractStateKey = contractReady ? "ready" : "missing";
+  const explicitContractReady =
+    typeof source?.contract_ready === "boolean"
+      ? source.contract_ready
+      : typeof actionContextSource?.contract_ready === "boolean"
+        ? actionContextSource.contract_ready
+        : typeof riskContextSource?.contract_ready === "boolean"
+          ? riskContextSource.contract_ready
+          : undefined;
+  const explicitContractStateKey = toText(
+    source?.contract_state_key,
+    toText(actionContextSource?.contract_state_key, toText(riskContextSource?.contract_state_key, ""))
+  );
+  const explicitContractMissingKeys = [
+    ...(Array.isArray(source?.contract_missing_keys) ? source.contract_missing_keys : []),
+    ...(Array.isArray(actionContextSource?.contract_missing_keys) ? actionContextSource.contract_missing_keys : []),
+    ...(Array.isArray(riskContextSource?.contract_missing_keys) ? riskContextSource.contract_missing_keys : [])
+  ]
+    .map((value) => toText(value, ""))
+    .filter(Boolean);
+  const contractMissingKeys = [
+    ...computedContractMissingKeys,
+    ...explicitContractMissingKeys,
+    ...(contextLookupRequired && !contextLookupResolved ? ["action_context_lookup"] : [])
+  ];
+  const dedupedContractMissingKeys = [...new Set(contractMissingKeys)];
+  const contractReady =
+    computedContractReady &&
+    explicitContractReady !== false &&
+    dedupedContractMissingKeys.length === 0;
+  const contractStateKey =
+    explicitContractReady === false
+      ? "missing"
+      : explicitContractStateKey || (contractReady ? "ready" : "missing");
   actionContext.contract_state_key = contractStateKey;
   actionContext.contract_ready = contractReady;
-  actionContext.contract_missing_keys = contractMissingKeys;
+  actionContext.contract_missing_keys = dedupedContractMissingKeys;
   riskContext.contract_state_key = contractStateKey;
   riskContext.contract_ready = contractReady;
-  riskContext.contract_missing_keys = contractMissingKeys;
+  riskContext.contract_missing_keys = dedupedContractMissingKeys;
   return {
     district_key: districtKey,
     loop_family_key: loopFamilyKey,
@@ -529,9 +581,11 @@ function buildSceneLoopRiskContext(row) {
     risk_trend_direction_key: trendDirection,
     risk_key: riskKey,
     risk_focus_key: riskFocusKey,
+    context_lookup_required: contextLookupRequired,
+    context_lookup_resolved: contextLookupResolved,
     contract_state_key: contractStateKey,
     contract_ready: contractReady,
-    contract_missing_keys: contractMissingKeys,
+    contract_missing_keys: dedupedContractMissingKeys,
     action_context_signature: actionContext.action_context_signature,
     risk_context_signature: riskContext.risk_context_signature,
     entry_kind_key: entryKindKey,
@@ -569,15 +623,41 @@ function normalizeSceneLoopDistrictFamilyDailyRows(rows, limit = 84) {
 function normalizeSceneLoopDistrictMicroflowDailyRows(rows, limit = 126) {
   const source = Array.isArray(rows) ? rows : [];
   return source
-    .map((row) => ({
-      day: String(row?.day || ""),
-      district_key: String(row?.district_key || "unknown"),
-      loop_family_key: normalizeSceneLoopMicroflowFamilyKey(row?.loop_microflow_key ?? row?.loop_family_key),
-      loop_microflow_key: normalizeSceneLoopMicroflowKey(row?.loop_microflow_key),
-      total_count: Math.max(0, Math.floor(toNum(row?.total_count, 0))),
-      live_count: Math.max(0, Math.floor(toNum(row?.live_count, 0))),
-      blocked_count: Math.max(0, Math.floor(toNum(row?.blocked_count, 0)))
-    }))
+    .map((row) => {
+      const sourceRow = row && typeof row === "object" ? row : {};
+      const actionContextSource = asRecord(sourceRow.action_context);
+      const riskContextSource = asRecord(sourceRow.risk_context);
+      const contractMissingKeys = [
+        ...(Array.isArray(sourceRow.contract_missing_keys) ? sourceRow.contract_missing_keys : []),
+        ...(Array.isArray(actionContextSource?.contract_missing_keys) ? actionContextSource.contract_missing_keys : []),
+        ...(Array.isArray(riskContextSource?.contract_missing_keys) ? riskContextSource.contract_missing_keys : [])
+      ]
+        .map((value) => toText(value, ""))
+        .filter(Boolean);
+      return {
+        day: String(sourceRow.day || ""),
+        district_key: String(sourceRow.district_key || "unknown"),
+        loop_family_key: normalizeSceneLoopMicroflowFamilyKey(sourceRow.loop_family_key ?? sourceRow.loop_microflow_key),
+        loop_microflow_key: normalizeSceneLoopMicroflowKey(sourceRow.loop_microflow_key),
+        flow_key: toText(sourceRow.flow_key, ""),
+        focus_key: toText(sourceRow.focus_key, ""),
+        risk_key: toText(sourceRow.risk_key, ""),
+        risk_focus_key: toText(sourceRow.risk_focus_key, ""),
+        entry_kind_key: toText(sourceRow.entry_kind_key, ""),
+        sequence_kind_key: toText(sourceRow.sequence_kind_key, ""),
+        action_context_signature: toText(sourceRow.action_context_signature, ""),
+        risk_context_signature: toText(sourceRow.risk_context_signature, ""),
+        contract_state_key: toText(sourceRow.contract_state_key, ""),
+        contract_ready:
+          typeof sourceRow.contract_ready === "boolean" ? sourceRow.contract_ready : undefined,
+        contract_missing_keys: [...new Set(contractMissingKeys)],
+        action_context: actionContextSource && Object.keys(actionContextSource).length ? actionContextSource : null,
+        risk_context: riskContextSource && Object.keys(riskContextSource).length ? riskContextSource : null,
+        total_count: Math.max(0, Math.floor(toNum(sourceRow.total_count, 0))),
+        live_count: Math.max(0, Math.floor(toNum(sourceRow.live_count, 0))),
+        blocked_count: Math.max(0, Math.floor(toNum(sourceRow.blocked_count, 0)))
+      };
+    })
     .filter((row) => row.day && row.district_key && row.loop_microflow_key)
     .map((row) => {
       const liveShare = toRate(row.live_count, row.total_count);
@@ -624,7 +704,7 @@ function mapSceneLoopFamilyRowToMicroflow(row) {
   const loopFamilyKey = normalizeSceneLoopFamilyKey(loop_family_key);
   const loopMicroflowKey = normalizeSceneLoopMicroflowKey(rawMicroflowKey);
   const context = buildSceneLoopRiskContext({
-    ...rest,
+    ...source,
     loop_family_key: loopFamilyKey,
     loop_microflow_key: loopMicroflowKey,
     latest_health_band: source.latest_health_band ?? source.health_band,
@@ -1327,7 +1407,9 @@ function buildSceneLoopDistrictMicroflowMatrix(rows, limit = 18) {
       const yellowDays = sortedRows.filter((row) => String(row?.health_band || "") === "yellow").length;
       const redDays = sortedRows.filter((row) => String(row?.health_band || "") === "red").length;
       const attentionBand = resolveSceneLoopDistrictAttentionBand(latestHealthBand, trendDirection, blockedShare);
+      const latestRowSource = latestRow && typeof latestRow === "object" ? latestRow : {};
       const context = buildSceneLoopRiskContext({
+        ...latestRowSource,
         district_key: districtKey,
         loop_family_key: loopFamilyKey,
         loop_microflow_key: loopMicroflowKey,
@@ -1487,9 +1569,7 @@ function buildSceneLoopDistrictMicroflowHealthAttentionTrendMatrix(rows, limit =
       const attentionBand = String(row?.attention_band || "no_data");
       const trendDirection = String(row?.trend_direction || "no_data");
       const context = buildSceneLoopRiskContext({
-        district_key: row?.district_key,
-        loop_family_key: row?.loop_family_key,
-        loop_microflow_key: row?.loop_microflow_key,
+        ...(row && typeof row === "object" ? row : {}),
         latest_health_band: latestHealthBand,
         attention_band: attentionBand,
         trend_direction: trendDirection
@@ -1553,13 +1633,127 @@ function buildSceneLoopDistrictMicroflowHealthAttentionTrendDailyBreakdown(rows,
       const trendDirection = resolveSceneLoopTrendDirection(totalCount, olderRow?.total_count, olderRow ? 2 : 1);
       const latestHealthBand = resolveSceneLoopDistrictHealthBand(totalCount, liveShare, blockedShare);
       const attentionBand = resolveSceneLoopDistrictAttentionBand(latestHealthBand, trendDirection, blockedShare);
+      const actionContextSource = asRecord(row?.action_context);
+      const riskContextSource = asRecord(row?.risk_context);
+      const flowKey = toText(
+        row?.flow_key,
+        toText(
+          riskContextSource?.flow_key,
+          toText(actionContextSource?.flow_key, resolveSceneLoopMicroflowFlowKey(loopMicroflowKey, loopFamilyKey))
+        )
+      );
+      const focusKey = toText(
+        row?.focus_key,
+        toText(riskContextSource?.focus_key, toText(actionContextSource?.focus_key, `${districtKey}:${loopFamilyKey}:${loopMicroflowKey}`))
+      );
+      const entryKindKey = toText(
+        row?.entry_kind_key,
+        toText(
+          riskContextSource?.entry_kind_key,
+          toText(actionContextSource?.entry_kind_key, resolveSceneLoopMicroflowEntryKindKey(loopMicroflowKey, loopFamilyKey))
+        )
+      );
+      const sequenceKindKey = toText(
+        row?.sequence_kind_key,
+        toText(
+          riskContextSource?.sequence_kind_key,
+          toText(actionContextSource?.sequence_kind_key, resolveSceneLoopMicroflowSequenceKindKey(loopMicroflowKey, loopFamilyKey))
+        )
+      );
+      const actionContextSignature = toText(
+        row?.action_context_signature,
+        toText(
+          actionContextSource?.action_context_signature,
+          toText(
+            riskContextSource?.action_context_signature,
+            buildSceneLoopActionContextSignature(flowKey, focusKey, entryKindKey, sequenceKindKey)
+          )
+        )
+      );
+      const explicitContractStateKey = toText(
+        row?.contract_state_key,
+        toText(actionContextSource?.contract_state_key, toText(riskContextSource?.contract_state_key, ""))
+      );
+      const explicitContractReady =
+        typeof row?.contract_ready === "boolean"
+          ? row.contract_ready
+          : typeof actionContextSource?.contract_ready === "boolean"
+            ? actionContextSource.contract_ready
+            : typeof riskContextSource?.contract_ready === "boolean"
+              ? riskContextSource.contract_ready
+              : undefined;
+      const explicitContractMissingKeys = [
+        ...(Array.isArray(row?.contract_missing_keys) ? row.contract_missing_keys : []),
+        ...(Array.isArray(actionContextSource?.contract_missing_keys) ? actionContextSource.contract_missing_keys : []),
+        ...(Array.isArray(riskContextSource?.contract_missing_keys) ? riskContextSource.contract_missing_keys : [])
+      ]
+        .map((value) => toText(value, ""))
+        .filter(Boolean);
+      const contextLookupRequired =
+        typeof row?.context_lookup_required === "boolean"
+          ? row.context_lookup_required
+          : typeof actionContextSource?.context_lookup_required === "boolean"
+            ? actionContextSource.context_lookup_required
+            : typeof riskContextSource?.context_lookup_required === "boolean"
+              ? riskContextSource.context_lookup_required
+              : false;
+      const contextLookupResolved =
+        typeof row?.context_lookup_resolved === "boolean"
+          ? row.context_lookup_resolved
+          : typeof actionContextSource?.context_lookup_resolved === "boolean"
+            ? actionContextSource.context_lookup_resolved
+            : typeof riskContextSource?.context_lookup_resolved === "boolean"
+              ? riskContextSource.context_lookup_resolved
+              : !contextLookupRequired;
       const context = buildSceneLoopRiskContext({
         district_key: districtKey,
         loop_family_key: loopFamilyKey,
         loop_microflow_key: loopMicroflowKey,
+        flow_key: flowKey,
+        focus_key: focusKey,
+        entry_kind_key: entryKindKey,
+        sequence_kind_key: sequenceKindKey,
         latest_health_band: latestHealthBand,
         attention_band: attentionBand,
-        trend_direction: trendDirection
+        trend_direction: trendDirection,
+        action_context_signature: actionContextSignature,
+        context_lookup_required: contextLookupRequired,
+        context_lookup_resolved: contextLookupResolved,
+        contract_state_key: explicitContractStateKey,
+        contract_ready: explicitContractReady,
+        contract_missing_keys: explicitContractMissingKeys,
+        action_context: {
+          district_key: districtKey,
+          family_key: loopFamilyKey,
+          flow_key: flowKey,
+          microflow_key: loopMicroflowKey,
+          focus_key: focusKey,
+          entry_kind_key: entryKindKey,
+          sequence_kind_key: sequenceKindKey,
+          action_context_signature: actionContextSignature,
+          context_lookup_required: contextLookupRequired,
+          context_lookup_resolved: contextLookupResolved,
+          contract_state_key: explicitContractStateKey,
+          contract_ready: explicitContractReady,
+          contract_missing_keys: explicitContractMissingKeys
+        },
+        risk_context: {
+          district_key: districtKey,
+          family_key: loopFamilyKey,
+          flow_key: flowKey,
+          microflow_key: loopMicroflowKey,
+          focus_key: focusKey,
+          entry_kind_key: entryKindKey,
+          sequence_kind_key: sequenceKindKey,
+          risk_health_band_key: latestHealthBand,
+          risk_attention_band_key: attentionBand,
+          risk_trend_direction_key: trendDirection,
+          context_lookup_required: contextLookupRequired,
+          context_lookup_resolved: contextLookupResolved,
+          contract_state_key: explicitContractStateKey,
+          contract_ready: explicitContractReady,
+          contract_missing_keys: explicitContractMissingKeys
+        }
       });
       output.push({
         ...context,
@@ -1608,9 +1802,7 @@ function buildSceneLoopDistrictMicroflowHealthAttentionTrendDailyMatrix(rows, li
       const attentionBand = String(row?.attention_band || "no_data");
       const trendDirection = String(row?.trend_direction || "no_data");
       const context = buildSceneLoopRiskContext({
-        district_key: row?.district_key,
-        loop_family_key: row?.loop_family_key,
-        loop_microflow_key: row?.loop_microflow_key,
+        ...(row && typeof row === "object" ? row : {}),
         latest_health_band: latestHealthBand,
         attention_band: attentionBand,
         trend_direction: trendDirection
@@ -1658,9 +1850,7 @@ function buildSceneLoopDistrictMicroflowAttentionPriority(rows, limit = 18) {
       const attentionBand = String(row?.attention_band || "no_data");
       const trendDirection = String(row?.trend_direction || "no_data");
       const context = buildSceneLoopRiskContext({
-        district_key: row?.district_key,
-        loop_family_key: row?.loop_family_key,
-        loop_microflow_key: row?.loop_microflow_key,
+        ...(row && typeof row === "object" ? row : {}),
         latest_health_band: latestHealthBand,
         attention_band: attentionBand,
         trend_direction: trendDirection
@@ -1706,9 +1896,7 @@ function buildSceneLoopDistrictMicroflowAttentionPriorityDaily(rows, limit = 24)
       const attentionBand = String(row?.attention_band || "no_data");
       const trendDirection = String(row?.trend_direction || "no_data");
       const context = buildSceneLoopRiskContext({
-        district_key: row?.district_key,
-        loop_family_key: row?.loop_family_key,
-        loop_microflow_key: row?.loop_microflow_key,
+        ...(row && typeof row === "object" ? row : {}),
         latest_health_band: latestHealthBand,
         attention_band: attentionBand,
         trend_direction: trendDirection

@@ -4630,12 +4630,25 @@ async function buildAdminMetrics(db) {
                json_build_object(
                  'day', day,
                  'district_key', district_key,
+                 'loop_family_key', loop_family_key,
                  'loop_microflow_key', loop_microflow_key,
+                 'flow_key', flow_key,
+                 'focus_key', focus_key,
+                 'risk_key', risk_key,
+                 'risk_focus_key', risk_focus_key,
+                 'entry_kind_key', entry_kind_key,
+                 'sequence_kind_key', sequence_kind_key,
+                 'action_context_signature', action_context_signature,
+                 'risk_context_signature', risk_context_signature,
+                 'contract_state_key', contract_state_key,
+                 'contract_ready', contract_ready,
+                 'action_context', action_context,
+                 'risk_context', risk_context,
                  'total_count', total_count,
                  'live_count', live_count,
                  'blocked_count', blocked_count
                )
-               ORDER BY day DESC, total_count DESC, district_key, loop_microflow_key
+               ORDER BY day DESC, total_count DESC, district_key, loop_family_key, loop_microflow_key
              ),
              '[]'::json
            )
@@ -4644,11 +4657,80 @@ async function buildAdminMetrics(db) {
                to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS day,
                COALESCE(NULLIF(lower(payload_json->>'district_key'), ''), 'unknown') AS district_key,
                COALESCE(
+                 (ARRAY_AGG(NULLIF(lower(payload_json->>'family_key'), '') ORDER BY created_at DESC)
+                   FILTER (WHERE NULLIF(lower(payload_json->>'family_key'), '') IS NOT NULL))[1],
+                 ''
+               ) AS loop_family_key,
+               COALESCE(
                  NULLIF(lower(payload_json->>'microflow_key'), ''),
                  NULLIF(lower(payload_json->>'protocol_pod_key'), ''),
                  NULLIF(lower(payload_json->>'entry_kind_key'), ''),
                  'unknown'
                ) AS loop_microflow_key,
+               COALESCE(
+                 (ARRAY_AGG(NULLIF(lower(payload_json->>'flow_key'), '') ORDER BY created_at DESC)
+                   FILTER (WHERE NULLIF(lower(payload_json->>'flow_key'), '') IS NOT NULL))[1],
+                 ''
+               ) AS flow_key,
+               COALESCE(
+                 (ARRAY_AGG(NULLIF(lower(payload_json->>'focus_key'), '') ORDER BY created_at DESC)
+                   FILTER (WHERE NULLIF(lower(payload_json->>'focus_key'), '') IS NOT NULL))[1],
+                 ''
+               ) AS focus_key,
+               COALESCE(
+                 (ARRAY_AGG(NULLIF(lower(payload_json->>'risk_key'), '') ORDER BY created_at DESC)
+                   FILTER (WHERE NULLIF(lower(payload_json->>'risk_key'), '') IS NOT NULL))[1],
+                 ''
+               ) AS risk_key,
+               COALESCE(
+                 (ARRAY_AGG(NULLIF(lower(payload_json->>'risk_focus_key'), '') ORDER BY created_at DESC)
+                   FILTER (WHERE NULLIF(lower(payload_json->>'risk_focus_key'), '') IS NOT NULL))[1],
+                 ''
+               ) AS risk_focus_key,
+               COALESCE(
+                 (ARRAY_AGG(NULLIF(lower(payload_json->>'entry_kind_key'), '') ORDER BY created_at DESC)
+                   FILTER (WHERE NULLIF(lower(payload_json->>'entry_kind_key'), '') IS NOT NULL))[1],
+                 ''
+               ) AS entry_kind_key,
+               COALESCE(
+                 (ARRAY_AGG(NULLIF(lower(payload_json->>'sequence_kind_key'), '') ORDER BY created_at DESC)
+                   FILTER (WHERE NULLIF(lower(payload_json->>'sequence_kind_key'), '') IS NOT NULL))[1],
+                 ''
+               ) AS sequence_kind_key,
+               COALESCE(
+                 (ARRAY_AGG(NULLIF(payload_json->>'action_context_signature', '') ORDER BY created_at DESC)
+                   FILTER (WHERE NULLIF(payload_json->>'action_context_signature', '') IS NOT NULL))[1],
+                 ''
+               ) AS action_context_signature,
+               COALESCE(
+                 (ARRAY_AGG(NULLIF(payload_json->>'risk_context_signature', '') ORDER BY created_at DESC)
+                   FILTER (WHERE NULLIF(payload_json->>'risk_context_signature', '') IS NOT NULL))[1],
+                 ''
+               ) AS risk_context_signature,
+               COALESCE(
+                 (ARRAY_AGG(NULLIF(lower(payload_json->>'contract_state_key'), '') ORDER BY created_at DESC)
+                   FILTER (WHERE NULLIF(lower(payload_json->>'contract_state_key'), '') IS NOT NULL))[1],
+                 ''
+               ) AS contract_state_key,
+               COALESCE(
+                 (ARRAY_AGG(
+                   CASE
+                     WHEN lower(payload_json->>'contract_ready') IN ('true', 'false')
+                       THEN lower(payload_json->>'contract_ready')
+                     ELSE NULL
+                   END
+                   ORDER BY created_at DESC
+                 ) FILTER (WHERE lower(payload_json->>'contract_ready') IN ('true', 'false')))[1],
+                 ''
+               ) AS contract_ready,
+               (
+                 ARRAY_AGG(payload_json->'action_context' ORDER BY created_at DESC)
+                 FILTER (WHERE payload_json->'action_context' IS NOT NULL)
+               )[1] AS action_context,
+               (
+                 ARRAY_AGG(payload_json->'risk_context' ORDER BY created_at DESC)
+                 FILTER (WHERE payload_json->'risk_context' IS NOT NULL)
+               )[1] AS risk_context,
                COUNT(*)::int AS total_count,
                COUNT(*) FILTER (
                  WHERE COALESCE(NULLIF(lower(payload_json->>'loop_status_key'), ''), 'unknown')
@@ -4661,8 +4743,8 @@ async function buildAdminMetrics(db) {
              FROM v5_webapp_ui_events
              WHERE created_at >= now() - interval '7 days'
                AND event_key = 'runtime.scene.loop'
-             GROUP BY 1, 2, 3
-             ORDER BY day DESC, total_count DESC, district_key, loop_microflow_key
+             GROUP BY 1, 2, 4
+             ORDER BY day DESC, total_count DESC, district_key, loop_family_key, loop_microflow_key
              LIMIT 126
            ) district_microflow_daily_rows
          ) AS scene_loop_district_microflow_daily_breakdown_7d,

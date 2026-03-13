@@ -122,6 +122,8 @@ type RiskContext = {
   sequence_kind_key?: string;
   action_context_signature?: string;
   risk_context_signature?: string;
+  context_lookup_required?: boolean;
+  context_lookup_resolved?: boolean;
   contract_state_key?: string;
   contract_ready?: boolean;
   contract_missing_keys?: string[];
@@ -449,6 +451,8 @@ type SceneActionLike = {
   sequence_kind_key?: string;
   action_context_signature?: string;
   risk_context_signature?: string;
+  context_lookup_required?: boolean;
+  context_lookup_resolved?: boolean;
 };
 
 type ResolvedSceneActionContext = {
@@ -465,6 +469,8 @@ type ResolvedSceneActionContext = {
   riskHealthBandKey: string;
   riskAttentionBandKey: string;
   riskTrendDirectionKey: string;
+  contextLookupRequired: boolean;
+  contextLookupResolved: boolean;
   contractStateKey: string;
   contractReady: boolean;
   contractMissingKeys: string[];
@@ -506,6 +512,10 @@ function buildSceneRiskContextSignature(
 
 function buildSceneContractMeta(source?: Record<string, unknown> | null) {
   const primary = source && typeof source === "object" && !Array.isArray(source) ? source : {};
+  const explicitLookupRequired =
+    typeof primary.context_lookup_required === "boolean" ? primary.context_lookup_required : null;
+  const explicitLookupResolved =
+    typeof primary.context_lookup_resolved === "boolean" ? primary.context_lookup_resolved : null;
   const resolved = {
     flow_key: readSceneActionText(primary.flow_key),
     focus_key: readSceneActionText(primary.focus_key),
@@ -522,6 +532,9 @@ function buildSceneContractMeta(source?: Record<string, unknown> | null) {
   const explicitMissingKeys = Array.isArray(primary.contract_missing_keys)
     ? primary.contract_missing_keys.map((value) => readSceneActionText(value)).filter(Boolean)
     : [];
+  if (explicitLookupRequired === true && explicitLookupResolved !== true) {
+    explicitMissingKeys.push("action_context_lookup");
+  }
   const mergedMissingKeys = [...new Set([...contractMissingKeys, ...explicitMissingKeys])];
   const explicitReady = typeof primary.contract_ready === "boolean" ? primary.contract_ready : null;
   const explicitStateKey = readSceneActionText(primary.contract_state_key);
@@ -531,7 +544,9 @@ function buildSceneContractMeta(source?: Record<string, unknown> | null) {
   return {
     contractStateKey: contractReady ? "ready" : "missing",
     contractReady,
-    contractMissingKeys: mergedMissingKeys
+    contractMissingKeys: mergedMissingKeys,
+    contextLookupRequired: explicitLookupRequired === true,
+    contextLookupResolved: explicitLookupRequired === true ? explicitLookupResolved === true : true
   };
 }
 
@@ -575,6 +590,22 @@ function normalizeSceneActionContext(source?: SceneActionLike | Record<string, u
       actionContext.risk_context_signature,
       primary.risk_context_signature
     ) || buildSceneRiskContextSignature(flowKey, riskFocusKey, entryKindKey, sequenceKindKey);
+  const contextLookupRequired =
+    typeof primary.context_lookup_required === "boolean"
+      ? primary.context_lookup_required
+      : typeof riskContext.context_lookup_required === "boolean"
+        ? riskContext.context_lookup_required
+        : typeof actionContext.context_lookup_required === "boolean"
+          ? actionContext.context_lookup_required
+          : false;
+  const contextLookupResolved =
+    typeof primary.context_lookup_resolved === "boolean"
+      ? primary.context_lookup_resolved
+      : typeof riskContext.context_lookup_resolved === "boolean"
+        ? riskContext.context_lookup_resolved
+        : typeof actionContext.context_lookup_resolved === "boolean"
+          ? actionContext.context_lookup_resolved
+          : !contextLookupRequired;
   const resolvedActionContext: RiskContext | null = familyKey || flowKey || microflowKey || focusKey || riskKey || riskFocusKey
     ? {
         district_key: readSceneActionText(actionContext.district_key, riskContext.district_key, primary.district_key),
@@ -604,6 +635,8 @@ function normalizeSceneActionContext(source?: SceneActionLike | Record<string, u
           riskContext.contract_state_key,
           primary.contract_state_key
         ),
+        context_lookup_required: contextLookupRequired,
+        context_lookup_resolved: contextLookupResolved,
         entry_kind_key: entryKindKey,
         sequence_kind_key: sequenceKindKey,
         action_context_signature: actionContextSignature
@@ -618,6 +651,8 @@ function normalizeSceneActionContext(source?: SceneActionLike | Record<string, u
             actionContext.contract_state_key,
             primary.contract_state_key
           ),
+          context_lookup_required: contextLookupRequired,
+          context_lookup_resolved: contextLookupResolved,
           risk_context_signature: riskContextSignature
         }
       : null;
@@ -633,6 +668,8 @@ function normalizeSceneActionContext(source?: SceneActionLike | Record<string, u
       riskContext.contract_state_key,
       actionContext.contract_state_key
     ),
+    context_lookup_required: contextLookupRequired,
+    context_lookup_resolved: contextLookupResolved,
     action_context_signature: actionContextSignature,
     risk_context_signature: riskContextSignature,
     contract_ready:
@@ -653,11 +690,15 @@ function normalizeSceneActionContext(source?: SceneActionLike | Record<string, u
     resolvedActionContext.contract_state_key = contractMeta.contractStateKey;
     resolvedActionContext.contract_ready = contractMeta.contractReady;
     resolvedActionContext.contract_missing_keys = contractMeta.contractMissingKeys;
+    resolvedActionContext.context_lookup_required = contractMeta.contextLookupRequired;
+    resolvedActionContext.context_lookup_resolved = contractMeta.contextLookupResolved;
   }
   if (resolvedRiskContext) {
     resolvedRiskContext.contract_state_key = contractMeta.contractStateKey;
     resolvedRiskContext.contract_ready = contractMeta.contractReady;
     resolvedRiskContext.contract_missing_keys = contractMeta.contractMissingKeys;
+    resolvedRiskContext.context_lookup_required = contractMeta.contextLookupRequired;
+    resolvedRiskContext.context_lookup_resolved = contractMeta.contextLookupResolved;
   }
   return {
     familyKey,
@@ -685,6 +726,8 @@ function normalizeSceneActionContext(source?: SceneActionLike | Record<string, u
       actionContext.risk_trend_direction_key,
       primary.risk_trend_direction_key
     ),
+    contextLookupRequired: contractMeta.contextLookupRequired,
+    contextLookupResolved: contractMeta.contextLookupResolved,
     contractStateKey: contractMeta.contractStateKey,
     contractReady: contractMeta.contractReady,
     contractMissingKeys: contractMeta.contractMissingKeys,
@@ -722,6 +765,10 @@ function mergeSceneActionContexts(...contexts: Array<ResolvedSceneActionContext 
     riskHealthBandKey: pick((context) => context.riskHealthBandKey),
     riskAttentionBandKey: pick((context) => context.riskAttentionBandKey),
     riskTrendDirectionKey: pick((context) => context.riskTrendDirectionKey),
+    contextLookupRequired: contexts.some((context) => context?.contextLookupRequired === true),
+    contextLookupResolved: contexts.every(
+      (context) => !context || context.contextLookupRequired !== true || context.contextLookupResolved === true
+    ),
     contractStateKey,
     contractReady: contexts.every((context) => !context || context.contractReady),
     contractMissingKeys: [...new Set(contexts.flatMap((context) => context?.contractMissingKeys || []))],
@@ -734,6 +781,9 @@ function mergeSceneActionContexts(...contexts: Array<ResolvedSceneActionContext 
 
 function isStrictSceneActionContractReady(context: ResolvedSceneActionContext | null | undefined) {
   if (!context) {
+    return false;
+  }
+  if (context.contextLookupRequired && !context.contextLookupResolved) {
     return false;
   }
   if (!context.contractReady || context.contractStateKey !== "ready") {
@@ -754,6 +804,16 @@ function isStrictSceneActionContractReady(context: ResolvedSceneActionContext | 
   const actionContext = context.actionContext || null;
   const riskContext = context.riskContext || null;
   if (!actionContext || !riskContext) {
+    return false;
+  }
+  if (
+    actionContext.context_lookup_required === true && actionContext.context_lookup_resolved !== true
+  ) {
+    return false;
+  }
+  if (
+    riskContext.context_lookup_required === true && riskContext.context_lookup_resolved !== true
+  ) {
     return false;
   }
   if (
@@ -1024,6 +1084,8 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
         "data-risk-health-band": context.riskHealthBandKey || "",
         "data-risk-attention-band": context.riskAttentionBandKey || "",
         "data-risk-trend-direction": context.riskTrendDirectionKey || "",
+        "data-context-lookup-required": context.contextLookupRequired ? "true" : "false",
+        "data-context-lookup-resolved": context.contextLookupResolved ? "true" : "false",
         "data-contract-state": context.contractStateKey || "",
         "data-contract-ready": contractReady ? "true" : "false",
         "data-contract-missing-keys": context.contractMissingKeys.join(",")
@@ -1090,6 +1152,9 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
       if (context.riskContextSignature) {
         parts.push(`RCS ${context.riskContextSignature}`);
       }
+      if (context.contextLookupRequired) {
+        parts.push(`LOOKUP ${context.contextLookupResolved ? "ok" : "miss"}`);
+      }
       if (context.contractStateKey) {
         parts.push(`CSTATE ${context.contractStateKey}`);
       }
@@ -1115,6 +1180,13 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           ? { label: "ATTN", value: context.riskAttentionBandKey, tone: context.riskAttentionBandKey }
           : null,
         context.riskTrendDirectionKey ? { label: "TREND", value: context.riskTrendDirectionKey, tone: "trend" } : null,
+        context.contextLookupRequired
+          ? {
+              label: "LOOKUP",
+              value: context.contextLookupResolved ? "ok" : "miss",
+              tone: context.contextLookupResolved ? "green" : "red"
+            }
+          : null,
         context.contractStateKey ? { label: "CSTATE", value: context.contractStateKey, tone: context.contractStateKey } : null,
         context.actionContextSignature
           ? { label: "ACS", value: context.actionContextSignature, tone: "signature" }

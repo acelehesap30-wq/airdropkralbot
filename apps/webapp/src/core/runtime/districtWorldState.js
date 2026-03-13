@@ -293,6 +293,18 @@ function buildActionContextSignature(source, fallback = {}) {
 function buildSceneContractMeta(source, fallback = {}) {
   const primary = asRecord(source);
   const secondary = asRecord(fallback);
+  const contextLookupRequired =
+    typeof primary?.context_lookup_required === "boolean"
+      ? primary.context_lookup_required
+      : typeof secondary?.context_lookup_required === "boolean"
+        ? secondary.context_lookup_required
+        : false;
+  const contextLookupResolved =
+    typeof primary?.context_lookup_resolved === "boolean"
+      ? primary.context_lookup_resolved
+      : typeof secondary?.context_lookup_resolved === "boolean"
+        ? secondary.context_lookup_resolved
+        : !contextLookupRequired;
   const resolved = {
     flow_key: toText(primary.flow_key, toText(secondary.flow_key, "")),
     focus_key: toText(primary.focus_key, toText(secondary.focus_key, "")),
@@ -309,14 +321,19 @@ function buildSceneContractMeta(source, fallback = {}) {
   const contractMissingKeys = Object.entries(resolved)
     .filter(([, value]) => !toText(value, ""))
     .map(([key]) => key);
+  if (contextLookupRequired && !contextLookupResolved) {
+    contractMissingKeys.push("action_context_lookup");
+  }
   const explicitStateKey = toText(primary.contract_state_key, toText(secondary.contract_state_key, ""));
   const contractReady = explicitStateKey
     ? explicitStateKey === "ready"
     : contractMissingKeys.length === 0;
   return {
+    context_lookup_required: contextLookupRequired,
+    context_lookup_resolved: contextLookupResolved,
     contract_ready: contractReady,
     contract_state_key: contractReady ? "ready" : "missing",
-    contract_missing_keys: contractMissingKeys
+    contract_missing_keys: [...new Set(contractMissingKeys)]
   };
 }
 
@@ -350,6 +367,18 @@ function buildActionContextShape(source, fallback = {}) {
       primary.sequence_kind_key,
       toText(secondary.sequence_kind_key, "")
     ),
+    context_lookup_required:
+      typeof primary.context_lookup_required === "boolean"
+        ? primary.context_lookup_required
+        : typeof secondary.context_lookup_required === "boolean"
+          ? secondary.context_lookup_required
+          : false,
+    context_lookup_resolved:
+      typeof primary.context_lookup_resolved === "boolean"
+        ? primary.context_lookup_resolved
+        : typeof secondary.context_lookup_resolved === "boolean"
+          ? secondary.context_lookup_resolved
+          : undefined,
     action_context_signature: actionContextSignature,
     risk_context_signature: riskContextSignature
   };
@@ -389,6 +418,18 @@ function buildRiskContextShape(source, fallback = {}) {
       primary.sequence_kind_key,
       toText(secondary.sequence_kind_key, "")
     ),
+    context_lookup_required:
+      typeof primary.context_lookup_required === "boolean"
+        ? primary.context_lookup_required
+        : typeof secondary.context_lookup_required === "boolean"
+          ? secondary.context_lookup_required
+          : false,
+    context_lookup_resolved:
+      typeof primary.context_lookup_resolved === "boolean"
+        ? primary.context_lookup_resolved
+        : typeof secondary.context_lookup_resolved === "boolean"
+          ? secondary.context_lookup_resolved
+          : undefined,
     action_context_signature: actionContextSignature,
     risk_context_signature: riskContextSignature
   };
@@ -6189,7 +6230,19 @@ function enrichDistrictInteractionModal(interactionModal, input) {
     resolveDistrictKey(normalizeWorkspace(input.workspace), normalizeTab(input.tab));
   const buildContextActionItems = (items, actionContext) =>
     asList(items).map((item) => {
-      return applyResolvedActionRiskMeta(item, actionContext, item);
+      return applyResolvedActionRiskMeta(
+        item,
+        {
+          ...(asRecord(actionContext) || {}),
+          context_lookup_required: true,
+          context_lookup_resolved: true
+        },
+        item,
+        {
+          context_lookup_required: true,
+          context_lookup_resolved: true
+        }
+      );
     });
   const enrichedProtocolCards = modal.protocol_cards.map((card) => {
     const protocolCard = asRecord(card);
@@ -6236,7 +6289,9 @@ function enrichDistrictInteractionModal(interactionModal, input) {
           risk_attention_band_key: riskBands.risk_attention_band_key,
           risk_trend_direction_key: riskBands.risk_trend_direction_key,
           entry_kind_key: toText(microflow.entry_kind_key, ""),
-          sequence_kind_key: toText(microflow.sequence_kind_key, "")
+          sequence_kind_key: toText(microflow.sequence_kind_key, ""),
+          context_lookup_required: true,
+          context_lookup_resolved: true
         };
         return applyResolvedActionRiskMeta(flow, actionContext, flow, {
           district_key: districtKey,
@@ -6257,6 +6312,8 @@ function enrichDistrictInteractionModal(interactionModal, input) {
           risk_chrome_scalar: riskVisualMeta.risk_chrome_scalar,
           risk_pulse_scalar: riskVisualMeta.risk_pulse_scalar,
           risk_motion_scalar: riskVisualMeta.risk_motion_scalar,
+          context_lookup_required: true,
+          context_lookup_resolved: true,
           loop_status_key: loopState.loop_status_key,
           loop_status_label_key: loopState.loop_status_label_key,
           loop_stage_value: loopState.loop_stage_value,
@@ -6338,16 +6395,28 @@ function enrichDistrictInteractionModal(interactionModal, input) {
     const primaryMicroflow = asRecord(
       enrichedMicroflows.find((flow) => asRecord(flow).action_context) || enrichedMicroflows[0]
     );
-    const podActionContext = asRecord(primaryMicroflow.action_context);
+    const podActionContext = {
+      ...(asRecord(primaryMicroflow.action_context) || {}),
+      context_lookup_required: true,
+      context_lookup_resolved: true
+    };
     return applyResolvedActionRiskMeta(pod, primaryMicroflow, podActionContext, {
       microflow_cards: enrichedMicroflows,
+      context_lookup_required: true,
+      context_lookup_resolved: true,
       action_items: buildContextActionItems(flowPod.action_items, podActionContext)
     });
   });
   const primaryPod = asRecord(enrichedFlowPods.find((pod) => asRecord(pod).action_context) || enrichedFlowPods[0]);
-  const cardActionContext = asRecord(primaryPod.action_context);
+  const cardActionContext = {
+    ...(asRecord(primaryPod.action_context) || {}),
+    context_lookup_required: true,
+    context_lookup_resolved: true
+  };
   return applyResolvedActionRiskMeta(card, primaryPod, cardActionContext, {
     flow_pods: enrichedFlowPods,
+    context_lookup_required: true,
+    context_lookup_resolved: true,
     action_items: buildContextActionItems(protocolCard.action_items, cardActionContext)
   });
 });
@@ -6384,7 +6453,9 @@ function enrichDistrictInteractionModal(interactionModal, input) {
       action_label_key: toText(microflow.action_label_key, toText(protocolCard.action_label_key, "")),
       hint_label_key: toText(microflow.hint_label_key, toText(modalActionContext.hint_label_key, "")),
       family_key: toText(microflow.family_key, toText(protocolPod.family_key, toText(protocolCard.family_key, ""))),
-      flow_key: toText(microflow.flow_key, toText(protocolPod.flow_key, toText(protocolCard.flow_key, "")))
+      flow_key: toText(microflow.flow_key, toText(protocolPod.flow_key, toText(protocolCard.flow_key, ""))),
+      context_lookup_required: true,
+      context_lookup_resolved: true
     });
   });
   return {
@@ -6481,6 +6552,32 @@ function enrichInteractionActionItems(items, actionContextLookup) {
     const actionKey = toText(record.action_key, "");
     const meta =
       actionContextLookup instanceof Map && actionContextLookup.size ? actionContextLookup.get(actionKey) : null;
+    const recordActionContext = asRecord(record.action_context);
+    const recordRiskContext = asRecord(record.risk_context);
+    const contextLookupRequired =
+      Boolean(meta) ||
+      typeof record.context_lookup_required === "boolean" ||
+      typeof recordActionContext?.context_lookup_required === "boolean" ||
+      typeof recordRiskContext?.context_lookup_required === "boolean"
+        ? Boolean(
+            meta ||
+              record.context_lookup_required ||
+              recordActionContext?.context_lookup_required ||
+              recordRiskContext?.context_lookup_required
+          )
+        : false;
+    const contextLookupResolved =
+      Boolean(meta) ||
+      typeof record.context_lookup_resolved === "boolean" ||
+      typeof recordActionContext?.context_lookup_resolved === "boolean" ||
+      typeof recordRiskContext?.context_lookup_resolved === "boolean"
+        ? Boolean(
+            meta ||
+              record.context_lookup_resolved ||
+              recordActionContext?.context_lookup_resolved ||
+              recordRiskContext?.context_lookup_resolved
+          )
+        : !contextLookupRequired;
     const contextSource = meta || record.action_context || record.risk_context || record;
     const enriched = applyResolvedActionRiskMeta(item, contextSource, record, {
       family_key: toText(meta?.family_key, toText(record.family_key, "")),
@@ -6504,10 +6601,14 @@ function enrichInteractionActionItems(items, actionContextLookup) {
       risk_context_signature: toText(
         meta?.risk_context_signature,
         toText(record.risk_context_signature, "")
-      )
+      ),
+      context_lookup_required: contextLookupRequired,
+      context_lookup_resolved: contextLookupResolved
     });
     return {
       ...enriched,
+      context_lookup_required: contextLookupRequired,
+      context_lookup_resolved: contextLookupResolved,
       contract_ready:
         typeof meta?.contract_ready === "boolean" ? meta.contract_ready : enriched.contract_ready,
       contract_missing_keys: Array.isArray(meta?.contract_missing_keys)
