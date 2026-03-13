@@ -388,6 +388,14 @@ test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
     "wallet_link:wallet|exchange_district:wallet_link:wallet|red:alert:no_data|world_entry_kind_wallet_terminal|world_modal_kind_wallet_terminal"
   );
   assert.equal(
+    enriched.scene_loop_district_microflow_risk_rows_7d[0].action_context_signature,
+    "wallet_link:wallet|exchange_district:wallet_link:wallet|world_entry_kind_wallet_terminal|world_modal_kind_wallet_terminal"
+  );
+  assert.equal(
+    enriched.scene_loop_district_microflow_risk_rows_7d[0].action_context?.action_context_signature,
+    "wallet_link:wallet|exchange_district:wallet_link:wallet|world_entry_kind_wallet_terminal|world_modal_kind_wallet_terminal"
+  );
+  assert.equal(
     enriched.scene_loop_district_microflow_risk_rows_7d[0].risk_context?.risk_context_signature,
     "wallet_link:wallet|exchange_district:wallet_link:wallet|red:alert:no_data|world_entry_kind_wallet_terminal|world_modal_kind_wallet_terminal"
   );
@@ -428,6 +436,14 @@ test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
   assert.equal(
     enriched.scene_loop_district_microflow_risk_rows_daily_7d[0].risk_context_signature,
     "payout_lane:payout|exchange_district:payout_lane:payout|yellow:watch:no_data|world_entry_kind_payout_terminal|world_modal_kind_payout_route"
+  );
+  assert.equal(
+    enriched.scene_loop_district_microflow_risk_rows_daily_7d[0].action_context_signature,
+    "payout_lane:payout|exchange_district:payout_lane:payout|world_entry_kind_payout_terminal|world_modal_kind_payout_route"
+  );
+  assert.equal(
+    enriched.scene_loop_district_microflow_risk_rows_daily_7d[0].action_context?.action_context_signature,
+    "payout_lane:payout|exchange_district:payout_lane:payout|world_entry_kind_payout_terminal|world_modal_kind_payout_route"
   );
   assert.equal(
     enriched.scene_loop_district_microflow_risk_rows_daily_7d[0].risk_context?.risk_context_signature,

@@ -70,6 +70,14 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
     state.interaction_surface.action_context?.risk_focus_key,
     "central_hub:travel:travel_flow|green:stable:flat"
   );
+  assert.equal(
+    state.interaction_surface.action_context_signature,
+    "travel_flow|central_hub:travel:travel_flow|world_entry_kind_hub_portal|world_modal_kind_travel_gate"
+  );
+  assert.equal(
+    state.interaction_surface.action_context?.action_context_signature,
+    "travel_flow|central_hub:travel:travel_flow|world_entry_kind_hub_portal|world_modal_kind_travel_gate"
+  );
   assert.equal(state.interaction_surface.risk_context?.district_key, "central_hub");
   assert.equal(state.interaction_surface.risk_context?.focus_key, "central_hub:travel:travel_flow");
   assert.equal(
@@ -244,6 +252,14 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
   assert.equal(
     state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].action_context?.risk_focus_key,
     "central_hub:travel:travel_flow|green:stable:flat"
+  );
+  assert.equal(
+    state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].action_context_signature,
+    "travel_flow|central_hub:travel:travel_flow|world_entry_kind_hub_portal|world_modal_kind_travel_gate"
+  );
+  assert.equal(
+    state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].action_context?.action_context_signature,
+    "travel_flow|central_hub:travel:travel_flow|world_entry_kind_hub_portal|world_modal_kind_travel_gate"
   );
   assert.equal(
     state.interaction_modal.protocol_cards[0].flow_pods[0].microflow_cards[0].risk_context?.focus_key,
@@ -741,6 +757,10 @@ test("buildDistrictWorldState maps admin runtime into ops citadel", () => {
   assert.equal(state.interaction_modal.protocol_cards[2].flow_pods[0].risk_attention_band_key, "watch");
   assert.equal(state.interaction_modal.protocol_cards[2].flow_pods[0].risk_trend_direction_key, "flat");
   assert.equal(state.interaction_modal.protocol_cards[2].flow_pods[0].action_context?.focus_key, "ops_citadel:dispatch:dispatch_flow");
+  assert.equal(
+    state.interaction_modal.protocol_cards[2].flow_pods[0].action_context_signature,
+    "dispatch_flow|ops_citadel:dispatch:dispatch_flow|world_entry_kind_dispatch_console|world_modal_kind_dispatch_sequence"
+  );
   assert.equal(state.interaction_modal.protocol_cards[2].flow_pods[0].microflow_cards[0].focus_key, "ops_citadel:dispatch:dispatch_flow");
   assert.equal(state.interaction_modal.protocol_cards[2].flow_pods[0].microflow_cards[0].risk_key, "yellow:watch:flat");
   assert.equal(
@@ -754,6 +774,14 @@ test("buildDistrictWorldState maps admin runtime into ops citadel", () => {
   assert.equal(
     state.interaction_modal.protocol_cards[2].flow_pods[0].microflow_cards[0].action_context?.risk_focus_key,
     "ops_citadel:dispatch:dispatch_flow|yellow:watch:flat"
+  );
+  assert.equal(
+    state.interaction_modal.protocol_cards[2].flow_pods[0].microflow_cards[0].action_context_signature,
+    "dispatch_flow|ops_citadel:dispatch:dispatch_flow|world_entry_kind_dispatch_console|world_modal_kind_dispatch_sequence"
+  );
+  assert.equal(
+    state.interaction_modal.protocol_cards[2].flow_pods[0].microflow_cards[0].action_context?.action_context_signature,
+    "dispatch_flow|ops_citadel:dispatch:dispatch_flow|world_entry_kind_dispatch_console|world_modal_kind_dispatch_sequence"
   );
   assert.equal(state.interaction_modal.protocol_cards[2].flow_pods[0].microflow_cards[0].risk_health_band_key, "yellow");
   assert.equal(state.interaction_modal.protocol_cards[2].flow_pods[0].microflow_cards[0].risk_attention_band_key, "watch");

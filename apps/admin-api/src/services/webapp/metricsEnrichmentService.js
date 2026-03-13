@@ -330,6 +330,17 @@ function buildSceneLoopRiskContextSignature(flowKey, riskFocusKey, entryKindKey,
     .join("|");
 }
 
+function buildSceneLoopActionContextSignature(flowKey, focusKey, entryKindKey, sequenceKindKey) {
+  return [
+    String(flowKey || "").trim(),
+    String(focusKey || "").trim(),
+    String(entryKindKey || "").trim(),
+    String(sequenceKindKey || "").trim()
+  ]
+    .filter(Boolean)
+    .join("|");
+}
+
 function buildSceneLoopRiskContext(row) {
   const districtKey = String(row?.district_key || "unknown");
   const loopFamilyKey = normalizeSceneLoopMicroflowFamilyKey(row?.loop_family_key ?? row?.loop_microflow_key);
@@ -349,7 +360,13 @@ function buildSceneLoopRiskContext(row) {
     entryKindKey,
     sequenceKindKey
   );
-  const riskContext = {
+  const actionContextSignature = buildSceneLoopActionContextSignature(
+    flowKey,
+    focusKey,
+    entryKindKey,
+    sequenceKindKey
+  );
+  const actionContext = {
     district_key: districtKey,
     family_key: loopFamilyKey,
     flow_key: flowKey,
@@ -362,6 +379,10 @@ function buildSceneLoopRiskContext(row) {
     risk_trend_direction_key: trendDirection,
     entry_kind_key: entryKindKey,
     sequence_kind_key: sequenceKindKey,
+    action_context_signature: actionContextSignature
+  };
+  const riskContext = {
+    ...actionContext,
     risk_context_signature: riskContextSignature
   };
   return {
@@ -380,9 +401,11 @@ function buildSceneLoopRiskContext(row) {
     risk_trend_direction_key: trendDirection,
     risk_key: riskKey,
     risk_focus_key: riskFocusKey,
+    action_context_signature: actionContextSignature,
     risk_context_signature: riskContextSignature,
     entry_kind_key: entryKindKey,
     sequence_kind_key: sequenceKindKey,
+    action_context: actionContext,
     risk_context: riskContext
   };
 }
