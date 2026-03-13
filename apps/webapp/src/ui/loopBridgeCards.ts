@@ -282,6 +282,78 @@ function applyBridgeMeta(article: HTMLElement, meta: LoopBridgeMeta): void {
   }
 }
 
+function buildBridgeContextChips(meta: LoopBridgeMeta): string[] {
+  const actionContext = meta.action_context ?? {};
+  const riskContext = meta.risk_context ?? {};
+  const chips: string[] = [];
+  const pushChip = (label: string, value: unknown) => {
+    const text = safeText(value);
+    if (text) {
+      chips.push(`${label} ${text}`);
+    }
+  };
+  pushChip("FLOW", meta.flow_key || actionContext.flow_key || riskContext.flow_key);
+  pushChip("ENTRY", meta.entry_kind_key || actionContext.entry_kind_key || riskContext.entry_kind_key);
+  pushChip("SEQ", meta.sequence_kind_key || actionContext.sequence_kind_key || riskContext.sequence_kind_key);
+  pushChip(
+    "HB",
+    meta.risk_health_band_key || actionContext.risk_health_band_key || riskContext.risk_health_band_key
+  );
+  pushChip(
+    "ATTN",
+    meta.risk_attention_band_key ||
+      actionContext.risk_attention_band_key ||
+      riskContext.risk_attention_band_key
+  );
+  pushChip(
+    "TREND",
+    meta.risk_trend_direction_key ||
+      actionContext.risk_trend_direction_key ||
+      riskContext.risk_trend_direction_key
+  );
+  pushChip("ACS", meta.action_context_signature || actionContext.action_context_signature);
+  pushChip("RCS", meta.risk_context_signature || riskContext.risk_context_signature);
+  return chips;
+}
+
+function renderBridgeContextRibbon(meta: LoopBridgeMeta): HTMLDivElement | null {
+  const chips = buildBridgeContextChips(meta);
+  if (!chips.length && typeof meta.contract_ready !== "boolean" && !meta.contract_state_key) {
+    return null;
+  }
+  const container = document.createElement("div");
+  container.className = "akrBridgeContextRibbon";
+  const state = document.createElement("span");
+  const contractReady = resolveBridgeContractReady(meta);
+  state.className = `akrBridgeContextChip is-contract ${contractReady ? "is-ready" : "is-missing"}`;
+  state.textContent = contractReady ? "READY" : "MISS";
+  container.appendChild(state);
+  chips.forEach((chipText) => {
+    const chip = document.createElement("span");
+    chip.className = "akrBridgeContextChip";
+    chip.textContent = chipText;
+    container.appendChild(chip);
+  });
+  return container;
+}
+
+function renderBridgeContractMeta(meta: LoopBridgeMeta): HTMLElement | null {
+  const contractMissingKeys = Array.isArray(meta.contract_missing_keys)
+    ? meta.contract_missing_keys.map((value) => safeText(value)).filter(Boolean)
+    : [];
+  if (!contractMissingKeys.length && typeof meta.contract_ready !== "boolean" && !meta.contract_state_key) {
+    return null;
+  }
+  const line = document.createElement("p");
+  line.className = "akrBridgeContractMeta";
+  const contractReady = resolveBridgeContractReady(meta);
+  const state = safeText(meta.contract_state_key, contractReady ? "ready" : "missing");
+  line.textContent = contractMissingKeys.length
+    ? `contract ${state} | miss ${contractMissingKeys.join(",")}`
+    : `contract ${state}`;
+  return line;
+}
+
 function hasBridgeMeta(meta: LoopBridgeMeta | null | undefined): boolean {
   if (!meta) {
     return false;
@@ -359,11 +431,19 @@ export function renderLoopBridgeCards(host: HTMLElement | null, cards: LoopBridg
 
     article.appendChild(title);
     article.appendChild(value);
+    const ribbon = renderBridgeContextRibbon(card);
+    if (ribbon) {
+      article.appendChild(ribbon);
+    }
 
     if (safeText(card.hint)) {
       const hint = document.createElement("em");
       hint.textContent = safeText(card.hint);
       article.appendChild(hint);
+    }
+    const contractMeta = renderBridgeContractMeta(card);
+    if (contractMeta) {
+      article.appendChild(contractMeta);
     }
 
     host.appendChild(article);
@@ -399,11 +479,19 @@ export function renderLoopBridgeBlocks(host: HTMLElement | null, blocks: LoopBri
     article.appendChild(title);
     article.appendChild(summary);
     article.appendChild(gate);
+    const ribbon = renderBridgeContextRibbon(block);
+    if (ribbon) {
+      article.appendChild(ribbon);
+    }
 
     if (safeText(block.hint)) {
       const hint = document.createElement("em");
       hint.textContent = safeText(block.hint);
       article.appendChild(hint);
+    }
+    const contractMeta = renderBridgeContractMeta(block);
+    if (contractMeta) {
+      article.appendChild(contractMeta);
     }
 
     host.appendChild(article);
@@ -440,11 +528,19 @@ export function renderLoopBridgePanels(host: HTMLElement | null, panels: LoopBri
       list.appendChild(item);
     });
     article.appendChild(list);
+    const ribbon = renderBridgeContextRibbon(panel);
+    if (ribbon) {
+      article.appendChild(ribbon);
+    }
 
     if (safeText(panel.hint)) {
       const hint = document.createElement("em");
       hint.textContent = safeText(panel.hint);
       article.appendChild(hint);
+    }
+    const contractMeta = renderBridgeContractMeta(panel);
+    if (contractMeta) {
+      article.appendChild(contractMeta);
     }
 
     host.appendChild(article);

@@ -2887,6 +2887,43 @@ body {
   color: #f2fbff;
 }
 
+.akrBridgeContextRibbon {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.akrBridgeContextChip {
+  padding: 3px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(120, 181, 225, 0.22);
+  background: rgba(7, 22, 42, 0.42);
+  color: #9fc7df;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.05em;
+  word-break: break-word;
+}
+
+.akrBridgeContextChip.is-contract.is-ready {
+  border-color: rgba(64, 255, 188, 0.34);
+  color: #8ff4cf;
+}
+
+.akrBridgeContextChip.is-contract.is-missing {
+  border-color: rgba(255, 111, 145, 0.34);
+  color: #ffc0cf;
+}
+
+.akrBridgeContractMeta {
+  margin: 0;
+  color: rgba(170, 222, 242, 0.76);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.04em;
+  word-break: break-word;
+}
+
 .akrBridgeFocusCard[data-tone="advantage"] {
   border-color: rgba(47, 255, 181, 0.26);
 }
