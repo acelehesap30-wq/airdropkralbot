@@ -2864,6 +2864,7 @@ body {
 }
 
 .akrBridgeFocusCard {
+  position: relative;
   display: grid;
   gap: 4px;
   padding: 10px 12px;
@@ -2902,6 +2903,36 @@ body {
   border-color: rgba(255, 111, 145, 0.3);
 }
 
+.akrBridgeFocusCard.is-contract-ready,
+.akrBridgeFlowBlock.is-contract-ready,
+.akrBridgeFlowPanel.is-contract-ready {
+  cursor: default;
+}
+
+.akrBridgeFocusCard.is-contract-missing,
+.akrBridgeFlowBlock.is-contract-missing,
+.akrBridgeFlowPanel.is-contract-missing,
+.akrBridgeFocusCard[data-contract-ready="false"],
+.akrBridgeFlowBlock[data-contract-ready="false"],
+.akrBridgeFlowPanel[data-contract-ready="false"] {
+  opacity: 0.68;
+  border-style: dashed;
+  border-color: rgba(255, 135, 156, 0.34);
+  box-shadow: inset 0 0 0 1px rgba(255, 135, 156, 0.08);
+}
+
+.akrBridgeFocusCard.is-contract-missing::after,
+.akrBridgeFlowBlock.is-contract-missing::after,
+.akrBridgeFlowPanel.is-contract-missing::after {
+  content: "CONTRACT";
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  font-size: 0.56rem;
+  letter-spacing: 0.16em;
+  color: rgba(255, 171, 187, 0.78);
+}
+
 .akrBridgeFlowBlocks {
   display: grid;
   gap: 8px;
@@ -2915,6 +2946,7 @@ body {
 }
 
 .akrBridgeFlowBlock {
+  position: relative;
   display: grid;
   gap: 4px;
   padding: 10px 12px;
@@ -2957,6 +2989,7 @@ body {
 }
 
 .akrBridgeFlowPanel {
+  position: relative;
   display: grid;
   gap: 6px;
   padding: 10px 12px;

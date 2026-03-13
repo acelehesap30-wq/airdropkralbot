@@ -3,6 +3,7 @@ export type LoopBridgeCard = {
   value: string;
   hint?: string;
   tone?: string;
+  contract_ready?: boolean;
   action_context_signature?: string;
   risk_context_signature?: string;
   focus_key?: string;
@@ -26,6 +27,7 @@ export type LoopBridgeBlock = {
   gate: string;
   hint?: string;
   tone?: string;
+  contract_ready?: boolean;
   action_context_signature?: string;
   risk_context_signature?: string;
   focus_key?: string;
@@ -48,6 +50,7 @@ export type LoopBridgePanel = {
   lines: string[];
   hint?: string;
   tone?: string;
+  contract_ready?: boolean;
   action_context_signature?: string;
   risk_context_signature?: string;
   focus_key?: string;
@@ -100,6 +103,7 @@ function normalizeTone(value: unknown): string {
 }
 
 type LoopBridgeMeta = {
+  contract_ready?: boolean;
   action_context_signature?: string;
   risk_context_signature?: string;
   focus_key?: string;
@@ -117,7 +121,44 @@ type LoopBridgeMeta = {
   risk_context?: LoopBridgeRiskContext;
 };
 
+function resolveBridgeContractReady(meta: LoopBridgeMeta): boolean {
+  if (typeof meta.contract_ready === "boolean") {
+    return meta.contract_ready;
+  }
+  const actionContext = meta.action_context ?? {};
+  const riskContext = meta.risk_context ?? {};
+  const flowKey = safeText(meta.flow_key || actionContext.flow_key || riskContext.flow_key);
+  const focusKey = safeText(meta.focus_key || actionContext.focus_key || riskContext.focus_key);
+  const riskKey = safeText(meta.risk_key || actionContext.risk_key || riskContext.risk_key);
+  const riskFocusKey = safeText(
+    meta.risk_focus_key || actionContext.risk_focus_key || riskContext.risk_focus_key
+  );
+  const entryKindKey = safeText(meta.entry_kind_key || actionContext.entry_kind_key || riskContext.entry_kind_key);
+  const sequenceKindKey = safeText(
+    meta.sequence_kind_key || actionContext.sequence_kind_key || riskContext.sequence_kind_key
+  );
+  const actionContextSignature = safeText(
+    meta.action_context_signature || actionContext.action_context_signature
+  );
+  const riskContextSignature = safeText(
+    meta.risk_context_signature || riskContext.risk_context_signature
+  );
+  return Boolean(
+    flowKey &&
+      focusKey &&
+      riskKey &&
+      riskFocusKey &&
+      entryKindKey &&
+      sequenceKindKey &&
+      actionContextSignature &&
+      riskContextSignature
+  );
+}
+
 function applyBridgeMeta(article: HTMLElement, meta: LoopBridgeMeta): void {
+  const contractReady = resolveBridgeContractReady(meta);
+  article.dataset.contractReady = contractReady ? "true" : "false";
+  article.classList.add(contractReady ? "is-contract-ready" : "is-contract-missing");
   const actionContext = meta.action_context ?? {};
   const riskContext = meta.risk_context ?? {};
   const actionContextSignature = safeText(

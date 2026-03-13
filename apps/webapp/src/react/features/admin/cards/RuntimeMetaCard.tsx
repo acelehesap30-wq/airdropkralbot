@@ -87,6 +87,9 @@ function renderRiskContextSuffix(row: Record<string, unknown>): string {
   if (riskContext.risk_trend_direction_key) {
     parts.push(`trend ${String(riskContext.risk_trend_direction_key)}`);
   }
+  if (typeof riskContext.contract_ready === "boolean" || typeof row.contract_ready === "boolean") {
+    parts.push(`contract ${riskContext.contract_ready === true || row.contract_ready === true ? "ready" : "missing"}`);
+  }
   const riskContextSignature = String(riskContext.risk_context_signature || row.risk_context_signature || "").trim();
   const actionContextSignature = String(
     actionContext.action_context_signature || row.action_context_signature || ""

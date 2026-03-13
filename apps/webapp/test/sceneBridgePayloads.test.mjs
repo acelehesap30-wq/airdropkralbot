@@ -398,6 +398,7 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
   assert.match(payloads.combatHud.loopDuelFlowCards?.[0]?.value || "", /DUEL CONSOLE|DUEL FLOW/i);
   assert.match(payloads.combatHud.loopDuelFlowCards?.[0]?.hint || "", /FOCUS arena_prime:duel:duel_flow/i);
   assert.equal(payloads.combatHud.loopDuelFlowCards?.[0]?.focus_key, "arena_prime:duel:duel_flow");
+  assert.equal(payloads.combatHud.loopDuelFlowCards?.[0]?.contract_ready, true);
   assert.equal(payloads.combatHud.loopDuelFlowCards?.[0]?.flow_key, "duel:duel_flow");
   assert.equal(payloads.combatHud.loopDuelFlowCards?.[0]?.entry_kind_key, "world_entry_kind_duel_console");
   assert.equal(payloads.combatHud.loopDuelFlowCards?.[0]?.sequence_kind_key, "world_modal_kind_duel_sequence");
@@ -437,14 +438,17 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
   assert.equal(payloads.combatHud.loopDuelFlowCards?.[2]?.title, "RISK");
   assert.equal(payloads.combatHud.loopDuelFlowBlocks?.length, 3);
   assert.equal(payloads.combatHud.loopDuelFlowBlocks?.[2]?.title, "RISK");
+  assert.equal(payloads.combatHud.loopDuelFlowBlocks?.[0]?.contract_ready, true);
   assert.equal(payloads.combatHud.loopDuelFlowBlocks?.[0]?.focus_key, "arena_prime:duel:duel_flow");
   assert.equal(payloads.combatHud.loopDuelFlowPanels?.length, 3);
   assert.equal(payloads.combatHud.loopDuelFlowPanels?.[0]?.title, "STANCE");
   assert.equal(payloads.combatHud.loopDuelFlowPanels?.[1]?.title, "STATUS");
   assert.equal(payloads.combatHud.loopDuelFlowPanels?.[2]?.title, "RESOLVE");
+  assert.equal(payloads.combatHud.loopDuelFlowPanels?.[0]?.contract_ready, true);
   assert.equal(payloads.combatHud.loopDuelFlowPanels?.[2]?.focus_key, "arena_prime:duel:duel_flow");
   assert.equal(payloads.combatHud.loopDuelRiskCards?.length, 4);
   assert.equal(payloads.combatHud.loopDuelRiskCards?.[0]?.title, "HEALTH");
+  assert.equal(payloads.combatHud.loopDuelRiskCards?.[0]?.contract_ready, true);
   assert.equal(payloads.combatHud.loopDuelRiskCards?.[1]?.title, "ATTN");
   assert.equal(payloads.combatHud.loopDuelRiskCards?.[2]?.title, "TREND");
   assert.equal(payloads.combatHud.loopDuelRiskCards?.[3]?.title, "MICRO");

@@ -952,7 +952,18 @@ function buildLoopBridgeMeta(source, familyKey = "") {
     ...action_context,
     risk_context_signature
   };
+  const contract_ready = Boolean(
+    flow_key &&
+      focus_key &&
+      risk_key &&
+      risk_focus_key &&
+      entry_kind_key &&
+      sequence_kind_key &&
+      action_context_signature &&
+      risk_context_signature
+  );
   return {
+    contract_ready,
     focus_key,
     risk_key,
     risk_focus_key,

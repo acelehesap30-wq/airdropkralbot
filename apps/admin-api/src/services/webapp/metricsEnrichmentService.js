@@ -350,6 +350,27 @@ function buildSceneLoopActionContextSignature(flowKey, focusKey, entryKindKey, s
     .join("|");
 }
 
+function isSceneLoopRiskContextReady(context) {
+  const source = context && typeof context === "object" ? context : {};
+  const requiredValues = [
+    source.district_key,
+    source.family_key,
+    source.flow_key,
+    source.microflow_key,
+    source.focus_key,
+    source.risk_key,
+    source.risk_focus_key,
+    source.entry_kind_key,
+    source.sequence_kind_key,
+    source.action_context_signature,
+    source.risk_context_signature
+  ];
+  return requiredValues.every((value) => {
+    const normalized = String(value || "").trim().toLowerCase();
+    return normalized && normalized !== "unknown";
+  });
+}
+
 function buildSceneLoopRiskContext(row) {
   const source = row && typeof row === "object" ? row : {};
   const actionContextSource = asRecord(source.action_context);
@@ -456,6 +477,12 @@ function buildSceneLoopRiskContext(row) {
       toText(actionContextSource?.risk_context_signature, toText(source?.risk_context_signature, riskContextSignature))
     )
   };
+  const contractReady = isSceneLoopRiskContextReady({
+    ...riskContext,
+    action_context_signature: actionContext.action_context_signature
+  });
+  actionContext.contract_ready = contractReady;
+  riskContext.contract_ready = contractReady;
   return {
     district_key: districtKey,
     loop_family_key: loopFamilyKey,
@@ -472,6 +499,7 @@ function buildSceneLoopRiskContext(row) {
     risk_trend_direction_key: trendDirection,
     risk_key: riskKey,
     risk_focus_key: riskFocusKey,
+    contract_ready: contractReady,
     action_context_signature: actionContext.action_context_signature,
     risk_context_signature: riskContext.risk_context_signature,
     entry_kind_key: entryKindKey,
