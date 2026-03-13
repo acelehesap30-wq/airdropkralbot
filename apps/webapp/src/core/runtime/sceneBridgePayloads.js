@@ -633,6 +633,52 @@ function buildLoopRiskContextSignatureText(source, familyKey = "") {
   return [flowKeyText, riskFocusKeyText, entryKindKeyText, sequenceKindKeyText].filter(Boolean).join("|");
 }
 
+function buildLoopEntryKindKeyText(source, familyKey = "") {
+  const row = asRecord(source);
+  const family_key =
+    toText(row.familyKey || row.family_key, "").toLowerCase() ||
+    toText(buildLoopFocusKeyText(row, familyKey).split(":")[1], "").toLowerCase() ||
+    toText(familyKey, "").toLowerCase();
+  const microflow_key =
+    toText(row.microflowKey || row.microflow_key, "").toLowerCase() ||
+    toText(buildLoopFocusKeyText(row, familyKey).split(":")[2], "").toLowerCase();
+  return (
+    toText(row.entryKindKey || row.entry_kind_key, "").toLowerCase() ||
+    resolveLoopBridgeEntryKindKey(family_key, microflow_key)
+  );
+}
+
+function buildLoopSequenceKindKeyText(source, familyKey = "") {
+  const row = asRecord(source);
+  const family_key =
+    toText(row.familyKey || row.family_key, "").toLowerCase() ||
+    toText(buildLoopFocusKeyText(row, familyKey).split(":")[1], "").toLowerCase() ||
+    toText(familyKey, "").toLowerCase();
+  const microflow_key =
+    toText(row.microflowKey || row.microflow_key, "").toLowerCase() ||
+    toText(buildLoopFocusKeyText(row, familyKey).split(":")[2], "").toLowerCase();
+  return (
+    toText(row.sequenceKindKey || row.sequence_kind_key, "").toLowerCase() ||
+    resolveLoopBridgeSequenceKindKey(family_key, microflow_key)
+  );
+}
+
+function buildLoopContractContextText(source, familyKey = "") {
+  const flowKeyText = buildLoopFlowKeyText(source, familyKey);
+  const entryKindKeyText = buildLoopEntryKindKeyText(source, familyKey);
+  const sequenceKindKeyText = buildLoopSequenceKindKeyText(source, familyKey);
+  return buildLoopMicroDetail(
+    flowKeyText ? `FLOW ${flowKeyText}` : "",
+    entryKindKeyText ? `ENTRY ${entryKindKeyText}` : "",
+    sequenceKindKeyText ? `SEQ ${sequenceKindKeyText}` : ""
+  );
+}
+
+function buildLoopContractSignatureText(source, familyKey = "") {
+  const signature = buildLoopRiskContextSignatureText(source, familyKey);
+  return signature ? `SIG ${signature}` : "";
+}
+
 function buildLoopFlowKeyText(source, familyKey = "") {
   const row = asRecord(source);
   const focusKeyText = buildLoopFocusKeyText(row, familyKey);
@@ -1028,6 +1074,8 @@ function buildLoopFlowFamilyPanels(tone, rails, titles) {
   const riskKeyText = buildLoopRiskKeyText(source);
   const focusKeyText = buildLoopFocusKeyText(source);
   const riskFocusKeyText = buildLoopRiskFocusKeyText(source);
+  const contractContextText = buildLoopContractContextText(source);
+  const contractSignatureText = buildLoopContractSignatureText(source);
   const [commandTitle, stateTitle, signalTitle] = normalizeLoopFlowPanelTitles(titles);
   return applyLoopBridgeMeta([
     {
@@ -1060,7 +1108,9 @@ function buildLoopFlowFamilyPanels(tone, rails, titles) {
         buildLoopTrendText(source),
         buildLoopMicroDetail(riskComponentText, buildLoopRiskSummaryText(source)),
         `RISK ${riskKeyText}`,
-        riskFocusKeyText ? `RFK ${riskFocusKeyText}` : ""
+        riskFocusKeyText ? `RFK ${riskFocusKeyText}` : "",
+        contractContextText,
+        contractSignatureText
       ]
     }
   ], source);
@@ -1073,6 +1123,8 @@ function buildLoopRiskPanels(tone, rails) {
   const riskKeyText = buildLoopRiskKeyText(source);
   const focusKeyText = buildLoopFocusKeyText(source);
   const riskFocusKeyText = buildLoopRiskFocusKeyText(source);
+  const contractContextText = buildLoopContractContextText(source);
+  const contractSignatureText = buildLoopContractSignatureText(source);
   return applyLoopBridgeMeta([
     {
       title: "HEALTH",
@@ -1085,7 +1137,9 @@ function buildLoopRiskPanels(tone, rails) {
         buildLoopMicroDetail(microflowText, focusKeyText ? `FOCUS ${focusKeyText}` : ""),
         buildLoopMicroDetail(riskComponentText, buildLoopRiskSummaryText(source)),
         `RISK ${riskKeyText}`,
-        riskFocusKeyText ? `RFK ${riskFocusKeyText}` : ""
+        riskFocusKeyText ? `RFK ${riskFocusKeyText}` : "",
+        contractContextText,
+        contractSignatureText
       ]
     },
     {
@@ -1099,7 +1153,9 @@ function buildLoopRiskPanels(tone, rails) {
         buildLoopMicroDetail(microflowText, focusKeyText ? `FOCUS ${focusKeyText}` : ""),
         buildLoopMicroDetail(riskComponentText, buildLoopRiskSummaryText(source)),
         `RISK ${riskKeyText}`,
-        riskFocusKeyText ? `RFK ${riskFocusKeyText}` : ""
+        riskFocusKeyText ? `RFK ${riskFocusKeyText}` : "",
+        contractContextText,
+        contractSignatureText
       ]
     },
     {
@@ -1113,7 +1169,9 @@ function buildLoopRiskPanels(tone, rails) {
         buildLoopMicroDetail(microflowText, focusKeyText ? `FOCUS ${focusKeyText}` : ""),
         buildLoopMicroDetail(riskComponentText, buildLoopRiskSummaryText(source)),
         `RISK ${riskKeyText}`,
-        riskFocusKeyText ? `RFK ${riskFocusKeyText}` : ""
+        riskFocusKeyText ? `RFK ${riskFocusKeyText}` : "",
+        contractContextText,
+        contractSignatureText
       ]
     }
   ], source);
@@ -1151,6 +1209,8 @@ function buildLoopSubflowPanels(tone, rails, titles) {
   const riskKeyText = buildLoopRiskKeyText(source);
   const focusKeyText = buildLoopFocusKeyText(source);
   const riskFocusKeyText = buildLoopRiskFocusKeyText(source);
+  const contractContextText = buildLoopContractContextText(source);
+  const contractSignatureText = buildLoopContractSignatureText(source);
   const [entryTitle, stateTitle, opsTitle] = normalizeLoopSubflowPanelTitles(titles);
   return applyLoopBridgeMeta([
     {
@@ -1183,7 +1243,9 @@ function buildLoopSubflowPanels(tone, rails, titles) {
         riskComponentText,
         buildLoopMicroDetail(buildLoopRiskSummaryText(source)),
         `RISK ${riskKeyText}`,
-        riskFocusKeyText ? `RFK ${riskFocusKeyText}` : ""
+        riskFocusKeyText ? `RFK ${riskFocusKeyText}` : "",
+        contractContextText,
+        contractSignatureText
       ]
     }
   ], source);
