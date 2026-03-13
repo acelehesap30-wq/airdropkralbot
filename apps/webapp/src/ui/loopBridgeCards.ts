@@ -4,6 +4,7 @@ export type LoopBridgeCard = {
   hint?: string;
   tone?: string;
   contract_ready?: boolean;
+  contract_missing_keys?: string[];
   action_context_signature?: string;
   risk_context_signature?: string;
   focus_key?: string;
@@ -15,6 +16,7 @@ export type LoopBridgeCard = {
   risk_health_band_key?: string;
   risk_attention_band_key?: string;
   risk_trend_direction_key?: string;
+  contract_state_key?: string;
   entry_kind_key?: string;
   sequence_kind_key?: string;
   action_context?: LoopBridgeActionContext;
@@ -28,6 +30,7 @@ export type LoopBridgeBlock = {
   hint?: string;
   tone?: string;
   contract_ready?: boolean;
+  contract_missing_keys?: string[];
   action_context_signature?: string;
   risk_context_signature?: string;
   focus_key?: string;
@@ -39,6 +42,7 @@ export type LoopBridgeBlock = {
   risk_health_band_key?: string;
   risk_attention_band_key?: string;
   risk_trend_direction_key?: string;
+  contract_state_key?: string;
   entry_kind_key?: string;
   sequence_kind_key?: string;
   action_context?: LoopBridgeActionContext;
@@ -51,6 +55,7 @@ export type LoopBridgePanel = {
   hint?: string;
   tone?: string;
   contract_ready?: boolean;
+  contract_missing_keys?: string[];
   action_context_signature?: string;
   risk_context_signature?: string;
   focus_key?: string;
@@ -62,6 +67,7 @@ export type LoopBridgePanel = {
   risk_health_band_key?: string;
   risk_attention_band_key?: string;
   risk_trend_direction_key?: string;
+  contract_state_key?: string;
   entry_kind_key?: string;
   sequence_kind_key?: string;
   action_context?: LoopBridgeActionContext;
@@ -78,9 +84,12 @@ export type LoopBridgeActionContext = {
   risk_health_band_key?: string;
   risk_attention_band_key?: string;
   risk_trend_direction_key?: string;
+  contract_state_key?: string;
   entry_kind_key?: string;
   sequence_kind_key?: string;
   action_context_signature?: string;
+  contract_ready?: boolean;
+  contract_missing_keys?: string[];
 };
 
 export type LoopBridgeRiskContext = LoopBridgeActionContext & {
@@ -104,6 +113,7 @@ function normalizeTone(value: unknown): string {
 
 type LoopBridgeMeta = {
   contract_ready?: boolean;
+  contract_missing_keys?: string[];
   action_context_signature?: string;
   risk_context_signature?: string;
   focus_key?: string;
@@ -115,6 +125,7 @@ type LoopBridgeMeta = {
   risk_health_band_key?: string;
   risk_attention_band_key?: string;
   risk_trend_direction_key?: string;
+  contract_state_key?: string;
   entry_kind_key?: string;
   sequence_kind_key?: string;
   action_context?: LoopBridgeActionContext;
@@ -159,6 +170,12 @@ function applyBridgeMeta(article: HTMLElement, meta: LoopBridgeMeta): void {
   const contractReady = resolveBridgeContractReady(meta);
   article.dataset.contractReady = contractReady ? "true" : "false";
   article.classList.add(contractReady ? "is-contract-ready" : "is-contract-missing");
+  const contractMissingKeys = Array.isArray(meta.contract_missing_keys)
+    ? meta.contract_missing_keys.map((value) => safeText(value)).filter(Boolean)
+    : [];
+  if (contractMissingKeys.length) {
+    article.dataset.contractMissingKeys = contractMissingKeys.join(",");
+  }
   const actionContext = meta.action_context ?? {};
   const riskContext = meta.risk_context ?? {};
   const actionContextSignature = safeText(
@@ -187,6 +204,9 @@ function applyBridgeMeta(article: HTMLElement, meta: LoopBridgeMeta): void {
     meta.risk_trend_direction_key ||
       actionContext.risk_trend_direction_key ||
       riskContext.risk_trend_direction_key
+  );
+  const contractStateKey = safeText(
+    meta.contract_state_key || actionContext.contract_state_key || riskContext.contract_state_key
   );
   const entryKindKey = safeText(meta.entry_kind_key || actionContext.entry_kind_key || riskContext.entry_kind_key);
   const sequenceKindKey = safeText(
@@ -224,6 +244,9 @@ function applyBridgeMeta(article: HTMLElement, meta: LoopBridgeMeta): void {
   }
   if (riskTrendDirectionKey) {
     article.dataset.riskTrendDirectionKey = riskTrendDirectionKey;
+  }
+  if (contractStateKey) {
+    article.dataset.contractStateKey = contractStateKey;
   }
   if (entryKindKey) {
     article.dataset.entryKindKey = entryKindKey;

@@ -952,18 +952,30 @@ function buildLoopBridgeMeta(source, familyKey = "") {
     ...action_context,
     risk_context_signature
   };
-  const contract_ready = Boolean(
-    flow_key &&
-      focus_key &&
-      risk_key &&
-      risk_focus_key &&
-      entry_kind_key &&
-      sequence_kind_key &&
-      action_context_signature &&
-      risk_context_signature
-  );
+  const contract_missing_keys = [
+    ["flow_key", flow_key],
+    ["focus_key", focus_key],
+    ["risk_key", risk_key],
+    ["risk_focus_key", risk_focus_key],
+    ["entry_kind_key", entry_kind_key],
+    ["sequence_kind_key", sequence_kind_key],
+    ["action_context_signature", action_context_signature],
+    ["risk_context_signature", risk_context_signature]
+  ]
+    .filter(([, value]) => !toText(value, ""))
+    .map(([key]) => key);
+  const contract_ready = contract_missing_keys.length === 0;
+  const contract_state_key = contract_ready ? "ready" : "missing";
+  action_context.contract_state_key = contract_state_key;
+  action_context.contract_ready = contract_ready;
+  action_context.contract_missing_keys = contract_missing_keys;
+  risk_context.contract_state_key = contract_state_key;
+  risk_context.contract_ready = contract_ready;
+  risk_context.contract_missing_keys = contract_missing_keys;
   return {
     contract_ready,
+    contract_missing_keys,
+    contract_state_key,
     focus_key,
     risk_key,
     risk_focus_key,

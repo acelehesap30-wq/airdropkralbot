@@ -353,7 +353,10 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
     entry_kind_key: "world_entry_kind_duel_console",
     sequence_kind_key: "world_modal_kind_duel_sequence",
     action_context_signature:
-      "duel:duel_flow|arena_prime:duel:duel_flow|world_entry_kind_duel_console|world_modal_kind_duel_sequence"
+      "duel:duel_flow|arena_prime:duel:duel_flow|world_entry_kind_duel_console|world_modal_kind_duel_sequence",
+    contract_state_key: "ready",
+    contract_ready: true,
+    contract_missing_keys: []
   });
   assert.deepEqual(payloads.sceneStatus.loopContext, {
     family_key: "duel",
@@ -370,7 +373,10 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
     action_context_signature:
       "duel:duel_flow|arena_prime:duel:duel_flow|world_entry_kind_duel_console|world_modal_kind_duel_sequence",
     risk_context_signature:
-      "duel:duel_flow|arena_prime:duel:duel_flow|no_data:no_data:no_data|world_entry_kind_duel_console|world_modal_kind_duel_sequence"
+      "duel:duel_flow|arena_prime:duel:duel_flow|no_data:no_data:no_data|world_entry_kind_duel_console|world_modal_kind_duel_sequence",
+    contract_state_key: "ready",
+    contract_ready: true,
+    contract_missing_keys: []
   });
   assert.equal(payloads.sceneTelemetry.alarm.badgeText, "SCENE WARN");
   assert.equal(payloads.publicTelemetry.assetManifest.badgeText, "ASSET 3/4");
@@ -399,6 +405,8 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
   assert.match(payloads.combatHud.loopDuelFlowCards?.[0]?.hint || "", /FOCUS arena_prime:duel:duel_flow/i);
   assert.equal(payloads.combatHud.loopDuelFlowCards?.[0]?.focus_key, "arena_prime:duel:duel_flow");
   assert.equal(payloads.combatHud.loopDuelFlowCards?.[0]?.contract_ready, true);
+  assert.equal(payloads.combatHud.loopDuelFlowCards?.[0]?.contract_state_key, "ready");
+  assert.deepEqual(payloads.combatHud.loopDuelFlowCards?.[0]?.contract_missing_keys, []);
   assert.equal(payloads.combatHud.loopDuelFlowCards?.[0]?.flow_key, "duel:duel_flow");
   assert.equal(payloads.combatHud.loopDuelFlowCards?.[0]?.entry_kind_key, "world_entry_kind_duel_console");
   assert.equal(payloads.combatHud.loopDuelFlowCards?.[0]?.sequence_kind_key, "world_modal_kind_duel_sequence");
@@ -439,16 +447,22 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
   assert.equal(payloads.combatHud.loopDuelFlowBlocks?.length, 3);
   assert.equal(payloads.combatHud.loopDuelFlowBlocks?.[2]?.title, "RISK");
   assert.equal(payloads.combatHud.loopDuelFlowBlocks?.[0]?.contract_ready, true);
+  assert.equal(payloads.combatHud.loopDuelFlowBlocks?.[0]?.contract_state_key, "ready");
+  assert.deepEqual(payloads.combatHud.loopDuelFlowBlocks?.[0]?.contract_missing_keys, []);
   assert.equal(payloads.combatHud.loopDuelFlowBlocks?.[0]?.focus_key, "arena_prime:duel:duel_flow");
   assert.equal(payloads.combatHud.loopDuelFlowPanels?.length, 3);
   assert.equal(payloads.combatHud.loopDuelFlowPanels?.[0]?.title, "STANCE");
   assert.equal(payloads.combatHud.loopDuelFlowPanels?.[1]?.title, "STATUS");
   assert.equal(payloads.combatHud.loopDuelFlowPanels?.[2]?.title, "RESOLVE");
   assert.equal(payloads.combatHud.loopDuelFlowPanels?.[0]?.contract_ready, true);
+  assert.equal(payloads.combatHud.loopDuelFlowPanels?.[0]?.contract_state_key, "ready");
+  assert.deepEqual(payloads.combatHud.loopDuelFlowPanels?.[0]?.contract_missing_keys, []);
   assert.equal(payloads.combatHud.loopDuelFlowPanels?.[2]?.focus_key, "arena_prime:duel:duel_flow");
   assert.equal(payloads.combatHud.loopDuelRiskCards?.length, 4);
   assert.equal(payloads.combatHud.loopDuelRiskCards?.[0]?.title, "HEALTH");
   assert.equal(payloads.combatHud.loopDuelRiskCards?.[0]?.contract_ready, true);
+  assert.equal(payloads.combatHud.loopDuelRiskCards?.[0]?.contract_state_key, "ready");
+  assert.deepEqual(payloads.combatHud.loopDuelRiskCards?.[0]?.contract_missing_keys, []);
   assert.equal(payloads.combatHud.loopDuelRiskCards?.[1]?.title, "ATTN");
   assert.equal(payloads.combatHud.loopDuelRiskCards?.[2]?.title, "TREND");
   assert.equal(payloads.combatHud.loopDuelRiskCards?.[3]?.title, "MICRO");
@@ -940,6 +954,7 @@ test("buildPlayerBridgePayloads surfaces active vault loop micro panels from sel
     payloads.tokenOverview.loopWalletFlowCards?.[0]?.risk_context?.risk_context_signature,
     "wallet:payout_flow|exchange_district:wallet:payout_flow|green:stable:flat|world_entry_kind_payout_terminal|world_modal_kind_payout_route"
   );
+  assert.equal(payloads.tokenOverview.loopWalletFlowCards?.[0]?.contract_state_key, "ready");
   assert.equal(payloads.tokenOverview.loopWalletFlowBlocks?.length, 3);
   assert.equal(payloads.tokenOverview.loopWalletFlowPanels?.length, 3);
   assert.equal(payloads.tokenOverview.loopWalletFlowPanels?.[0]?.title, "LINK");
@@ -1461,6 +1476,7 @@ test("buildAdminBridgePayloads produces runtime, asset and audit cards from admi
     payloads.runtime.loopDispatchFlowCards?.[0]?.risk_context?.risk_context_signature,
     "queue:dispatch_flow|ops_citadel:queue:dispatch_flow|red:alert:degrading|world_entry_kind_dispatch_console|world_modal_kind_dispatch_sequence"
   );
+  assert.equal(payloads.runtime.loopDispatchFlowCards?.[0]?.contract_state_key, "ready");
   assert.equal(payloads.runtime.loopDispatchFlowBlocks?.length, 3);
   assert.equal(payloads.runtime.loopDispatchFlowPanels?.length, 3);
   assert.equal(payloads.runtime.loopDispatchFlowPanels?.[0]?.title, "QUEUE");

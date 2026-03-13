@@ -555,6 +555,18 @@ const DICT = {
       "District x Mikroakis Action Baglam Imzasi Priority",
     admin_runtime_scene_loop_district_microflow_risk_action_signature_priority_daily_title:
       "District x Mikroakis Gunluk Action Baglam Imzasi Priority",
+    admin_runtime_scene_loop_district_microflow_risk_contract_state_title:
+      "District x Mikroakis Risk Contract State",
+    admin_runtime_scene_loop_district_microflow_risk_contract_state_daily_title:
+      "District x Mikroakis Gunluk Risk Contract State",
+    admin_runtime_scene_loop_district_microflow_risk_contract_state_matrix_title:
+      "District x Mikroakis Risk Contract State Matrisi",
+    admin_runtime_scene_loop_district_microflow_risk_contract_state_matrix_daily_title:
+      "District x Mikroakis Gunluk Risk Contract State Matrisi",
+    admin_runtime_scene_loop_district_microflow_risk_contract_state_priority_title:
+      "District x Mikroakis Risk Contract State Priority",
+    admin_runtime_scene_loop_district_microflow_risk_contract_state_priority_daily_title:
+      "District x Mikroakis Gunluk Risk Contract State Priority",
     admin_runtime_scene_loop_district_microflow_risk_latest_band_title:
       "District x Mikroakis Risk Son Band",
     admin_runtime_scene_loop_district_microflow_risk_health_band_title:
@@ -1665,6 +1677,18 @@ const DICT = {
       "District x Microflow Action Context Signature Priority",
     admin_runtime_scene_loop_district_microflow_risk_action_signature_priority_daily_title:
       "District x Microflow Daily Action Context Signature Priority",
+    admin_runtime_scene_loop_district_microflow_risk_contract_state_title:
+      "District x Microflow Risk Contract State",
+    admin_runtime_scene_loop_district_microflow_risk_contract_state_daily_title:
+      "District x Microflow Daily Risk Contract State",
+    admin_runtime_scene_loop_district_microflow_risk_contract_state_matrix_title:
+      "District x Microflow Risk Contract State Matrix",
+    admin_runtime_scene_loop_district_microflow_risk_contract_state_matrix_daily_title:
+      "District x Microflow Daily Risk Contract State Matrix",
+    admin_runtime_scene_loop_district_microflow_risk_contract_state_priority_title:
+      "District x Microflow Risk Contract State Priority",
+    admin_runtime_scene_loop_district_microflow_risk_contract_state_priority_daily_title:
+      "District x Microflow Daily Risk Contract State Priority",
     admin_runtime_scene_loop_district_microflow_risk_latest_band_title:
       "District x Microflow Risk Latest Band",
     admin_runtime_scene_loop_district_microflow_risk_health_band_title:

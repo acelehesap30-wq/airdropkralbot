@@ -90,6 +90,19 @@ function renderRiskContextSuffix(row: Record<string, unknown>): string {
   if (typeof riskContext.contract_ready === "boolean" || typeof row.contract_ready === "boolean") {
     parts.push(`contract ${riskContext.contract_ready === true || row.contract_ready === true ? "ready" : "missing"}`);
   }
+  const contractMissingKeys = Array.isArray(riskContext.contract_missing_keys)
+    ? riskContext.contract_missing_keys
+    : Array.isArray(row.contract_missing_keys)
+      ? (row.contract_missing_keys as unknown[])
+      : [];
+  if (contractMissingKeys.length) {
+    parts.push(
+      `miss ${contractMissingKeys
+        .map((value) => String(value || "").trim())
+        .filter(Boolean)
+        .join(",")}`
+    );
+  }
   const riskContextSignature = String(riskContext.risk_context_signature || row.risk_context_signature || "").trim();
   const actionContextSignature = String(
     actionContext.action_context_signature || row.action_context_signature || ""
@@ -829,6 +842,24 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
   const sceneLoopDistrictMicroflowRiskActionSignaturePriorityDaily = asRows(
     props.metricsData?.scene_loop_district_microflow_risk_action_signature_priority_daily_7d
   );
+  const sceneLoopDistrictMicroflowRiskContractStateBreakdown = asRows(
+    props.metricsData?.scene_loop_district_microflow_risk_contract_state_breakdown_7d
+  );
+  const sceneLoopDistrictMicroflowRiskContractStateBreakdownDaily = asRows(
+    props.metricsData?.scene_loop_district_microflow_risk_contract_state_breakdown_daily_7d
+  );
+  const sceneLoopDistrictMicroflowRiskContractStateMatrix = asRows(
+    props.metricsData?.scene_loop_district_microflow_risk_contract_state_matrix_7d
+  );
+  const sceneLoopDistrictMicroflowRiskContractStateMatrixDaily = asRows(
+    props.metricsData?.scene_loop_district_microflow_risk_contract_state_matrix_daily_7d
+  );
+  const sceneLoopDistrictMicroflowRiskContractStatePriority = asRows(
+    props.metricsData?.scene_loop_district_microflow_risk_contract_state_priority_7d
+  );
+  const sceneLoopDistrictMicroflowRiskContractStatePriorityDaily = asRows(
+    props.metricsData?.scene_loop_district_microflow_risk_contract_state_priority_daily_7d
+  );
   const sceneLoopDistrictMicroflowRiskLatestBandBreakdown = asRows(
     props.metricsData?.scene_loop_district_microflow_risk_latest_band_breakdown_7d
   );
@@ -1445,6 +1476,32 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
           title={t(props.lang, "admin_runtime_scene_loop_district_microflow_risk_action_signature_priority_daily_title")}
           rows={sceneLoopDistrictMicroflowRiskActionSignaturePriorityDaily}
           loopKeyField="action_context_signature"
+        />
+        <BreakdownList
+          title={t(props.lang, "admin_runtime_scene_loop_district_microflow_risk_contract_state_title")}
+          rows={sceneLoopDistrictMicroflowRiskContractStateBreakdown}
+        />
+        <DailyBreakdownList
+          title={t(props.lang, "admin_runtime_scene_loop_district_microflow_risk_contract_state_daily_title")}
+          rows={sceneLoopDistrictMicroflowRiskContractStateBreakdownDaily}
+        />
+        <SceneLoopRiskDimensionMatrixList
+          title={t(props.lang, "admin_runtime_scene_loop_district_microflow_risk_contract_state_matrix_title")}
+          rows={sceneLoopDistrictMicroflowRiskContractStateMatrix}
+        />
+        <SceneLoopRiskDimensionDailyMatrixList
+          title={t(props.lang, "admin_runtime_scene_loop_district_microflow_risk_contract_state_matrix_daily_title")}
+          rows={sceneLoopDistrictMicroflowRiskContractStateMatrixDaily}
+        />
+        <SceneLoopDistrictFamilyPriorityList
+          title={t(props.lang, "admin_runtime_scene_loop_district_microflow_risk_contract_state_priority_title")}
+          rows={sceneLoopDistrictMicroflowRiskContractStatePriority}
+          loopKeyField="contract_state_key"
+        />
+        <SceneLoopDistrictFamilyPriorityList
+          title={t(props.lang, "admin_runtime_scene_loop_district_microflow_risk_contract_state_priority_daily_title")}
+          rows={sceneLoopDistrictMicroflowRiskContractStatePriorityDaily}
+          loopKeyField="contract_state_key"
         />
         <BreakdownList
           title={t(props.lang, "admin_runtime_scene_loop_district_microflow_risk_latest_band_title")}
