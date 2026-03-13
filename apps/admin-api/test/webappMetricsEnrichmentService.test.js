@@ -839,6 +839,63 @@ test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
     )
   );
   assert.ok(
+    enriched.scene_loop_district_microflow_risk_action_signature_breakdown_7d.some(
+      (row) =>
+        row.bucket_key ===
+          "wallet_link:wallet|exchange_district:wallet_link:wallet|world_entry_kind_wallet_terminal|world_modal_kind_wallet_terminal" &&
+        row.flow_key === "wallet_link:wallet" &&
+        row.risk_context?.focus_key === "exchange_district:wallet_link:wallet"
+    )
+  );
+  assert.ok(
+    enriched.scene_loop_district_microflow_risk_action_signature_breakdown_daily_7d.some(
+      (row) =>
+        row.day === "2026-03-08" &&
+        row.bucket_key ===
+          "payout_lane:payout|exchange_district:payout_lane:payout|world_entry_kind_payout_terminal|world_modal_kind_payout_route" &&
+        row.risk_context?.sequence_kind_key === "world_modal_kind_payout_route"
+    )
+  );
+  assert.ok(
+    enriched.scene_loop_district_microflow_risk_action_signature_matrix_7d.some(
+      (row) =>
+        row.bucket_key ===
+          "wallet_link:wallet|exchange_district:wallet_link:wallet|world_entry_kind_wallet_terminal|world_modal_kind_wallet_terminal" &&
+        row.risk_key === "red:alert:no_data" &&
+        row.action_context_signature ===
+          "wallet_link:wallet|exchange_district:wallet_link:wallet|world_entry_kind_wallet_terminal|world_modal_kind_wallet_terminal"
+    )
+  );
+  assert.ok(
+    enriched.scene_loop_district_microflow_risk_action_signature_matrix_daily_7d.some(
+      (row) =>
+        row.day === "2026-03-08" &&
+        row.bucket_key ===
+          "payout_lane:payout|exchange_district:payout_lane:payout|world_entry_kind_payout_terminal|world_modal_kind_payout_route" &&
+        row.action_context_signature ===
+          "payout_lane:payout|exchange_district:payout_lane:payout|world_entry_kind_payout_terminal|world_modal_kind_payout_route"
+    )
+  );
+  assert.ok(
+    enriched.scene_loop_district_microflow_risk_action_signature_priority_7d.some(
+      (row) =>
+        row.action_context_signature ===
+          "wallet_link:wallet|exchange_district:wallet_link:wallet|world_entry_kind_wallet_terminal|world_modal_kind_wallet_terminal" &&
+        row.loop_microflow_key === "wallet" &&
+        Number(row.priority_score || 0) >= 3000
+    )
+  );
+  assert.ok(
+    enriched.scene_loop_district_microflow_risk_action_signature_priority_daily_7d.some(
+      (row) =>
+        row.day === "2026-03-08" &&
+        row.action_context_signature ===
+          "payout_lane:payout|exchange_district:payout_lane:payout|world_entry_kind_payout_terminal|world_modal_kind_payout_route" &&
+        row.loop_microflow_key === "payout" &&
+        Number(row.priority_score || 0) >= 2000
+    )
+  );
+  assert.ok(
     enriched.scene_loop_district_microflow_risk_latest_band_breakdown_7d.some(
       (row) => row.bucket_key === "red" && Number(row.item_count || 0) >= 1
     )

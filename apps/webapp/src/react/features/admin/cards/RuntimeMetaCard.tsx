@@ -800,6 +800,24 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
   const sceneLoopDistrictMicroflowRiskSignaturePriorityDaily = asRows(
     props.metricsData?.scene_loop_district_microflow_risk_signature_priority_daily_7d
   );
+  const sceneLoopDistrictMicroflowRiskActionSignatureBreakdown = asRows(
+    props.metricsData?.scene_loop_district_microflow_risk_action_signature_breakdown_7d
+  );
+  const sceneLoopDistrictMicroflowRiskActionSignatureBreakdownDaily = asRows(
+    props.metricsData?.scene_loop_district_microflow_risk_action_signature_breakdown_daily_7d
+  );
+  const sceneLoopDistrictMicroflowRiskActionSignatureMatrix = asRows(
+    props.metricsData?.scene_loop_district_microflow_risk_action_signature_matrix_7d
+  );
+  const sceneLoopDistrictMicroflowRiskActionSignatureMatrixDaily = asRows(
+    props.metricsData?.scene_loop_district_microflow_risk_action_signature_matrix_daily_7d
+  );
+  const sceneLoopDistrictMicroflowRiskActionSignaturePriority = asRows(
+    props.metricsData?.scene_loop_district_microflow_risk_action_signature_priority_7d
+  );
+  const sceneLoopDistrictMicroflowRiskActionSignaturePriorityDaily = asRows(
+    props.metricsData?.scene_loop_district_microflow_risk_action_signature_priority_daily_7d
+  );
   const sceneLoopDistrictMicroflowRiskLatestBandBreakdown = asRows(
     props.metricsData?.scene_loop_district_microflow_risk_latest_band_breakdown_7d
   );
@@ -1390,6 +1408,32 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
           title={t(props.lang, "admin_runtime_scene_loop_district_microflow_risk_signature_priority_daily_title")}
           rows={sceneLoopDistrictMicroflowRiskSignaturePriorityDaily}
           loopKeyField="risk_context_signature"
+        />
+        <BreakdownList
+          title={t(props.lang, "admin_runtime_scene_loop_district_microflow_risk_action_signature_title")}
+          rows={sceneLoopDistrictMicroflowRiskActionSignatureBreakdown}
+        />
+        <DailyBreakdownList
+          title={t(props.lang, "admin_runtime_scene_loop_district_microflow_risk_action_signature_daily_title")}
+          rows={sceneLoopDistrictMicroflowRiskActionSignatureBreakdownDaily}
+        />
+        <SceneLoopRiskDimensionMatrixList
+          title={t(props.lang, "admin_runtime_scene_loop_district_microflow_risk_action_signature_matrix_title")}
+          rows={sceneLoopDistrictMicroflowRiskActionSignatureMatrix}
+        />
+        <SceneLoopRiskDimensionDailyMatrixList
+          title={t(props.lang, "admin_runtime_scene_loop_district_microflow_risk_action_signature_matrix_daily_title")}
+          rows={sceneLoopDistrictMicroflowRiskActionSignatureMatrixDaily}
+        />
+        <SceneLoopDistrictFamilyPriorityList
+          title={t(props.lang, "admin_runtime_scene_loop_district_microflow_risk_action_signature_priority_title")}
+          rows={sceneLoopDistrictMicroflowRiskActionSignaturePriority}
+          loopKeyField="action_context_signature"
+        />
+        <SceneLoopDistrictFamilyPriorityList
+          title={t(props.lang, "admin_runtime_scene_loop_district_microflow_risk_action_signature_priority_daily_title")}
+          rows={sceneLoopDistrictMicroflowRiskActionSignaturePriorityDaily}
+          loopKeyField="action_context_signature"
         />
         <BreakdownList
           title={t(props.lang, "admin_runtime_scene_loop_district_microflow_risk_latest_band_title")}
