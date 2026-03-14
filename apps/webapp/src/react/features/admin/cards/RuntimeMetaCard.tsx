@@ -599,6 +599,13 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
   const assetSourceCatalogCandidates = asRows(localAssetManifest?.source_catalog_candidates);
   const assetSelectedBundleSummary = asRecord(localAssetManifest?.selected_bundle_summary);
   const assetSelectedBundleRows = asRows(localAssetManifest?.selected_bundle_rows);
+  const assetWebappDomainSummary = asRecord(localAssetManifest?.webapp_domain_summary);
+  const assetWebappDomainTargets = [
+    ...(Array.isArray(assetWebappDomainSummary?.cname_targets) ? assetWebappDomainSummary.cname_targets : []),
+    ...(Array.isArray(assetWebappDomainSummary?.a_records) ? assetWebappDomainSummary.a_records : [])
+  ]
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
   const assetDistrictBundleSummary = asRecord(localAssetManifest?.district_bundle_summary);
   const assetDistrictBundleRows = asRows(localAssetManifest?.district_bundle_rows);
   const assetSourceCatalogProviders = Array.isArray(assetSourceCatalogSummary?.providers)
@@ -1134,6 +1141,38 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
               );
             })}
           </div>
+        </section>
+      ) : null}
+      {assetWebappDomainSummary ? (
+        <section className="akrMiniPanel">
+          <h3>{t(props.lang, "admin_runtime_asset_domain_title")}</h3>
+          <div className="akrChipRow">
+            <span className="akrChip">
+              {t(props.lang, "admin_runtime_asset_domain_host")}: {String(assetWebappDomainSummary.host || "-")}
+            </span>
+            <span className="akrChip">
+              {t(props.lang, "admin_runtime_asset_domain_state")}: {String(assetWebappDomainSummary.state_key || "missing")}
+            </span>
+            <span className="akrChip">
+              {t(props.lang, "admin_runtime_asset_domain_dns")}: {assetWebappDomainSummary.dns_ready ? "yes" : "no"}
+            </span>
+            <span className="akrChip">
+              {t(props.lang, "admin_runtime_asset_domain_guard")}: {assetWebappDomainSummary.runtime_guard_matches_host ? "match" : "drift"}
+            </span>
+          </div>
+          <p className="akrMutedLine">
+            {t(props.lang, "admin_runtime_asset_domain_public_url")}: {String(assetWebappDomainSummary.public_url || "-")}
+          </p>
+          <p className="akrMutedLine">
+            {t(props.lang, "admin_runtime_asset_domain_runtime_guard_url")}: {String(assetWebappDomainSummary.runtime_guard_base_url || "-")}
+          </p>
+          <p className="akrMutedLine">
+            {t(props.lang, "admin_runtime_asset_domain_probe")}: health {Math.floor(Number(assetWebappDomainSummary.health_status_code || 0))} | webapp{" "}
+            {Math.floor(Number(assetWebappDomainSummary.webapp_status_code || 0))}
+          </p>
+          <p className="akrMutedLine">
+            {t(props.lang, "admin_runtime_asset_domain_target")}: {assetWebappDomainTargets.join(", ") || "-"}
+          </p>
         </section>
       ) : null}
       {assetSelectedBundleRows.length ? (

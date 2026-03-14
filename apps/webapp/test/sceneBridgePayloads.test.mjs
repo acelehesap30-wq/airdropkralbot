@@ -1299,6 +1299,19 @@ test("buildAdminBridgePayloads produces runtime, asset and audit cards from admi
         summary: { ready_assets: 3, total_assets: 4, missing_assets: 1, integrity_ratio: 0.75 },
         active_manifest: { manifest_revision: "rev_42", updated_at: "2099-03-10T12:00:00.000Z" },
         local_manifest: {
+          webapp_domain_summary: {
+            host: "webapp.k99-exchange.xyz",
+            state_key: "ready",
+            dns_ready: true,
+            contract_ready: true,
+            health_status_code: 200,
+            webapp_status_code: 200,
+            cname_targets: ["airdropkral-admin.onrender.com"],
+            a_records: ["216.24.57.7", "216.24.57.251"],
+            public_url: "https://webapp.k99-exchange.xyz/webapp",
+            runtime_guard_base_url: "https://webapp.k99-exchange.xyz",
+            runtime_guard_matches_host: true
+          },
           selected_bundle_summary: { selected_count: 2, downloaded_count: 2, district_count: 2, verified_at: "2099-03-10" },
           selected_bundle_rows: [
             {
@@ -1606,11 +1619,16 @@ test("buildAdminBridgePayloads produces runtime, asset and audit cards from admi
     "SELECT arena_prime:duel:arena_trophy | exchange_district:wallet:exchange_artifact"
   );
   assert.equal(
+    payloads.assetRuntime.domainLineText,
+    "DOMAIN webapp.k99-exchange.xyz | READY | HEALTH 200 | WEBAPP 200 | TARGET airdropkral-admin.onrender.com"
+  );
+  assert.equal(
     payloads.assetRuntime.focusLineText,
     "FOCUS arena_prime | duel | arena_trophy | arena_khronos_cesium_man"
   );
-  assert.equal(payloads.assetRuntime.chips.length, 4);
+  assert.equal(payloads.assetRuntime.chips.length, 5);
   assert.equal(payloads.assetRuntime.chips[2].text, "DIST 1/2");
+  assert.equal(payloads.assetRuntime.chips[3].text, "HOST READY");
   assert.equal(payloads.auditRuntime.phaseChipText, "PHASE PARTIAL");
   assert.equal(payloads.auditRuntime.chips.length, 4);
 });

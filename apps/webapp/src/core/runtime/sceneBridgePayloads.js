@@ -6752,6 +6752,7 @@ function buildAdminAssetStatusPayload(adminPanels) {
 function buildAdminAssetRuntimePayload(mutators, adminPanels) {
   const assets = asRecord(adminPanels?.assets);
   const localManifest = asRecord(assets.local_manifest);
+  const webappDomainSummary = asRecord(localManifest.webapp_domain_summary);
   const districtBundleSummary = asRecord(localManifest.district_bundle_summary);
   const selectedBundleSummary = asRecord(localManifest.selected_bundle_summary);
   const selectedBundleRows = asArray(localManifest.selected_bundle_rows).map((row) => asRecord(row));
@@ -6777,12 +6778,19 @@ function buildAdminAssetRuntimePayload(mutators, adminPanels) {
   const focusDistrict = districtBundleRows.find((row) => toText(row.state_key) === "ready") || districtBundleRows[0] || {};
   const focusSelectedRow =
     selectedBundleRows.find((row) => toText(row.district_key) === toText(focusDistrict.district_key)) || selectedBundleRows[0] || {};
+  const domainStateKey = toText(webappDomainSummary.state_key || "missing", "missing").toLowerCase();
+  const domainHost = toText(webappDomainSummary.host || "--", "--");
+  const domainCnameTarget = toText(asArray(webappDomainSummary.cname_targets)[0] || asArray(webappDomainSummary.a_records)[0] || "--", "--");
+  const domainLineText = `DOMAIN ${domainHost} | ${domainStateKey.toUpperCase()} | HEALTH ${Math.round(
+    toNum(webappDomainSummary.health_status_code)
+  )} | WEBAPP ${Math.round(toNum(webappDomainSummary.webapp_status_code))} | TARGET ${domainCnameTarget}`;
   return {
     tone: mapRuntimeTone(metrics.tone || "balanced"),
     readyRatio: clamp(metrics.readyRatio),
     syncRatio: clamp(metrics.integrityRatio),
     signalLineText: `Ready ${Math.round(clamp(metrics.readyRatio) * 100)}% | Integrity ${Math.round(clamp(metrics.integrityRatio) * 100)}% | Bundles ${Math.round(toNum(districtBundleSummary.ready_count))}/${Math.max(1, Math.round(toNum(districtBundleSummary.district_count)))} | Selected ${Math.round(toNum(selectedBundleSummary.downloaded_count || selectedBundleSummary.selected_count))}`,
     selectionLineText: selectedSummaryText ? `SELECT ${selectedSummaryText}` : "SELECT bundle telemetry bekleniyor",
+    domainLineText,
     focusLineText: toText(focusSelectedRow.asset_key)
       ? `FOCUS ${toText(focusSelectedRow.district_key || "--")} | ${toText(focusSelectedRow.family_key || "--")} | ${toText(focusSelectedRow.asset_key || "--")} | ${toText(focusSelectedRow.candidate_key || "--")}`
       : "FOCUS district asset bekleniyor",
@@ -6790,6 +6798,12 @@ function buildAdminAssetRuntimePayload(mutators, adminPanels) {
       { id: "adminAssetReadyChip", text: `READY ${Math.round(clamp(metrics.readyRatio) * 100)}%`, tone: mapRuntimeTone(metrics.readyRatio < 0.7 ? "pressure" : "advantage"), level: clamp(metrics.readyRatio) },
       { id: "adminAssetSyncChip", text: `SYNC ${Math.round(clamp(metrics.integrityRatio) * 100)}%`, tone: mapRuntimeTone(metrics.integrityRatio < 0.7 ? "critical" : "advantage"), level: clamp(metrics.integrityRatio) },
       { id: "adminAssetDistrictChip", text: `DIST ${Math.round(toNum(districtBundleSummary.ready_count))}/${Math.round(toNum(districtBundleSummary.district_count))}`, tone: mapRuntimeTone(toNum(districtBundleSummary.partial_count) > 0 ? "pressure" : "advantage"), level: clamp(toNum(districtBundleSummary.district_count) ? toNum(districtBundleSummary.ready_count) / Math.max(1, toNum(districtBundleSummary.district_count)) : 0) },
+      {
+        id: "adminAssetHostChip",
+        text: `HOST ${domainStateKey.toUpperCase()}`,
+        tone: mapRuntimeTone(domainStateKey === "ready" ? "advantage" : domainStateKey === "partial" ? "pressure" : "critical"),
+        level: clamp(webappDomainSummary.contract_ready ? 1 : webappDomainSummary.dns_ready ? 0.6 : 0.2)
+      },
       { id: "adminAssetRevisionChip", text: `REV ${toText(metrics.manifestRevision || "local").slice(0, 10)}`, tone: "balanced", level: 0.5 }
     ],
     meters: [

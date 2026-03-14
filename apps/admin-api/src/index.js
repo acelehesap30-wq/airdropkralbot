@@ -77,6 +77,7 @@ const {
   summarizeSelectedDistrictBundles,
   buildDistrictAssetBundleCatalog
 } = require("./services/webapp/assetManifestIntakeService");
+const { summarizeWebappDomainRuntime } = require("./services/webapp/webappDomainRuntimeService");
 const { createChatTrustNotificationService } = require("./services/chatTrustNotificationService");
 
 const envPath = path.join(process.cwd(), ".env");
@@ -2694,7 +2695,7 @@ function resolveManifestAssetPath(assetWebPath = "") {
   return path.join(WEBAPP_ASSETS_DIR, path.basename(cleaned));
 }
 
-function buildAssetStatusRows() {
+async function buildAssetStatusRows() {
   const { manifestPath, manifest } = readAssetManifest();
   const sourceCatalog = summarizeAssetSourceCatalog({ manifestPath, manifest });
   const selectedBundles = summarizeSelectedDistrictBundles({ manifestPath, manifest });
@@ -2717,6 +2718,10 @@ function buildAssetStatusRows() {
     assetRows: rows,
     candidates: sourceCatalog.candidates
   });
+  const webappDomainSummary = await summarizeWebappDomainRuntime({
+    publicUrl: WEBAPP_PUBLIC_URL,
+    runtimeGuardBaseUrl: String(process.env.RUNTIME_GUARD_BASE_URL || "").trim()
+  });
   return {
     manifest_path: manifestPath,
     manifest_version: Number(manifest?.version || 0),
@@ -2727,6 +2732,7 @@ function buildAssetStatusRows() {
     selected_bundle_catalog_path: String(manifest?.selected_bundle_catalog_path || ""),
     selected_bundle_summary: selectedBundles.summary,
     selected_bundle_rows: selectedBundles.rows,
+    webapp_domain_summary: webappDomainSummary,
     district_bundle_summary: districtBundles.summary,
     district_bundle_rows: districtBundles.rows,
     rows
@@ -2805,6 +2811,10 @@ async function persistAssetManifestState(db, summary, updatedBy = 0) {
         selected_bundle_summary:
           summary?.selected_bundle_summary && typeof summary.selected_bundle_summary === "object"
             ? summary.selected_bundle_summary
+            : {},
+        webapp_domain_summary:
+          summary?.webapp_domain_summary && typeof summary.webapp_domain_summary === "object"
+            ? summary.webapp_domain_summary
             : {},
         district_bundle_summary:
           summary?.district_bundle_summary && typeof summary.district_bundle_summary === "object"
@@ -6190,7 +6200,7 @@ fastify.get("/webapp/api/bootstrap", async (request, reply) => {
     }
     let manifestSummary = summarizeActiveAssetManifest(activeManifest);
     if (Number(manifestSummary.total_assets || 0) <= 0) {
-      const localAssetStatus = buildAssetStatusRows();
+      const localAssetStatus = await buildAssetStatusRows();
       const localReady = localAssetStatus.rows.filter((row) => row.exists).length;
       const localTotal = localAssetStatus.rows.length;
       manifestSummary = {
@@ -11569,7 +11579,7 @@ fastify.get("/webapp/api/admin/assets/status", async (request, reply) => {
     if (!profile) {
       return;
     }
-    const local = buildAssetStatusRows();
+    const local = await buildAssetStatusRows();
     const dbRows = await client
       .query(
         `SELECT asset_key, manifest_path, file_path, bytes_size, load_status, meta_json, updated_at, updated_by
@@ -11609,6 +11619,9 @@ fastify.get("/webapp/api/admin/assets/status", async (request, reply) => {
           intake_providers: Number(local.source_catalog_summary?.provider_count || 0),
           selected_bundles: Number(local.selected_bundle_summary?.selected_count || 0),
           downloaded_bundles: Number(local.selected_bundle_summary?.downloaded_count || 0),
+          domain_state_key: String(local.webapp_domain_summary?.state_key || "missing"),
+          domain_dns_ready: local.webapp_domain_summary?.dns_ready ? 1 : 0,
+          domain_https_ready: local.webapp_domain_summary?.health_ok && local.webapp_domain_summary?.webapp_ok ? 1 : 0,
           bundle_ready_districts: Number(local.district_bundle_summary?.ready_count || 0),
           bundle_partial_districts: Number(local.district_bundle_summary?.partial_count || 0),
           bundle_intake_ready_districts: Number(local.district_bundle_summary?.intake_ready_count || 0)
@@ -11649,7 +11662,7 @@ fastify.post(
         await client.query("ROLLBACK");
         return;
       }
-      const local = buildAssetStatusRows();
+      const local = await buildAssetStatusRows();
       await persistAssetRegistry(client, local.rows, Number(auth.uid));
       await persistAssetManifestState(client, local, Number(auth.uid));
       await client.query(
@@ -11678,6 +11691,9 @@ fastify.post(
             intake_providers: Number(local.source_catalog_summary?.provider_count || 0),
             selected_bundles: Number(local.selected_bundle_summary?.selected_count || 0),
             downloaded_bundles: Number(local.selected_bundle_summary?.downloaded_count || 0),
+            domain_state_key: String(local.webapp_domain_summary?.state_key || "missing"),
+            domain_dns_ready: local.webapp_domain_summary?.dns_ready ? 1 : 0,
+            domain_https_ready: local.webapp_domain_summary?.health_ok && local.webapp_domain_summary?.webapp_ok ? 1 : 0,
             bundle_ready_districts: Number(local.district_bundle_summary?.ready_count || 0),
             bundle_partial_districts: Number(local.district_bundle_summary?.partial_count || 0),
             bundle_intake_ready_districts: Number(local.district_bundle_summary?.intake_ready_count || 0)
