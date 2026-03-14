@@ -1060,28 +1060,72 @@ function buildSceneLoopDistrictFamilyLatestBandBreakdown(rows) {
   const counters = new Map();
   (Array.isArray(rows) ? rows : []).forEach((row) => {
     const key = String(row?.latest_health_band || row?.health_band || "no_data");
-    counters.set(key, (counters.get(key) || 0) + 1);
+    const day = String(row?.latest_day || row?.day || "");
+    const totalCount = Math.max(0, Math.floor(toNum(row?.total_count, 0)));
+    const context = buildSceneLoopRiskContext(row);
+    if (!counters.has(key)) {
+      counters.set(key, {
+        bucket_key: key,
+        item_count: 0,
+        total_count: 0,
+        latest_day: day || null,
+        priority_score: 0,
+        ...context
+      });
+    }
+    const current = counters.get(key);
+    current.item_count = Math.max(0, Math.floor(toNum(current.item_count, 0)) + 1);
+    const priorityScore = Math.max(0, Math.floor(toNum(row?.priority_score, totalCount)));
+    if (shouldPromoteSceneLoopRepresentative(current, day, priorityScore, context)) {
+      Object.assign(current, context);
+      current.latest_day = day || null;
+      current.total_count = totalCount;
+    }
+    current.priority_score = Math.max(toNum(current.priority_score, 0), priorityScore);
   });
-  return Array.from(counters.entries())
-    .map(([bucket_key, item_count]) => ({
-      bucket_key,
-      item_count: Math.max(0, Math.floor(toNum(item_count, 0)))
-    }))
-    .sort((left, right) => right.item_count - left.item_count || String(left.bucket_key).localeCompare(String(right.bucket_key)));
+  return Array.from(counters.values()).sort((left, right) => {
+    const itemGap = toNum(right.item_count, 0) - toNum(left.item_count, 0);
+    if (Math.abs(itemGap) > 0.0001) return itemGap;
+    const contractGap = compareSceneLoopContractStrength(left, right);
+    if (contractGap !== 0) return contractGap;
+    return String(left.bucket_key).localeCompare(String(right.bucket_key));
+  });
 }
 
 function buildSceneLoopDistrictFamilyTrendBreakdown(rows) {
   const counters = new Map();
   (Array.isArray(rows) ? rows : []).forEach((row) => {
     const key = String(row?.trend_direction || "no_data");
-    counters.set(key, (counters.get(key) || 0) + 1);
+    const day = String(row?.latest_day || row?.day || "");
+    const totalCount = Math.max(0, Math.floor(toNum(row?.total_count, 0)));
+    const context = buildSceneLoopRiskContext(row);
+    if (!counters.has(key)) {
+      counters.set(key, {
+        bucket_key: key,
+        item_count: 0,
+        total_count: 0,
+        latest_day: day || null,
+        priority_score: 0,
+        ...context
+      });
+    }
+    const current = counters.get(key);
+    current.item_count = Math.max(0, Math.floor(toNum(current.item_count, 0)) + 1);
+    const priorityScore = Math.max(0, Math.floor(toNum(row?.priority_score, totalCount)));
+    if (shouldPromoteSceneLoopRepresentative(current, day, priorityScore, context)) {
+      Object.assign(current, context);
+      current.latest_day = day || null;
+      current.total_count = totalCount;
+    }
+    current.priority_score = Math.max(toNum(current.priority_score, 0), priorityScore);
   });
-  return Array.from(counters.entries())
-    .map(([bucket_key, item_count]) => ({
-      bucket_key,
-      item_count: Math.max(0, Math.floor(toNum(item_count, 0)))
-    }))
-    .sort((left, right) => right.item_count - left.item_count || String(left.bucket_key).localeCompare(String(right.bucket_key)));
+  return Array.from(counters.values()).sort((left, right) => {
+    const itemGap = toNum(right.item_count, 0) - toNum(left.item_count, 0);
+    if (Math.abs(itemGap) > 0.0001) return itemGap;
+    const contractGap = compareSceneLoopContractStrength(left, right);
+    if (contractGap !== 0) return contractGap;
+    return String(left.bucket_key).localeCompare(String(right.bucket_key));
+  });
 }
 
 function buildSceneLoopDistrictFamilyHealthTrendBreakdown(rows) {
@@ -1090,28 +1134,72 @@ function buildSceneLoopDistrictFamilyHealthTrendBreakdown(rows) {
     const latestBand = String(row?.latest_health_band || row?.health_band || "no_data");
     const trend = String(row?.trend_direction || "no_data");
     const key = `${latestBand}:${trend}`;
-    counters.set(key, (counters.get(key) || 0) + 1);
+    const day = String(row?.latest_day || row?.day || "");
+    const totalCount = Math.max(0, Math.floor(toNum(row?.total_count, 0)));
+    const context = buildSceneLoopRiskContext(row);
+    if (!counters.has(key)) {
+      counters.set(key, {
+        bucket_key: key,
+        item_count: 0,
+        total_count: 0,
+        latest_day: day || null,
+        priority_score: 0,
+        ...context
+      });
+    }
+    const current = counters.get(key);
+    current.item_count = Math.max(0, Math.floor(toNum(current.item_count, 0)) + 1);
+    const priorityScore = Math.max(0, Math.floor(toNum(row?.priority_score, totalCount)));
+    if (shouldPromoteSceneLoopRepresentative(current, day, priorityScore, context)) {
+      Object.assign(current, context);
+      current.latest_day = day || null;
+      current.total_count = totalCount;
+    }
+    current.priority_score = Math.max(toNum(current.priority_score, 0), priorityScore);
   });
-  return Array.from(counters.entries())
-    .map(([bucket_key, item_count]) => ({
-      bucket_key,
-      item_count: Math.max(0, Math.floor(toNum(item_count, 0)))
-    }))
-    .sort((left, right) => right.item_count - left.item_count || String(left.bucket_key).localeCompare(String(right.bucket_key)));
+  return Array.from(counters.values()).sort((left, right) => {
+    const itemGap = toNum(right.item_count, 0) - toNum(left.item_count, 0);
+    if (Math.abs(itemGap) > 0.0001) return itemGap;
+    const contractGap = compareSceneLoopContractStrength(left, right);
+    if (contractGap !== 0) return contractGap;
+    return String(left.bucket_key).localeCompare(String(right.bucket_key));
+  });
 }
 
 function buildSceneLoopDistrictFamilyAttentionBreakdown(rows) {
   const counters = new Map();
   (Array.isArray(rows) ? rows : []).forEach((row) => {
     const key = String(row?.attention_band || "no_data");
-    counters.set(key, (counters.get(key) || 0) + 1);
+    const day = String(row?.latest_day || row?.day || "");
+    const totalCount = Math.max(0, Math.floor(toNum(row?.total_count, 0)));
+    const context = buildSceneLoopRiskContext(row);
+    if (!counters.has(key)) {
+      counters.set(key, {
+        bucket_key: key,
+        item_count: 0,
+        total_count: 0,
+        latest_day: day || null,
+        priority_score: 0,
+        ...context
+      });
+    }
+    const current = counters.get(key);
+    current.item_count = Math.max(0, Math.floor(toNum(current.item_count, 0)) + 1);
+    const priorityScore = Math.max(0, Math.floor(toNum(row?.priority_score, totalCount)));
+    if (shouldPromoteSceneLoopRepresentative(current, day, priorityScore, context)) {
+      Object.assign(current, context);
+      current.latest_day = day || null;
+      current.total_count = totalCount;
+    }
+    current.priority_score = Math.max(toNum(current.priority_score, 0), priorityScore);
   });
-  return Array.from(counters.entries())
-    .map(([bucket_key, item_count]) => ({
-      bucket_key,
-      item_count: Math.max(0, Math.floor(toNum(item_count, 0)))
-    }))
-    .sort((left, right) => right.item_count - left.item_count || String(left.bucket_key).localeCompare(String(right.bucket_key)));
+  return Array.from(counters.values()).sort((left, right) => {
+    const itemGap = toNum(right.item_count, 0) - toNum(left.item_count, 0);
+    if (Math.abs(itemGap) > 0.0001) return itemGap;
+    const contractGap = compareSceneLoopContractStrength(left, right);
+    if (contractGap !== 0) return contractGap;
+    return String(left.bucket_key).localeCompare(String(right.bucket_key));
+  });
 }
 
 function buildSceneLoopDistrictFamilyHealthAttentionBreakdown(rows) {
@@ -1134,20 +1222,21 @@ function buildSceneLoopDistrictFamilyHealthAttentionBreakdown(rows) {
     }
     const current = counters.get(key);
     current.item_count = Math.max(0, Math.floor(toNum(current.item_count, 0)) + 1);
-    current.total_count = Math.max(toNum(current.total_count, 0), totalCount);
-    const latestDay = String(current.latest_day || "");
-    const shouldReplace =
-      !latestDay ||
-      (day && day.localeCompare(latestDay) > 0) ||
-      (day === latestDay && totalCount > toNum(current.total_count, 0));
-    if (shouldReplace) {
+    const priorityScore = Math.max(0, Math.floor(toNum(row?.priority_score, totalCount)));
+    if (shouldPromoteSceneLoopRepresentative(current, day, priorityScore, context)) {
       Object.assign(current, context);
       current.latest_day = day || null;
+      current.total_count = totalCount;
     }
+    current.priority_score = Math.max(toNum(current.priority_score, 0), priorityScore);
   });
-  return Array.from(counters.values()).sort(
-    (left, right) => right.item_count - left.item_count || String(left.bucket_key).localeCompare(String(right.bucket_key))
-  );
+  return Array.from(counters.values()).sort((left, right) => {
+    const itemGap = toNum(right.item_count, 0) - toNum(left.item_count, 0);
+    if (Math.abs(itemGap) > 0.0001) return itemGap;
+    const contractGap = compareSceneLoopContractStrength(left, right);
+    if (contractGap !== 0) return contractGap;
+    return String(left.bucket_key).localeCompare(String(right.bucket_key));
+  });
 }
 
 function buildSceneLoopDistrictFamilyAttentionTrendBreakdown(rows) {
@@ -1170,20 +1259,21 @@ function buildSceneLoopDistrictFamilyAttentionTrendBreakdown(rows) {
     }
     const current = counters.get(key);
     current.item_count = Math.max(0, Math.floor(toNum(current.item_count, 0)) + 1);
-    current.total_count = Math.max(toNum(current.total_count, 0), totalCount);
-    const latestDay = String(current.latest_day || "");
-    const shouldReplace =
-      !latestDay ||
-      (day && day.localeCompare(latestDay) > 0) ||
-      (day === latestDay && totalCount > toNum(current.total_count, 0));
-    if (shouldReplace) {
+    const priorityScore = Math.max(0, Math.floor(toNum(row?.priority_score, totalCount)));
+    if (shouldPromoteSceneLoopRepresentative(current, day, priorityScore, context)) {
       Object.assign(current, context);
       current.latest_day = day || null;
+      current.total_count = totalCount;
     }
+    current.priority_score = Math.max(toNum(current.priority_score, 0), priorityScore);
   });
-  return Array.from(counters.values()).sort(
-    (left, right) => right.item_count - left.item_count || String(left.bucket_key).localeCompare(String(right.bucket_key))
-  );
+  return Array.from(counters.values()).sort((left, right) => {
+    const itemGap = toNum(right.item_count, 0) - toNum(left.item_count, 0);
+    if (Math.abs(itemGap) > 0.0001) return itemGap;
+    const contractGap = compareSceneLoopContractStrength(left, right);
+    if (contractGap !== 0) return contractGap;
+    return String(left.bucket_key).localeCompare(String(right.bucket_key));
+  });
 }
 
 function buildSceneLoopDistrictFamilyHealthAttentionTrendBreakdown(rows) {
@@ -1207,20 +1297,21 @@ function buildSceneLoopDistrictFamilyHealthAttentionTrendBreakdown(rows) {
     }
     const current = counters.get(key);
     current.item_count = Math.max(0, Math.floor(toNum(current.item_count, 0)) + 1);
-    current.total_count = Math.max(toNum(current.total_count, 0), totalCount);
-    const latestDay = String(current.latest_day || "");
-    const shouldReplace =
-      !latestDay ||
-      (day && day.localeCompare(latestDay) > 0) ||
-      (day === latestDay && totalCount > toNum(current.total_count, 0));
-    if (shouldReplace) {
+    const priorityScore = Math.max(0, Math.floor(toNum(row?.priority_score, totalCount)));
+    if (shouldPromoteSceneLoopRepresentative(current, day, priorityScore, context)) {
       Object.assign(current, context);
       current.latest_day = day || null;
+      current.total_count = totalCount;
     }
+    current.priority_score = Math.max(toNum(current.priority_score, 0), priorityScore);
   });
-  return Array.from(counters.values()).sort(
-    (left, right) => right.item_count - left.item_count || String(left.bucket_key).localeCompare(String(right.bucket_key))
-  );
+  return Array.from(counters.values()).sort((left, right) => {
+    const itemGap = toNum(right.item_count, 0) - toNum(left.item_count, 0);
+    if (Math.abs(itemGap) > 0.0001) return itemGap;
+    const contractGap = compareSceneLoopContractStrength(left, right);
+    if (contractGap !== 0) return contractGap;
+    return String(left.bucket_key).localeCompare(String(right.bucket_key));
+  });
 }
 
 function rankSceneLoopAttentionBand(value) {

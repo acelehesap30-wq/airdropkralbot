@@ -603,6 +603,85 @@ test("aggregate family loop views preserve explicit risk context and prefer cont
   assert.equal(familyPriority[0].risk_context?.contract_ready, true);
 });
 
+test("family breakdown buckets preserve representative risk context", () => {
+  const readyRow = {
+    day: "2026-03-13",
+    latest_day: "2026-03-13",
+    district_key: "exchange_district",
+    loop_family_key: "wallet_link",
+    loop_microflow_key: "wallet",
+    flow_key: "wallet_link:wallet",
+    focus_key: "exchange_district:wallet_link:wallet",
+    risk_key: "red:alert:stable",
+    risk_focus_key: "exchange_district:wallet_link:wallet|red:alert:stable",
+    entry_kind_key: "world_entry_kind_wallet_terminal",
+    sequence_kind_key: "world_modal_kind_wallet_terminal",
+    action_context_signature:
+      "wallet_link:wallet|exchange_district:wallet_link:wallet|world_entry_kind_wallet_terminal|world_modal_kind_wallet_terminal",
+    risk_context_signature:
+      "wallet_link:wallet|exchange_district:wallet_link:wallet|red:alert:stable|world_entry_kind_wallet_terminal|world_modal_kind_wallet_terminal",
+    contract_ready: true,
+    contract_state_key: "ready",
+    contract_missing_keys: [],
+    context_lookup_required: false,
+    context_lookup_resolved: true,
+    latest_health_band: "red",
+    attention_band: "alert",
+    trend_direction: "stable",
+    total_count: 5
+  };
+  const staleRow = {
+    ...readyRow,
+    district_key: "ops_citadel",
+    loop_family_key: "dispatch_gate",
+    loop_microflow_key: "dispatch",
+    flow_key: "dispatch_gate:dispatch",
+    focus_key: "ops_citadel:dispatch_gate:dispatch",
+    risk_focus_key: "ops_citadel:dispatch_gate:dispatch|red:alert:stable",
+    entry_kind_key: "world_entry_kind_dispatch_console",
+    sequence_kind_key: "world_modal_kind_dispatch_sequence",
+    action_context_signature:
+      "dispatch_gate:dispatch|ops_citadel:dispatch_gate:dispatch|world_entry_kind_dispatch_console|world_modal_kind_dispatch_sequence",
+    risk_context_signature:
+      "dispatch_gate:dispatch|ops_citadel:dispatch_gate:dispatch|red:alert:stable|world_entry_kind_dispatch_console|world_modal_kind_dispatch_sequence",
+    contract_ready: false,
+    contract_state_key: "missing",
+    contract_missing_keys: ["action_context_lookup"],
+    context_lookup_required: true,
+    context_lookup_resolved: false
+  };
+
+  const latestBand = service.buildSceneLoopDistrictFamilyLatestBandBreakdown([staleRow, readyRow]);
+  const trend = service.buildSceneLoopDistrictFamilyTrendBreakdown([staleRow, readyRow]);
+  const healthTrend = service.buildSceneLoopDistrictFamilyHealthTrendBreakdown([staleRow, readyRow]);
+  const attention = service.buildSceneLoopDistrictFamilyAttentionBreakdown([staleRow, readyRow]);
+  const healthAttention = service.buildSceneLoopDistrictFamilyHealthAttentionBreakdown([staleRow, readyRow]);
+  const attentionTrend = service.buildSceneLoopDistrictFamilyAttentionTrendBreakdown([staleRow, readyRow]);
+  const healthAttentionTrend = service.buildSceneLoopDistrictFamilyHealthAttentionTrendBreakdown([staleRow, readyRow]);
+
+  assert.equal(latestBand[0].focus_key, "exchange_district:wallet_link:wallet");
+  assert.equal(latestBand[0].contract_ready, true);
+  assert.equal(latestBand[0].risk_context_signature, readyRow.risk_context_signature);
+
+  assert.equal(trend[0].focus_key, "exchange_district:wallet_link:wallet");
+  assert.equal(trend[0].contract_ready, true);
+
+  assert.equal(healthTrend[0].focus_key, "exchange_district:wallet_link:wallet");
+  assert.equal(healthTrend[0].contract_ready, true);
+
+  assert.equal(attention[0].focus_key, "exchange_district:wallet_link:wallet");
+  assert.equal(attention[0].contract_ready, true);
+
+  assert.equal(healthAttention[0].focus_key, "exchange_district:wallet_link:wallet");
+  assert.equal(healthAttention[0].contract_ready, true);
+
+  assert.equal(attentionTrend[0].focus_key, "exchange_district:wallet_link:wallet");
+  assert.equal(attentionTrend[0].contract_ready, true);
+
+  assert.equal(healthAttentionTrend[0].focus_key, "exchange_district:wallet_link:wallet");
+  assert.equal(healthAttentionTrend[0].contract_ready, true);
+});
+
 test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
   const enriched = service.enrichWebappRevenueMetrics({
     ui_events_ingested_24h: 100,
