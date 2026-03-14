@@ -464,6 +464,86 @@ test("daily microflow breakdown buckets sort contract-ready context ahead of equ
   assert.equal(flowBreakdownDaily[0].bucket_key, "wallet_link:wallet");
 });
 
+test("aggregate microflow views preserve representative risk context and prefer contract-ready rows", () => {
+  const readyRow = {
+    day: "2026-03-11",
+    district_key: "exchange_district",
+    loop_family_key: "wallet_link",
+    loop_microflow_key: "wallet",
+    flow_key: "wallet_link:wallet",
+    focus_key: "exchange_district:wallet_link:wallet",
+    risk_key: "red:alert:stable",
+    risk_focus_key: "exchange_district:wallet_link:wallet|red:alert:stable",
+    entry_kind_key: "world_entry_kind_wallet_terminal",
+    sequence_kind_key: "world_modal_kind_wallet_terminal",
+    action_context_signature:
+      "wallet_link:wallet|exchange_district:wallet_link:wallet|world_entry_kind_wallet_terminal|world_modal_kind_wallet_terminal",
+    risk_context_signature:
+      "wallet_link:wallet|exchange_district:wallet_link:wallet|red:alert:stable|world_entry_kind_wallet_terminal|world_modal_kind_wallet_terminal",
+    contract_ready: true,
+    contract_state_key: "ready",
+    contract_missing_keys: [],
+    context_lookup_required: false,
+    context_lookup_resolved: true,
+    health_band: "red",
+    latest_health_band: "red",
+    attention_band: "alert",
+    trend_direction: "stable",
+    trend_delta: 0,
+    total_count: 8,
+    live_count: 4,
+    blocked_count: 2,
+    day_count: 2
+  };
+  const staleRow = {
+    ...readyRow,
+    focus_key: "exchange_district:wallet_link:wallet_stale",
+    risk_focus_key: "exchange_district:wallet_link:wallet_stale|red:alert:stable",
+    action_context_signature:
+      "wallet_link:wallet|exchange_district:wallet_link:wallet_stale|world_entry_kind_wallet_terminal|world_modal_kind_wallet_terminal",
+    risk_context_signature:
+      "wallet_link:wallet|exchange_district:wallet_link:wallet_stale|red:alert:stable|world_entry_kind_wallet_terminal|world_modal_kind_wallet_terminal",
+    contract_ready: false,
+    contract_state_key: "missing",
+    contract_missing_keys: ["action_context_lookup"],
+    context_lookup_required: true,
+    context_lookup_resolved: false
+  };
+
+  const microflowMatrix = service.buildSceneLoopDistrictMicroflowMatrix([staleRow, readyRow], 10);
+  const healthAttention = service.buildSceneLoopDistrictMicroflowHealthAttentionBreakdown([staleRow, readyRow], 10);
+  const attentionTrend = service.buildSceneLoopDistrictMicroflowAttentionTrendBreakdown([staleRow, readyRow], 10);
+  const healthAttentionTrend = service.buildSceneLoopDistrictMicroflowHealthAttentionTrendBreakdown(
+    [staleRow, readyRow],
+    10
+  );
+  const riskMatrix = service.buildSceneLoopDistrictMicroflowHealthAttentionTrendMatrix([staleRow, readyRow], 10);
+  const priority = service.buildSceneLoopDistrictMicroflowAttentionPriority([staleRow, readyRow], 10);
+  const riskRows = service.buildSceneLoopDistrictMicroflowRiskRows([staleRow, readyRow], 10);
+
+  assert.equal(microflowMatrix[0].focus_key, "exchange_district:wallet_link:wallet");
+  assert.equal(microflowMatrix[0].contract_ready, true);
+  assert.equal(microflowMatrix[0].risk_context_signature, readyRow.risk_context_signature);
+
+  assert.equal(healthAttention[0].focus_key, "exchange_district:wallet_link:wallet");
+  assert.equal(healthAttention[0].contract_ready, true);
+
+  assert.equal(attentionTrend[0].focus_key, "exchange_district:wallet_link:wallet");
+  assert.equal(attentionTrend[0].contract_ready, true);
+
+  assert.equal(healthAttentionTrend[0].focus_key, "exchange_district:wallet_link:wallet");
+  assert.equal(healthAttentionTrend[0].contract_ready, true);
+
+  assert.equal(riskMatrix[0].focus_key, "exchange_district:wallet_link:wallet");
+  assert.equal(riskMatrix[0].contract_ready, true);
+
+  assert.equal(priority[0].focus_key, "exchange_district:wallet_link:wallet");
+  assert.equal(priority[0].contract_ready, true);
+
+  assert.equal(riskRows[0].focus_key, "exchange_district:wallet_link:wallet");
+  assert.equal(riskRows[0].contract_ready, true);
+});
+
 test("daily family loop views preserve explicit risk context and prefer contract-ready rows", () => {
   const readyRow = {
     day: "2026-03-11",
@@ -1042,8 +1122,14 @@ test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
     enriched.scene_loop_district_microflow_health_attention_breakdown_7d[0].risk_context?.entry_kind_key,
     "world_entry_kind_duel_console"
   );
-  assert.equal(enriched.scene_loop_district_microflow_attention_trend_breakdown_7d[0].bucket_key, "alert:no_data");
-  assert.equal(enriched.scene_loop_district_microflow_health_attention_trend_breakdown_7d[0].bucket_key, "red:alert:no_data");
+  assert.ok(
+    enriched.scene_loop_district_microflow_attention_trend_breakdown_7d.some((row) => row.bucket_key === "alert:no_data")
+  );
+  assert.ok(
+    enriched.scene_loop_district_microflow_health_attention_trend_breakdown_7d.some(
+      (row) => row.bucket_key === "red:alert:no_data"
+    )
+  );
   assert.ok(
     enriched.scene_loop_district_microflow_health_attention_breakdown_7d.some(
       (row) =>

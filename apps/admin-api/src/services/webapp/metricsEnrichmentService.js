@@ -1657,14 +1657,15 @@ function buildSceneLoopDistrictMicroflowMatrix(rows, limit = 18) {
   });
   return Array.from(grouped.values())
     .map(({ districtKey, loopMicroflowKey, loopFamilyKey, rows: microflowRows }) => {
-      const sortedRows = [...microflowRows].sort((left, right) => String(right.day || "").localeCompare(String(left.day || "")));
+      const sortedRows = [...microflowRows].sort((left, right) => compareSceneLoopRowsByDayAndContract(left, right, "desc"));
+      const earliestRows = [...microflowRows].sort((left, right) => compareSceneLoopRowsByDayAndContract(left, right, "asc"));
       const totalCount = sortedRows.reduce((sum, row) => sum + Math.max(0, Math.floor(toNum(row.total_count, 0))), 0);
       const liveCount = sortedRows.reduce((sum, row) => sum + Math.max(0, Math.floor(toNum(row.live_count, 0))), 0);
       const blockedCount = sortedRows.reduce((sum, row) => sum + Math.max(0, Math.floor(toNum(row.blocked_count, 0))), 0);
       const liveShare = toRate(liveCount, totalCount);
       const blockedShare = toRate(blockedCount, totalCount);
       const latestRow = sortedRows[0] || null;
-      const earliestRow = sortedRows[sortedRows.length - 1] || null;
+      const earliestRow = earliestRows[0] || null;
       const latestHealthBand = String(latestRow?.health_band || "no_data");
       const trendDirection = resolveSceneLoopTrendDirection(
         latestRow?.total_count,
@@ -1714,6 +1715,8 @@ function buildSceneLoopDistrictMicroflowMatrix(rows, limit = 18) {
     .sort((left, right) => {
       const totalGap = toNum(right.total_count, 0) - toNum(left.total_count, 0);
       if (Math.abs(totalGap) > 0.0001) return totalGap;
+      const contractGap = compareSceneLoopContractStrength(left, right);
+      if (contractGap !== 0) return contractGap;
       return `${String(left.district_key || "")}:${String(left.loop_microflow_key || "")}`.localeCompare(
         `${String(right.district_key || "")}:${String(right.loop_microflow_key || "")}`
       );
@@ -1741,19 +1744,22 @@ function buildSceneLoopDistrictMicroflowHealthAttentionBreakdown(rows, limit = 1
     }
     const current = counters.get(key);
     current.item_count = Math.max(0, Math.floor(toNum(current.item_count, 0)) + 1);
-    current.total_count = Math.max(toNum(current.total_count, 0), totalCount);
-    const latestDay = String(current.latest_day || "");
-    const shouldReplace =
-      !latestDay ||
-      (day && day.localeCompare(latestDay) > 0) ||
-      (day === latestDay && totalCount > toNum(current.total_count, 0));
-    if (shouldReplace) {
+    const priorityScore = Math.max(0, Math.floor(toNum(row?.priority_score, totalCount)));
+    if (shouldPromoteSceneLoopRepresentative(current, day, priorityScore, context)) {
       Object.assign(current, context);
       current.latest_day = day || null;
+      current.total_count = totalCount;
     }
+    current.priority_score = Math.max(toNum(current.priority_score, 0), priorityScore);
   });
   return Array.from(counters.values())
-    .sort((left, right) => right.item_count - left.item_count || String(left.bucket_key).localeCompare(String(right.bucket_key)))
+    .sort((left, right) => {
+      const itemGap = toNum(right.item_count, 0) - toNum(left.item_count, 0);
+      if (Math.abs(itemGap) > 0.0001) return itemGap;
+      const contractGap = compareSceneLoopContractStrength(left, right);
+      if (contractGap !== 0) return contractGap;
+      return String(left.bucket_key).localeCompare(String(right.bucket_key));
+    })
     .slice(0, Math.max(1, Math.floor(toNum(limit, 18))));
 }
 
@@ -1777,19 +1783,22 @@ function buildSceneLoopDistrictMicroflowAttentionTrendBreakdown(rows, limit = 18
     }
     const current = counters.get(key);
     current.item_count = Math.max(0, Math.floor(toNum(current.item_count, 0)) + 1);
-    current.total_count = Math.max(toNum(current.total_count, 0), totalCount);
-    const latestDay = String(current.latest_day || "");
-    const shouldReplace =
-      !latestDay ||
-      (day && day.localeCompare(latestDay) > 0) ||
-      (day === latestDay && totalCount > toNum(current.total_count, 0));
-    if (shouldReplace) {
+    const priorityScore = Math.max(0, Math.floor(toNum(row?.priority_score, totalCount)));
+    if (shouldPromoteSceneLoopRepresentative(current, day, priorityScore, context)) {
       Object.assign(current, context);
       current.latest_day = day || null;
+      current.total_count = totalCount;
     }
+    current.priority_score = Math.max(toNum(current.priority_score, 0), priorityScore);
   });
   return Array.from(counters.values())
-    .sort((left, right) => right.item_count - left.item_count || String(left.bucket_key).localeCompare(String(right.bucket_key)))
+    .sort((left, right) => {
+      const itemGap = toNum(right.item_count, 0) - toNum(left.item_count, 0);
+      if (Math.abs(itemGap) > 0.0001) return itemGap;
+      const contractGap = compareSceneLoopContractStrength(left, right);
+      if (contractGap !== 0) return contractGap;
+      return String(left.bucket_key).localeCompare(String(right.bucket_key));
+    })
     .slice(0, Math.max(1, Math.floor(toNum(limit, 18))));
 }
 
@@ -1814,19 +1823,22 @@ function buildSceneLoopDistrictMicroflowHealthAttentionTrendBreakdown(rows, limi
     }
     const current = counters.get(key);
     current.item_count = Math.max(0, Math.floor(toNum(current.item_count, 0)) + 1);
-    current.total_count = Math.max(toNum(current.total_count, 0), totalCount);
-    const latestDay = String(current.latest_day || "");
-    const shouldReplace =
-      !latestDay ||
-      (day && day.localeCompare(latestDay) > 0) ||
-      (day === latestDay && totalCount > toNum(current.total_count, 0));
-    if (shouldReplace) {
+    const priorityScore = Math.max(0, Math.floor(toNum(row?.priority_score, totalCount)));
+    if (shouldPromoteSceneLoopRepresentative(current, day, priorityScore, context)) {
       Object.assign(current, context);
       current.latest_day = day || null;
+      current.total_count = totalCount;
     }
+    current.priority_score = Math.max(toNum(current.priority_score, 0), priorityScore);
   });
   return Array.from(counters.values())
-    .sort((left, right) => right.item_count - left.item_count || String(left.bucket_key).localeCompare(String(right.bucket_key)))
+    .sort((left, right) => {
+      const itemGap = toNum(right.item_count, 0) - toNum(left.item_count, 0);
+      if (Math.abs(itemGap) > 0.0001) return itemGap;
+      const contractGap = compareSceneLoopContractStrength(left, right);
+      if (contractGap !== 0) return contractGap;
+      return String(left.bucket_key).localeCompare(String(right.bucket_key));
+    })
     .slice(0, Math.max(1, Math.floor(toNum(limit, 18))));
 }
 
@@ -1866,6 +1878,8 @@ function buildSceneLoopDistrictMicroflowHealthAttentionTrendMatrix(rows, limit =
       if (Math.abs(healthGap) > 0.0001) return healthGap;
       const trendGap = toNum(right.trend_rank, 0) - toNum(left.trend_rank, 0);
       if (Math.abs(trendGap) > 0.0001) return trendGap;
+      const contractGap = compareSceneLoopContractStrength(left, right);
+      if (contractGap !== 0) return contractGap;
       const totalGap = toNum(right.total_count, 0) - toNum(left.total_count, 0);
       if (Math.abs(totalGap) > 0.0001) return totalGap;
       return `${String(left.district_key || "")}:${String(left.loop_microflow_key || "")}`.localeCompare(
@@ -2152,6 +2166,8 @@ function buildSceneLoopDistrictMicroflowAttentionPriority(rows, limit = 18) {
     .sort((left, right) => {
       const priorityGap = toNum(right.priority_score, 0) - toNum(left.priority_score, 0);
       if (Math.abs(priorityGap) > 0.0001) return priorityGap;
+      const contractGap = compareSceneLoopContractStrength(left, right);
+      if (contractGap !== 0) return contractGap;
       const totalGap = toNum(right.total_count, 0) - toNum(left.total_count, 0);
       if (Math.abs(totalGap) > 0.0001) return totalGap;
       return `${String(left.district_key || "")}:${String(left.loop_microflow_key || "")}`.localeCompare(
@@ -2235,6 +2251,8 @@ function buildSceneLoopDistrictMicroflowRiskRows(rows, limit = 18) {
     .sort((left, right) => {
       const priorityGap = toNum(right.priority_score, 0) - toNum(left.priority_score, 0);
       if (Math.abs(priorityGap) > 0.0001) return priorityGap;
+      const contractGap = compareSceneLoopContractStrength(left, right);
+      if (contractGap !== 0) return contractGap;
       const totalGap = toNum(right.total_count, 0) - toNum(left.total_count, 0);
       if (Math.abs(totalGap) > 0.0001) return totalGap;
       return `${String(left.district_key || "")}:${String(left.loop_microflow_key || "")}`.localeCompare(
@@ -3543,6 +3561,7 @@ module.exports = {
   buildSceneLoopDistrictMicroflowHealthAttentionTrendDailyMatrix,
   buildSceneLoopDistrictMicroflowAttentionPriority,
   buildSceneLoopDistrictMicroflowAttentionPriorityDaily,
+  buildSceneLoopDistrictMicroflowRiskRows,
   buildSceneLoopDistrictMicroflowRiskRowsDaily,
   buildSceneLoopDistrictMicroflowRiskPriorityDaily,
   buildSceneLoopDistrictMicroflowRiskMatrix,
