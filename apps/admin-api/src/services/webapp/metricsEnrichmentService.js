@@ -999,7 +999,28 @@ function buildSceneLoopDistrictFamilyMatrix(rows, limit = 12) {
       const greenDays = sortedRows.filter((row) => String(row?.health_band || "") === "green").length;
       const yellowDays = sortedRows.filter((row) => String(row?.health_band || "") === "yellow").length;
       const redDays = sortedRows.filter((row) => String(row?.health_band || "") === "red").length;
+      const latestHealthBand = String(latestRow?.health_band || "no_data");
+      const trendDirection = resolveSceneLoopTrendDirection(
+        latestRow?.total_count,
+        earliestRow?.total_count,
+        sortedRows.length
+      );
+      const attentionBand = resolveSceneLoopDistrictAttentionBand(
+        latestHealthBand,
+        trendDirection,
+        blockedShare
+      );
+      const context = buildSceneLoopRiskContext({
+        ...(latestRow && typeof latestRow === "object" ? latestRow : {}),
+        district_key,
+        loop_family_key,
+        loop_microflow_key: latestRow?.loop_microflow_key ?? latestRow?.microflow_key ?? loop_family_key,
+        latest_health_band: latestHealthBand,
+        attention_band: attentionBand,
+        trend_direction: trendDirection
+      });
       return {
+        ...context,
         district_key,
         loop_family_key,
         total_count: totalCount,
@@ -1010,21 +1031,13 @@ function buildSceneLoopDistrictFamilyMatrix(rows, limit = 12) {
         day_count: sortedRows.length,
         latest_day: latestRow?.day || null,
         latest_total_count: Math.max(0, Math.floor(toNum(latestRow?.total_count, 0))),
-        latest_health_band: String(latestRow?.health_band || "no_data"),
+        latest_health_band: latestHealthBand,
         green_days: greenDays,
         yellow_days: yellowDays,
         red_days: redDays,
         health_band: resolveSceneLoopDistrictHealthBand(totalCount, liveShare, blockedShare),
-        attention_band: resolveSceneLoopDistrictAttentionBand(
-          String(latestRow?.health_band || "no_data"),
-          resolveSceneLoopTrendDirection(latestRow?.total_count, earliestRow?.total_count, sortedRows.length),
-          blockedShare
-        ),
-        trend_direction: resolveSceneLoopTrendDirection(
-          latestRow?.total_count,
-          earliestRow?.total_count,
-          sortedRows.length
-        ),
+        attention_band: attentionBand,
+        trend_direction: trendDirection,
         trend_delta: Math.max(
           -9999,
           Math.min(9999, Math.floor(toNum(latestRow?.total_count, 0) - toNum(earliestRow?.total_count, 0)))
@@ -1034,6 +1047,8 @@ function buildSceneLoopDistrictFamilyMatrix(rows, limit = 12) {
     .sort((left, right) => {
       const totalGap = toNum(right.total_count, 0) - toNum(left.total_count, 0);
       if (Math.abs(totalGap) > 0.0001) return totalGap;
+      const contractGap = compareSceneLoopContractStrength(left, right);
+      if (contractGap !== 0) return contractGap;
       return `${String(left.district_key || "")}:${String(left.loop_family_key || "")}`.localeCompare(
         `${String(right.district_key || "")}:${String(right.loop_family_key || "")}`
       );
@@ -1248,7 +1263,15 @@ function buildSceneLoopDistrictFamilyHealthAttentionTrendMatrix(rows, limit = 12
       const latestHealthBand = String(row?.latest_health_band || row?.health_band || "no_data");
       const attentionBand = String(row?.attention_band || "no_data");
       const trendDirection = String(row?.trend_direction || "no_data");
+      const context = buildSceneLoopRiskContext({
+        ...(row && typeof row === "object" ? row : {}),
+        loop_microflow_key: row?.loop_microflow_key ?? row?.microflow_key ?? row?.loop_family_key,
+        latest_health_band: latestHealthBand,
+        attention_band: attentionBand,
+        trend_direction: trendDirection
+      });
       return {
+        ...context,
         district_key: String(row?.district_key || "unknown"),
         loop_family_key: normalizeSceneLoopFamilyKey(row?.loop_family_key),
         latest_health_band: latestHealthBand,
@@ -1270,6 +1293,8 @@ function buildSceneLoopDistrictFamilyHealthAttentionTrendMatrix(rows, limit = 12
       if (Math.abs(healthGap) > 0.0001) return healthGap;
       const trendGap = toNum(right.trend_rank, 0) - toNum(left.trend_rank, 0);
       if (Math.abs(trendGap) > 0.0001) return trendGap;
+      const contractGap = compareSceneLoopContractStrength(left, right);
+      if (contractGap !== 0) return contractGap;
       const totalGap = toNum(right.total_count, 0) - toNum(left.total_count, 0);
       if (Math.abs(totalGap) > 0.0001) return totalGap;
       return `${String(left.district_key || "")}:${String(left.loop_family_key || "")}`.localeCompare(
@@ -1285,11 +1310,19 @@ function buildSceneLoopDistrictFamilyAttentionPriority(rows, limit = 12) {
       const latestHealthBand = String(row?.latest_health_band || row?.health_band || "no_data");
       const attentionBand = String(row?.attention_band || "no_data");
       const trendDirection = String(row?.trend_direction || "no_data");
+      const context = buildSceneLoopRiskContext({
+        ...(row && typeof row === "object" ? row : {}),
+        loop_microflow_key: row?.loop_microflow_key ?? row?.microflow_key ?? row?.loop_family_key,
+        latest_health_band: latestHealthBand,
+        attention_band: attentionBand,
+        trend_direction: trendDirection
+      });
       const attentionRank = rankSceneLoopAttentionBand(attentionBand);
       const healthRank = rankSceneLoopHealthBand(latestHealthBand);
       const trendRank = rankSceneLoopTrendDirection(trendDirection);
       const totalCount = Math.max(0, Math.floor(toNum(row?.total_count, 0)));
       return {
+        ...context,
         district_key: String(row?.district_key || "unknown"),
         loop_family_key: normalizeSceneLoopFamilyKey(row?.loop_family_key),
         latest_health_band: latestHealthBand,
@@ -1308,6 +1341,8 @@ function buildSceneLoopDistrictFamilyAttentionPriority(rows, limit = 12) {
     .sort((left, right) => {
       const priorityGap = toNum(right.priority_score, 0) - toNum(left.priority_score, 0);
       if (Math.abs(priorityGap) > 0.0001) return priorityGap;
+      const contractGap = compareSceneLoopContractStrength(left, right);
+      if (contractGap !== 0) return contractGap;
       const totalGap = toNum(right.total_count, 0) - toNum(left.total_count, 0);
       if (Math.abs(totalGap) > 0.0001) return totalGap;
       return `${String(left.district_key || "")}:${String(left.loop_family_key || "")}`.localeCompare(
