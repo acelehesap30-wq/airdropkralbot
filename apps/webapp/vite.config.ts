@@ -10,6 +10,10 @@ export default defineConfig({
     assetsDir: "assets",
     sourcemap: false,
     chunkSizeWarningLimit: 1500,
+    commonjsOptions: {
+      include: [/node_modules/, /packages[\\/]shared[\\/]src/],
+      transformMixedEsModules: true
+    },
     rollupOptions: {
       input: {
         index: path.resolve(__dirname, "index.vite.html")
