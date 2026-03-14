@@ -2731,6 +2731,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           data-composition-profile={selectedMicroflow?.composition_profile_key || ""}
           data-rail-anchor={selectedMicroflow?.rail_anchor_key || ""}
           data-rail-presence={selectedMicroflow?.rail_presence_key || ""}
+          {...buildSceneActionDataAttrs(focusedCluster)}
         >
           <div className="akrSceneWorldRailHeader">
             <strong>
@@ -2746,6 +2747,9 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
               {focusedCluster?.label_key ? <strong>{t(props.lang, focusedCluster.label_key as never)}</strong> : null}
             </div>
           ) : null}
+          {renderSceneActionContextMeta(focusedCluster)}
+          {renderPrimaryActionSummary(focusedCluster, { compact: true })}
+          {renderSceneActionContextChips(focusedCluster)}
           <div className="akrSceneWorldRailActions">
             {focusedClusterActions.map((action) => {
               const actionContractReady = hasSceneActionContract(action);

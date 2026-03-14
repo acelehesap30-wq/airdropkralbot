@@ -1515,7 +1515,7 @@ function buildInteractionClusters(actors, hotspots, activeHotspotKey) {
       size_scalar: item.is_secondary ? 0.82 : 1,
       angle_offset_scalar: (Math.PI * 2 * slotIndex) / Math.max(1, actionItems.length)
     }));
-    return {
+    const clusterBase = {
       ...cluster,
       x: toNum(actor?.x, cluster.x),
       y: toNum(actor?.y, cluster.y + 0.44),
@@ -1525,6 +1525,50 @@ function buildInteractionClusters(actors, hotspots, activeHotspotKey) {
       action_items: actionItems,
       intent_slots: intentSlots
     };
+    const primaryAction = asRecord(actionItems[0]);
+    if (!toText(primaryAction.action_key, "")) {
+      return clusterBase;
+    }
+    const clusterMeta = buildInteractionContextMeta(primaryAction, primaryAction);
+    const resolvedCluster = applyResolvedActionRiskMeta(clusterBase, clusterMeta, primaryAction, {
+      family_key: toText(clusterMeta.family_key, toText(primaryAction.family_key, "")),
+      flow_key: toText(clusterMeta.flow_key, toText(primaryAction.flow_key, "")),
+      microflow_key: toText(clusterMeta.microflow_key, toText(primaryAction.microflow_key, "")),
+      focus_key: toText(clusterMeta.focus_key, toText(primaryAction.focus_key, "")),
+      risk_key: toText(clusterMeta.risk_key, toText(primaryAction.risk_key, "")),
+      risk_focus_key: toText(clusterMeta.risk_focus_key, toText(primaryAction.risk_focus_key, "")),
+      risk_health_band_key: toText(
+        clusterMeta.risk_health_band_key,
+        toText(primaryAction.risk_health_band_key, "")
+      ),
+      risk_attention_band_key: toText(
+        clusterMeta.risk_attention_band_key,
+        toText(primaryAction.risk_attention_band_key, "")
+      ),
+      risk_trend_direction_key: toText(
+        clusterMeta.risk_trend_direction_key,
+        toText(primaryAction.risk_trend_direction_key, "")
+      ),
+      entry_kind_key: toText(clusterMeta.entry_kind_key, toText(primaryAction.entry_kind_key, "")),
+      sequence_kind_key: toText(clusterMeta.sequence_kind_key, toText(primaryAction.sequence_kind_key, "")),
+      action_context_signature: toText(
+        clusterMeta.action_context_signature,
+        toText(primaryAction.action_context_signature, "")
+      ),
+      risk_context_signature: toText(
+        clusterMeta.risk_context_signature,
+        toText(primaryAction.risk_context_signature, "")
+      ),
+      context_lookup_required:
+        typeof clusterMeta.context_lookup_required === "boolean"
+          ? clusterMeta.context_lookup_required
+          : primaryAction.context_lookup_required,
+      context_lookup_resolved:
+        typeof clusterMeta.context_lookup_resolved === "boolean"
+          ? clusterMeta.context_lookup_resolved
+          : primaryAction.context_lookup_resolved
+    });
+    return attachPrimaryActionMeta(resolvedCluster, primaryAction, clusterMeta);
   });
 }
 

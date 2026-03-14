@@ -799,6 +799,50 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
     state.interaction_clusters.find((cluster) => cluster.cluster_key === "hub_gate_north")?.intent_slots[0].contract_ready,
     true
   );
+  assert.equal(
+    state.interaction_clusters.find((cluster) => cluster.cluster_key === "hub_gate_north")?.primary_action_key,
+    SHELL_ACTION_KEY.PLAYER_SEASON_HALL
+  );
+  assert.equal(
+    state.interaction_clusters.find((cluster) => cluster.cluster_key === "hub_gate_north")?.primary_flow_key,
+    "travel_flow"
+  );
+  assert.equal(
+    state.interaction_clusters.find((cluster) => cluster.cluster_key === "hub_gate_north")?.primary_microflow_key,
+    "world_modal_lane_season_arc:travel"
+  );
+  assert.equal(
+    state.interaction_clusters.find((cluster) => cluster.cluster_key === "hub_gate_north")?.primary_focus_key,
+    "central_hub:travel:travel_flow"
+  );
+  assert.equal(
+    state.interaction_clusters.find((cluster) => cluster.cluster_key === "hub_gate_north")?.primary_risk_focus_key,
+    "central_hub:travel:travel_flow|green:stable:flat"
+  );
+  assert.equal(
+    state.interaction_clusters.find((cluster) => cluster.cluster_key === "hub_gate_north")?.primary_entry_kind_key,
+    "world_entry_kind_hub_portal"
+  );
+  assert.equal(
+    state.interaction_clusters.find((cluster) => cluster.cluster_key === "hub_gate_north")?.primary_sequence_kind_key,
+    "world_modal_kind_travel_gate"
+  );
+  assert.equal(
+    state.interaction_clusters.find((cluster) => cluster.cluster_key === "hub_gate_north")?.primary_contract_ready,
+    true
+  );
+  assert.equal(
+    state.interaction_clusters.find((cluster) => cluster.cluster_key === "hub_gate_north")?.contract_ready,
+    true
+  );
+  assert.equal(
+    state.interaction_clusters.find((cluster) => cluster.cluster_key === "hub_gate_north")?.action_context?.contract_ready,
+    true
+  );
+  assert.equal(
+    state.interaction_clusters.find((cluster) => cluster.cluster_key === "hub_gate_north")?.risk_context?.contract_ready,
+    true
+  );
 });
 
 test("buildDistrictWorldState trims pvp nodes on low-end profile", () => {
