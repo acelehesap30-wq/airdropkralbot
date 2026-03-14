@@ -116,6 +116,9 @@ function compareDistrictAssetRuntimeRows(left, right, activeFamilyKey) {
 function readDistrictAssetRuntimeSummary(input = {}, districtKey = "", activeFamilyKey = "") {
   const data = asRecord(input.data);
   const localManifest = asRecord(data.local_manifest);
+  const focusRows = asList(localManifest.district_family_asset_focus_rows)
+    .map((row) => asRecord(row))
+    .filter((row) => toText(row.district_key, "") === districtKey);
   const familyRows = asList(localManifest.district_family_asset_rows)
     .map((row) => asRecord(row))
     .filter((row) => toText(row.district_key, "") === districtKey);
@@ -138,6 +141,14 @@ function readDistrictAssetRuntimeSummary(input = {}, districtKey = "", activeFam
     return {};
   }
   const activeRow = rows[0];
+  const activeFocusRow =
+    focusRows.find(
+      (row) =>
+        toText(row.asset_key, "") === toText(activeRow.asset_key, "") &&
+        toText(row.family_key, "") === toText(activeRow.family_key, activeFamilyKey)
+    ) ||
+    focusRows.find((row) => toText(row.family_key, "") === toText(activeRow.family_key, activeFamilyKey)) ||
+    {};
   const selectedCount = rows.length;
   const readyCount = rows.filter((row) => toText(row.state_key, "") === "ready" || row.exists_local !== false).length;
   const summary = {
@@ -145,6 +156,18 @@ function readDistrictAssetRuntimeSummary(input = {}, districtKey = "", activeFam
     asset_family_key: toText(activeRow.family_key, activeFamilyKey),
     asset_candidate_key: toText(activeRow.candidate_key, ""),
     asset_state_key: toText(activeRow.state_key, activeRow.exists_local !== false ? "ready" : "partial"),
+    asset_focus_key: toText(
+      activeFocusRow.focus_key,
+      districtKey && toText(activeRow.asset_key, "")
+        ? `${districtKey}:${toText(activeRow.family_key, activeFamilyKey || "district")}:${toText(activeRow.asset_key, "")}`
+        : ""
+    ),
+    asset_contract_signature: toText(
+      activeFocusRow.asset_contract_signature,
+      districtKey && toText(activeRow.asset_key, "")
+        ? `${districtKey}:${toText(activeRow.family_key, activeFamilyKey || "district")}:${toText(activeRow.asset_key, "")}|${toText(activeRow.state_key, activeRow.exists_local !== false ? "ready" : "partial")}|${toText(activeRow.candidate_key, "--")}`
+        : ""
+    ),
     selected_count: selectedCount,
     ready_count: readyCount,
     contract_ready: Boolean(selectedCount && readyCount)
@@ -177,6 +200,8 @@ function attachRuntimeContractSummary(target, summary, assetSummary = {}) {
     runtime_summary_asset_family_key: toText(assetRuntimeSummary.asset_family_key, ""),
     runtime_summary_asset_candidate_key: toText(assetRuntimeSummary.asset_candidate_key, ""),
     runtime_summary_asset_state_key: toText(assetRuntimeSummary.asset_state_key, ""),
+    runtime_summary_asset_focus_key: toText(assetRuntimeSummary.asset_focus_key, ""),
+    runtime_summary_asset_contract_signature: toText(assetRuntimeSummary.asset_contract_signature, ""),
     runtime_summary_asset_selected_count: Math.max(0, Math.round(toNum(assetRuntimeSummary.selected_count, 0))),
     runtime_summary_asset_ready_count: Math.max(0, Math.round(toNum(assetRuntimeSummary.ready_count, 0))),
     runtime_summary_asset_contract_ready:
@@ -948,13 +973,14 @@ function applyResolvedActionRiskMeta(target, contextSource, fallback = {}, overr
   };
 }
 
-function attachPrimaryActionMeta(target, action, fallback = {}) {
+function attachPrimaryActionMeta(target, action, fallback = {}, assetSummary = {}) {
   const base = asRecord(target);
   if (!Object.keys(base).length) {
     return target;
   }
   const primaryAction = asRecord(action);
   const fallbackRecord = asRecord(fallback);
+  const assetRecord = asRecord(assetSummary);
   const resolvedAction = toText(primaryAction.action_key, "")
     ? primaryAction
     : asRecord(asList(base.action_items)[0]);
@@ -989,6 +1015,20 @@ function attachPrimaryActionMeta(target, action, fallback = {}) {
       primaryMeta.sequence_kind_key,
       toText(base.primary_sequence_kind_key, "")
     ),
+    primary_asset_key: toText(assetRecord.asset_key, toText(base.primary_asset_key, "")),
+    primary_asset_family_key: toText(assetRecord.asset_family_key, toText(base.primary_asset_family_key, "")),
+    primary_asset_state_key: toText(assetRecord.asset_state_key, toText(base.primary_asset_state_key, "")),
+    primary_asset_focus_key: toText(assetRecord.asset_focus_key, toText(base.primary_asset_focus_key, "")),
+    primary_asset_contract_signature: toText(
+      assetRecord.asset_contract_signature,
+      toText(base.primary_asset_contract_signature, "")
+    ),
+    primary_asset_contract_ready:
+      typeof assetRecord.contract_ready === "boolean"
+        ? assetRecord.contract_ready
+        : typeof base.primary_asset_contract_ready === "boolean"
+          ? base.primary_asset_contract_ready
+          : undefined,
     primary_action_context_signature: toText(
       primaryMeta.action_context_signature,
       toText(base.primary_action_context_signature, "")
@@ -6811,7 +6851,7 @@ function enrichDistrictInteractionModal(interactionModal, input) {
         }
       );
       return attachRuntimeContractSummary(
-        attachPrimaryActionMeta(enrichedItem, enrichedItem, actionContext),
+        attachPrimaryActionMeta(enrichedItem, enrichedItem, actionContext, resolveAssetRuntimeSummary(actionContext)),
         webappDomainSummary,
         resolveAssetRuntimeSummary(actionContext)
       );
@@ -6972,7 +7012,12 @@ function enrichDistrictInteractionModal(interactionModal, input) {
           satellite_orbit_scalar: loopPersonality.satellite_orbit_scalar
         });
         return attachRuntimeContractSummary(
-          attachPrimaryActionMeta(enrichedFlow, enrichedFlow, flowContextMeta),
+          attachPrimaryActionMeta(
+            enrichedFlow,
+            enrichedFlow,
+            flowContextMeta,
+            resolveAssetRuntimeSummary(flowContextMeta.action_context)
+          ),
           webappDomainSummary,
           resolveAssetRuntimeSummary(flowContextMeta.action_context)
         );
@@ -6991,7 +7036,12 @@ function enrichDistrictInteractionModal(interactionModal, input) {
       action_items: buildContextActionItems(flowPod.action_items, podActionContext)
     });
     return attachRuntimeContractSummary(
-      attachPrimaryActionMeta(enrichedPod, enrichedPod, podContextMeta),
+      attachPrimaryActionMeta(
+        enrichedPod,
+        enrichedPod,
+        podContextMeta,
+        resolveAssetRuntimeSummary(podContextMeta.action_context)
+      ),
       webappDomainSummary,
       resolveAssetRuntimeSummary(podContextMeta.action_context)
     );
@@ -7008,7 +7058,12 @@ function enrichDistrictInteractionModal(interactionModal, input) {
     action_items: buildContextActionItems(protocolCard.action_items, cardActionContext)
   });
   return attachRuntimeContractSummary(
-    attachPrimaryActionMeta(enrichedCard, enrichedCard, cardContextMeta),
+    attachPrimaryActionMeta(
+      enrichedCard,
+      enrichedCard,
+      cardContextMeta,
+      resolveAssetRuntimeSummary(cardContextMeta.action_context)
+    ),
     webappDomainSummary,
     resolveAssetRuntimeSummary(cardContextMeta.action_context)
   );
@@ -7061,7 +7116,12 @@ function enrichDistrictInteractionModal(interactionModal, input) {
       contract_missing_keys: modalContextMeta.contract_missing_keys
     });
     return attachRuntimeContractSummary(
-      attachPrimaryActionMeta(enrichedModalCard, enrichedModalCard, modalContextMeta),
+      attachPrimaryActionMeta(
+        enrichedModalCard,
+        enrichedModalCard,
+        modalContextMeta,
+        resolveAssetRuntimeSummary(modalContextMeta.action_context)
+      ),
       webappDomainSummary,
       resolveAssetRuntimeSummary(modalContextMeta.action_context)
     );
@@ -7197,7 +7257,7 @@ function enrichInteractionActionItems(items, actionContextLookup, runtimeSummary
           : []
     };
     return attachRuntimeContractSummary(
-      attachPrimaryActionMeta(enrichedActionItem, enrichedActionItem, resolvedMeta || record),
+      attachPrimaryActionMeta(enrichedActionItem, enrichedActionItem, resolvedMeta || record, assetSummary),
       runtimeSummary,
       assetSummary
     );
@@ -7513,8 +7573,8 @@ export function buildDistrictWorldState(input = {}) {
     toText(primaryModalAction.family_key, rootInteractionContext.family_key, "")
   );
   const finalInteractionSheet = attachRuntimeContractSummary(
-    attachContractCollectionMeta(
-      attachPrimaryActionMeta(finalInteractionSheetBase, primaryRootAction, rootInteractionMeta),
+      attachContractCollectionMeta(
+      attachPrimaryActionMeta(finalInteractionSheetBase, primaryRootAction, rootInteractionMeta, rootAssetRuntimeSummary),
       enrichedActiveCluster?.action_items
     ),
     webappDomainSummary,
@@ -7522,14 +7582,14 @@ export function buildDistrictWorldState(input = {}) {
   );
   const finalInteractionSurface = attachRuntimeContractSummary(
     attachContractCollectionMeta(
-      attachPrimaryActionMeta(finalInteractionSurfaceBase, primaryRootAction, rootInteractionMeta)
+      attachPrimaryActionMeta(finalInteractionSurfaceBase, primaryRootAction, rootInteractionMeta, rootAssetRuntimeSummary)
     ),
     webappDomainSummary,
     rootAssetRuntimeSummary
   );
   const finalInteractionFlow = attachRuntimeContractSummary(
     attachContractCollectionMeta(
-      attachPrimaryActionMeta(finalInteractionFlowBase, primaryRootAction, rootInteractionMeta),
+      attachPrimaryActionMeta(finalInteractionFlowBase, primaryRootAction, rootInteractionMeta, rootAssetRuntimeSummary),
       finalInteractionSurfaceBase?.action_items
     ),
     webappDomainSummary,
@@ -7537,7 +7597,7 @@ export function buildDistrictWorldState(input = {}) {
   );
   const finalInteractionEntry = attachRuntimeContractSummary(
     attachContractCollectionMeta(
-      attachPrimaryActionMeta(finalInteractionEntryBase, primaryRootAction, rootInteractionMeta),
+      attachPrimaryActionMeta(finalInteractionEntryBase, primaryRootAction, rootInteractionMeta, rootAssetRuntimeSummary),
       finalInteractionSurfaceBase?.action_items
     ),
     webappDomainSummary,
@@ -7548,7 +7608,8 @@ export function buildDistrictWorldState(input = {}) {
       attachPrimaryActionMeta(
         finalInteractionTerminalBase,
         toText(primaryTerminalAction.action_key, "") ? primaryTerminalAction : primaryRootAction,
-        rootInteractionMeta
+        rootInteractionMeta,
+        terminalAssetRuntimeSummary
       )
     ),
     webappDomainSummary,
@@ -7559,7 +7620,8 @@ export function buildDistrictWorldState(input = {}) {
       attachPrimaryActionMeta(
         finalInteractionModalBase,
         toText(primaryModalAction.action_key, "") ? primaryModalAction : primaryRootAction,
-        rootInteractionMeta
+        rootInteractionMeta,
+        modalAssetRuntimeSummary
       )
     ),
     webappDomainSummary,

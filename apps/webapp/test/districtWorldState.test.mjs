@@ -150,6 +150,11 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
   assert.equal(state.interaction_sheet.runtime_summary_asset_key, "hub_beacon");
   assert.equal(state.interaction_sheet.runtime_summary_asset_family_key, "travel");
   assert.equal(state.interaction_sheet.runtime_summary_asset_state_key, "ready");
+  assert.equal(state.interaction_sheet.runtime_summary_asset_focus_key, "central_hub:travel:hub_beacon");
+  assert.equal(
+    state.interaction_sheet.runtime_summary_asset_contract_signature,
+    "central_hub:travel:hub_beacon|ready|hub_beacon_primary"
+  );
   assert.equal(state.interaction_sheet.runtime_summary_asset_selected_count, 2);
   assert.equal(state.interaction_sheet.runtime_summary_asset_ready_count, 1);
   assert.equal(
@@ -228,6 +233,20 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
   assert.equal(state.interaction_surface.action_items[0].runtime_summary_guard_matches_host, true);
   assert.equal(state.interaction_surface.action_items[0].runtime_summary_asset_key, "hub_beacon");
   assert.equal(state.interaction_surface.action_items[0].runtime_summary_asset_family_key, "travel");
+  assert.equal(state.interaction_surface.action_items[0].runtime_summary_asset_focus_key, "central_hub:travel:hub_beacon");
+  assert.equal(
+    state.interaction_surface.action_items[0].runtime_summary_asset_contract_signature,
+    "central_hub:travel:hub_beacon|ready|hub_beacon_primary"
+  );
+  assert.equal(state.interaction_surface.action_items[0].primary_asset_key, "hub_beacon");
+  assert.equal(state.interaction_surface.action_items[0].primary_asset_family_key, "travel");
+  assert.equal(state.interaction_surface.action_items[0].primary_asset_state_key, "ready");
+  assert.equal(state.interaction_surface.action_items[0].primary_asset_focus_key, "central_hub:travel:hub_beacon");
+  assert.equal(
+    state.interaction_surface.action_items[0].primary_asset_contract_signature,
+    "central_hub:travel:hub_beacon|ready|hub_beacon_primary"
+  );
+  assert.equal(state.interaction_surface.action_items[0].primary_asset_contract_ready, true);
   assert.equal(
     state.interaction_surface.action_items[0].runtime_summary_asset_line,
     "ASSET 1/2 travel:hub_beacon | ready"
@@ -1758,6 +1777,11 @@ test("buildDistrictWorldState marks active node from navigation context shell ac
   assert.equal(state.interaction_sheet.runtime_summary_asset_key, "exchange_artifact");
   assert.equal(state.interaction_sheet.runtime_summary_asset_family_key, "payout");
   assert.equal(state.interaction_sheet.runtime_summary_asset_state_key, "partial");
+  assert.equal(state.interaction_sheet.runtime_summary_asset_focus_key, "exchange_district:payout:exchange_artifact");
+  assert.equal(
+    state.interaction_sheet.runtime_summary_asset_contract_signature,
+    "exchange_district:payout:exchange_artifact|partial|exchange_payout_artifact"
+  );
   assert.equal(state.interaction_sheet.runtime_summary_asset_selected_count, 2);
   assert.equal(state.interaction_sheet.runtime_summary_asset_ready_count, 1);
   assert.equal(
@@ -1774,6 +1798,20 @@ test("buildDistrictWorldState marks active node from navigation context shell ac
   assert.equal(state.interaction_surface.action_items[0].runtime_summary_contract_ready, false);
   assert.equal(state.interaction_surface.action_items[0].runtime_summary_asset_key, "ops_console");
   assert.equal(state.interaction_surface.action_items[0].runtime_summary_asset_family_key, "wallet");
+  assert.equal(state.interaction_surface.action_items[0].runtime_summary_asset_focus_key, "exchange_district:wallet:ops_console");
+  assert.equal(
+    state.interaction_surface.action_items[0].runtime_summary_asset_contract_signature,
+    "exchange_district:wallet:ops_console|ready|exchange_wallet_console"
+  );
+  assert.equal(state.interaction_surface.action_items[0].primary_asset_key, "ops_console");
+  assert.equal(state.interaction_surface.action_items[0].primary_asset_family_key, "wallet");
+  assert.equal(state.interaction_surface.action_items[0].primary_asset_state_key, "ready");
+  assert.equal(state.interaction_surface.action_items[0].primary_asset_focus_key, "exchange_district:wallet:ops_console");
+  assert.equal(
+    state.interaction_surface.action_items[0].primary_asset_contract_signature,
+    "exchange_district:wallet:ops_console|ready|exchange_wallet_console"
+  );
+  assert.equal(state.interaction_surface.action_items[0].primary_asset_contract_ready, true);
   assert.equal(state.interaction_flow.action_contract_ready_count, 1);
   assert.equal(state.interaction_flow.action_contract_state_key, "partial");
   assert.equal(state.interaction_entry.action_contract_ready_count, 1);

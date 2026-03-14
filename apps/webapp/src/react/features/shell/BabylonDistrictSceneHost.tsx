@@ -236,6 +236,12 @@ type PrimaryActionSummary = {
   primary_risk_trend_direction_key?: string;
   primary_entry_kind_key?: string;
   primary_sequence_kind_key?: string;
+  primary_asset_key?: string;
+  primary_asset_family_key?: string;
+  primary_asset_state_key?: string;
+  primary_asset_focus_key?: string;
+  primary_asset_contract_signature?: string;
+  primary_asset_contract_ready?: boolean;
   primary_action_context_signature?: string;
   primary_risk_context_signature?: string;
   primary_contract_ready?: boolean;
@@ -505,6 +511,8 @@ type SceneActionLike = {
   runtime_summary_asset_family_key?: string;
   runtime_summary_asset_candidate_key?: string;
   runtime_summary_asset_state_key?: string;
+  runtime_summary_asset_focus_key?: string;
+  runtime_summary_asset_contract_signature?: string;
   runtime_summary_asset_selected_count?: number;
   runtime_summary_asset_ready_count?: number;
   runtime_summary_asset_contract_ready?: boolean;
@@ -594,6 +602,13 @@ function buildPrimarySceneActionSource(source?: PrimaryActionSummary | Record<st
     risk_trend_direction_key: readSceneActionText(primary.primary_risk_trend_direction_key),
     entry_kind_key: readSceneActionText(primary.primary_entry_kind_key),
     sequence_kind_key: readSceneActionText(primary.primary_sequence_kind_key),
+    primary_asset_key: readSceneActionText(primary.primary_asset_key),
+    primary_asset_family_key: readSceneActionText(primary.primary_asset_family_key),
+    primary_asset_state_key: readSceneActionText(primary.primary_asset_state_key),
+    primary_asset_focus_key: readSceneActionText(primary.primary_asset_focus_key),
+    primary_asset_contract_signature: readSceneActionText(primary.primary_asset_contract_signature),
+    primary_asset_contract_ready:
+      typeof primary.primary_asset_contract_ready === "boolean" ? primary.primary_asset_contract_ready : undefined,
     action_context_signature: readSceneActionText(primary.primary_action_context_signature),
     risk_context_signature: readSceneActionText(primary.primary_risk_context_signature),
     contract_ready:
@@ -1256,6 +1271,8 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
         "data-runtime-summary-asset-key": readSceneActionText(action?.runtime_summary_asset_key),
         "data-runtime-summary-asset-family": readSceneActionText(action?.runtime_summary_asset_family_key),
         "data-runtime-summary-asset-state": readSceneActionText(action?.runtime_summary_asset_state_key),
+        "data-runtime-summary-asset-focus": readSceneActionText(action?.runtime_summary_asset_focus_key),
+        "data-runtime-summary-asset-signature": readSceneActionText(action?.runtime_summary_asset_contract_signature),
         "data-runtime-summary-asset-selected-count": readSceneActionText(action?.runtime_summary_asset_selected_count),
         "data-runtime-summary-asset-ready-count": readSceneActionText(action?.runtime_summary_asset_ready_count),
         "data-runtime-summary-asset-contract-ready":
@@ -1272,6 +1289,15 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
         "data-primary-risk-focus-key": primaryContext.riskFocusKey || "",
         "data-primary-entry-kind-key": primaryContext.entryKindKey || "",
         "data-primary-sequence-kind-key": primaryContext.sequenceKindKey || "",
+        "data-primary-asset-key": readSceneActionText(primarySource.primary_asset_key),
+        "data-primary-asset-family": readSceneActionText(primarySource.primary_asset_family_key),
+        "data-primary-asset-state": readSceneActionText(primarySource.primary_asset_state_key),
+        "data-primary-asset-focus": readSceneActionText(primarySource.primary_asset_focus_key),
+        "data-primary-asset-signature": readSceneActionText(primarySource.primary_asset_contract_signature),
+        "data-primary-asset-contract-ready":
+          typeof primarySource.primary_asset_contract_ready === "boolean"
+            ? String(primarySource.primary_asset_contract_ready)
+            : "",
         "data-primary-action-context-signature": primaryContext.actionContextSignature || "",
         "data-primary-risk-context-signature": primaryContext.riskContextSignature || "",
         "data-primary-contract-ready": isStrictSceneActionContractReady(primaryContext) ? "true" : "false"
@@ -1332,6 +1358,14 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
       if (context.riskFocusKey) {
         parts.push(`RFK ${context.riskFocusKey}`);
       }
+      const assetFocusKey = readSceneActionText(action?.runtime_summary_asset_focus_key);
+      const assetContractSignature = readSceneActionText(action?.runtime_summary_asset_contract_signature);
+      if (assetFocusKey) {
+        parts.push(`ASF ${assetFocusKey}`);
+      }
+      if (assetContractSignature) {
+        parts.push(`ASIG ${assetContractSignature}`);
+      }
       if (context.actionContextSignature) {
         parts.push(`ACS ${context.actionContextSignature}`);
       }
@@ -1366,6 +1400,34 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           ? { label: "ATTN", value: context.riskAttentionBandKey, tone: context.riskAttentionBandKey }
           : null,
         context.riskTrendDirectionKey ? { label: "TREND", value: context.riskTrendDirectionKey, tone: "trend" } : null,
+        readSceneActionText(action?.runtime_summary_asset_state_key)
+          ? {
+              label: "AST",
+              value: `${readSceneActionText(action?.runtime_summary_asset_state_key)} ${readSceneActionText(
+                action?.runtime_summary_asset_ready_count
+              )}/${readSceneActionText(action?.runtime_summary_asset_selected_count)}`,
+              tone:
+                action?.runtime_summary_asset_contract_ready === true
+                  ? "green"
+                  : readSceneActionText(action?.runtime_summary_asset_state_key) === "partial"
+                    ? "watch"
+                    : "red"
+            }
+          : null,
+        readSceneActionText(action?.runtime_summary_asset_focus_key)
+          ? {
+              label: "ASF",
+              value: readSceneActionText(action?.runtime_summary_asset_focus_key),
+              tone: "signature"
+            }
+          : null,
+        readSceneActionText(action?.runtime_summary_asset_contract_signature)
+          ? {
+              label: "ASIG",
+              value: readSceneActionText(action?.runtime_summary_asset_contract_signature),
+              tone: "signature"
+            }
+          : null,
         context.contextLookupRequired
           ? {
               label: "LOOKUP",
@@ -1414,6 +1476,15 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
       const primaryContractReady = isStrictSceneActionContractReady(primaryContext);
       const actionLabelKey = readSceneActionText(primarySource.action_label_key);
       const actionHintLabelKey = readSceneActionText(primarySource.hint_label_key);
+      const primaryAssetKey = readSceneActionText(primarySource.primary_asset_key);
+      const primaryAssetFamilyKey = readSceneActionText(primarySource.primary_asset_family_key);
+      const primaryAssetStateKey = readSceneActionText(primarySource.primary_asset_state_key);
+      const primaryAssetFocusKey = readSceneActionText(primarySource.primary_asset_focus_key);
+      const primaryAssetContractSignature = readSceneActionText(primarySource.primary_asset_contract_signature);
+      const primaryAssetContractReady =
+        typeof primarySource.primary_asset_contract_ready === "boolean"
+          ? primarySource.primary_asset_contract_ready
+          : undefined;
       const hasPrimarySummary = Boolean(
         readSceneActionText(
           primarySource.action_key,
@@ -1481,6 +1552,34 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
               label: t(props.lang, "world_modal_chip_sequence_kind" as never),
               value: t(props.lang, primaryContext.sequenceKindKey as never),
               tone: "sequence"
+            }
+          : null,
+        primaryAssetKey
+          ? {
+              label: t(props.lang, "world_modal_chip_primary_asset" as never),
+              value: `${primaryAssetFamilyKey || primaryContext.familyKey || "district"}:${primaryAssetKey}${
+                primaryAssetStateKey ? ` | ${primaryAssetStateKey}` : ""
+              }`,
+              tone:
+                primaryAssetContractReady === true
+                  ? "green"
+                  : primaryAssetStateKey === "partial"
+                    ? "watch"
+                    : "flow"
+            }
+          : null,
+        primaryAssetFocusKey
+          ? {
+              label: "ASF",
+              value: primaryAssetFocusKey,
+              tone: "signature"
+            }
+          : null,
+        primaryAssetContractSignature
+          ? {
+              label: "ASIG",
+              value: primaryAssetContractSignature,
+              tone: "signature"
             }
           : null,
         {
