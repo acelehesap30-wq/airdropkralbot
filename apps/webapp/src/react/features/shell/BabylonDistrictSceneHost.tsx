@@ -1098,12 +1098,8 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
     [selectedMicroflow]
   );
   const resolveSceneActionContext = useCallback(
-    (action?: SceneActionLike | null, fallback?: SceneActionLike | null) => {
-      return mergeSceneActionContexts(
-        normalizeSceneActionContext(action),
-        normalizeSceneActionContext(fallback),
-        selectedLoopActionContext
-      );
+    (action?: SceneActionLike | null) => {
+      return mergeSceneActionContexts(normalizeSceneActionContext(action), selectedLoopActionContext);
     },
     [selectedLoopActionContext]
   );
@@ -1122,8 +1118,8 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
     }
   }, []);
   const buildSceneActionDataAttrs = useCallback(
-    (action?: SceneActionLike | null, fallback?: SceneActionLike | null) => {
-      const context = resolveSceneActionContext(action, fallback);
+    (action?: SceneActionLike | null) => {
+      const context = resolveSceneActionContext(action);
       const contractReady = isStrictSceneActionContractReady(context);
       return {
         "data-family-key": context.familyKey || "",
@@ -1149,8 +1145,8 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
     [resolveSceneActionContext]
   );
   const hasSceneActionContract = useCallback(
-    (action?: SceneActionLike | null, fallback?: SceneActionLike | null) => {
-      const context = resolveSceneActionContext(action, fallback);
+    (action?: SceneActionLike | null) => {
+      const context = resolveSceneActionContext(action);
       return isStrictSceneActionContractReady(context);
     },
     [resolveSceneActionContext]
@@ -1183,8 +1179,8 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
     [resolveSceneActionContext]
   );
   const renderSceneActionContextMeta = useCallback(
-    (action?: SceneActionLike | null, fallback?: SceneActionLike | null) => {
-      const context = resolveSceneActionContext(action, fallback);
+    (action?: SceneActionLike | null) => {
+      const context = resolveSceneActionContext(action);
       const parts = [];
       if (context.familyKey) {
         parts.push(`FAM ${context.familyKey}`);
@@ -1224,8 +1220,8 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
     [resolveSceneActionContext]
   );
   const renderSceneActionContextChips = useCallback(
-    (action?: SceneActionLike | null, fallback?: SceneActionLike | null) => {
-      const context = resolveSceneActionContext(action, fallback);
+    (action?: SceneActionLike | null) => {
+      const context = resolveSceneActionContext(action);
       const chips = [
         context.flowKey ? { label: "FLOW", value: context.flowKey, tone: "flow" } : null,
         context.entryKindKey ? { label: "ENTRY", value: context.entryKindKey, tone: "entry" } : null,
@@ -1275,11 +1271,11 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
   const renderPrimaryActionSummary = useCallback(
     (
       source?: PrimaryActionSummary | Record<string, unknown> | null,
-      options?: { compact?: boolean; fallback?: SceneActionLike | null }
+      options?: { compact?: boolean }
     ) => {
       const compact = options?.compact === true;
       const primarySource = buildPrimarySceneActionSource(source);
-      const primaryContext = resolveSceneActionContext(primarySource, options?.fallback);
+      const primaryContext = resolveSceneActionContext(primarySource);
       const primaryContractReady = isStrictSceneActionContractReady(primaryContext);
       const actionLabelKey = readSceneActionText(primarySource.action_label_key);
       const actionHintLabelKey = readSceneActionText(primarySource.hint_label_key);
@@ -1363,7 +1359,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           className={`akrScenePrimaryActionSummary ${compact ? "is-compact" : "is-full"} ${
             primaryContractReady ? "is-contract-ready" : "is-contract-missing"
           }`}
-          {...buildSceneActionDataAttrs(primarySource, options?.fallback)}
+          {...buildSceneActionDataAttrs(primarySource)}
         >
           <div className="akrScenePrimaryActionSummaryHeader">
             <span>{t(props.lang, "world_modal_section_primary_summary" as never)}</span>
@@ -1384,7 +1380,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           {actionHintLabelKey ? (
             <small className="akrSceneActionContextMeta">{t(props.lang, actionHintLabelKey as never)}</small>
           ) : null}
-          {!compact ? renderSceneActionContextChips(primarySource, options?.fallback) : null}
+          {!compact ? renderSceneActionContextChips(primarySource) : null}
         </div>
       );
     },
@@ -2738,7 +2734,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           ) : null}
           <div className="akrSceneWorldRailActions">
             {focusedClusterActions.map((action) => {
-              const actionContractReady = hasSceneActionContract(action, focusedCluster);
+              const actionContractReady = hasSceneActionContract(action);
               return (
                 <button
                   key={action.key}
@@ -2746,7 +2742,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                   className={`akrSceneWorldAction ${action.is_secondary ? "isSecondary" : "isPrimary"} is-${
                     action.intent_profile?.rail_class_key || action.intent_profile_key || "open_primary"
                   } ${actionContractReady ? "is-contract-ready" : "is-contract-missing"}`}
-                  {...buildSceneActionDataAttrs(action, focusedCluster)}
+                  {...buildSceneActionDataAttrs(action)}
                   onClick={() =>
                     actionContractReady
                       ? triggerSceneAction({
@@ -2776,8 +2772,8 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                   <span>{t(props.lang, (action.intent_profile?.intent_label_key || "world_intent_open") as never)}</span>
                   <span>{t(props.lang, (action.intent_profile?.intent_tone_key || "world_intent_tone_open") as never)}</span>
                   <span>{t(props.lang, action.hint_label_key as never)}</span>
-                  {renderSceneActionContextMeta(action, focusedCluster)}
-                  {renderSceneActionContextChips(action, focusedCluster)}
+                  {renderSceneActionContextMeta(action)}
+                  {renderSceneActionContextChips(action)}
                 </button>
               );
             })}
