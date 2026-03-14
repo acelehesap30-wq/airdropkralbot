@@ -147,8 +147,58 @@ function buildAssetMetrics(mutators, source) {
   };
 }
 
-function buildSceneStatusPayload(profileMetrics) {
+function readWebappDomainSummary(source) {
+  const root = asRecord(source);
+  const localManifest = asRecord(root.local_manifest);
+  const explicitSummary = asRecord(localManifest.webapp_domain_summary || root.webapp_domain_summary);
+  if (Object.keys(explicitSummary).length) {
+    return explicitSummary;
+  }
+  const runtimeLocation =
+    typeof window !== "undefined" && window?.location
+      ? window.location
+      : globalThis?.location && typeof globalThis.location === "object"
+        ? globalThis.location
+        : null;
+  const host = toText(runtimeLocation?.host || "");
+  const pathname = toText(runtimeLocation?.pathname || "");
+  const origin = toText(runtimeLocation?.origin || (host ? `https://${host}` : ""));
+  if (!host && !origin) {
+    return {};
+  }
+  const onWebappPath = pathname.toLowerCase().includes("/webapp");
+  return {
+    host,
+    state_key: onWebappPath ? "ready" : "partial",
+    dns_ready: Boolean(host),
+    contract_ready: Boolean(host && onWebappPath),
+    runtime_guard_matches_host: Boolean(host),
+    public_url: origin ? `${origin}${pathname || "/webapp"}` : "",
+    runtime_guard_base_url: origin || "",
+    health_status_code: onWebappPath ? 200 : 0,
+    webapp_status_code: onWebappPath ? 200 : 0,
+    cname_targets: [],
+    a_records: []
+  };
+}
+
+function buildWebappDomainLine(webappDomainSummary, fallbackText = "DOMAIN telemetry bekleniyor") {
+  const summary = asRecord(webappDomainSummary);
+  const host = toText(summary.host || "");
+  if (!host) {
+    return fallbackText;
+  }
+  const stateKey = toText(summary.state_key || "missing", "missing").toUpperCase();
+  const webappCode = Math.round(toNum(summary.webapp_status_code));
+  const guardState = summary.runtime_guard_matches_host === false ? "DRIFT" : "MATCH";
+  return `DOMAIN ${host} | ${stateKey} | WEBAPP ${webappCode} | GUARD ${guardState}`;
+}
+
+function buildSceneStatusPayload(profileMetrics, webappDomainSummary) {
   if (!profileMetrics) return null;
+  const summary = asRecord(webappDomainSummary);
+  const domainStateKey = toText(summary.state_key || "missing", "missing").toLowerCase();
+  const domainHost = toText(summary.host || "");
   return {
     chips: [
       {
@@ -183,6 +233,10 @@ function buildSceneStatusPayload(profileMetrics) {
       }
     ],
     profileLine: toText(profileMetrics.profileLine, "Profile telemetry bekleniyor."),
+    domainLine: buildWebappDomainLine(summary),
+    domainStateKey,
+    domainHost,
+    runtimeGuardMatchesHost: summary.runtime_guard_matches_host !== false,
     liteBadge: profileMetrics.liteBadge
       ? {
           shouldShow: Boolean(profileMetrics.liteBadge.shouldShow),
@@ -5152,8 +5206,10 @@ function buildPvpLeaderboardPayload(pvpView) {
   };
 }
 
-function buildAssetManifestStripPayload(assetMetrics, loopDeck) {
+function buildAssetManifestStripPayload(assetMetrics, loopDeck, webappDomainSummary) {
   if (!assetMetrics || toNum(assetMetrics.totalEntries) <= 0) return null;
+  const domainSummary = asRecord(webappDomainSummary);
+  const domainStateKey = toText(domainSummary.state_key || "missing", "missing").toLowerCase();
   const assetFamilyKey = toText(loopDeck?.activeAssetFamilyKey || loopDeck?.familyKey, "");
   const assetKey = toText(loopDeck?.activeAssetKey, "");
   const assetAnchorKind = toText(loopDeck?.activeAssetAnchorKind, "");
@@ -5169,6 +5225,10 @@ function buildAssetManifestStripPayload(assetMetrics, loopDeck) {
       assetKey || selectedCount
         ? `ACTIVE ${assetFamilyKey || "district"}:${assetKey || "--"} | ${loadedCount}/${selectedCount || Math.max(1, loadedCount)} | ${assetAnchorKind || "manifest"}`
         : "ACTIVE district asset bekleniyor",
+    domainLineText: buildWebappDomainLine(domainSummary),
+    domainStateKey,
+    domainHost: toText(domainSummary.host || ""),
+    runtimeGuardMatchesHost: domainSummary.runtime_guard_matches_host !== false,
     readyPct: Math.round(clamp(assetMetrics.readyRatio) * 100),
     integrityPct: Math.round(clamp(assetMetrics.integrityRatio) * 100),
     readyPalette: mapMeterPalette(assetMetrics.tone || "balanced"),
@@ -5188,6 +5248,11 @@ function buildAssetManifestStripPayload(assetMetrics, loopDeck) {
         text: `INT ${Math.round(clamp(assetMetrics.integrityRatio) * 100)}%`,
         tone: (assetMetrics.integrityRatio || 0) < 0.7 ? "critical" : "advantage",
         level: clamp(assetMetrics.integrityRatio)
+      },
+      host: {
+        text: `HOST ${domainStateKey.toUpperCase()}`,
+        tone: domainStateKey === "ready" ? "advantage" : domainStateKey === "partial" ? "pressure" : "critical",
+        level: clamp(domainSummary.contract_ready ? 1 : domainSummary.dns_ready ? 0.6 : 0.2)
       }
     }
   };
@@ -6875,6 +6940,7 @@ function buildPlayerBridgePayloads(options = {}) {
   });
   const vaultView = buildVaultViewModel({ vaultData: vaultRoot });
   const assetMetrics = buildAssetMetrics(mutators, data);
+  const webappDomainSummary = readWebappDomainSummary(data);
   const pvpRuntimePayloads = buildPvpRuntimePayload(options.pvpRuntime, pvpLive, pvpView, scene, assetMetrics);
   const profileMetrics = mutators.computeSceneEffectiveProfile
     ? mutators.computeSceneEffectiveProfile({
@@ -6925,7 +6991,7 @@ function buildPlayerBridgePayloads(options = {}) {
   const sceneLoopDeck = buildSceneLoopDeckPayload(scene);
   return {
     sceneStatus: {
-      ...(buildSceneStatusPayload(profileMetrics) || {}),
+      ...(buildSceneStatusPayload(profileMetrics, webappDomainSummary) || {}),
       loopLine: sceneLoopDeck.lineText,
       assetLine:
         sceneLoopDeck.activeAssetKey || sceneLoopDeck.selectedAssetCount
@@ -6947,6 +7013,9 @@ function buildPlayerBridgePayloads(options = {}) {
       assetCandidateKey: sceneLoopDeck.activeAssetCandidateKey,
       selectedAssetCount: sceneLoopDeck.selectedAssetCount,
       loadedAssetCount: sceneLoopDeck.loadedAssetCount,
+      domainStateKey: toText(webappDomainSummary.state_key || "missing", "missing").toLowerCase(),
+      domainHost: toText(webappDomainSummary.host || ""),
+      runtimeGuardMatchesHost: webappDomainSummary.runtime_guard_matches_host !== false,
       entryKindKey: sceneLoopDeck.entryKindKey,
       sequenceKindKey: sceneLoopDeck.sequenceKindKey,
       riskHealthBandKey: sceneLoopDeck.riskHealthBandKey,
@@ -6955,7 +7024,7 @@ function buildPlayerBridgePayloads(options = {}) {
     },
     sceneTelemetry: buildSceneTelemetryPayload(mutators, telemetryInput),
     publicTelemetry: {
-      assetManifest: buildAssetManifestStripPayload(assetMetrics, sceneLoopDeck),
+      assetManifest: buildAssetManifestStripPayload(assetMetrics, sceneLoopDeck, webappDomainSummary),
       pvpLeaderboard: buildPvpLeaderboardPayload(pvpView)
     },
     pvpRadar: pvpRuntimePayloads.radar,

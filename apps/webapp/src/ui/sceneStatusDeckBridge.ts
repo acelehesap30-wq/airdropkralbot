@@ -18,6 +18,7 @@ type SceneLiteBadgePayload = {
 export type SceneStatusDeckBridgePayload = {
   chips: SceneDeckChipPayload[];
   profileLine?: string;
+  domainLine?: string;
   loopLine?: string;
   assetLine?: string;
   liteBadge?: SceneLiteBadgePayload;
@@ -35,6 +36,9 @@ export type SceneStatusDeckBridgePayload = {
   assetCandidateKey?: string;
   selectedAssetCount?: number;
   loadedAssetCount?: number;
+  domainStateKey?: string;
+  domainHost?: string;
+  runtimeGuardMatchesHost?: boolean;
   entryKindKey?: string;
   sequenceKindKey?: string;
   riskHealthBandKey?: string;
@@ -167,6 +171,9 @@ function render(payload: SceneStatusDeckBridgePayload): boolean {
   deck.dataset.assetCandidateKey = String(payload.assetCandidateKey || "").trim();
   deck.dataset.selectedAssetCount = String(asNum(payload.selectedAssetCount));
   deck.dataset.loadedAssetCount = String(asNum(payload.loadedAssetCount));
+  deck.dataset.domainStateKey = String(payload.domainStateKey || "").trim();
+  deck.dataset.domainHost = String(payload.domainHost || "").trim();
+  deck.dataset.runtimeGuardMatchesHost = payload.runtimeGuardMatchesHost === false ? "false" : "true";
   deck.dataset.entryKindKey = entryKindKey;
   deck.dataset.sequenceKindKey = sequenceKindKey;
   deck.dataset.riskHealthBandKey = riskHealthBandKey;
@@ -176,6 +183,13 @@ function render(payload: SceneStatusDeckBridgePayload): boolean {
   const profileLineNode = byId<HTMLElement>("sceneProfileLine");
   if (profileLineNode && payload.profileLine) {
     profileLineNode.textContent = String(payload.profileLine);
+  }
+  const domainLineNode = byId<HTMLElement>("sceneDomainLine");
+  if (domainLineNode) {
+    domainLineNode.textContent = String(payload.domainLine || "DOMAIN telemetry bekleniyor.");
+    domainLineNode.dataset.domainStateKey = String(payload.domainStateKey || "").trim();
+    domainLineNode.dataset.domainHost = String(payload.domainHost || "").trim();
+    domainLineNode.dataset.runtimeGuardMatchesHost = payload.runtimeGuardMatchesHost === false ? "false" : "true";
   }
   const assetLineNode = byId<HTMLElement>("sceneAssetLine");
   if (assetLineNode) {

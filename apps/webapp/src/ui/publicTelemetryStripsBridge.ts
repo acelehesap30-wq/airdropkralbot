@@ -13,6 +13,10 @@ type AssetManifestStripPayload = {
   lineText?: string;
   hintText?: string;
   selectionLineText?: string;
+  domainLineText?: string;
+  domainStateKey?: string;
+  domainHost?: string;
+  runtimeGuardMatchesHost?: boolean;
   readyPct?: number;
   integrityPct?: number;
   readyPalette?: string;
@@ -25,6 +29,7 @@ type AssetManifestStripPayload = {
     revision?: StripChip;
     ready?: StripChip;
     integrity?: StripChip;
+    host?: StripChip;
   };
 };
 
@@ -123,6 +128,7 @@ function renderAssetManifest(payload: AssetManifestStripPayload): boolean {
   const line = byId<HTMLElement>("assetManifestLine");
   const hint = byId<HTMLElement>("assetManifestHint");
   const selection = byId<HTMLElement>("assetManifestSelectionLine");
+  const domain = byId<HTMLElement>("assetManifestDomainLine");
   const readyMeter = byId<HTMLElement>("assetManifestReadyMeter");
   const integrityMeter = byId<HTMLElement>("assetManifestIntegrityMeter");
   if (!host || !badge || !line || !hint || !readyMeter || !integrityMeter) {
@@ -138,10 +144,17 @@ function renderAssetManifest(payload: AssetManifestStripPayload): boolean {
   if (selection) {
     selection.textContent = String(payload.selectionLineText || "ACTIVE district asset bekleniyor");
   }
+  if (domain) {
+    domain.textContent = String(payload.domainLineText || "DOMAIN telemetry bekleniyor.");
+    domain.dataset.domainStateKey = String(payload.domainStateKey || "").trim();
+    domain.dataset.domainHost = String(payload.domainHost || "").trim();
+    domain.dataset.runtimeGuardMatchesHost = payload.runtimeGuardMatchesHost === false ? "false" : "true";
+  }
   setChip(byId("assetManifestSourceChip"), payload.chips?.source);
   setChip(byId("assetManifestRevisionChip"), payload.chips?.revision);
   setChip(byId("assetManifestReadyChip"), payload.chips?.ready);
   setChip(byId("assetManifestIntegrityChip"), payload.chips?.integrity);
+  setChip(byId("assetManifestHostChip"), payload.chips?.host);
   setMeter(readyMeter, payload.readyPct, payload.readyPalette);
   setMeter(integrityMeter, payload.integrityPct, payload.integrityPalette);
   return true;

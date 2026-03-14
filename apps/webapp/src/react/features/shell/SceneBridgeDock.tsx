@@ -46,6 +46,9 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
           <p id="sceneProfileLine" className="akrBridgeLine">
             -
           </p>
+          <p id="sceneDomainLine" className="akrBridgeHint">
+            DOMAIN telemetry bekleniyor.
+          </p>
           <p id="sceneAssetLine" className="akrBridgeHint">
             ASSET district bundle bekleniyor.
           </p>
@@ -117,6 +120,9 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
           <p id="assetManifestSelectionLine" className="akrBridgeHint">
             ACTIVE district asset bekleniyor
           </p>
+          <p id="assetManifestDomainLine" className="akrBridgeHint">
+            DOMAIN telemetry bekleniyor.
+          </p>
           <MeterTrack id="assetManifestReadyMeter" />
           <MeterTrack id="assetManifestIntegrityMeter" />
           <div className="akrChipRow">
@@ -124,6 +130,7 @@ function PlayerBridgeCards(props: { lang: Lang; tab: SceneBridgeDockProps["tab"]
             <BridgeChip id="assetManifestRevisionChip" />
             <BridgeChip id="assetManifestReadyChip" />
             <BridgeChip id="assetManifestIntegrityChip" />
+            <BridgeChip id="assetManifestHostChip" />
           </div>
         </div>
 

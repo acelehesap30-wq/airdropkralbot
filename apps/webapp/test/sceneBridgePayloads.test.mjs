@@ -162,6 +162,16 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
         ],
         summary: { total_assets: 4, ready_assets: 3, missing_assets: 1, integrity_ratio: 0.75 }
       },
+      local_manifest: {
+        webapp_domain_summary: {
+          host: "webapp.k99-exchange.xyz",
+          state_key: "ready",
+          dns_ready: true,
+          contract_ready: true,
+          runtime_guard_matches_host: true,
+          webapp_status_code: 200
+        }
+      },
       offers: [
         {
           id: 11,
@@ -339,6 +349,10 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
   assert.equal(payloads.sceneStatus.assetCandidateKey, "arena_khronos_cesium_man");
   assert.equal(payloads.sceneStatus.selectedAssetCount, 4);
   assert.equal(payloads.sceneStatus.loadedAssetCount, 4);
+  assert.equal(payloads.sceneStatus.domainLine, "DOMAIN webapp.k99-exchange.xyz | READY | WEBAPP 200 | GUARD MATCH");
+  assert.equal(payloads.sceneStatus.domainStateKey, "ready");
+  assert.equal(payloads.sceneStatus.domainHost, "webapp.k99-exchange.xyz");
+  assert.equal(payloads.sceneStatus.runtimeGuardMatchesHost, true);
   assert.equal(payloads.sceneStatus.assetLine, "ASSET 4/4 | duel:arena_trophy | cluster");
   assert.equal(payloads.sceneStatus.entryKindKey, "world_entry_kind_duel_console");
   assert.equal(payloads.sceneStatus.sequenceKindKey, "world_modal_kind_duel_sequence");
@@ -394,6 +408,14 @@ test("buildPlayerBridgePayloads produces live player bridge payloads from real s
   assert.equal(payloads.sceneTelemetry.alarm.badgeText, "SCENE WARN");
   assert.equal(payloads.publicTelemetry.assetManifest.badgeText, "ASSET 3/4");
   assert.equal(payloads.publicTelemetry.assetManifest.selectionLineText, "ACTIVE duel:arena_trophy | 4/4 | cluster");
+  assert.equal(
+    payloads.publicTelemetry.assetManifest.domainLineText,
+    "DOMAIN webapp.k99-exchange.xyz | READY | WEBAPP 200 | GUARD MATCH"
+  );
+  assert.equal(payloads.publicTelemetry.assetManifest.domainStateKey, "ready");
+  assert.equal(payloads.publicTelemetry.assetManifest.domainHost, "webapp.k99-exchange.xyz");
+  assert.equal(payloads.publicTelemetry.assetManifest.runtimeGuardMatchesHost, true);
+  assert.equal(payloads.publicTelemetry.assetManifest.chips.host.text, "HOST READY");
   assert.equal(payloads.publicTelemetry.pvpLeaderboard.badgeText, "TOP 2");
   assert.equal(payloads.pvpDirector.cinematic.phaseBadgeText, "ACTIVE");
   assert.match(payloads.pvpDirector.loopLineText, /ARENA LOOP/);
