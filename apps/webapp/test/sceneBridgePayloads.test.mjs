@@ -1285,6 +1285,21 @@ test("buildAdminBridgePayloads produces runtime, asset and audit cards from admi
         summary: { ready_assets: 3, total_assets: 4, missing_assets: 1, integrity_ratio: 0.75 },
         active_manifest: { manifest_revision: "rev_42", updated_at: "2099-03-10T12:00:00.000Z" },
         local_manifest: {
+          selected_bundle_summary: { selected_count: 2, downloaded_count: 2, district_count: 2, verified_at: "2099-03-10" },
+          selected_bundle_rows: [
+            {
+              district_key: "arena_prime",
+              asset_key: "arena_trophy",
+              file_name: "arena-trophy.glb",
+              candidate_key: "arena_khronos_cesium_man"
+            },
+            {
+              district_key: "exchange_district",
+              asset_key: "exchange_artifact",
+              file_name: "exchange-artifact.glb",
+              candidate_key: "exchange_khronos_damaged_helmet"
+            }
+          ],
           district_bundle_summary: { district_count: 2, ready_count: 1, partial_count: 1, intake_ready_count: 0 },
           district_bundle_rows: [
             {
@@ -1567,7 +1582,7 @@ test("buildAdminBridgePayloads produces runtime, asset and audit cards from admi
   assert.equal(payloads.assetStatus.rows[0].title, "arena_prime");
   assert.match(payloads.assetStatus.rows[0].meta, /bundle 3\/3 \| intake 2 \| mode direct_gltf/i);
   assert.equal(payloads.assetStatus.rows[1].title, "exchange_district");
-  assert.equal(payloads.assetRuntime.signalLineText, "Ready 75% | Integrity 75% | Bundles 1/2");
+  assert.equal(payloads.assetRuntime.signalLineText, "Ready 75% | Integrity 75% | Bundles 1/2 | Selected 2");
   assert.equal(payloads.assetRuntime.chips.length, 4);
   assert.equal(payloads.assetRuntime.chips[2].text, "DIST 1/2");
   assert.equal(payloads.auditRuntime.phaseChipText, "PHASE PARTIAL");

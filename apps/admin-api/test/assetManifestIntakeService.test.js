@@ -6,6 +6,7 @@ const path = require("node:path");
 
 const {
   summarizeAssetSourceCatalog,
+  summarizeSelectedDistrictBundles,
   buildDistrictAssetBundleCatalog
 } = require("../src/services/webapp/assetManifestIntakeService");
 
@@ -128,4 +129,59 @@ test("buildDistrictAssetBundleCatalog summarizes district bundle readiness and i
   assert.equal(result.rows[0].recommended_candidates[0].candidate_key, "arena_quaternius_scifi_essentials");
   assert.equal(result.rows[1].district_key, "mission_quarter");
   assert.equal(result.rows[1].state_key, "intake_ready");
+});
+
+test("summarizeSelectedDistrictBundles reads downloaded bundle selections", () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "akr-selected-bundles-"));
+  const manifestPath = path.join(tempRoot, "manifest.json");
+  const selectionPath = path.join(tempRoot, "district-selected-bundles.json");
+
+  fs.writeFileSync(
+    manifestPath,
+    JSON.stringify(
+      {
+        version: 3,
+        selected_bundle_catalog_path: "/webapp/assets/district-selected-bundles.json"
+      },
+      null,
+      2
+    )
+  );
+  fs.writeFileSync(
+    selectionPath,
+    JSON.stringify(
+      {
+        verified_at: "2026-03-14",
+        rows: [
+          {
+            district_key: "central_hub",
+            family_key: "travel",
+            candidate_key: "hub_khronos_lantern_beacon",
+            asset_key: "hub_beacon",
+            file_name: "hub-beacon.glb",
+            provider_key: "khronos_gltf_sample_models",
+            provider_label: "Khronos glTF Sample Models",
+            source_url: "https://github.com/KhronosGroup/glTF-Sample-Models",
+            download_url: "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/Lantern/glTF-Binary/Lantern.glb",
+            sha256: "abc",
+            downloaded_at: "2026-03-14"
+          }
+        ]
+      },
+      null,
+      2
+    )
+  );
+
+  const result = summarizeSelectedDistrictBundles({
+    manifestPath,
+    manifest: JSON.parse(fs.readFileSync(manifestPath, "utf8"))
+  });
+
+  assert.equal(result.summary.selected_count, 1);
+  assert.equal(result.summary.downloaded_count, 1);
+  assert.equal(result.summary.district_count, 1);
+  assert.equal(result.summary.provider_count, 1);
+  assert.equal(result.rows[0].asset_key, "hub_beacon");
+  assert.equal(result.rows[0].file_name, "hub-beacon.glb");
 });

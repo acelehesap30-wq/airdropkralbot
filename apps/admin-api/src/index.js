@@ -72,7 +72,11 @@ const {
 } = require("./services/webapp/reactV1Service");
 const { resolveDynamicAutoPolicyDecision } = require("./services/webapp/dynamicAutoPolicyService");
 const { enrichWebappRevenueMetrics } = require("./services/webapp/metricsEnrichmentService");
-const { summarizeAssetSourceCatalog, buildDistrictAssetBundleCatalog } = require("./services/webapp/assetManifestIntakeService");
+const {
+  summarizeAssetSourceCatalog,
+  summarizeSelectedDistrictBundles,
+  buildDistrictAssetBundleCatalog
+} = require("./services/webapp/assetManifestIntakeService");
 const { createChatTrustNotificationService } = require("./services/chatTrustNotificationService");
 
 const envPath = path.join(process.cwd(), ".env");
@@ -2693,6 +2697,7 @@ function resolveManifestAssetPath(assetWebPath = "") {
 function buildAssetStatusRows() {
   const { manifestPath, manifest } = readAssetManifest();
   const sourceCatalog = summarizeAssetSourceCatalog({ manifestPath, manifest });
+  const selectedBundles = summarizeSelectedDistrictBundles({ manifestPath, manifest });
   const models = manifest?.models && typeof manifest.models === "object" ? manifest.models : {};
   const rows = Object.entries(models).map(([assetKey, value]) => {
     const filePath = resolveManifestAssetPath(value?.path || "");
@@ -2719,6 +2724,9 @@ function buildAssetStatusRows() {
     source_catalog_path: String(manifest?.source_catalog_path || ""),
     source_catalog_summary: sourceCatalog.summary,
     source_catalog_candidates: sourceCatalog.candidates,
+    selected_bundle_catalog_path: String(manifest?.selected_bundle_catalog_path || ""),
+    selected_bundle_summary: selectedBundles.summary,
+    selected_bundle_rows: selectedBundles.rows,
     district_bundle_summary: districtBundles.summary,
     district_bundle_rows: districtBundles.rows,
     rows
@@ -2793,6 +2801,10 @@ async function persistAssetManifestState(db, summary, updatedBy = 0) {
         source_catalog_summary:
           summary?.source_catalog_summary && typeof summary.source_catalog_summary === "object"
             ? summary.source_catalog_summary
+            : {},
+        selected_bundle_summary:
+          summary?.selected_bundle_summary && typeof summary.selected_bundle_summary === "object"
+            ? summary.selected_bundle_summary
             : {},
         district_bundle_summary:
           summary?.district_bundle_summary && typeof summary.district_bundle_summary === "object"
@@ -11595,6 +11607,8 @@ fastify.get("/webapp/api/admin/assets/status", async (request, reply) => {
           intake_candidates: Number(local.source_catalog_summary?.candidate_count || 0),
           intake_districts: Number(local.source_catalog_summary?.district_count || 0),
           intake_providers: Number(local.source_catalog_summary?.provider_count || 0),
+          selected_bundles: Number(local.selected_bundle_summary?.selected_count || 0),
+          downloaded_bundles: Number(local.selected_bundle_summary?.downloaded_count || 0),
           bundle_ready_districts: Number(local.district_bundle_summary?.ready_count || 0),
           bundle_partial_districts: Number(local.district_bundle_summary?.partial_count || 0),
           bundle_intake_ready_districts: Number(local.district_bundle_summary?.intake_ready_count || 0)
@@ -11662,6 +11676,8 @@ fastify.post(
             intake_candidates: Number(local.source_catalog_summary?.candidate_count || 0),
             intake_districts: Number(local.source_catalog_summary?.district_count || 0),
             intake_providers: Number(local.source_catalog_summary?.provider_count || 0),
+            selected_bundles: Number(local.selected_bundle_summary?.selected_count || 0),
+            downloaded_bundles: Number(local.selected_bundle_summary?.downloaded_count || 0),
             bundle_ready_districts: Number(local.district_bundle_summary?.ready_count || 0),
             bundle_partial_districts: Number(local.district_bundle_summary?.partial_count || 0),
             bundle_intake_ready_districts: Number(local.district_bundle_summary?.intake_ready_count || 0)

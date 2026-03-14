@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "verified_at": "2026-03-14",
+  "rows": [
+    {
+      "district_key": "central_hub",
+      "family_key": "travel",
+      "candidate_key": "hub_khronos_lantern_beacon",
+      "asset_key": "hub_beacon",
+      "file_name": "hub-beacon.glb",
+      "provider_key": "khronos_gltf_sample_models",
+      "provider_label": "Khronos glTF Sample Models",
+      "license": "upstream_varied",
+      "source_url": "https://github.com/KhronosGroup/glTF-Sample-Models",
+      "download_url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/Lantern/glTF-Binary/Lantern.glb",
+      "sha256": "2D7EA69E1F4B7F5B9F00854978B20F41B9EFFA392272C50F4C98B5A8DB3152B2",
+      "downloaded_at": "2026-03-14"
+    },
+    {
+      "district_key": "arena_prime",
+      "family_key": "duel",
+      "candidate_key": "arena_khronos_cesium_man",
+      "asset_key": "arena_trophy",
+      "file_name": "arena-trophy.glb",
+      "provider_key": "khronos_gltf_sample_models",
+      "provider_label": "Khronos glTF Sample Models",
+      "license": "upstream_varied",
+      "source_url": "https://github.com/KhronosGroup/glTF-Sample-Models",
+      "download_url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/CesiumMan/glTF-Binary/CesiumMan.glb",
+      "sha256": "659349B0A374B73D5362A61070039BC8601401BBDEACBECE4F3680FB4BFD41B0",
+      "downloaded_at": "2026-03-14"
+    },
+    {
+      "district_key": "mission_quarter",
+      "family_key": "claim",
+      "candidate_key": "mission_khronos_gearbox_assy",
+      "asset_key": "mission_engine",
+      "file_name": "mission-engine.glb",
+      "provider_key": "khronos_gltf_sample_models",
+      "provider_label": "Khronos glTF Sample Models",
+      "license": "upstream_varied",
+      "source_url": "https://github.com/KhronosGroup/glTF-Sample-Models",
+      "download_url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/GearboxAssy/glTF-Binary/GearboxAssy.glb",
+      "sha256": "8536AC06EC3C37E229A1EEFA91803196C5CF281B8F4A88377DAF0E943CE91C36",
+      "downloaded_at": "2026-03-14"
+    },
+    {
+      "district_key": "exchange_district",
+      "family_key": "wallet",
+      "candidate_key": "exchange_khronos_damaged_helmet",
+      "asset_key": "exchange_artifact",
+      "file_name": "exchange-artifact.glb",
+      "provider_key": "khronos_gltf_sample_models",
+      "provider_label": "Khronos glTF Sample Models",
+      "license": "upstream_varied",
+      "source_url": "https://github.com/KhronosGroup/glTF-Sample-Models",
+      "download_url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb",
+      "sha256": "A1E3B04DE97B11DE564CE6E53B95F02954A297F0008183AC63A4F5974F6B32D8",
+      "downloaded_at": "2026-03-14"
+    },
+    {
+      "district_key": "ops_citadel",
+      "family_key": "runtime",
+      "candidate_key": "ops_khronos_boombox_console",
+      "asset_key": "ops_console",
+      "file_name": "ops-console.glb",
+      "provider_key": "khronos_gltf_sample_models",
+      "provider_label": "Khronos glTF Sample Models",
+      "license": "upstream_varied",
+      "source_url": "https://github.com/KhronosGroup/glTF-Sample-Models",
+      "download_url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/BoomBox/glTF-Binary/BoomBox.glb",
+      "sha256": "84C32A396684D0B329BBE60428F5CB89C5F447356CCF359B0374856653ECA331",
+      "downloaded_at": "2026-03-14"
+    }
+  ]
+}

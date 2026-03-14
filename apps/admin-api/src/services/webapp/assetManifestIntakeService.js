@@ -35,61 +35,64 @@ function toIngestModeScore(value) {
   return 0;
 }
 
-function resolveCatalogPath(manifestPath, manifest) {
+function resolveCatalogPath(manifestPath, rawPath, fallbackPath) {
   const manifestDir = path.dirname(String(manifestPath || ""));
-  const rawPath = readText(manifest?.source_catalog_path, "district-intake.json");
-  if (!rawPath) {
+  const resolvedRawPath = readText(rawPath, fallbackPath);
+  if (!resolvedRawPath) {
     return "";
   }
-  const trimmed = rawPath.replace(/^\/+/, "");
+  const trimmed = resolvedRawPath.replace(/^\/+/, "");
   if (trimmed.startsWith("webapp/assets/")) {
     return path.join(manifestDir, trimmed.slice("webapp/assets/".length));
   }
-  return path.isAbsolute(rawPath) ? rawPath : path.join(manifestDir, rawPath);
+  return path.isAbsolute(resolvedRawPath) ? resolvedRawPath : path.join(manifestDir, resolvedRawPath);
 }
 
-function summarizeAssetSourceCatalog({ manifestPath, manifest }) {
-  const catalogPath = resolveCatalogPath(manifestPath, manifest);
-  if (!catalogPath || !fs.existsSync(catalogPath)) {
-    return {
-      catalog_path: catalogPath,
-      candidates: [],
-      summary: {
-        candidate_count: 0,
-        district_count: 0,
-        provider_count: 0,
-        verified_at: "",
-        ingest_modes: [],
-        licenses: [],
-        districts: [],
-        providers: []
-      }
-    };
-  }
+function resolveSourceCatalogPath(manifestPath, manifest) {
+  return resolveCatalogPath(manifestPath, manifest?.source_catalog_path, "district-intake.json");
+}
 
+function resolveSelectedBundleCatalogPath(manifestPath, manifest) {
+  return resolveCatalogPath(manifestPath, manifest?.selected_bundle_catalog_path, "district-selected-bundles.json");
+}
+
+function summarizeCatalogRows(catalogPath, mapper) {
+  if (!catalogPath || !fs.existsSync(catalogPath)) {
+    return { catalog_path: catalogPath, parsed: {}, rows: [] };
+  }
   let parsed = {};
   try {
     parsed = asRecord(JSON.parse(fs.readFileSync(catalogPath, "utf8")));
   } catch {
     parsed = {};
   }
+  return {
+    catalog_path: catalogPath,
+    parsed,
+    rows: asList(parsed.rows || parsed.candidates).map((item) => mapper(asRecord(item)))
+  };
+}
 
-  const candidates = asList(parsed.candidates).map((candidate) => {
-    const row = asRecord(candidate);
-    return {
-      candidate_key: readText(row.candidate_key),
-      district_key: readText(row.district_key),
-      family_key: readText(row.family_key),
-      role: readText(row.role),
-      provider_key: readText(row.provider_key),
-      provider_label: readText(row.provider_label),
-      license: readText(row.license),
-      ingest_mode: readText(row.ingest_mode),
-      fit_band: readText(row.fit_band),
-      source_url: readText(row.source_url),
-      notes: readText(row.notes)
-    };
-  });
+function summarizeAssetSourceCatalog({ manifestPath, manifest }) {
+  const catalogPath = resolveSourceCatalogPath(manifestPath, manifest);
+  const result = summarizeCatalogRows(catalogPath, (row) => ({
+    candidate_key: readText(row.candidate_key),
+    district_key: readText(row.district_key),
+    family_key: readText(row.family_key),
+    role: readText(row.role),
+    provider_key: readText(row.provider_key),
+    provider_label: readText(row.provider_label),
+    license: readText(row.license),
+    ingest_mode: readText(row.ingest_mode),
+    fit_band: readText(row.fit_band),
+    source_url: readText(row.source_url),
+    notes: readText(row.notes),
+    selection_state: readText(row.selection_state),
+    local_asset_key: readText(row.local_asset_key)
+  }));
+
+  const candidates = result.rows;
+  const parsed = result.parsed;
 
   const providers = [...new Set(candidates.map((row) => row.provider_key || row.provider_label).filter(Boolean))];
   const districts = [...new Set(candidates.map((row) => row.district_key).filter(Boolean))];
@@ -106,6 +109,43 @@ function summarizeAssetSourceCatalog({ manifestPath, manifest }) {
       verified_at: readText(parsed.verified_at),
       ingest_modes: ingestModes,
       licenses,
+      districts,
+      providers
+    }
+  };
+}
+
+function summarizeSelectedDistrictBundles({ manifestPath, manifest }) {
+  const catalogPath = resolveSelectedBundleCatalogPath(manifestPath, manifest);
+  const result = summarizeCatalogRows(catalogPath, (row) => ({
+    district_key: readText(row.district_key),
+    family_key: readText(row.family_key),
+    candidate_key: readText(row.candidate_key),
+    asset_key: readText(row.asset_key),
+    file_name: readText(row.file_name),
+    provider_key: readText(row.provider_key),
+    provider_label: readText(row.provider_label),
+    license: readText(row.license),
+    source_url: readText(row.source_url),
+    download_url: readText(row.download_url),
+    sha256: readText(row.sha256),
+    downloaded_at: readText(row.downloaded_at)
+  }));
+  const rows = result.rows;
+  const parsed = result.parsed;
+  const providers = [...new Set(rows.map((row) => row.provider_key || row.provider_label).filter(Boolean))];
+  const districts = [...new Set(rows.map((row) => row.district_key).filter(Boolean))];
+  const downloadedCount = rows.filter((row) => row.downloaded_at && row.file_name).length;
+
+  return {
+    catalog_path: catalogPath,
+    rows,
+    summary: {
+      selected_count: rows.length,
+      downloaded_count: downloadedCount,
+      district_count: districts.length,
+      provider_count: providers.length,
+      verified_at: readText(parsed.verified_at),
       districts,
       providers
     }
@@ -196,5 +236,6 @@ function buildDistrictAssetBundleCatalog({ manifest, assetRows, candidates }) {
 
 module.exports = {
   summarizeAssetSourceCatalog,
+  summarizeSelectedDistrictBundles,
   buildDistrictAssetBundleCatalog
 };
