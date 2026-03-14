@@ -6,6 +6,7 @@ param(
   [int]$HealthDelaySec = 8,
   [int]$WarmupWaitSec = 12,
   [switch]$SkipTests,
+  [switch]$SkipEnvContract,
   [switch]$SkipWebAppBuild,
   [switch]$SkipV52Audit,
   [switch]$SkipSystemAudit,
@@ -228,6 +229,20 @@ try {
     & powershell @args
     if ($LASTEXITCODE -ne 0) {
       throw "check_render_env failed with exit code $LASTEXITCODE"
+    }
+  }
+
+  if (-not $SkipEnvContract) {
+    Invoke-Step "Env contract validation" {
+      Push-Location $root
+      try {
+        npm run check:env:contract
+        if ($LASTEXITCODE -ne 0) {
+          throw "check:env:contract failed with exit code $LASTEXITCODE"
+        }
+      } finally {
+        Pop-Location
+      }
     }
   }
 
