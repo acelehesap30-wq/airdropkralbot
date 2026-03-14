@@ -3694,6 +3694,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                       ) : null}
                       {renderSceneActionContextChips(card)}
                       {selectedModalLane?.card_key === card.card_key ? renderPrimaryActionSummary(card, { compact: true }) : null}
+                      {selectedModalLane?.card_key === card.card_key ? renderSceneRuntimeSummary(card, { compact: true }) : null}
                     </button>
                   );
                 })}
@@ -3750,6 +3751,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                       {renderSceneActionContextMeta(card)}
                       {renderSceneActionContextChips(card)}
                       {selectedProtocolCard?.card_key === card.card_key ? renderPrimaryActionSummary(card, { compact: true }) : null}
+                      {selectedProtocolCard?.card_key === card.card_key ? renderSceneRuntimeSummary(card, { compact: true }) : null}
                     </button>
                   );
                 })}
@@ -3768,6 +3770,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
               {renderSceneActionContextMeta(selectedProtocolCard)}
               {renderSceneActionContextChips(selectedProtocolCard)}
               {renderPrimaryActionSummary(selectedProtocolCard)}
+              {renderSceneRuntimeSummary(selectedProtocolCard)}
               <div className="akrSceneInteractionModalChips">
                 <div className={`akrSceneInteractionModalChip is-${selectedProtocolCard.status_key}`}>
                   <span>{t(props.lang, selectedProtocolCard.label_key as never)}</span>
@@ -3928,6 +3931,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                     {renderSceneActionContextMeta(selectedProtocolPod)}
                     {renderSceneActionContextChips(selectedProtocolPod)}
                     {renderPrimaryActionSummary(selectedProtocolPod)}
+                    {renderSceneRuntimeSummary(selectedProtocolPod)}
                     <div className="akrSceneInteractionModalChips">
                       <div className={`akrSceneInteractionModalChip is-${selectedProtocolPod.status_key}`}>
                         <span>{t(props.lang, selectedProtocolPod.label_key as never)}</span>
@@ -4059,6 +4063,9 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                                   {selectedMicroflow?.microflow_key === item.microflow_key
                                     ? renderPrimaryActionSummary(item, { compact: true })
                                     : null}
+                                  {selectedMicroflow?.microflow_key === item.microflow_key
+                                    ? renderSceneRuntimeSummary(item, { compact: true })
+                                    : null}
                                 </button>
                               );
                             })}
@@ -4081,6 +4088,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                           {renderSceneActionContextMeta(selectedMicroflow)}
                           {renderSceneActionContextChips(selectedMicroflow)}
                           {renderPrimaryActionSummary(selectedMicroflow)}
+                          {renderSceneRuntimeSummary(selectedMicroflow)}
                           <div className="akrSceneInteractionModalChips">
                             {selectedMicroflow.entry_kind_key ? (
                               <div className={`akrSceneInteractionModalChip is-${selectedMicroflow.status_key}`}>

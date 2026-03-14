@@ -6705,6 +6705,7 @@ function enrichDistrictInteractionModal(interactionModal, input) {
   const districtKey =
     toKeyToken(toText(modal.modal_key, "").split(":")[0], "") ||
     resolveDistrictKey(normalizeWorkspace(input.workspace), normalizeTab(input.tab));
+  const webappDomainSummary = readWebappDomainRuntimeSummary(input);
   const buildContextActionItems = (items, actionContext) =>
     asList(items).map((item) => {
       const enrichedItem = applyResolvedActionRiskMeta(
@@ -6877,7 +6878,10 @@ function enrichDistrictInteractionModal(interactionModal, input) {
           ring_pulse_scalar: loopPersonality.ring_pulse_scalar,
           satellite_orbit_scalar: loopPersonality.satellite_orbit_scalar
         });
-        return attachPrimaryActionMeta(enrichedFlow, enrichedFlow, flowContextMeta);
+        return attachRuntimeContractSummary(
+          attachPrimaryActionMeta(enrichedFlow, enrichedFlow, flowContextMeta),
+          webappDomainSummary
+        );
       });
     const primaryMicroflow = asRecord(
       enrichedMicroflows.find((flow) => asRecord(flow).action_context) || enrichedMicroflows[0]
@@ -6892,7 +6896,10 @@ function enrichDistrictInteractionModal(interactionModal, input) {
       contract_missing_keys: podContextMeta.contract_missing_keys,
       action_items: buildContextActionItems(flowPod.action_items, podActionContext)
     });
-    return attachPrimaryActionMeta(enrichedPod, enrichedPod, podContextMeta);
+    return attachRuntimeContractSummary(
+      attachPrimaryActionMeta(enrichedPod, enrichedPod, podContextMeta),
+      webappDomainSummary
+    );
   });
   const primaryPod = asRecord(enrichedFlowPods.find((pod) => asRecord(pod).action_context) || enrichedFlowPods[0]);
   const cardContextMeta = buildInteractionContextMeta(primaryPod, card);
@@ -6905,7 +6912,10 @@ function enrichDistrictInteractionModal(interactionModal, input) {
     contract_missing_keys: cardContextMeta.contract_missing_keys,
     action_items: buildContextActionItems(protocolCard.action_items, cardActionContext)
   });
-  return attachPrimaryActionMeta(enrichedCard, enrichedCard, cardContextMeta);
+  return attachRuntimeContractSummary(
+    attachPrimaryActionMeta(enrichedCard, enrichedCard, cardContextMeta),
+    webappDomainSummary
+  );
 });
   const enrichedModalCards = asList(modal.modal_cards).map((card) => {
     const modalCard = asRecord(card);
@@ -6954,7 +6964,10 @@ function enrichDistrictInteractionModal(interactionModal, input) {
       contract_ready: modalContextMeta.contract_ready,
       contract_missing_keys: modalContextMeta.contract_missing_keys
     });
-    return attachPrimaryActionMeta(enrichedModalCard, enrichedModalCard, modalContextMeta);
+    return attachRuntimeContractSummary(
+      attachPrimaryActionMeta(enrichedModalCard, enrichedModalCard, modalContextMeta),
+      webappDomainSummary
+    );
   });
   const primaryModalSource = asRecord(
     enrichedModalCards.find((card) => asRecord(card).action_context) ||
@@ -6964,15 +6977,18 @@ function enrichDistrictInteractionModal(interactionModal, input) {
   );
   const modalRootContextMeta = buildInteractionContextMeta(primaryModalSource, modal);
   const modalRootActionContext = asRecord(modalRootContextMeta.action_context);
-  return applyResolvedActionRiskMeta(interactionModal, modalRootContextMeta, modalRootActionContext, {
-    modal_cards: enrichedModalCards,
-    protocol_cards: enrichedProtocolCards,
-    action_items: buildContextActionItems(modal.action_items, modalRootActionContext),
-    context_lookup_required: true,
-    context_lookup_resolved: true,
-    contract_ready: modalRootContextMeta.contract_ready,
-    contract_missing_keys: modalRootContextMeta.contract_missing_keys
-  });
+  return attachRuntimeContractSummary(
+    applyResolvedActionRiskMeta(interactionModal, modalRootContextMeta, modalRootActionContext, {
+      modal_cards: enrichedModalCards,
+      protocol_cards: enrichedProtocolCards,
+      action_items: buildContextActionItems(modal.action_items, modalRootActionContext),
+      context_lookup_required: true,
+      context_lookup_resolved: true,
+      contract_ready: modalRootContextMeta.contract_ready,
+      contract_missing_keys: modalRootContextMeta.contract_missing_keys
+    }),
+    webappDomainSummary
+  );
 }
 
 function buildInteractionActionContextLookup(interactionModal) {
