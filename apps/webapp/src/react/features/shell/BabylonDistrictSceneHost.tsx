@@ -3500,7 +3500,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                     </div>
                     <div className="akrSceneInteractionModalPodGrid">
                       {selectedProtocolCard.flow_pods.map((pod) => {
-                        const podContractReady = hasSceneActionContract(pod, selectedProtocolCard);
+                        const podContractReady = hasSceneActionContract(pod);
                         return (
                           <button
                             key={`${selectedProtocolCard.card_key}:pod:${pod.pod_key}`}
@@ -3508,7 +3508,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                             className={`akrSceneInteractionModalPod is-${pod.status_key} ${
                               selectedProtocolPod?.pod_key === pod.pod_key ? "is-selected" : ""
                             } ${podContractReady ? "is-contract-ready" : "is-contract-missing"}`}
-                            {...buildSceneActionDataAttrs(pod, selectedProtocolCard)}
+                            {...buildSceneActionDataAttrs(pod)}
                             onMouseEnter={() => (podContractReady ? setActiveProtocolPodKey(pod.pod_key) : undefined)}
                             onFocus={() => (podContractReady ? setActiveProtocolPodKey(pod.pod_key) : undefined)}
                             onClick={() => (podContractReady ? setActiveProtocolPodKey(pod.pod_key) : undefined)}
@@ -3521,8 +3521,8 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                             </div>
                             {pod.tone_key ? <em>{t(props.lang, pod.tone_key as never)}</em> : null}
                             {pod.hint_label_key ? <b>{t(props.lang, pod.hint_label_key as never)}</b> : null}
-                            {renderSceneActionContextMeta(pod, selectedProtocolCard)}
-                            {renderSceneActionContextChips(pod, selectedProtocolCard)}
+                            {renderSceneActionContextMeta(pod)}
+                            {renderSceneActionContextChips(pod)}
                             <div className="akrSceneInteractionModalPodMeta">
                               <span>{pod.status_label_key ? t(props.lang, pod.status_label_key as never) : pod.value}</span>
                               <strong>{pod.action_items?.length || 0}</strong>
@@ -3536,15 +3536,15 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                 {selectedProtocolPod ? (
                   <section
                     className="akrSceneInteractionModalSection"
-                    {...buildSceneActionDataAttrs(selectedProtocolPod, selectedProtocolCard)}
+                    {...buildSceneActionDataAttrs(selectedProtocolPod)}
                   >
                     <div className="akrSceneInteractionModalSectionHeader">
                       <span>{t(props.lang, "world_modal_section_pod_focus" as never)}</span>
                       <strong>{selectedProtocolPod.status_label_key ? t(props.lang, selectedProtocolPod.status_label_key as never) : selectedProtocolPod.value}</strong>
                     </div>
-                    {renderSceneActionContextMeta(selectedProtocolPod, selectedProtocolCard)}
-                    {renderSceneActionContextChips(selectedProtocolPod, selectedProtocolCard)}
-                    {renderPrimaryActionSummary(selectedProtocolPod, { fallback: selectedProtocolCard })}
+                    {renderSceneActionContextMeta(selectedProtocolPod)}
+                    {renderSceneActionContextChips(selectedProtocolPod)}
+                    {renderPrimaryActionSummary(selectedProtocolPod)}
                     <div className="akrSceneInteractionModalChips">
                       <div className={`akrSceneInteractionModalChip is-${selectedProtocolPod.status_key}`}>
                         <span>{t(props.lang, selectedProtocolPod.label_key as never)}</span>
@@ -3640,7 +3640,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                           </div>
                           <div className="akrSceneInteractionModalMicroGrid">
                             {selectedProtocolPod.microflow_cards.map((item) => {
-                              const microflowContractReady = hasSceneActionContract(item, selectedProtocolPod);
+                              const microflowContractReady = hasSceneActionContract(item);
                               return (
                                 <button
                                   key={`${selectedProtocolPod.pod_key}:microflow:${item.microflow_key}`}
@@ -3648,7 +3648,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                                   className={`akrSceneInteractionModalMicroflow is-${item.status_key} ${
                                     selectedMicroflow?.microflow_key === item.microflow_key ? "is-selected" : ""
                                   } ${microflowContractReady ? "is-contract-ready" : "is-contract-missing"}`}
-                                  {...buildSceneActionDataAttrs(item, selectedProtocolPod)}
+                                  {...buildSceneActionDataAttrs(item)}
                                   onMouseEnter={() => (microflowContractReady ? setActiveMicroflowKey(item.microflow_key) : undefined)}
                                   onFocus={() => (microflowContractReady ? setActiveMicroflowKey(item.microflow_key) : undefined)}
                                   onClick={() => (microflowContractReady ? setActiveMicroflowKey(item.microflow_key) : undefined)}
@@ -3671,10 +3671,10 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                                     </div>
                                   ) : null}
                                   {item.action_label_key ? <b>{t(props.lang, item.action_label_key as never)}</b> : null}
-                                  {renderSceneActionContextMeta(item, selectedProtocolPod)}
-                                  {renderSceneActionContextChips(item, selectedProtocolPod)}
+                                  {renderSceneActionContextMeta(item)}
+                                  {renderSceneActionContextChips(item)}
                                   {selectedMicroflow?.microflow_key === item.microflow_key
-                                    ? renderPrimaryActionSummary(item, { compact: true, fallback: selectedProtocolPod })
+                                    ? renderPrimaryActionSummary(item, { compact: true })
                                     : null}
                                 </button>
                               );
@@ -3685,7 +3685,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                       {selectedMicroflow ? (
                         <section
                           className="akrSceneInteractionModalSection"
-                          {...buildSceneActionDataAttrs(selectedMicroflow, selectedProtocolPod)}
+                          {...buildSceneActionDataAttrs(selectedMicroflow)}
                         >
                           <div className="akrSceneInteractionModalSectionHeader">
                             <span>{t(props.lang, "world_modal_section_microflow_focus" as never)}</span>
@@ -3695,9 +3695,9 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                                 : selectedMicroflow.stage_value || selectedMicroflow.value}
                             </strong>
                           </div>
-                          {renderSceneActionContextMeta(selectedMicroflow, selectedProtocolPod)}
-                          {renderSceneActionContextChips(selectedMicroflow, selectedProtocolPod)}
-                          {renderPrimaryActionSummary(selectedMicroflow, { fallback: selectedProtocolPod })}
+                          {renderSceneActionContextMeta(selectedMicroflow)}
+                          {renderSceneActionContextChips(selectedMicroflow)}
+                          {renderPrimaryActionSummary(selectedMicroflow)}
                           <div className="akrSceneInteractionModalChips">
                             {selectedMicroflow.entry_kind_key ? (
                               <div className={`akrSceneInteractionModalChip is-${selectedMicroflow.status_key}`}>
