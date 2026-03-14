@@ -13,6 +13,7 @@
     "dev:bot": "node apps/bot/src/index.js",
     "dev:admin": "node apps/admin-api/src/index.js",
     "build:webapp": "npm run build --workspace @airdropkralbot/webapp",
+    "check:env:contract": "node scripts/check_env_contract.mjs",
     "sync:webapp:assets": "node scripts/webapp_sync_assets.mjs",
     "assets:webapp": "node scripts/generate_webapp_glb.mjs",
     "migrate:node": "node scripts/migrate_node.js",
