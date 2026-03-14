@@ -38,6 +38,18 @@ function familyMatchScore(assetFamilyKey, riskFamilyKey) {
   return 0;
 }
 
+function microflowMatchScore(assetFamilyKey, riskRow) {
+  const row = asRecord(riskRow);
+  const riskContext = asRecord(row.risk_context);
+  const microflowKey = toText(row.loop_microflow_key || row.microflow_key || riskContext.microflow_key);
+  const microflowScore = familyMatchScore(assetFamilyKey, microflowKey);
+  if (microflowScore) {
+    return microflowScore + 4;
+  }
+  const familyKey = toText(row.loop_family_key || row.family_key || riskContext.family_key);
+  return familyMatchScore(assetFamilyKey, familyKey);
+}
+
 function scoreAssetState(value) {
   const key = toText(value, "missing").toLowerCase();
   if (key === "missing") return 5;
@@ -65,8 +77,29 @@ function scoreHealthBand(value) {
   return 0;
 }
 
-function buildRiskSourceRows(metrics, daily = false) {
+function scoreDay(value) {
+  const dayText = toText(value);
+  if (!dayText) return 0;
+  const timestamp = Date.parse(dayText);
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function buildRiskSourceRows(metrics, { daily = false, scope = "family" } = {}) {
   const source = asRecord(metrics);
+  if (scope === "microflow") {
+    const preferred = daily
+      ? source.scene_loop_district_microflow_risk_priority_daily_7d
+      : source.scene_loop_district_microflow_risk_priority_7d;
+    const fallbackRows = daily
+      ? source.scene_loop_district_microflow_risk_rows_daily_7d
+      : source.scene_loop_district_microflow_risk_rows_7d;
+    const fallbackMatrix = daily
+      ? source.scene_loop_district_microflow_risk_matrix_daily_7d
+      : source.scene_loop_district_microflow_risk_matrix_7d;
+    if (asArray(preferred).length) return asArray(preferred);
+    if (asArray(fallbackRows).length) return asArray(fallbackRows);
+    return asArray(fallbackMatrix);
+  }
   const preferred = daily
     ? source.scene_loop_district_family_attention_priority_daily_7d
     : source.scene_loop_district_family_attention_priority_7d;
@@ -76,17 +109,21 @@ function buildRiskSourceRows(metrics, daily = false) {
   return asArray(preferred).length ? asArray(preferred) : asArray(fallback);
 }
 
-function pickBestRiskRow(assetRow, riskRows) {
+function pickBestRiskRow(assetRow, riskRows, { scope = "family" } = {}) {
   const districtKey = toText(assetRow.district_key);
   const familyKey = toText(assetRow.family_key);
   let bestRow = null;
   let bestScore = -1;
+  let bestDayScore = -1;
   asArray(riskRows).forEach((rawRow) => {
     const row = asRecord(rawRow);
     if (districtKey && toText(row.district_key) !== districtKey) {
       return;
     }
-    const matchScore = familyMatchScore(familyKey, row.loop_family_key || asRecord(row.risk_context).family_key);
+    const matchScore =
+      scope === "microflow"
+        ? microflowMatchScore(familyKey, row)
+        : familyMatchScore(familyKey, row.loop_family_key || asRecord(row.risk_context).family_key);
     if (!matchScore) {
       return;
     }
@@ -96,9 +133,11 @@ function pickBestRiskRow(assetRow, riskRows) {
       scoreHealthBand(row.latest_health_band || row.health_band || asRecord(row.risk_context).risk_health_band_key) * 100 +
       (row.contract_ready === true ? 0 : 10) +
       toNum(row.priority_score || row.total_count || row.item_count || 0);
-    if (rowScore > bestScore) {
+    const rowDayScore = scoreDay(row.day);
+    if (rowScore > bestScore || (rowScore === bestScore && rowDayScore > bestDayScore)) {
       bestRow = row;
       bestScore = rowScore;
+      bestDayScore = rowDayScore;
     }
   });
   return bestRow ? asRecord(bestRow) : null;
@@ -120,22 +159,24 @@ function resolveCombinedStateKey(assetStateKey, healthBandKey, attentionBandKey,
  * @param {{
  *   metrics?: Record<string, unknown> | null,
  *   localManifest?: Record<string, unknown> | null,
+ *   scope?: "family" | "microflow",
  *   daily?: boolean,
  *   limit?: number
  * }} [options]
  * @returns {Array<Record<string, unknown>>}
  */
-export function buildAssetRiskFocusRows({ metrics, localManifest, daily = false, limit = 7 } = {}) {
+export function buildAssetRiskFocusRows({ metrics, localManifest, scope = "family", daily = false, limit = 7 } = {}) {
   const manifest = asRecord(localManifest);
   const assetRuntimeRows = asArray(manifest.district_family_asset_runtime_rows).map((row) => asRecord(row));
-  const riskRows = buildRiskSourceRows(metrics, daily);
+  const normalizedScope = scope === "microflow" ? "microflow" : "family";
+  const riskRows = buildRiskSourceRows(metrics, { daily, scope: normalizedScope });
   if (!assetRuntimeRows.length || !riskRows.length) {
     return [];
   }
 
   return assetRuntimeRows
     .map((assetRow) => {
-      const riskRow = pickBestRiskRow(assetRow, riskRows);
+      const riskRow = pickBestRiskRow(assetRow, riskRows, { scope: normalizedScope });
       const riskContext = asRecord(riskRow?.risk_context);
       const actionContext = asRecord(riskRow?.action_context);
       const familyKey = toText(riskRow?.loop_family_key || riskContext.family_key || assetRow.family_key);
@@ -165,8 +206,29 @@ export function buildAssetRiskFocusRows({ metrics, localManifest, daily = false,
         runtimeContractReady,
         riskContractReady
       );
+      const scopeKey = toText(normalizedScope === "microflow" ? microflowKey || familyKey : familyKey);
       const assetRiskFocusKey = `${toText(assetRow.focus_key || "--")}|${riskKey || "no_data:no_data:no_data"}`;
+      const baseContractSignature = [
+        toText(assetRow.runtime_contract_signature || assetRow.asset_contract_signature || assetRow.focus_key),
+        riskFocusKey || riskKey || "no_risk",
+        flowKey || "--"
+      ]
+        .filter(Boolean)
+        .join("|");
+      const scopedContractSignature =
+        normalizedScope === "family" && !daily
+          ? baseContractSignature
+          : [
+              baseContractSignature,
+              `${normalizedScope}:${scopeKey || "--"}`,
+              daily ? `day:${toText(riskRow?.day || "--", "--")}` : ""
+            ]
+              .filter(Boolean)
+              .join("|");
       return {
+        scope_kind: normalizedScope,
+        scope_key: scopeKey,
+        day: toText(riskRow?.day),
         district_key: toText(assetRow.district_key),
         family_key: toText(assetRow.family_key),
         asset_key: toText(assetRow.asset_key),
@@ -179,14 +241,13 @@ export function buildAssetRiskFocusRows({ metrics, localManifest, daily = false,
         asset_contract_signature: toText(assetRow.asset_contract_signature),
         combined_state_key: combinedStateKey,
         combined_contract_ready: runtimeContractReady && riskContractReady,
-        asset_risk_focus_key: assetRiskFocusKey,
-        asset_risk_contract_signature: [
-          toText(assetRow.runtime_contract_signature || assetRow.asset_contract_signature || assetRow.focus_key),
-          riskFocusKey || riskKey || "no_risk",
-          flowKey || "--"
-        ]
-          .filter(Boolean)
-          .join("|"),
+        asset_risk_focus_key:
+          normalizedScope === "family" && !daily
+            ? assetRiskFocusKey
+            : [assetRiskFocusKey, `${normalizedScope}:${scopeKey || "--"}`, daily ? `day:${toText(riskRow?.day || "--", "--")}` : ""]
+                .filter(Boolean)
+                .join("|"),
+        asset_risk_contract_signature: scopedContractSignature,
         priority_score: toNum(riskRow?.priority_score || 0),
         flow_key: flowKey,
         microflow_key: microflowKey,

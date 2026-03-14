@@ -1409,6 +1409,140 @@ test("buildAdminBridgePayloads produces runtime, asset and audit cards from admi
                 "duel_sync:duel|arena_prime:duel_sync:duel|world_entry_kind_duel_console|world_modal_kind_duel_sequence"
             }
           }
+        ],
+        scene_loop_district_microflow_risk_priority_7d: [
+          {
+            district_key: "exchange_district",
+            loop_family_key: "wallet_link",
+            loop_microflow_key: "wallet",
+            focus_key: "exchange_district:wallet_link:wallet",
+            flow_key: "wallet_link:wallet",
+            risk_key: "red:alert:no_data",
+            risk_focus_key: "exchange_district:wallet_link:wallet|red:alert:no_data",
+            risk_health_band_key: "red",
+            risk_attention_band_key: "alert",
+            risk_trend_direction_key: "no_data",
+            priority_score: 3500,
+            contract_ready: true,
+            risk_context: {
+              family_key: "wallet_link",
+              microflow_key: "wallet",
+              flow_key: "wallet_link:wallet",
+              focus_key: "exchange_district:wallet_link:wallet",
+              risk_key: "red:alert:no_data",
+              risk_focus_key: "exchange_district:wallet_link:wallet|red:alert:no_data",
+              risk_health_band_key: "red",
+              risk_attention_band_key: "alert",
+              risk_trend_direction_key: "no_data",
+              risk_context_signature:
+                "wallet_link:wallet|exchange_district:wallet_link:wallet|red:alert:no_data|world_entry_kind_wallet_terminal|world_modal_kind_wallet_terminal",
+              contract_ready: true
+            },
+            action_context: {
+              family_key: "wallet_link",
+              microflow_key: "wallet",
+              flow_key: "wallet_link:wallet",
+              focus_key: "exchange_district:wallet_link:wallet",
+              entry_kind_key: "world_entry_kind_wallet_terminal",
+              sequence_kind_key: "world_modal_kind_wallet_terminal",
+              action_context_signature:
+                "wallet_link:wallet|exchange_district:wallet_link:wallet|world_entry_kind_wallet_terminal|world_modal_kind_wallet_terminal"
+            }
+          },
+          {
+            district_key: "arena_prime",
+            loop_family_key: "duel_sync",
+            loop_microflow_key: "duel",
+            focus_key: "arena_prime:duel_sync:duel",
+            flow_key: "duel_sync:duel",
+            risk_key: "yellow:watch:improving",
+            risk_focus_key: "arena_prime:duel_sync:duel|yellow:watch:improving",
+            risk_health_band_key: "yellow",
+            risk_attention_band_key: "watch",
+            risk_trend_direction_key: "improving",
+            priority_score: 2100,
+            contract_ready: true,
+            risk_context: {
+              family_key: "duel_sync",
+              microflow_key: "duel",
+              flow_key: "duel_sync:duel",
+              focus_key: "arena_prime:duel_sync:duel",
+              risk_key: "yellow:watch:improving",
+              risk_focus_key: "arena_prime:duel_sync:duel|yellow:watch:improving",
+              risk_health_band_key: "yellow",
+              risk_attention_band_key: "watch",
+              risk_trend_direction_key: "improving",
+              risk_context_signature:
+                "duel_sync:duel|arena_prime:duel_sync:duel|yellow:watch:improving|world_entry_kind_duel_console|world_modal_kind_duel_sequence",
+              contract_ready: true
+            },
+            action_context: {
+              family_key: "duel_sync",
+              microflow_key: "duel",
+              flow_key: "duel_sync:duel",
+              focus_key: "arena_prime:duel_sync:duel",
+              entry_kind_key: "world_entry_kind_duel_console",
+              sequence_kind_key: "world_modal_kind_duel_sequence",
+              action_context_signature:
+                "duel_sync:duel|arena_prime:duel_sync:duel|world_entry_kind_duel_console|world_modal_kind_duel_sequence"
+            }
+          }
+        ],
+        scene_loop_district_microflow_risk_priority_daily_7d: [
+          {
+            day: "2099-03-10",
+            district_key: "exchange_district",
+            loop_family_key: "wallet_link",
+            loop_microflow_key: "wallet",
+            focus_key: "exchange_district:wallet_link:wallet",
+            flow_key: "wallet_link:wallet",
+            risk_key: "red:alert:no_data",
+            risk_focus_key: "exchange_district:wallet_link:wallet|red:alert:no_data",
+            risk_health_band_key: "red",
+            risk_attention_band_key: "alert",
+            risk_trend_direction_key: "no_data",
+            priority_score: 3500,
+            contract_ready: true,
+            risk_context: {
+              family_key: "wallet_link",
+              microflow_key: "wallet",
+              flow_key: "wallet_link:wallet",
+              focus_key: "exchange_district:wallet_link:wallet",
+              risk_key: "red:alert:no_data",
+              risk_focus_key: "exchange_district:wallet_link:wallet|red:alert:no_data",
+              risk_health_band_key: "red",
+              risk_attention_band_key: "alert",
+              risk_trend_direction_key: "no_data",
+              contract_ready: true
+            }
+          },
+          {
+            day: "2099-03-10",
+            district_key: "arena_prime",
+            loop_family_key: "duel_sync",
+            loop_microflow_key: "duel",
+            focus_key: "arena_prime:duel_sync:duel",
+            flow_key: "duel_sync:duel",
+            risk_key: "yellow:watch:improving",
+            risk_focus_key: "arena_prime:duel_sync:duel|yellow:watch:improving",
+            risk_health_band_key: "yellow",
+            risk_attention_band_key: "watch",
+            risk_trend_direction_key: "improving",
+            priority_score: 2100,
+            contract_ready: true,
+            risk_context: {
+              family_key: "duel_sync",
+              microflow_key: "duel",
+              flow_key: "duel_sync:duel",
+              focus_key: "arena_prime:duel_sync:duel",
+              risk_key: "yellow:watch:improving",
+              risk_focus_key: "arena_prime:duel_sync:duel|yellow:watch:improving",
+              risk_health_band_key: "yellow",
+              risk_attention_band_key: "watch",
+              risk_trend_direction_key: "improving",
+              contract_ready: true
+            }
+          }
         ]
       },
       assets: {
@@ -1814,10 +1948,13 @@ test("buildAdminBridgePayloads produces runtime, asset and audit cards from admi
     /HB RED \| ATTN ALERT \| TREND NO_DATA \| exchange_district:wallet:exchange_artifact\|partial\|ready\|guard_match\|exchange_khronos_damaged_helmet\|exchange_district:wallet_link:wallet\|red:alert:no_data/i
   );
   assert.equal(payloads.assetStatus.rows[1].title, "arena_prime:duel:arena_trophy");
-  assert.equal(payloads.assetRuntime.signalLineText, "Ready 75% | Integrity 75% | Bundles 1/2 | Family 1/2 | Focus 1/2 | Runtime 1/2 | Risk 1/2");
+  assert.equal(
+    payloads.assetRuntime.signalLineText,
+    "Ready 75% | Integrity 75% | Bundles 1/2 | Family 1/2 | Focus 1/2 | Runtime 1/2 | Risk 1/2 | Micro 1/2 | Daily 1/2"
+  );
   assert.equal(
     payloads.assetRuntime.selectionLineText,
-    "SELECT exchange_district:wallet:exchange_artifact:partial | arena_prime:duel:arena_trophy:ready"
+    "SELECT exchange_district:wallet:exchange_artifact:wallet:partial | arena_prime:duel:arena_trophy:duel:ready"
   );
   assert.equal(
     payloads.assetRuntime.domainLineText,
@@ -1825,7 +1962,7 @@ test("buildAdminBridgePayloads produces runtime, asset and audit cards from admi
   );
   assert.equal(
     payloads.assetRuntime.riskLineText,
-    "RISK arena_prime:duel:arena_trophy | yellow:watch:improving | FLOW duel_sync:duel | arena_prime:duel:arena_trophy|ready|ready|guard_match|arena_khronos_cesium_man|arena_prime:duel_sync:duel|yellow:watch:improving|duel_sync:duel"
+    "RISK arena_prime:duel:arena_trophy | MICRO duel | yellow:watch:improving | DAY 2099-03-10 | FLOW duel_sync:duel | arena_prime:duel:arena_trophy|ready|ready|guard_match|arena_khronos_cesium_man|arena_prime:duel_sync:duel|yellow:watch:improving|duel_sync:duel|microflow:duel"
   );
   assert.equal(
     payloads.assetRuntime.focusLineText,

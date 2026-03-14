@@ -6807,6 +6807,10 @@ function buildAdminAssetStatusPayload(adminPanels) {
   const familyAssetRuntimeRows = asArray(localManifest.district_family_asset_runtime_rows).map((row) => asRecord(row));
   const assetRiskFocusRows = buildAssetRiskFocusRows({ metrics, localManifest, limit: 5 });
   const assetRiskFocusSummary = summarizeAssetRiskFocusRows(assetRiskFocusRows);
+  const assetMicroflowRiskFocusRows = buildAssetRiskFocusRows({ metrics, localManifest, scope: "microflow", limit: 5 });
+  const assetMicroflowRiskFocusSummary = summarizeAssetRiskFocusRows(assetMicroflowRiskFocusRows);
+  const assetRiskFocusDailyRows = buildAssetRiskFocusRows({ metrics, localManifest, daily: true, limit: 5 });
+  const assetRiskFocusDailySummary = summarizeAssetRiskFocusRows(assetRiskFocusDailyRows);
   const selectedBundleSummary = asRecord(localManifest.selected_bundle_summary);
   const selectedBundleRows = asArray(localManifest.selected_bundle_rows).map((row) => asRecord(row));
   const selectedByDistrict = new Map(
@@ -6883,6 +6887,16 @@ function buildAdminAssetStatusPayload(adminPanels) {
     };
   });
   const activeManifest = asRecord(assets.active_manifest);
+  const microSummaryText = toNum(assetMicroflowRiskFocusSummary.row_count)
+    ? ` | micro ${Math.round(toNum(assetMicroflowRiskFocusSummary.contract_ready_count || assetMicroflowRiskFocusSummary.row_count))}/${Math.round(
+        toNum(assetMicroflowRiskFocusSummary.row_count)
+      )}`
+    : "";
+  const dailySummaryText = toNum(assetRiskFocusDailySummary.row_count)
+    ? ` | daily ${Math.round(toNum(assetRiskFocusDailySummary.contract_ready_count || assetRiskFocusDailySummary.row_count))}/${Math.round(
+        toNum(assetRiskFocusDailySummary.row_count)
+      )}`
+    : "";
   return {
     summaryLineText: `Assets: ready ${Math.round(toNum(summary.ready_assets))}/${Math.round(toNum(summary.total_assets))} | family ${Math.round(toNum(
       familyAssetSummary.ready_count || familyAssetSummary.row_count
@@ -6892,7 +6906,9 @@ function buildAdminAssetStatusPayload(adminPanels) {
       toNum(familyAssetRuntimeSummary.contract_ready_count || familyAssetRuntimeSummary.row_count)
     )}/${Math.round(toNum(familyAssetRuntimeSummary.row_count))} | risk ${Math.round(
       toNum(assetRiskFocusSummary.contract_ready_count || assetRiskFocusSummary.row_count)
-    )}/${Math.round(toNum(assetRiskFocusSummary.row_count))} | missing ${Math.round(toNum(summary.missing_assets))}`,
+    )}/${Math.round(toNum(assetRiskFocusSummary.row_count))}${microSummaryText}${dailySummaryText} | missing ${Math.round(
+      toNum(summary.missing_assets)
+    )}`,
     revisionLineText: `Manifest: ${toText(activeManifest.manifest_revision || activeManifest.state_json?.manifest_revision || "local")} | updated ${toText(activeManifest.updated_at, "-")}`,
     rows: familyRiskRows.length
       ? familyRiskRows.concat(familyRuntimeRows, familyFocusRows, familyRows, districtRows, fileRows).slice(0, 8)
@@ -6926,6 +6942,16 @@ function buildAdminAssetRuntimePayload(mutators, adminPanels) {
   const familyAssetRuntimeRows = asArray(localManifest.district_family_asset_runtime_rows).map((row) => asRecord(row));
   const assetRiskFocusRows = buildAssetRiskFocusRows({ metrics: kpiMetrics, localManifest, limit: 5 });
   const assetRiskFocusSummary = summarizeAssetRiskFocusRows(assetRiskFocusRows);
+  const assetMicroflowRiskFocusRows = buildAssetRiskFocusRows({ metrics: kpiMetrics, localManifest, scope: "microflow", limit: 5 });
+  const assetMicroflowRiskFocusSummary = summarizeAssetRiskFocusRows(assetMicroflowRiskFocusRows);
+  const assetMicroflowRiskFocusDailyRows = buildAssetRiskFocusRows({
+    metrics: kpiMetrics,
+    localManifest,
+    scope: "microflow",
+    daily: true,
+    limit: 5
+  });
+  const assetMicroflowRiskFocusDailySummary = summarizeAssetRiskFocusRows(assetMicroflowRiskFocusDailyRows);
   const rows = asArray(localManifest.rows).map((row) => ({
     asset_key: toText(asRecord(row).asset_key || "asset"),
     exists_local: asRecord(row).exists !== false,
@@ -6939,7 +6965,18 @@ function buildAdminAssetRuntimePayload(mutators, adminPanels) {
       summary: asRecord(assets.summary)
     }
   });
-  const selectedSummaryText = assetRiskFocusRows.length
+  const selectedSummaryText = assetMicroflowRiskFocusRows.length
+    ? assetMicroflowRiskFocusRows
+        .slice(0, 3)
+        .map(
+          (row) =>
+            `${toText(row.focus_key || "--")}:${toText(row.scope_key || row.microflow_key || "--")}:${toText(
+              row.combined_state_key || row.runtime_state_key || "--"
+            )}`
+        )
+        .filter(Boolean)
+        .join(" | ")
+    : assetRiskFocusRows.length
     ? assetRiskFocusRows
         .slice(0, 3)
         .map((row) => `${toText(row.focus_key || "--")}:${toText(row.combined_state_key || row.runtime_state_key || "--")}`)
@@ -6970,6 +7007,8 @@ function buildAdminAssetRuntimePayload(mutators, adminPanels) {
     .join(" | ");
   const focusDistrict = districtBundleRows.find((row) => toText(row.state_key) === "ready") || districtBundleRows[0] || {};
   const focusSelectedRow =
+    assetMicroflowRiskFocusRows.find((row) => toText(row.district_key) === toText(focusDistrict.district_key)) ||
+    assetMicroflowRiskFocusRows[0] ||
     assetRiskFocusRows.find((row) => toText(row.district_key) === toText(focusDistrict.district_key)) ||
     assetRiskFocusRows[0] ||
     familyAssetRuntimeRows.find((row) => toText(row.district_key) === toText(focusDistrict.district_key)) ||
@@ -6984,6 +7023,22 @@ function buildAdminAssetRuntimePayload(mutators, adminPanels) {
   const domainStateKey = toText(webappDomainSummary.state_key || "missing", "missing").toLowerCase();
   const domainHost = toText(webappDomainSummary.host || "--", "--");
   const domainCnameTarget = toText(asArray(webappDomainSummary.cname_targets)[0] || asArray(webappDomainSummary.a_records)[0] || "--", "--");
+  const focusDailyRiskRow =
+    assetMicroflowRiskFocusDailyRows.find(
+      (row) =>
+        toText(row.focus_key) === toText(focusSelectedRow.focus_key) &&
+        toText(row.scope_key || row.microflow_key) === toText(focusSelectedRow.scope_key || focusSelectedRow.microflow_key)
+    ) || assetMicroflowRiskFocusDailyRows[0] || {};
+  const microSummaryText = toNum(assetMicroflowRiskFocusSummary.row_count)
+    ? ` | Micro ${Math.round(
+        toNum(assetMicroflowRiskFocusSummary.contract_ready_count || assetMicroflowRiskFocusSummary.row_count)
+      )}/${Math.round(toNum(assetMicroflowRiskFocusSummary.row_count))}`
+    : "";
+  const dailySummaryText = toNum(assetMicroflowRiskFocusDailySummary.row_count)
+    ? ` | Daily ${Math.round(
+        toNum(assetMicroflowRiskFocusDailySummary.contract_ready_count || assetMicroflowRiskFocusDailySummary.row_count)
+      )}/${Math.round(toNum(assetMicroflowRiskFocusDailySummary.row_count))}`
+    : "";
   const domainLineText = `DOMAIN ${domainHost} | ${domainStateKey.toUpperCase()} | HEALTH ${Math.round(
     toNum(webappDomainSummary.health_status_code)
   )} | WEBAPP ${Math.round(toNum(webappDomainSummary.webapp_status_code))} | TARGET ${domainCnameTarget}`;
@@ -6991,11 +7046,13 @@ function buildAdminAssetRuntimePayload(mutators, adminPanels) {
     tone: mapRuntimeTone(metrics.tone || "balanced"),
     readyRatio: clamp(metrics.readyRatio),
     syncRatio: clamp(metrics.integrityRatio),
-    signalLineText: `Ready ${Math.round(clamp(metrics.readyRatio) * 100)}% | Integrity ${Math.round(clamp(metrics.integrityRatio) * 100)}% | Bundles ${Math.round(toNum(districtBundleSummary.ready_count))}/${Math.max(1, Math.round(toNum(districtBundleSummary.district_count)))} | Family ${Math.round(toNum(familyAssetSummary.ready_count || familyAssetSummary.row_count))}/${Math.max(1, Math.round(toNum(familyAssetSummary.row_count)))} | Focus ${Math.round(toNum(familyAssetFocusSummary.contract_ready_count || familyAssetFocusSummary.row_count))}/${Math.max(1, Math.round(toNum(familyAssetFocusSummary.row_count)))} | Runtime ${Math.round(toNum(familyAssetRuntimeSummary.contract_ready_count || familyAssetRuntimeSummary.row_count))}/${Math.max(1, Math.round(toNum(familyAssetRuntimeSummary.row_count)))} | Risk ${Math.round(toNum(assetRiskFocusSummary.contract_ready_count || assetRiskFocusSummary.row_count))}/${Math.max(1, Math.round(toNum(assetRiskFocusSummary.row_count)))}`,
+    signalLineText: `Ready ${Math.round(clamp(metrics.readyRatio) * 100)}% | Integrity ${Math.round(clamp(metrics.integrityRatio) * 100)}% | Bundles ${Math.round(toNum(districtBundleSummary.ready_count))}/${Math.max(1, Math.round(toNum(districtBundleSummary.district_count)))} | Family ${Math.round(toNum(familyAssetSummary.ready_count || familyAssetSummary.row_count))}/${Math.max(1, Math.round(toNum(familyAssetSummary.row_count)))} | Focus ${Math.round(toNum(familyAssetFocusSummary.contract_ready_count || familyAssetFocusSummary.row_count))}/${Math.max(1, Math.round(toNum(familyAssetFocusSummary.row_count)))} | Runtime ${Math.round(toNum(familyAssetRuntimeSummary.contract_ready_count || familyAssetRuntimeSummary.row_count))}/${Math.max(1, Math.round(toNum(familyAssetRuntimeSummary.row_count)))} | Risk ${Math.round(toNum(assetRiskFocusSummary.contract_ready_count || assetRiskFocusSummary.row_count))}/${Math.max(1, Math.round(toNum(assetRiskFocusSummary.row_count)))}${microSummaryText}${dailySummaryText}`,
     selectionLineText: selectedSummaryText ? `SELECT ${selectedSummaryText}` : "SELECT bundle telemetry bekleniyor",
     domainLineText,
     riskLineText: toText(focusSelectedRow.asset_key)
-      ? `RISK ${toText(focusSelectedRow.focus_key || "--")} | ${toText(focusSelectedRow.risk_key || "--")} | FLOW ${toText(
+      ? `RISK ${toText(focusSelectedRow.focus_key || "--")} | MICRO ${toText(
+          focusSelectedRow.scope_key || focusSelectedRow.microflow_key || "--"
+        )} | ${toText(focusSelectedRow.risk_key || "--")}${toText(focusDailyRiskRow.day) ? ` | DAY ${toText(focusDailyRiskRow.day)}` : ""} | FLOW ${toText(
           focusSelectedRow.flow_key || "--"
         )} | ${toText(focusSelectedRow.asset_risk_contract_signature || focusSelectedRow.risk_context_signature || "--")}`
       : "RISK district asset bekleniyor",

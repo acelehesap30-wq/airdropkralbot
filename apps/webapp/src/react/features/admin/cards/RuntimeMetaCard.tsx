@@ -620,6 +620,25 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
     localManifest: localAssetManifest
   });
   const assetRiskFocusSummary = summarizeAssetRiskFocusRows(assetRiskFocusRows);
+  const assetRiskFocusDailyRows = buildAssetRiskFocusRows({
+    metrics: props.metricsData,
+    localManifest: localAssetManifest,
+    daily: true
+  });
+  const assetRiskFocusDailySummary = summarizeAssetRiskFocusRows(assetRiskFocusDailyRows);
+  const assetMicroflowRiskFocusRows = buildAssetRiskFocusRows({
+    metrics: props.metricsData,
+    localManifest: localAssetManifest,
+    scope: "microflow"
+  });
+  const assetMicroflowRiskFocusSummary = summarizeAssetRiskFocusRows(assetMicroflowRiskFocusRows);
+  const assetMicroflowRiskFocusDailyRows = buildAssetRiskFocusRows({
+    metrics: props.metricsData,
+    localManifest: localAssetManifest,
+    scope: "microflow",
+    daily: true
+  });
+  const assetMicroflowRiskFocusDailySummary = summarizeAssetRiskFocusRows(assetMicroflowRiskFocusDailyRows);
   const assetSourceCatalogProviders = Array.isArray(assetSourceCatalogSummary?.providers)
     ? (assetSourceCatalogSummary.providers as unknown[]).map((value) => String(value || "").trim()).filter(Boolean)
     : [];
@@ -1291,6 +1310,96 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
               <p className="akrMutedLine" key={`asset_risk_focus_${String(row.asset_risk_focus_key || row.focus_key || index)}`}>
                 {String(row.focus_key || "-")} | {String(row.combined_state_key || row.runtime_state_key || "missing")} |{" "}
                 AST {String(row.runtime_state_key || "--")} | HB {String(row.risk_health_band_key || "--")} | ATTN{" "}
+                {String(row.risk_attention_band_key || "--")} | TREND {String(row.risk_trend_direction_key || "--")} | FLOW{" "}
+                {String(row.flow_key || "--")} | {String(row.asset_risk_contract_signature || "-")}
+                {renderRiskContextSuffix(row)}
+              </p>
+            ))}
+          </div>
+        </section>
+      ) : null}
+      {assetRiskFocusDailyRows.length ? (
+        <section className="akrMiniPanel">
+          <h3>{t(props.lang, "admin_runtime_asset_risk_focus_daily_title")}</h3>
+          <div className="akrChipRow">
+            <span className="akrChip">
+              {t(props.lang, "admin_runtime_asset_risk_focus_rows")}: {Math.floor(Number(assetRiskFocusDailySummary.row_count || 0))}
+            </span>
+            <span className="akrChip">
+              {t(props.lang, "admin_runtime_asset_risk_focus_ready")}: {Math.floor(Number(assetRiskFocusDailySummary.contract_ready_count || 0))}
+            </span>
+            <span className="akrChip">
+              {t(props.lang, "admin_runtime_asset_risk_focus_alert")}: {Math.floor(Number(assetRiskFocusDailySummary.alert_count || 0))}
+            </span>
+            <span className="akrChip">
+              {t(props.lang, "admin_runtime_asset_risk_focus_partial")}: {Math.floor(Number(assetRiskFocusDailySummary.partial_count || 0))}
+            </span>
+          </div>
+          <div className="akrStack">
+            {assetRiskFocusDailyRows.slice(0, 7).map((row, index) => (
+              <p className="akrMutedLine" key={`asset_risk_focus_daily_${String(row.asset_risk_focus_key || row.focus_key || index)}`}>
+                {String(row.focus_key || "-")} | DAY {String(row.day || "--")} | SCOPE {String(row.scope_key || row.loop_family_key || "--")} |{" "}
+                {String(row.combined_state_key || row.runtime_state_key || "missing")} | HB {String(row.risk_health_band_key || "--")} | ATTN{" "}
+                {String(row.risk_attention_band_key || "--")} | TREND {String(row.risk_trend_direction_key || "--")} |{" "}
+                {String(row.asset_risk_contract_signature || "-")}
+                {renderRiskContextSuffix(row)}
+              </p>
+            ))}
+          </div>
+        </section>
+      ) : null}
+      {assetMicroflowRiskFocusRows.length ? (
+        <section className="akrMiniPanel">
+          <h3>{t(props.lang, "admin_runtime_asset_microflow_risk_focus_title")}</h3>
+          <div className="akrChipRow">
+            <span className="akrChip">
+              {t(props.lang, "admin_runtime_asset_risk_focus_rows")}: {Math.floor(Number(assetMicroflowRiskFocusSummary.row_count || 0))}
+            </span>
+            <span className="akrChip">
+              {t(props.lang, "admin_runtime_asset_risk_focus_ready")}: {Math.floor(Number(assetMicroflowRiskFocusSummary.contract_ready_count || 0))}
+            </span>
+            <span className="akrChip">
+              {t(props.lang, "admin_runtime_asset_risk_focus_alert")}: {Math.floor(Number(assetMicroflowRiskFocusSummary.alert_count || 0))}
+            </span>
+            <span className="akrChip">
+              {t(props.lang, "admin_runtime_asset_risk_focus_partial")}: {Math.floor(Number(assetMicroflowRiskFocusSummary.partial_count || 0))}
+            </span>
+          </div>
+          <div className="akrStack">
+            {assetMicroflowRiskFocusRows.slice(0, 7).map((row, index) => (
+              <p className="akrMutedLine" key={`asset_microflow_risk_focus_${String(row.asset_risk_focus_key || row.focus_key || index)}`}>
+                {String(row.focus_key || "-")} | MICRO {String(row.scope_key || row.microflow_key || "--")} |{" "}
+                {String(row.combined_state_key || row.runtime_state_key || "missing")} | HB {String(row.risk_health_band_key || "--")} | ATTN{" "}
+                {String(row.risk_attention_band_key || "--")} | TREND {String(row.risk_trend_direction_key || "--")} | FLOW{" "}
+                {String(row.flow_key || "--")} | {String(row.asset_risk_contract_signature || "-")}
+                {renderRiskContextSuffix(row)}
+              </p>
+            ))}
+          </div>
+        </section>
+      ) : null}
+      {assetMicroflowRiskFocusDailyRows.length ? (
+        <section className="akrMiniPanel">
+          <h3>{t(props.lang, "admin_runtime_asset_microflow_risk_focus_daily_title")}</h3>
+          <div className="akrChipRow">
+            <span className="akrChip">
+              {t(props.lang, "admin_runtime_asset_risk_focus_rows")}: {Math.floor(Number(assetMicroflowRiskFocusDailySummary.row_count || 0))}
+            </span>
+            <span className="akrChip">
+              {t(props.lang, "admin_runtime_asset_risk_focus_ready")}: {Math.floor(Number(assetMicroflowRiskFocusDailySummary.contract_ready_count || 0))}
+            </span>
+            <span className="akrChip">
+              {t(props.lang, "admin_runtime_asset_risk_focus_alert")}: {Math.floor(Number(assetMicroflowRiskFocusDailySummary.alert_count || 0))}
+            </span>
+            <span className="akrChip">
+              {t(props.lang, "admin_runtime_asset_risk_focus_partial")}: {Math.floor(Number(assetMicroflowRiskFocusDailySummary.partial_count || 0))}
+            </span>
+          </div>
+          <div className="akrStack">
+            {assetMicroflowRiskFocusDailyRows.slice(0, 7).map((row, index) => (
+              <p className="akrMutedLine" key={`asset_microflow_risk_focus_daily_${String(row.asset_risk_focus_key || row.focus_key || index)}`}>
+                {String(row.focus_key || "-")} | DAY {String(row.day || "--")} | MICRO {String(row.scope_key || row.microflow_key || "--")} |{" "}
+                {String(row.combined_state_key || row.runtime_state_key || "missing")} | HB {String(row.risk_health_band_key || "--")} | ATTN{" "}
                 {String(row.risk_attention_band_key || "--")} | TREND {String(row.risk_trend_direction_key || "--")} | FLOW{" "}
                 {String(row.flow_key || "--")} | {String(row.asset_risk_contract_signature || "-")}
                 {renderRiskContextSuffix(row)}
