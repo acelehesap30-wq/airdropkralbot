@@ -1120,6 +1120,8 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
   const buildSceneActionDataAttrs = useCallback(
     (action?: SceneActionLike | null) => {
       const context = resolveSceneActionContext(action);
+      const primarySource = buildPrimarySceneActionSource(action as PrimaryActionSummary | Record<string, unknown> | null);
+      const primaryContext = resolveSceneActionContext(primarySource);
       const contractReady = isStrictSceneActionContractReady(context);
       return {
         "data-family-key": context.familyKey || "",
@@ -1139,7 +1141,19 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
         "data-context-lookup-resolved": context.contextLookupResolved ? "true" : "false",
         "data-contract-state": context.contractStateKey || "",
         "data-contract-ready": contractReady ? "true" : "false",
-        "data-contract-missing-keys": context.contractMissingKeys.join(",")
+        "data-contract-missing-keys": context.contractMissingKeys.join(","),
+        "data-primary-action-key": readSceneActionText(primarySource.action_key) || "",
+        "data-primary-family-key": primaryContext.familyKey || "",
+        "data-primary-flow-key": primaryContext.flowKey || "",
+        "data-primary-microflow-key": primaryContext.microflowKey || "",
+        "data-primary-focus-key": primaryContext.focusKey || "",
+        "data-primary-risk-key": primaryContext.riskKey || "",
+        "data-primary-risk-focus-key": primaryContext.riskFocusKey || "",
+        "data-primary-entry-kind-key": primaryContext.entryKindKey || "",
+        "data-primary-sequence-kind-key": primaryContext.sequenceKindKey || "",
+        "data-primary-action-context-signature": primaryContext.actionContextSignature || "",
+        "data-primary-risk-context-signature": primaryContext.riskContextSignature || "",
+        "data-primary-contract-ready": isStrictSceneActionContractReady(primaryContext) ? "true" : "false"
       };
     },
     [resolveSceneActionContext]
@@ -2773,6 +2787,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                   <span>{t(props.lang, (action.intent_profile?.intent_tone_key || "world_intent_tone_open") as never)}</span>
                   <span>{t(props.lang, action.hint_label_key as never)}</span>
                   {renderSceneActionContextMeta(action)}
+                  {renderPrimaryActionSummary(action, { compact: true })}
                   {renderSceneActionContextChips(action)}
                 </button>
               );
@@ -3009,6 +3024,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                   <span>{t(props.lang, (action.intent_profile?.intent_label_key || "world_intent_open") as never)}</span>
                   <strong>{action.label_key ? t(props.lang, action.label_key as never) : action.label}</strong>
                   {renderSceneActionContextMeta(action)}
+                  {renderPrimaryActionSummary(action, { compact: true })}
                   {renderSceneActionContextChips(action)}
                 </button>
               );
@@ -3176,6 +3192,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                     <strong>{action.label_key ? t(props.lang, action.label_key as never) : action.label}</strong>
                     <span>{t(props.lang, action.hint_label_key as never)}</span>
                     {renderSceneActionContextMeta(action)}
+                    {renderPrimaryActionSummary(action, { compact: true })}
                     {renderSceneActionContextChips(action)}
                   </button>
                 );
@@ -4091,6 +4108,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                     <strong>{action.label_key ? t(props.lang, action.label_key as never) : action.label}</strong>
                     <span>{t(props.lang, action.hint_label_key as never)}</span>
                     {renderSceneActionContextMeta(action)}
+                    {renderPrimaryActionSummary(action, { compact: true })}
                     {renderSceneActionContextChips(action)}
                   </button>
                 );
