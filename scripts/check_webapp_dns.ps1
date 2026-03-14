@@ -1,5 +1,6 @@
 param(
-  [string]$EnvPath = ".env"
+  [string]$EnvPath = ".env",
+  [int]$TimeoutSec = 12
 )
 
 $ErrorActionPreference = "Stop"
@@ -12,6 +13,69 @@ function Get-EnvValue {
     if ($line -match $pattern) { return $matches[1] }
   }
   return ""
+}
+
+function Invoke-CurlProbe {
+  param([string]$Url, [int]$Timeout = 12)
+  $curl = Get-Command curl.exe -ErrorAction SilentlyContinue
+  if (-not $curl) {
+    return $null
+  }
+  try {
+    $output = & curl.exe -I -L --max-time $Timeout --silent --show-error $Url 2>&1
+    if ($LASTEXITCODE -ne 0) {
+      return @{
+        ok = $false
+        message = ($output | Out-String).Trim()
+      }
+    }
+    $lines = @($output -split "`r?`n" | Where-Object { $_ -match '^HTTP/' })
+    $last = $lines | Select-Object -Last 1
+    $status = 0
+    if ($last -match '^HTTP/\S+\s+(\d{3})') {
+      $status = [int]$matches[1]
+    }
+    return @{
+      ok = $true
+      status = $status
+      message = ($output | Out-String).Trim()
+    }
+  } catch {
+    return @{
+      ok = $false
+      message = $_.Exception.Message
+    }
+  }
+}
+
+function Invoke-UrlProbe {
+  param([string]$Url, [int]$Timeout = 12)
+  try {
+    $res = Invoke-WebRequest -UseBasicParsing $Url -TimeoutSec $Timeout
+    return @{
+      ok = $true
+      status = [int]$res.StatusCode
+      transport = "powershell"
+      message = ""
+    }
+  } catch {
+    $pwMessage = $_.Exception.Message
+    $curlResult = Invoke-CurlProbe -Url $Url -Timeout $Timeout
+    if ($curlResult -and $curlResult.ok -and $curlResult.status -ge 200) {
+      return @{
+        ok = $true
+        status = [int]$curlResult.status
+        transport = "curl"
+        message = $pwMessage
+      }
+    }
+    return @{
+      ok = $false
+      status = 0
+      transport = if ($curlResult) { "curl" } else { "powershell" }
+      message = if ($curlResult -and $curlResult.message) { $curlResult.message } else { $pwMessage }
+    }
+  }
 }
 
 $webappUrl = Get-EnvValue -Path $EnvPath -Key "WEBAPP_PUBLIC_URL"
@@ -57,12 +121,15 @@ $paths = @("/health", "/webapp")
 $httpsFailures = 0
 foreach ($p in $paths) {
   $url = "$base$p"
-  try {
-    $res = Invoke-WebRequest -UseBasicParsing $url -TimeoutSec 12
-    Write-Host ("OK   " + $url + " -> " + $res.StatusCode) -ForegroundColor Green
-  } catch {
-    $msg = $_.Exception.Message
-    Write-Host ("FAIL " + $url + " -> " + $msg) -ForegroundColor Yellow
+  $probe = Invoke-UrlProbe -Url $url -Timeout $TimeoutSec
+  if ($probe.ok) {
+    $suffix = if ($probe.transport -eq "curl") { " (curl fallback)" } else { "" }
+    Write-Host ("OK   " + $url + " -> " + $probe.status + $suffix) -ForegroundColor Green
+    if ($probe.message) {
+      Write-Host ("      PowerShell probe note: " + $probe.message) -ForegroundColor DarkGray
+    }
+  } else {
+    Write-Host ("FAIL " + $url + " -> " + $probe.message) -ForegroundColor Yellow
     if ($url -like "https://*") {
       $httpsFailures += 1
     }

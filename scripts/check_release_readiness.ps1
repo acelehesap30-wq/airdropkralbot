@@ -7,6 +7,7 @@ param(
   [int]$WarmupWaitSec = 12,
   [switch]$SkipTests,
   [switch]$SkipEnvContract,
+  [switch]$SkipDnsCheck,
   [switch]$SkipWebAppBuild,
   [switch]$SkipV52Audit,
   [switch]$SkipSystemAudit,
@@ -242,6 +243,15 @@ try {
         }
       } finally {
         Pop-Location
+      }
+    }
+  }
+
+  if (-not $SkipDnsCheck) {
+    Invoke-Step "WebApp DNS + HTTPS probe" {
+      & powershell -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "check_webapp_dns.ps1") -EnvPath $EnvPath
+      if ($LASTEXITCODE -ne 0) {
+        throw "check_webapp_dns failed with exit code $LASTEXITCODE"
       }
     }
   }
