@@ -15,21 +15,31 @@ type FatalBoundaryProps = {
 
 type FatalBoundaryState = {
   errorMessage: string;
+  errorStack: string;
+  componentStack: string;
 };
 
 class FatalBoundary extends React.Component<FatalBoundaryProps, FatalBoundaryState> {
   state: FatalBoundaryState = {
-    errorMessage: ""
+    errorMessage: "",
+    errorStack: "",
+    componentStack: ""
   };
 
   static getDerivedStateFromError(error: unknown): FatalBoundaryState {
     return {
-      errorMessage: error instanceof Error ? error.message : "react_runtime_unknown_error"
+      errorMessage: error instanceof Error ? error.message : "react_runtime_unknown_error",
+      errorStack: error instanceof Error ? String(error.stack || "") : "",
+      componentStack: ""
     };
   }
 
   componentDidCatch(error: unknown, info: React.ErrorInfo) {
     console.error("[webapp-runtime-boundary]", error, info);
+    this.setState({
+      errorStack: error instanceof Error ? String(error.stack || "") : "",
+      componentStack: String(info?.componentStack || "")
+    });
   }
 
   render() {
@@ -57,6 +67,43 @@ class FatalBoundary extends React.Component<FatalBoundaryProps, FatalBoundarySta
           >
             <h1 style={{ margin: "0 0 8px", fontSize: 24 }}>React Runtime Render Failed</h1>
             <p style={{ margin: "0 0 14px", opacity: 0.9, lineHeight: 1.5 }}>{this.state.errorMessage}</p>
+            {this.state.componentStack ? (
+              <pre
+                style={{
+                  margin: "0 0 14px",
+                  padding: 12,
+                  borderRadius: 10,
+                  background: "rgba(3,9,18,.88)",
+                  color: "#8fb7ff",
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: 12,
+                  lineHeight: 1.45,
+                  whiteSpace: "pre-wrap"
+                }}
+              >
+                {this.state.componentStack}
+              </pre>
+            ) : null}
+            {this.state.errorStack ? (
+              <details style={{ margin: "0 0 14px", opacity: 0.92 }}>
+                <summary style={{ cursor: "pointer", fontWeight: 600 }}>Stack</summary>
+                <pre
+                  style={{
+                    margin: "10px 0 0",
+                    padding: 12,
+                    borderRadius: 10,
+                    background: "rgba(3,9,18,.88)",
+                    color: "#8fb7ff",
+                    fontFamily: "'IBM Plex Mono', monospace",
+                    fontSize: 12,
+                    lineHeight: 1.45,
+                    whiteSpace: "pre-wrap"
+                  }}
+                >
+                  {this.state.errorStack}
+                </pre>
+              </details>
+            ) : null}
             <button
               type="button"
               onClick={() => window.location.reload()}
