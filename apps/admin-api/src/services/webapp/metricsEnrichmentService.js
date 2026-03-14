@@ -598,14 +598,59 @@ function buildSceneLoopRiskContext(row) {
 function normalizeSceneLoopDistrictFamilyDailyRows(rows, limit = 84) {
   const source = Array.isArray(rows) ? rows : [];
   return source
-    .map((row) => ({
-      day: String(row?.day || ""),
-      district_key: String(row?.district_key || "unknown"),
-      loop_family_key: normalizeSceneLoopFamilyKey(row?.loop_family_key),
-      total_count: Math.max(0, Math.floor(toNum(row?.total_count, 0))),
-      live_count: Math.max(0, Math.floor(toNum(row?.live_count, 0))),
-      blocked_count: Math.max(0, Math.floor(toNum(row?.blocked_count, 0)))
-    }))
+    .map((row) => {
+      const sourceRow = row && typeof row === "object" ? row : {};
+      const actionContextSource = asRecord(sourceRow.action_context);
+      const riskContextSource = asRecord(sourceRow.risk_context);
+      const contractMissingKeys = [
+        ...(Array.isArray(sourceRow.contract_missing_keys) ? sourceRow.contract_missing_keys : []),
+        ...(Array.isArray(actionContextSource?.contract_missing_keys) ? actionContextSource.contract_missing_keys : []),
+        ...(Array.isArray(riskContextSource?.contract_missing_keys) ? riskContextSource.contract_missing_keys : [])
+      ]
+        .map((value) => toText(value, ""))
+        .filter(Boolean);
+      return {
+        day: String(sourceRow.day || ""),
+        district_key: String(sourceRow.district_key || "unknown"),
+        loop_family_key: normalizeSceneLoopFamilyKey(sourceRow.loop_family_key),
+        loop_microflow_key: normalizeSceneLoopMicroflowKey(
+          sourceRow.loop_microflow_key ?? sourceRow.microflow_key ?? sourceRow.loop_family_key
+        ),
+        flow_key: toText(sourceRow.flow_key, ""),
+        focus_key: toText(sourceRow.focus_key, ""),
+        risk_key: toText(sourceRow.risk_key, ""),
+        risk_focus_key: toText(sourceRow.risk_focus_key, ""),
+        entry_kind_key: toText(sourceRow.entry_kind_key, ""),
+        sequence_kind_key: toText(sourceRow.sequence_kind_key, ""),
+        action_context_signature: toText(sourceRow.action_context_signature, ""),
+        risk_context_signature: toText(sourceRow.risk_context_signature, ""),
+        contract_state_key: toText(sourceRow.contract_state_key, ""),
+        contract_ready:
+          typeof sourceRow.contract_ready === "boolean" ? sourceRow.contract_ready : undefined,
+        contract_missing_keys: contractMissingKeys,
+        context_lookup_required:
+          typeof sourceRow.context_lookup_required === "boolean"
+            ? sourceRow.context_lookup_required
+            : typeof actionContextSource?.context_lookup_required === "boolean"
+              ? actionContextSource.context_lookup_required
+              : typeof riskContextSource?.context_lookup_required === "boolean"
+                ? riskContextSource.context_lookup_required
+                : undefined,
+        context_lookup_resolved:
+          typeof sourceRow.context_lookup_resolved === "boolean"
+            ? sourceRow.context_lookup_resolved
+            : typeof actionContextSource?.context_lookup_resolved === "boolean"
+              ? actionContextSource.context_lookup_resolved
+              : typeof riskContextSource?.context_lookup_resolved === "boolean"
+                ? riskContextSource.context_lookup_resolved
+                : undefined,
+        action_context: actionContextSource,
+        risk_context: riskContextSource,
+        total_count: Math.max(0, Math.floor(toNum(sourceRow.total_count, 0))),
+        live_count: Math.max(0, Math.floor(toNum(sourceRow.live_count, 0))),
+        blocked_count: Math.max(0, Math.floor(toNum(sourceRow.blocked_count, 0)))
+      };
+    })
     .filter((row) => row.day && row.district_key && row.loop_family_key)
     .map((row) => {
       const liveShare = toRate(row.live_count, row.total_count);
@@ -1298,7 +1343,17 @@ function buildSceneLoopDistrictFamilyHealthAttentionTrendDailyBreakdown(rows, li
       const trendDirection = resolveSceneLoopTrendDirection(totalCount, olderRow?.total_count, olderRow ? 2 : 1);
       const latestHealthBand = resolveSceneLoopDistrictHealthBand(totalCount, liveShare, blockedShare);
       const attentionBand = resolveSceneLoopDistrictAttentionBand(latestHealthBand, trendDirection, blockedShare);
+      const context = buildSceneLoopRiskContext({
+        ...(row && typeof row === "object" ? row : {}),
+        district_key,
+        loop_family_key,
+        loop_microflow_key: row?.loop_microflow_key ?? loop_family_key,
+        latest_health_band: latestHealthBand,
+        attention_band: attentionBand,
+        trend_direction: trendDirection
+      });
       output.push({
+        ...context,
         day: String(row?.day || ""),
         district_key,
         loop_family_key,
@@ -1327,6 +1382,8 @@ function buildSceneLoopDistrictFamilyHealthAttentionTrendDailyBreakdown(rows, li
       if (healthGap !== 0) return healthGap;
       const trendGap = rankSceneLoopTrendDirection(right.trend_direction) - rankSceneLoopTrendDirection(left.trend_direction);
       if (trendGap !== 0) return trendGap;
+      const contractGap = compareSceneLoopContractStrength(left, right);
+      if (contractGap !== 0) return contractGap;
       const totalGap = toNum(right.total_count, 0) - toNum(left.total_count, 0);
       if (Math.abs(totalGap) > 0.0001) return totalGap;
       return `${String(left.district_key || "")}:${String(left.loop_family_key || "")}`.localeCompare(
@@ -1342,7 +1399,15 @@ function buildSceneLoopDistrictFamilyHealthAttentionTrendDailyMatrix(rows, limit
       const latestHealthBand = String(row?.latest_health_band || row?.health_band || "no_data");
       const attentionBand = String(row?.attention_band || "no_data");
       const trendDirection = String(row?.trend_direction || "no_data");
+      const context = buildSceneLoopRiskContext({
+        ...(row && typeof row === "object" ? row : {}),
+        loop_microflow_key: row?.loop_microflow_key ?? row?.microflow_key ?? row?.loop_family_key,
+        latest_health_band: latestHealthBand,
+        attention_band: attentionBand,
+        trend_direction: trendDirection
+      });
       return {
+        ...context,
         day: String(row?.day || ""),
         district_key: String(row?.district_key || "unknown"),
         loop_family_key: normalizeSceneLoopFamilyKey(row?.loop_family_key),
@@ -1384,11 +1449,19 @@ function buildSceneLoopDistrictFamilyAttentionPriorityDaily(rows, limit = 18) {
       const latestHealthBand = String(row?.latest_health_band || row?.health_band || "no_data");
       const attentionBand = String(row?.attention_band || "no_data");
       const trendDirection = String(row?.trend_direction || "no_data");
+      const context = buildSceneLoopRiskContext({
+        ...(row && typeof row === "object" ? row : {}),
+        loop_microflow_key: row?.loop_microflow_key ?? row?.microflow_key ?? row?.loop_family_key,
+        latest_health_band: latestHealthBand,
+        attention_band: attentionBand,
+        trend_direction: trendDirection
+      });
       const attentionRank = rankSceneLoopAttentionBand(attentionBand);
       const healthRank = rankSceneLoopHealthBand(latestHealthBand);
       const trendRank = rankSceneLoopTrendDirection(trendDirection);
       const totalCount = Math.max(0, Math.floor(toNum(row?.total_count, 0)));
       return {
+        ...context,
         day: String(row?.day || ""),
         district_key: String(row?.district_key || "unknown"),
         loop_family_key: normalizeSceneLoopFamilyKey(row?.loop_family_key),
@@ -1410,6 +1483,8 @@ function buildSceneLoopDistrictFamilyAttentionPriorityDaily(rows, limit = 18) {
       if (dayOrder !== 0) return dayOrder;
       const priorityGap = toNum(right.priority_score, 0) - toNum(left.priority_score, 0);
       if (Math.abs(priorityGap) > 0.0001) return priorityGap;
+      const contractGap = compareSceneLoopContractStrength(left, right);
+      if (contractGap !== 0) return contractGap;
       const totalGap = toNum(right.total_count, 0) - toNum(left.total_count, 0);
       if (Math.abs(totalGap) > 0.0001) return totalGap;
       return `${String(left.district_key || "")}:${String(left.loop_family_key || "")}`.localeCompare(
@@ -1978,6 +2053,8 @@ function buildSceneLoopDistrictMicroflowAttentionPriorityDaily(rows, limit = 24)
       if (dayOrder !== 0) return dayOrder;
       const priorityGap = toNum(right.priority_score, 0) - toNum(left.priority_score, 0);
       if (Math.abs(priorityGap) > 0.0001) return priorityGap;
+      const contractGap = compareSceneLoopContractStrength(left, right);
+      if (contractGap !== 0) return contractGap;
       const totalGap = toNum(right.total_count, 0) - toNum(left.total_count, 0);
       if (Math.abs(totalGap) > 0.0001) return totalGap;
       return `${String(left.district_key || "")}:${String(left.loop_microflow_key || "")}`.localeCompare(

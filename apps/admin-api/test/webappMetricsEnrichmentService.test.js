@@ -464,6 +464,76 @@ test("daily microflow breakdown buckets sort contract-ready context ahead of equ
   assert.equal(flowBreakdownDaily[0].bucket_key, "wallet_link:wallet");
 });
 
+test("daily family loop views preserve explicit risk context and prefer contract-ready rows", () => {
+  const readyRow = {
+    day: "2026-03-11",
+    district_key: "exchange_district",
+    loop_family_key: "wallet_link",
+    loop_microflow_key: "wallet",
+    flow_key: "wallet_link:wallet",
+    focus_key: "exchange_district:wallet_link:wallet",
+    risk_key: "yellow:watch:stable",
+    risk_focus_key: "exchange_district:wallet_link:wallet|yellow:watch:stable",
+    entry_kind_key: "world_entry_kind_wallet_terminal",
+    sequence_kind_key: "world_modal_kind_wallet_terminal",
+    action_context_signature:
+      "wallet_link:wallet|exchange_district:wallet_link:wallet|world_entry_kind_wallet_terminal|world_modal_kind_wallet_terminal",
+    risk_context_signature:
+      "wallet_link:wallet|exchange_district:wallet_link:wallet|yellow:watch:stable|world_entry_kind_wallet_terminal|world_modal_kind_wallet_terminal",
+    contract_ready: true,
+    contract_state_key: "ready",
+    contract_missing_keys: [],
+    context_lookup_required: false,
+    context_lookup_resolved: true,
+    latest_health_band: "yellow",
+    attention_band: "watch",
+    trend_direction: "stable",
+    trend_delta: 0,
+    total_count: 4,
+    live_count: 3,
+    blocked_count: 1
+  };
+  const staleRow = {
+    ...readyRow,
+    district_key: "ops_citadel",
+    loop_family_key: "dispatch_gate",
+    loop_microflow_key: "dispatch",
+    flow_key: "dispatch_gate:dispatch",
+    focus_key: "ops_citadel:dispatch_gate:dispatch",
+    risk_focus_key: "ops_citadel:dispatch_gate:dispatch|yellow:watch:stable",
+    entry_kind_key: "world_entry_kind_dispatch_console",
+    sequence_kind_key: "world_modal_kind_dispatch_sequence",
+    action_context_signature:
+      "dispatch_gate:dispatch|ops_citadel:dispatch_gate:dispatch|world_entry_kind_dispatch_console|world_modal_kind_dispatch_sequence",
+    risk_context_signature:
+      "dispatch_gate:dispatch|ops_citadel:dispatch_gate:dispatch|yellow:watch:stable|world_entry_kind_dispatch_console|world_modal_kind_dispatch_sequence",
+    contract_ready: false,
+    contract_state_key: "missing",
+    contract_missing_keys: ["action_context_lookup"],
+    context_lookup_required: true,
+    context_lookup_resolved: false
+  };
+
+  const familyDailyBreakdown = service.buildSceneLoopDistrictFamilyHealthAttentionTrendDailyBreakdown(
+    [staleRow, readyRow],
+    10
+  );
+  const familyDailyMatrix = service.buildSceneLoopDistrictFamilyHealthAttentionTrendDailyMatrix([staleRow, readyRow], 10);
+  const familyPriorityDaily = service.buildSceneLoopDistrictFamilyAttentionPriorityDaily([staleRow, readyRow], 10);
+
+  assert.equal(familyDailyBreakdown[0].focus_key, "exchange_district:wallet_link:wallet");
+  assert.equal(familyDailyBreakdown[0].contract_ready, true);
+  assert.equal(familyDailyBreakdown[0].risk_context?.contract_ready, true);
+
+  assert.equal(familyDailyMatrix[0].focus_key, "exchange_district:wallet_link:wallet");
+  assert.equal(familyDailyMatrix[0].contract_ready, true);
+  assert.equal(familyDailyMatrix[0].risk_context_signature, readyRow.risk_context_signature);
+
+  assert.equal(familyPriorityDaily[0].focus_key, "exchange_district:wallet_link:wallet");
+  assert.equal(familyPriorityDaily[0].contract_ready, true);
+  assert.equal(familyPriorityDaily[0].action_context_signature, readyRow.action_context_signature);
+});
+
 test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {
   const enriched = service.enrichWebappRevenueMetrics({
     ui_events_ingested_24h: 100,
