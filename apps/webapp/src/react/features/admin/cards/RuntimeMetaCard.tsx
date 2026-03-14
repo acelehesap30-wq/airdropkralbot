@@ -610,6 +610,8 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
   const assetDistrictBundleRows = asRows(localAssetManifest?.district_bundle_rows);
   const assetDistrictFamilyAssetSummary = asRecord(localAssetManifest?.district_family_asset_summary);
   const assetDistrictFamilyAssetRows = asRows(localAssetManifest?.district_family_asset_rows);
+  const assetDistrictFamilyAssetFocusSummary = asRecord(localAssetManifest?.district_family_asset_focus_summary);
+  const assetDistrictFamilyAssetFocusRows = asRows(localAssetManifest?.district_family_asset_focus_rows);
   const assetSourceCatalogProviders = Array.isArray(assetSourceCatalogSummary?.providers)
     ? (assetSourceCatalogSummary.providers as unknown[]).map((value) => String(value || "").trim()).filter(Boolean)
     : [];
@@ -1226,6 +1228,33 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
               <p className="akrMutedLine" key={`family_asset_${String(row.focus_key || row.asset_key || index)}`}>
                 {String(row.focus_key || "-")} | {String(row.state_key || "missing")} | {String(row.file_name || row.asset_key || "-")} |{" "}
                 {String(row.candidate_key || "-")} | {String(row.provider_label || row.provider_key || "--")}
+              </p>
+            ))}
+          </div>
+        </section>
+      ) : null}
+      {assetDistrictFamilyAssetFocusRows.length ? (
+        <section className="akrMiniPanel">
+          <h3>{t(props.lang, "admin_runtime_asset_family_focus_title")}</h3>
+          <div className="akrChipRow">
+            <span className="akrChip">
+              {t(props.lang, "admin_runtime_asset_family_focus_rows")}: {Math.floor(Number(assetDistrictFamilyAssetFocusSummary?.row_count || 0))}
+            </span>
+            <span className="akrChip">
+              {t(props.lang, "admin_runtime_asset_family_focus_ready")}: {Math.floor(Number(assetDistrictFamilyAssetFocusSummary?.contract_ready_count || 0))}
+            </span>
+            <span className="akrChip">
+              {t(props.lang, "admin_runtime_asset_family_focus_missing")}: {Math.floor(Number(assetDistrictFamilyAssetFocusSummary?.missing_count || 0))}
+            </span>
+            <span className="akrChip">
+              {t(props.lang, "admin_runtime_asset_family_focus_partial")}: {Math.floor(Number(assetDistrictFamilyAssetFocusSummary?.partial_count || 0))}
+            </span>
+          </div>
+          <div className="akrStack">
+            {assetDistrictFamilyAssetFocusRows.slice(0, 7).map((row, index) => (
+              <p className="akrMutedLine" key={`family_asset_focus_${String(row.focus_key || row.asset_key || index)}`}>
+                {String(row.focus_key || "-")} | {String(row.state_key || "missing")} | {String(row.asset_contract_ready ? "ready" : "hold")} |{" "}
+                {String(row.asset_contract_signature || "-")} | {String(row.file_name || row.asset_key || "-")}
               </p>
             ))}
           </div>

@@ -76,7 +76,8 @@ const {
   summarizeAssetSourceCatalog,
   summarizeSelectedDistrictBundles,
   buildDistrictAssetBundleCatalog,
-  buildDistrictFamilyAssetCatalog
+  buildDistrictFamilyAssetCatalog,
+  buildDistrictFamilyAssetFocusCatalog
 } = require("./services/webapp/assetManifestIntakeService");
 const { summarizeWebappDomainRuntime } = require("./services/webapp/webappDomainRuntimeService");
 const { createChatTrustNotificationService } = require("./services/chatTrustNotificationService");
@@ -2724,6 +2725,9 @@ async function buildAssetStatusRows() {
     districtRows: districtBundles.rows,
     assetRows: rows
   });
+  const districtFamilyAssetFocus = buildDistrictFamilyAssetFocusCatalog({
+    familyRows: districtFamilyAssets.rows
+  });
   const webappDomainSummary = await summarizeWebappDomainRuntime({
     publicUrl: WEBAPP_PUBLIC_URL,
     runtimeGuardBaseUrl: String(process.env.RUNTIME_GUARD_BASE_URL || "").trim()
@@ -2743,6 +2747,8 @@ async function buildAssetStatusRows() {
     district_bundle_rows: districtBundles.rows,
     district_family_asset_summary: districtFamilyAssets.summary,
     district_family_asset_rows: districtFamilyAssets.rows,
+    district_family_asset_focus_summary: districtFamilyAssetFocus.summary,
+    district_family_asset_focus_rows: districtFamilyAssetFocus.rows,
     rows
   };
 }

@@ -8,7 +8,8 @@ const {
   summarizeAssetSourceCatalog,
   summarizeSelectedDistrictBundles,
   buildDistrictAssetBundleCatalog,
-  buildDistrictFamilyAssetCatalog
+  buildDistrictFamilyAssetCatalog,
+  buildDistrictFamilyAssetFocusCatalog
 } = require("../src/services/webapp/assetManifestIntakeService");
 
 test("summarizeAssetSourceCatalog reads curated district intake catalog", () => {
@@ -229,4 +230,43 @@ test("buildDistrictFamilyAssetCatalog summarizes selected district family assets
   assert.equal(result.rows[1].focus_key, "exchange_district:wallet:exchange_artifact");
   assert.equal(result.rows[1].state_key, "partial");
   assert.equal(result.rows[1].exists_local, false);
+});
+
+test("buildDistrictFamilyAssetFocusCatalog prioritizes partial asset focus rows", () => {
+  const result = buildDistrictFamilyAssetFocusCatalog({
+    familyRows: [
+      {
+        district_key: "arena_prime",
+        family_key: "duel",
+        asset_key: "arena_trophy",
+        focus_key: "arena_prime:duel:arena_trophy",
+        state_key: "ready",
+        exists_local: true,
+        candidate_key: "arena_khronos_cesium_man",
+        file_name: "arena-trophy.glb"
+      },
+      {
+        district_key: "exchange_district",
+        family_key: "wallet",
+        asset_key: "exchange_artifact",
+        focus_key: "exchange_district:wallet:exchange_artifact",
+        state_key: "partial",
+        exists_local: false,
+        candidate_key: "exchange_khronos_damaged_helmet",
+        file_name: "exchange-artifact.glb"
+      }
+    ]
+  });
+
+  assert.equal(result.summary.row_count, 2);
+  assert.equal(result.summary.contract_ready_count, 1);
+  assert.equal(result.summary.partial_count, 1);
+  assert.equal(result.rows[0].focus_key, "exchange_district:wallet:exchange_artifact");
+  assert.equal(result.rows[0].asset_contract_ready, false);
+  assert.equal(
+    result.rows[0].asset_contract_signature,
+    "exchange_district:wallet:exchange_artifact|partial|exchange_khronos_damaged_helmet"
+  );
+  assert.equal(result.rows[1].focus_key, "arena_prime:duel:arena_trophy");
+  assert.equal(result.rows[1].asset_contract_ready, true);
 });

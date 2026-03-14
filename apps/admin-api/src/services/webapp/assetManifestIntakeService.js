@@ -306,9 +306,73 @@ function buildDistrictFamilyAssetCatalog({ selectedRows, districtRows, assetRows
   };
 }
 
+function scoreAssetState(value) {
+  const key = readText(value).toLowerCase();
+  if (key === "missing") return 4;
+  if (key === "partial") return 3;
+  if (key === "intake_ready") return 2;
+  if (key === "ready") return 1;
+  return 0;
+}
+
+function buildDistrictFamilyAssetFocusCatalog({ familyRows }) {
+  const rows = asList(familyRows)
+    .map((row) => asRecord(row))
+    .filter((row) => readText(row.focus_key))
+    .map((row) => {
+      const stateKey = readText(row.state_key, "missing").toLowerCase();
+      const contractReady = stateKey === "ready" && row.exists_local !== false;
+      return {
+        district_key: readText(row.district_key),
+        family_key: readText(row.family_key),
+        asset_key: readText(row.asset_key),
+        focus_key: readText(row.focus_key),
+        state_key: stateKey,
+        priority_score: scoreAssetState(stateKey),
+        asset_contract_ready: contractReady,
+        asset_contract_signature: [
+          readText(row.focus_key),
+          stateKey,
+          readText(row.candidate_key, "--")
+        ]
+          .filter(Boolean)
+          .join("|"),
+        file_name: readText(row.file_name, row.asset_key),
+        candidate_key: readText(row.candidate_key),
+        provider_key: readText(row.provider_key),
+        provider_label: readText(row.provider_label),
+        district_state_key: readText(row.district_state_key),
+        exists_local: row.exists_local !== false,
+        bundle_ready_count: Number(row.bundle_ready_count || 0),
+        bundle_asset_count: Number(row.bundle_asset_count || 0),
+        candidate_count: Number(row.candidate_count || 0)
+      };
+    })
+    .sort((left, right) => {
+      const scoreDelta = Number(right.priority_score || 0) - Number(left.priority_score || 0);
+      if (scoreDelta) return scoreDelta;
+      const readyDelta = Number(Boolean(right.asset_contract_ready)) - Number(Boolean(left.asset_contract_ready));
+      if (readyDelta) return readyDelta;
+      return readText(left.focus_key).localeCompare(readText(right.focus_key));
+    });
+
+  return {
+    rows,
+    summary: {
+      row_count: rows.length,
+      contract_ready_count: rows.filter((row) => row.asset_contract_ready).length,
+      ready_count: rows.filter((row) => readText(row.state_key) === "ready").length,
+      partial_count: rows.filter((row) => readText(row.state_key) === "partial").length,
+      intake_ready_count: rows.filter((row) => readText(row.state_key) === "intake_ready").length,
+      missing_count: rows.filter((row) => readText(row.state_key) === "missing").length
+    }
+  };
+}
+
 module.exports = {
   summarizeAssetSourceCatalog,
   summarizeSelectedDistrictBundles,
   buildDistrictAssetBundleCatalog,
-  buildDistrictFamilyAssetCatalog
+  buildDistrictFamilyAssetCatalog,
+  buildDistrictFamilyAssetFocusCatalog
 };
