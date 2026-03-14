@@ -77,7 +77,8 @@ const {
   summarizeSelectedDistrictBundles,
   buildDistrictAssetBundleCatalog,
   buildDistrictFamilyAssetCatalog,
-  buildDistrictFamilyAssetFocusCatalog
+  buildDistrictFamilyAssetFocusCatalog,
+  buildDistrictFamilyAssetRuntimeCatalog
 } = require("./services/webapp/assetManifestIntakeService");
 const { summarizeWebappDomainRuntime } = require("./services/webapp/webappDomainRuntimeService");
 const { createChatTrustNotificationService } = require("./services/chatTrustNotificationService");
@@ -2732,6 +2733,10 @@ async function buildAssetStatusRows() {
     publicUrl: WEBAPP_PUBLIC_URL,
     runtimeGuardBaseUrl: String(process.env.RUNTIME_GUARD_BASE_URL || "").trim()
   });
+  const districtFamilyAssetRuntime = buildDistrictFamilyAssetRuntimeCatalog({
+    focusRows: districtFamilyAssetFocus.rows,
+    webappDomainSummary
+  });
   return {
     manifest_path: manifestPath,
     manifest_version: Number(manifest?.version || 0),
@@ -2749,6 +2754,8 @@ async function buildAssetStatusRows() {
     district_family_asset_rows: districtFamilyAssets.rows,
     district_family_asset_focus_summary: districtFamilyAssetFocus.summary,
     district_family_asset_focus_rows: districtFamilyAssetFocus.rows,
+    district_family_asset_runtime_summary: districtFamilyAssetRuntime.summary,
+    district_family_asset_runtime_rows: districtFamilyAssetRuntime.rows,
     rows
   };
 }
@@ -11641,7 +11648,10 @@ fastify.get("/webapp/api/admin/assets/status", async (request, reply) => {
           bundle_intake_ready_districts: Number(local.district_bundle_summary?.intake_ready_count || 0),
           family_asset_rows: Number(local.district_family_asset_summary?.row_count || 0),
           family_asset_ready_rows: Number(local.district_family_asset_summary?.ready_count || 0),
-          family_asset_partial_rows: Number(local.district_family_asset_summary?.partial_count || 0)
+          family_asset_partial_rows: Number(local.district_family_asset_summary?.partial_count || 0),
+          family_asset_runtime_rows: Number(local.district_family_asset_runtime_summary?.row_count || 0),
+          family_asset_runtime_ready_rows: Number(local.district_family_asset_runtime_summary?.ready_count || 0),
+          family_asset_runtime_partial_rows: Number(local.district_family_asset_runtime_summary?.partial_count || 0)
         }
       }
     });
@@ -11716,7 +11726,10 @@ fastify.post(
             bundle_intake_ready_districts: Number(local.district_bundle_summary?.intake_ready_count || 0),
             family_asset_rows: Number(local.district_family_asset_summary?.row_count || 0),
             family_asset_ready_rows: Number(local.district_family_asset_summary?.ready_count || 0),
-            family_asset_partial_rows: Number(local.district_family_asset_summary?.partial_count || 0)
+            family_asset_partial_rows: Number(local.district_family_asset_summary?.partial_count || 0),
+            family_asset_runtime_rows: Number(local.district_family_asset_runtime_summary?.row_count || 0),
+            family_asset_runtime_ready_rows: Number(local.district_family_asset_runtime_summary?.ready_count || 0),
+            family_asset_runtime_partial_rows: Number(local.district_family_asset_runtime_summary?.partial_count || 0)
           }
         }
       });

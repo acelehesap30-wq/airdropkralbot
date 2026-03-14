@@ -6801,6 +6801,8 @@ function buildAdminAssetStatusPayload(adminPanels) {
   const familyAssetRows = asArray(localManifest.district_family_asset_rows).map((row) => asRecord(row));
   const familyAssetFocusSummary = asRecord(localManifest.district_family_asset_focus_summary);
   const familyAssetFocusRows = asArray(localManifest.district_family_asset_focus_rows).map((row) => asRecord(row));
+  const familyAssetRuntimeSummary = asRecord(localManifest.district_family_asset_runtime_summary);
+  const familyAssetRuntimeRows = asArray(localManifest.district_family_asset_runtime_rows).map((row) => asRecord(row));
   const selectedBundleSummary = asRecord(localManifest.selected_bundle_summary);
   const selectedBundleRows = asArray(localManifest.selected_bundle_rows).map((row) => asRecord(row));
   const selectedByDistrict = new Map(
@@ -6822,6 +6824,17 @@ function buildAdminAssetStatusPayload(adminPanels) {
       meta: `bundle ${readyCount}/${assetCount} | intake ${candidateCount} | mode ${toText(asArray(item.ingest_modes)[0] || "--")}${selectedAsset ? ` | ${selectedFamily}:${selectedAsset}` : ""}`,
       chip: stateKey.toUpperCase(),
       tone: stateKey === "ready" ? "ready" : "missing"
+    };
+  });
+  const familyRuntimeRows = familyAssetRuntimeRows.slice(0, 5).map((row) => {
+    const stateKey = toText(row.runtime_state_key || row.state_key || "missing", "missing").toLowerCase();
+    return {
+      title: toText(row.focus_key || `${toText(row.district_key)}:${toText(row.family_key)}:${toText(row.asset_key)}`, "asset"),
+      meta: `${toText(row.runtime_contract_signature || "--")} | host ${toText(row.domain_state_key || "--")} | ${toText(
+        row.file_name || row.asset_key || "-"
+      )}`,
+      chip: stateKey.toUpperCase(),
+      tone: stateKey === "missing" ? "missing" : stateKey === "partial" ? "watch" : stateKey === "intake_ready" ? "balanced" : "ready"
     };
   });
   const familyFocusRows = familyAssetFocusRows.slice(0, 5).map((row) => {
@@ -6860,9 +6873,13 @@ function buildAdminAssetStatusPayload(adminPanels) {
       familyAssetSummary.ready_count || familyAssetSummary.row_count
     ))}/${Math.round(toNum(familyAssetSummary.row_count))} | focus ${Math.round(
       toNum(familyAssetFocusSummary.contract_ready_count || familyAssetFocusSummary.row_count)
-    )}/${Math.round(toNum(familyAssetFocusSummary.row_count))} | missing ${Math.round(toNum(summary.missing_assets))}`,
+    )}/${Math.round(toNum(familyAssetFocusSummary.row_count))} | runtime ${Math.round(
+      toNum(familyAssetRuntimeSummary.contract_ready_count || familyAssetRuntimeSummary.row_count)
+    )}/${Math.round(toNum(familyAssetRuntimeSummary.row_count))} | missing ${Math.round(toNum(summary.missing_assets))}`,
     revisionLineText: `Manifest: ${toText(activeManifest.manifest_revision || activeManifest.state_json?.manifest_revision || "local")} | updated ${toText(activeManifest.updated_at, "-")}`,
-    rows: familyFocusRows.length
+    rows: familyRuntimeRows.length
+      ? familyRuntimeRows.concat(familyFocusRows, familyRows, districtRows, fileRows).slice(0, 8)
+      : familyFocusRows.length
       ? familyFocusRows.concat(familyRows, districtRows, fileRows).slice(0, 8)
       : familyRows.length
         ? familyRows.concat(districtRows, fileRows).slice(0, 8)
@@ -6880,11 +6897,13 @@ function buildAdminAssetRuntimePayload(mutators, adminPanels) {
   const districtBundleSummary = asRecord(localManifest.district_bundle_summary);
   const familyAssetSummary = asRecord(localManifest.district_family_asset_summary);
   const familyAssetFocusSummary = asRecord(localManifest.district_family_asset_focus_summary);
+  const familyAssetRuntimeSummary = asRecord(localManifest.district_family_asset_runtime_summary);
   const selectedBundleSummary = asRecord(localManifest.selected_bundle_summary);
   const selectedBundleRows = asArray(localManifest.selected_bundle_rows).map((row) => asRecord(row));
   const districtBundleRows = asArray(localManifest.district_bundle_rows).map((row) => asRecord(row));
   const familyAssetRows = asArray(localManifest.district_family_asset_rows).map((row) => asRecord(row));
   const familyAssetFocusRows = asArray(localManifest.district_family_asset_focus_rows).map((row) => asRecord(row));
+  const familyAssetRuntimeRows = asArray(localManifest.district_family_asset_runtime_rows).map((row) => asRecord(row));
   const rows = asArray(localManifest.rows).map((row) => ({
     asset_key: toText(asRecord(row).asset_key || "asset"),
     exists_local: asRecord(row).exists !== false,
@@ -6898,7 +6917,13 @@ function buildAdminAssetRuntimePayload(mutators, adminPanels) {
       summary: asRecord(assets.summary)
     }
   });
-  const selectedSummaryText = familyAssetFocusRows.length
+  const selectedSummaryText = familyAssetRuntimeRows.length
+    ? familyAssetRuntimeRows
+        .slice(0, 3)
+        .map((row) => `${toText(row.focus_key || "--")}:${toText(row.runtime_state_key || row.state_key || "--")}`)
+        .filter(Boolean)
+        .join(" | ")
+    : familyAssetFocusRows.length
     ? familyAssetFocusRows
         .slice(0, 3)
         .map((row) => `${toText(row.focus_key || "--")}:${toText(row.state_key || "--")}`)
@@ -6917,6 +6942,8 @@ function buildAdminAssetRuntimePayload(mutators, adminPanels) {
     .join(" | ");
   const focusDistrict = districtBundleRows.find((row) => toText(row.state_key) === "ready") || districtBundleRows[0] || {};
   const focusSelectedRow =
+    familyAssetRuntimeRows.find((row) => toText(row.district_key) === toText(focusDistrict.district_key)) ||
+    familyAssetRuntimeRows[0] ||
     familyAssetFocusRows.find((row) => toText(row.district_key) === toText(focusDistrict.district_key)) ||
     familyAssetFocusRows[0] ||
     familyAssetRows.find((row) => toText(row.district_key) === toText(focusDistrict.district_key)) ||
@@ -6934,16 +6961,33 @@ function buildAdminAssetRuntimePayload(mutators, adminPanels) {
     tone: mapRuntimeTone(metrics.tone || "balanced"),
     readyRatio: clamp(metrics.readyRatio),
     syncRatio: clamp(metrics.integrityRatio),
-    signalLineText: `Ready ${Math.round(clamp(metrics.readyRatio) * 100)}% | Integrity ${Math.round(clamp(metrics.integrityRatio) * 100)}% | Bundles ${Math.round(toNum(districtBundleSummary.ready_count))}/${Math.max(1, Math.round(toNum(districtBundleSummary.district_count)))} | Family ${Math.round(toNum(familyAssetSummary.ready_count || familyAssetSummary.row_count))}/${Math.max(1, Math.round(toNum(familyAssetSummary.row_count)))} | Focus ${Math.round(toNum(familyAssetFocusSummary.contract_ready_count || familyAssetFocusSummary.row_count))}/${Math.max(1, Math.round(toNum(familyAssetFocusSummary.row_count)))}`,
+    signalLineText: `Ready ${Math.round(clamp(metrics.readyRatio) * 100)}% | Integrity ${Math.round(clamp(metrics.integrityRatio) * 100)}% | Bundles ${Math.round(toNum(districtBundleSummary.ready_count))}/${Math.max(1, Math.round(toNum(districtBundleSummary.district_count)))} | Family ${Math.round(toNum(familyAssetSummary.ready_count || familyAssetSummary.row_count))}/${Math.max(1, Math.round(toNum(familyAssetSummary.row_count)))} | Focus ${Math.round(toNum(familyAssetFocusSummary.contract_ready_count || familyAssetFocusSummary.row_count))}/${Math.max(1, Math.round(toNum(familyAssetFocusSummary.row_count)))} | Runtime ${Math.round(toNum(familyAssetRuntimeSummary.contract_ready_count || familyAssetRuntimeSummary.row_count))}/${Math.max(1, Math.round(toNum(familyAssetRuntimeSummary.row_count)))}`,
     selectionLineText: selectedSummaryText ? `SELECT ${selectedSummaryText}` : "SELECT bundle telemetry bekleniyor",
     domainLineText,
     focusLineText: toText(focusSelectedRow.asset_key)
-      ? `FOCUS ${toText(focusSelectedRow.focus_key || `${toText(focusSelectedRow.district_key || "--")}:${toText(focusSelectedRow.family_key || "--")}:${toText(focusSelectedRow.asset_key || "--")}`)} | ${toText(focusSelectedRow.state_key || "--")} | ${toText(focusSelectedRow.asset_contract_signature || focusSelectedRow.candidate_key || "--")}`
+      ? `FOCUS ${toText(focusSelectedRow.focus_key || `${toText(focusSelectedRow.district_key || "--")}:${toText(focusSelectedRow.family_key || "--")}:${toText(focusSelectedRow.asset_key || "--")}`)} | ${toText(focusSelectedRow.runtime_state_key || focusSelectedRow.state_key || "--")} | HOST ${toText(focusSelectedRow.domain_state_key || domainStateKey || "--")} | ${toText(
+          focusSelectedRow.runtime_contract_signature ||
+            focusSelectedRow.asset_contract_signature ||
+            focusSelectedRow.candidate_key ||
+            "--"
+        )}`
       : "FOCUS district asset bekleniyor",
     chips: [
       { id: "adminAssetReadyChip", text: `READY ${Math.round(clamp(metrics.readyRatio) * 100)}%`, tone: mapRuntimeTone(metrics.readyRatio < 0.7 ? "pressure" : "advantage"), level: clamp(metrics.readyRatio) },
       { id: "adminAssetSyncChip", text: `SYNC ${Math.round(clamp(metrics.integrityRatio) * 100)}%`, tone: mapRuntimeTone(metrics.integrityRatio < 0.7 ? "critical" : "advantage"), level: clamp(metrics.integrityRatio) },
       { id: "adminAssetDistrictChip", text: `DIST ${Math.round(toNum(districtBundleSummary.ready_count))}/${Math.round(toNum(districtBundleSummary.district_count))}`, tone: mapRuntimeTone(toNum(districtBundleSummary.partial_count) > 0 ? "pressure" : "advantage"), level: clamp(toNum(districtBundleSummary.district_count) ? toNum(districtBundleSummary.ready_count) / Math.max(1, toNum(districtBundleSummary.district_count)) : 0) },
+      {
+        id: "adminAssetFocusChip",
+        text: `FOCUS ${Math.round(toNum(familyAssetRuntimeSummary.contract_ready_count || familyAssetRuntimeSummary.row_count))}/${Math.round(toNum(familyAssetRuntimeSummary.row_count || familyAssetFocusSummary.row_count))}`,
+        tone: mapRuntimeTone(
+          toNum(familyAssetRuntimeSummary.missing_count) > 0 ? "critical" : toNum(familyAssetRuntimeSummary.partial_count) > 0 ? "pressure" : "advantage"
+        ),
+        level: clamp(
+          toNum(familyAssetRuntimeSummary.row_count)
+            ? toNum(familyAssetRuntimeSummary.contract_ready_count) / Math.max(1, toNum(familyAssetRuntimeSummary.row_count))
+            : 0
+        )
+      },
       {
         id: "adminAssetHostChip",
         text: `HOST ${domainStateKey.toUpperCase()}`,

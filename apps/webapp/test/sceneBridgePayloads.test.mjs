@@ -1390,6 +1390,15 @@ test("buildAdminBridgePayloads produces runtime, asset and audit cards from admi
           ],
           district_family_asset_summary: { row_count: 2, family_count: 2, ready_count: 1, partial_count: 1, intake_ready_count: 0 },
           district_family_asset_focus_summary: { row_count: 2, contract_ready_count: 1, ready_count: 1, partial_count: 1, missing_count: 0 },
+          district_family_asset_runtime_summary: {
+            row_count: 2,
+            contract_ready_count: 1,
+            domain_ready_count: 2,
+            guard_match_count: 2,
+            ready_count: 1,
+            partial_count: 1,
+            missing_count: 0
+          },
           district_family_asset_rows: [
             {
               district_key: "arena_prime",
@@ -1429,6 +1438,35 @@ test("buildAdminBridgePayloads produces runtime, asset and audit cards from admi
               focus_key: "arena_prime:duel:arena_trophy",
               state_key: "ready",
               file_name: "arena-trophy.glb",
+              asset_contract_signature: "arena_prime:duel:arena_trophy|ready|arena_khronos_cesium_man"
+            }
+          ],
+          district_family_asset_runtime_rows: [
+            {
+              district_key: "exchange_district",
+              family_key: "wallet",
+              asset_key: "exchange_artifact",
+              focus_key: "exchange_district:wallet:exchange_artifact",
+              state_key: "partial",
+              runtime_state_key: "partial",
+              file_name: "exchange-artifact.glb",
+              domain_state_key: "ready",
+              runtime_contract_ready: false,
+              runtime_contract_signature:
+                "exchange_district:wallet:exchange_artifact|partial|ready|guard_match|exchange_khronos_damaged_helmet",
+              asset_contract_signature: "exchange_district:wallet:exchange_artifact|partial|exchange_khronos_damaged_helmet"
+            },
+            {
+              district_key: "arena_prime",
+              family_key: "duel",
+              asset_key: "arena_trophy",
+              focus_key: "arena_prime:duel:arena_trophy",
+              state_key: "ready",
+              runtime_state_key: "ready",
+              file_name: "arena-trophy.glb",
+              domain_state_key: "ready",
+              runtime_contract_ready: true,
+              runtime_contract_signature: "arena_prime:duel:arena_trophy|ready|ready|guard_match|arena_khronos_cesium_man",
               asset_contract_signature: "arena_prime:duel:arena_trophy|ready|arena_khronos_cesium_man"
             }
           ],
@@ -1693,9 +1731,12 @@ test("buildAdminBridgePayloads produces runtime, asset and audit cards from admi
   assert.match(payloads.runtime.loopDispatchBlocks?.[0]?.summary || "", /WATCH|ALERT|FLOW/i);
   assert.equal(payloads.assetStatus.rows.length, 8);
   assert.equal(payloads.assetStatus.rows[0].title, "exchange_district:wallet:exchange_artifact");
-  assert.match(payloads.assetStatus.rows[0].meta, /exchange_district:wallet:exchange_artifact\|partial\|exchange_khronos_damaged_helmet/i);
+  assert.match(
+    payloads.assetStatus.rows[0].meta,
+    /exchange_district:wallet:exchange_artifact\|partial\|ready\|guard_match\|exchange_khronos_damaged_helmet/i
+  );
   assert.equal(payloads.assetStatus.rows[1].title, "arena_prime:duel:arena_trophy");
-  assert.equal(payloads.assetRuntime.signalLineText, "Ready 75% | Integrity 75% | Bundles 1/2 | Family 1/2 | Focus 1/2");
+  assert.equal(payloads.assetRuntime.signalLineText, "Ready 75% | Integrity 75% | Bundles 1/2 | Family 1/2 | Focus 1/2 | Runtime 1/2");
   assert.equal(
     payloads.assetRuntime.selectionLineText,
     "SELECT exchange_district:wallet:exchange_artifact:partial | arena_prime:duel:arena_trophy:ready"
@@ -1706,11 +1747,12 @@ test("buildAdminBridgePayloads produces runtime, asset and audit cards from admi
   );
   assert.equal(
     payloads.assetRuntime.focusLineText,
-    "FOCUS arena_prime:duel:arena_trophy | ready | arena_prime:duel:arena_trophy|ready|arena_khronos_cesium_man"
+    "FOCUS arena_prime:duel:arena_trophy | ready | HOST ready | arena_prime:duel:arena_trophy|ready|ready|guard_match|arena_khronos_cesium_man"
   );
-  assert.equal(payloads.assetRuntime.chips.length, 5);
+  assert.equal(payloads.assetRuntime.chips.length, 6);
   assert.equal(payloads.assetRuntime.chips[2].text, "DIST 1/2");
-  assert.equal(payloads.assetRuntime.chips[3].text, "HOST READY");
+  assert.equal(payloads.assetRuntime.chips[3].text, "FOCUS 1/2");
+  assert.equal(payloads.assetRuntime.chips[4].text, "HOST READY");
   assert.equal(payloads.auditRuntime.phaseChipText, "PHASE PARTIAL");
   assert.equal(payloads.auditRuntime.chips.length, 4);
 });

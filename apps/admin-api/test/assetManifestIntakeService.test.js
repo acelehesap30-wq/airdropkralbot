@@ -9,7 +9,8 @@ const {
   summarizeSelectedDistrictBundles,
   buildDistrictAssetBundleCatalog,
   buildDistrictFamilyAssetCatalog,
-  buildDistrictFamilyAssetFocusCatalog
+  buildDistrictFamilyAssetFocusCatalog,
+  buildDistrictFamilyAssetRuntimeCatalog
 } = require("../src/services/webapp/assetManifestIntakeService");
 
 test("summarizeAssetSourceCatalog reads curated district intake catalog", () => {
@@ -269,4 +270,56 @@ test("buildDistrictFamilyAssetFocusCatalog prioritizes partial asset focus rows"
   );
   assert.equal(result.rows[1].focus_key, "arena_prime:duel:arena_trophy");
   assert.equal(result.rows[1].asset_contract_ready, true);
+});
+
+test("buildDistrictFamilyAssetRuntimeCatalog combines asset focus with domain runtime", () => {
+  const result = buildDistrictFamilyAssetRuntimeCatalog({
+    focusRows: [
+      {
+        district_key: "arena_prime",
+        family_key: "duel",
+        asset_key: "arena_trophy",
+        focus_key: "arena_prime:duel:arena_trophy",
+        state_key: "ready",
+        asset_contract_ready: true,
+        asset_contract_signature: "arena_prime:duel:arena_trophy|ready|arena_khronos_cesium_man",
+        candidate_key: "arena_khronos_cesium_man",
+        file_name: "arena-trophy.glb"
+      },
+      {
+        district_key: "exchange_district",
+        family_key: "wallet",
+        asset_key: "exchange_artifact",
+        focus_key: "exchange_district:wallet:exchange_artifact",
+        state_key: "partial",
+        asset_contract_ready: false,
+        asset_contract_signature: "exchange_district:wallet:exchange_artifact|partial|exchange_khronos_damaged_helmet",
+        candidate_key: "exchange_khronos_damaged_helmet",
+        file_name: "exchange-artifact.glb"
+      }
+    ],
+    webappDomainSummary: {
+      host: "webapp.k99-exchange.xyz",
+      state_key: "ready",
+      contract_ready: true,
+      runtime_guard_matches_host: true,
+      health_status_code: 200,
+      webapp_status_code: 200
+    }
+  });
+
+  assert.equal(result.summary.row_count, 2);
+  assert.equal(result.summary.contract_ready_count, 1);
+  assert.equal(result.summary.domain_ready_count, 2);
+  assert.equal(result.summary.partial_count, 1);
+  assert.equal(result.rows[0].focus_key, "exchange_district:wallet:exchange_artifact");
+  assert.equal(result.rows[0].runtime_state_key, "partial");
+  assert.equal(result.rows[0].runtime_contract_ready, false);
+  assert.equal(
+    result.rows[0].runtime_contract_signature,
+    "exchange_district:wallet:exchange_artifact|partial|ready|guard_match|exchange_khronos_damaged_helmet"
+  );
+  assert.equal(result.rows[1].focus_key, "arena_prime:duel:arena_trophy");
+  assert.equal(result.rows[1].runtime_state_key, "ready");
+  assert.equal(result.rows[1].runtime_contract_ready, true);
 });
