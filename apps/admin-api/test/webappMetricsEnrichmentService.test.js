@@ -357,6 +357,11 @@ test("daily microflow risk lists sort contract-ready rows ahead of equally ranke
     context_lookup_resolved: false
   };
 
+  const riskRowsDaily = service.buildSceneLoopDistrictMicroflowRiskRowsDaily([staleRow, readyRow], 10);
+  const trendDailyBreakdown = service.buildSceneLoopDistrictMicroflowHealthAttentionTrendDailyBreakdown(
+    [staleRow, readyRow],
+    10
+  );
   const riskPriorityDaily = service.buildSceneLoopDistrictMicroflowRiskPriorityDaily([staleRow, readyRow], 10);
   const dimensionPriorityDaily = service.buildSceneLoopDimensionPriorityDaily(
     service.buildSceneLoopDistrictMicroflowRiskRowsDaily([staleRow, readyRow], 10),
@@ -368,6 +373,12 @@ test("daily microflow risk lists sort contract-ready rows ahead of equally ranke
     10
   );
 
+  assert.equal(riskRowsDaily[0].focus_key, "mission_quarter:claim_lane:claim");
+  assert.equal(riskRowsDaily[0].contract_ready, true);
+
+  assert.equal(trendDailyBreakdown[0].focus_key, "mission_quarter:claim_lane:claim");
+  assert.equal(trendDailyBreakdown[0].contract_ready, true);
+
   assert.equal(riskPriorityDaily[0].focus_key, "mission_quarter:claim_lane:claim");
   assert.equal(riskPriorityDaily[0].contract_ready, true);
 
@@ -376,6 +387,81 @@ test("daily microflow risk lists sort contract-ready rows ahead of equally ranke
 
   assert.equal(trendDailyMatrix[0].focus_key, "mission_quarter:claim_lane:claim");
   assert.equal(trendDailyMatrix[0].contract_ready, true);
+});
+
+test("daily microflow breakdown buckets sort contract-ready context ahead of equally sized stale buckets", () => {
+  const readyRow = {
+    day: "2026-03-10",
+    district_key: "exchange_district",
+    loop_family_key: "wallet_link",
+    loop_microflow_key: "wallet",
+    flow_key: "wallet_link:wallet",
+    focus_key: "exchange_district:wallet_link:wallet",
+    risk_key: "yellow:watch:stable",
+    risk_focus_key: "exchange_district:wallet_link:wallet|yellow:watch:stable",
+    entry_kind_key: "world_entry_kind_wallet_terminal",
+    sequence_kind_key: "world_modal_kind_wallet_terminal",
+    action_context_signature:
+      "wallet_link:wallet|exchange_district:wallet_link:wallet|world_entry_kind_wallet_terminal|world_modal_kind_wallet_terminal",
+    risk_context_signature:
+      "wallet_link:wallet|exchange_district:wallet_link:wallet|yellow:watch:stable|world_entry_kind_wallet_terminal|world_modal_kind_wallet_terminal",
+    contract_ready: true,
+    contract_state_key: "ready",
+    contract_missing_keys: [],
+    context_lookup_required: false,
+    context_lookup_resolved: true,
+    latest_health_band: "yellow",
+    attention_band: "watch",
+    trend_direction: "stable",
+    trend_delta: 0,
+    total_count: 4,
+    live_count: 3,
+    blocked_count: 1,
+    priority_score: 900
+  };
+  const staleRow = {
+    ...readyRow,
+    loop_family_key: "dispatch_gate",
+    loop_microflow_key: "dispatch",
+    flow_key: "dispatch_gate:dispatch",
+    focus_key: "ops_citadel:dispatch_gate:dispatch",
+    risk_key: "red:alert:stable",
+    risk_focus_key: "ops_citadel:dispatch_gate:dispatch|red:alert:stable",
+    entry_kind_key: "world_entry_kind_dispatch_console",
+    sequence_kind_key: "world_modal_kind_dispatch_sequence",
+    action_context_signature:
+      "dispatch_gate:dispatch|ops_citadel:dispatch_gate:dispatch|world_entry_kind_dispatch_console|world_modal_kind_dispatch_sequence",
+    risk_context_signature:
+      "dispatch_gate:dispatch|ops_citadel:dispatch_gate:dispatch|red:alert:stable|world_entry_kind_dispatch_console|world_modal_kind_dispatch_sequence",
+    contract_ready: false,
+    contract_state_key: "missing",
+    contract_missing_keys: ["action_context_lookup"],
+    context_lookup_required: true,
+    context_lookup_resolved: false,
+    latest_health_band: "red",
+    attention_band: "alert"
+  };
+
+  const riskBreakdown = service.buildSceneLoopDistrictMicroflowRiskBreakdown([staleRow, readyRow], 10);
+  const riskBreakdownDaily = service.buildSceneLoopDistrictMicroflowRiskBreakdownDaily([staleRow, readyRow], 10);
+  const flowBreakdown = service.buildSceneLoopDimensionBreakdown([staleRow, readyRow], "flow_key", 10);
+  const flowBreakdownDaily = service.buildSceneLoopDimensionBreakdownDaily([staleRow, readyRow], "flow_key", 10);
+
+  assert.equal(riskBreakdown[0].focus_key, "exchange_district:wallet_link:wallet");
+  assert.equal(riskBreakdown[0].contract_ready, true);
+  assert.equal(riskBreakdown[0].bucket_key, "yellow:watch:stable");
+
+  assert.equal(riskBreakdownDaily[0].focus_key, "exchange_district:wallet_link:wallet");
+  assert.equal(riskBreakdownDaily[0].contract_ready, true);
+  assert.equal(riskBreakdownDaily[0].bucket_key, "yellow:watch:stable");
+
+  assert.equal(flowBreakdown[0].focus_key, "exchange_district:wallet_link:wallet");
+  assert.equal(flowBreakdown[0].contract_ready, true);
+  assert.equal(flowBreakdown[0].bucket_key, "wallet_link:wallet");
+
+  assert.equal(flowBreakdownDaily[0].focus_key, "exchange_district:wallet_link:wallet");
+  assert.equal(flowBreakdownDaily[0].contract_ready, true);
+  assert.equal(flowBreakdownDaily[0].bucket_key, "wallet_link:wallet");
 });
 
 test("enrichWebappRevenueMetrics computes quality and funnel rates", () => {

@@ -1831,6 +1831,8 @@ function buildSceneLoopDistrictMicroflowHealthAttentionTrendDailyBreakdown(rows,
       if (healthGap !== 0) return healthGap;
       const trendGap = rankSceneLoopTrendDirection(right.trend_direction) - rankSceneLoopTrendDirection(left.trend_direction);
       if (trendGap !== 0) return trendGap;
+      const contractGap = compareSceneLoopContractStrength(left, right);
+      if (contractGap !== 0) return contractGap;
       const totalGap = toNum(right.total_count, 0) - toNum(left.total_count, 0);
       if (Math.abs(totalGap) > 0.0001) return totalGap;
       return `${String(left.district_key || "")}:${String(left.loop_microflow_key || "")}`.localeCompare(
@@ -2043,6 +2045,8 @@ function buildSceneLoopDistrictMicroflowRiskRowsDaily(rows, limit = 24) {
       if (dayOrder !== 0) return dayOrder;
       const priorityGap = toNum(right.priority_score, 0) - toNum(left.priority_score, 0);
       if (Math.abs(priorityGap) > 0.0001) return priorityGap;
+      const contractGap = compareSceneLoopContractStrength(left, right);
+      if (contractGap !== 0) return contractGap;
       const totalGap = toNum(right.total_count, 0) - toNum(left.total_count, 0);
       if (Math.abs(totalGap) > 0.0001) return totalGap;
       return `${String(left.district_key || "")}:${String(left.loop_microflow_key || "")}`.localeCompare(
@@ -2269,6 +2273,8 @@ function buildSceneLoopDistrictMicroflowRiskBreakdown(rows, limit = 18) {
     .sort((left, right) => {
       const itemGap = toNum(right.item_count, 0) - toNum(left.item_count, 0);
       if (Math.abs(itemGap) > 0.0001) return itemGap;
+      const contractGap = compareSceneLoopContractStrength(left, right);
+      if (contractGap !== 0) return contractGap;
       return String(left.bucket_key || "").localeCompare(String(right.bucket_key || ""));
     })
     .slice(0, Math.max(1, Math.floor(toNum(limit, 18))));
@@ -2304,6 +2310,8 @@ function buildSceneLoopDistrictMicroflowRiskBreakdownDaily(rows, limit = 24) {
       if (dayOrder !== 0) return dayOrder;
       const itemGap = toNum(right.item_count, 0) - toNum(left.item_count, 0);
       if (Math.abs(itemGap) > 0.0001) return itemGap;
+      const contractGap = compareSceneLoopContractStrength(left, right);
+      if (contractGap !== 0) return contractGap;
       return String(left.bucket_key || "").localeCompare(String(right.bucket_key || ""));
     })
     .slice(0, Math.max(1, Math.floor(toNum(limit, 24))));
@@ -2338,6 +2346,8 @@ function buildSceneLoopDimensionBreakdown(rows, field, limit = 18) {
     .sort((left, right) => {
       const itemGap = toNum(right.item_count, 0) - toNum(left.item_count, 0);
       if (Math.abs(itemGap) > 0.0001) return itemGap;
+      const contractGap = compareSceneLoopContractStrength(left, right);
+      if (contractGap !== 0) return contractGap;
       return String(left.bucket_key || "").localeCompare(String(right.bucket_key || ""));
     })
     .slice(0, Math.max(1, Math.floor(toNum(limit, 18))));
@@ -2373,6 +2383,8 @@ function buildSceneLoopDimensionBreakdownDaily(rows, field, limit = 24) {
       if (dayOrder !== 0) return dayOrder;
       const itemGap = toNum(right.item_count, 0) - toNum(left.item_count, 0);
       if (Math.abs(itemGap) > 0.0001) return itemGap;
+      const contractGap = compareSceneLoopContractStrength(left, right);
+      if (contractGap !== 0) return contractGap;
       return String(left.bucket_key || "").localeCompare(String(right.bucket_key || ""));
     })
     .slice(0, Math.max(1, Math.floor(toNum(limit, 24))));
