@@ -2843,6 +2843,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
             </div>
           ) : null}
           {renderSceneActionContextMeta(worldState.interaction_sheet)}
+          {renderPrimaryActionSummary(worldState.interaction_sheet, { compact: true })}
           {renderSceneActionContextChips(worldState.interaction_sheet)}
           <div className="akrSceneWorldSheetRows">
             {worldState.interaction_sheet.rows.map((row: { label_key: string; value: string }) => (
@@ -2922,6 +2923,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
             </div>
           ) : null}
           {renderSceneActionContextMeta(worldState.interaction_surface)}
+          {renderPrimaryActionSummary(worldState.interaction_surface, { compact: true })}
           {renderSceneActionContextChips(worldState.interaction_surface)}
           {worldState.interaction_entry ? (
             <div
@@ -2943,6 +2945,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
                 </div>
               ) : null}
               {renderSceneActionContextMeta(worldState.interaction_entry)}
+              {renderPrimaryActionSummary(worldState.interaction_entry, { compact: true })}
               {renderSceneActionContextChips(worldState.interaction_entry)}
               <div className="akrSceneEntrySurfaceModeRows">
                 {worldState.interaction_entry.preview_rows.map((row: { label_key: string; value: string; status_key: string }) => (
@@ -3079,6 +3082,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
             ) : null}
           </div>
           {renderSceneActionContextMeta(worldState.interaction_terminal)}
+          {renderPrimaryActionSummary(worldState.interaction_terminal, { compact: true })}
           {renderSceneActionContextChips(worldState.interaction_terminal)}
           {worldState.interaction_terminal.focus_key || worldState.interaction_terminal.risk_focus_key ? (
             <div className="akrSceneTerminalConsoleContext">
@@ -3256,6 +3260,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
             </div>
           ) : null}
           {renderSceneActionContextMeta(worldState.interaction_modal)}
+          {renderPrimaryActionSummary(worldState.interaction_modal, { compact: true })}
           {renderSceneActionContextChips(worldState.interaction_modal)}
           <div className="akrSceneInteractionModalGrid">
             <section className="akrSceneInteractionModalSection">
@@ -4139,6 +4144,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
             ) : null}
           </div>
           {renderSceneActionContextMeta(worldState.interaction_flow)}
+          {renderPrimaryActionSummary(worldState.interaction_flow, { compact: true })}
           <div className="akrSceneEntryFlowSteps">
             {worldState.interaction_flow.step_rows.map((row: { label_key: string; value: string; status_key: string }) => (
               <div key={`${worldState.interaction_flow.flow_key}:${row.label_key}`} className={`akrSceneEntryFlowStep is-${row.status_key}`}>
