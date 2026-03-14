@@ -492,6 +492,11 @@ type SceneActionLike = {
   risk_context_signature?: string;
   context_lookup_required?: boolean;
   context_lookup_resolved?: boolean;
+  runtime_summary_host?: string;
+  runtime_summary_state_key?: string;
+  runtime_summary_contract_ready?: boolean;
+  runtime_summary_guard_matches_host?: boolean;
+  runtime_summary_line?: string;
 };
 
 type ResolvedSceneActionContext = {
@@ -1197,6 +1202,27 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
         "data-contract-state": context.contractStateKey || "",
         "data-contract-ready": contractReady ? "true" : "false",
         "data-contract-missing-keys": context.contractMissingKeys.join(","),
+        "data-runtime-summary-host": readSceneActionText(action?.runtime_summary_host, worldState.webapp_domain_host),
+        "data-runtime-summary-state": readSceneActionText(
+          action?.runtime_summary_state_key,
+          worldState.webapp_domain_state_key
+        ),
+        "data-runtime-summary-contract-ready":
+          typeof action?.runtime_summary_contract_ready === "boolean"
+            ? String(action.runtime_summary_contract_ready)
+            : typeof worldState.webapp_domain_contract_ready === "boolean"
+              ? String(worldState.webapp_domain_contract_ready)
+              : "",
+        "data-runtime-summary-guard":
+          typeof action?.runtime_summary_guard_matches_host === "boolean"
+            ? action.runtime_summary_guard_matches_host
+              ? "match"
+              : "drift"
+            : worldState.webapp_domain_runtime_guard_matches_host === false
+              ? "drift"
+              : worldState.webapp_domain_host
+                ? "match"
+                : "",
         "data-primary-action-key": readSceneActionText(primarySource.action_key) || "",
         "data-primary-family-key": primaryContext.familyKey || "",
         "data-primary-flow-key": primaryContext.flowKey || "",
@@ -1211,7 +1237,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
         "data-primary-contract-ready": isStrictSceneActionContractReady(primaryContext) ? "true" : "false"
       };
     },
-    [resolveSceneActionContext]
+    [resolveSceneActionContext, worldState.webapp_domain_contract_ready, worldState.webapp_domain_host, worldState.webapp_domain_runtime_guard_matches_host, worldState.webapp_domain_state_key]
   );
   const hasSceneActionContract = useCallback(
     (action?: SceneActionLike | null) => {
@@ -1454,6 +1480,92 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
       );
     },
     [buildSceneActionDataAttrs, props.lang, renderSceneActionContextChips, resolveSceneActionContext]
+  );
+  const renderSceneRuntimeSummary = useCallback(
+    (action?: SceneActionLike | null, options?: { compact?: boolean }) => {
+      const compact = Boolean(options?.compact);
+      const runtimeLine = readSceneActionText(action?.runtime_summary_line, worldState.webapp_domain_line);
+      const domainHost = readSceneActionText(action?.runtime_summary_host, worldState.webapp_domain_host);
+      const stateKey = readSceneActionText(
+        action?.runtime_summary_state_key,
+        worldState.webapp_domain_state_key,
+        "missing"
+      );
+      const contractReady =
+        typeof action?.runtime_summary_contract_ready === "boolean"
+          ? action.runtime_summary_contract_ready
+          : Boolean(worldState.webapp_domain_contract_ready);
+      const guardMatchesHost =
+        typeof action?.runtime_summary_guard_matches_host === "boolean"
+          ? action.runtime_summary_guard_matches_host
+          : worldState.webapp_domain_runtime_guard_matches_host !== false;
+      const assetSummary = districtAssetSummary.selectedCount
+        ? `${districtAssetSummary.loadedCount}/${districtAssetSummary.selectedCount} ${districtAssetSummary.activeFamilyKey || "district"}:${districtAssetSummary.activeAssetKey || districtAssetSummary.assetKeys.join(" · ")} | ${districtAssetSummary.activeAnchorKind || "manifest"}`
+        : "0/0 district:-- | manifest";
+      if (!runtimeLine && !domainHost && !districtAssetSummary.selectedCount) {
+        return null;
+      }
+      const chips = [
+        domainHost
+          ? {
+              label: t(props.lang, "world_modal_chip_runtime_domain" as never),
+              value: domainHost,
+              tone: "signature"
+            }
+          : null,
+        {
+          label: t(props.lang, "world_modal_chip_runtime_host" as never),
+          value: stateKey || "missing",
+          tone: contractReady ? "green" : stateKey === "partial" ? "watch" : "red"
+        },
+        {
+          label: t(props.lang, "world_modal_chip_runtime_guard" as never),
+          value: guardMatchesHost ? "match" : "drift",
+          tone: guardMatchesHost ? "green" : "red"
+        },
+        {
+          label: t(props.lang, "world_modal_chip_runtime_asset" as never),
+          value: assetSummary,
+          tone: districtAssetSummary.selectedCount ? "flow" : "watch"
+        }
+      ].filter(Boolean) as Array<{ label: string; value: string; tone: string }>;
+      return (
+        <div
+          className={`akrScenePrimaryActionSummary akrSceneRuntimeContractSummary ${
+            compact ? "is-compact" : "is-full"
+          } ${contractReady ? "is-contract-ready" : "is-contract-missing"}`}
+          {...buildSceneActionDataAttrs(action)}
+        >
+          <div className="akrScenePrimaryActionSummaryHeader">
+            <span>{t(props.lang, "world_modal_section_runtime_summary" as never)}</span>
+            <strong>{runtimeLine || domainHost || "DOMAIN telemetry bekleniyor"}</strong>
+          </div>
+          <div className="akrScenePrimaryActionSummaryChips">
+            {(compact ? chips.slice(0, 4) : chips).map((chip) => (
+              <div key={`${chip.label}:${chip.value}`} className={`akrSceneInteractionModalChip is-${chip.tone}`}>
+                <span>{chip.label}</span>
+                <strong>{chip.value}</strong>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    },
+    [
+      buildSceneActionDataAttrs,
+      districtAssetSummary.activeAnchorKind,
+      districtAssetSummary.activeAssetKey,
+      districtAssetSummary.activeFamilyKey,
+      districtAssetSummary.assetKeys,
+      districtAssetSummary.loadedCount,
+      districtAssetSummary.selectedCount,
+      props.lang,
+      worldState.webapp_domain_contract_ready,
+      worldState.webapp_domain_host,
+      worldState.webapp_domain_line,
+      worldState.webapp_domain_runtime_guard_matches_host,
+      worldState.webapp_domain_state_key
+    ]
   );
 
   useEffect(() => {
@@ -2829,6 +2941,12 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
       data-active-asset-key={districtAssetSummary.activeAssetKey}
       data-active-asset-family={districtAssetSummary.activeFamilyKey}
       data-active-asset-anchor={districtAssetSummary.activeAnchorKind}
+      data-webapp-domain-host={worldState.webapp_domain_host || ""}
+      data-webapp-domain-state={worldState.webapp_domain_state_key || ""}
+      data-webapp-domain-guard={worldState.webapp_domain_runtime_guard_matches_host === false ? "drift" : worldState.webapp_domain_host ? "match" : ""}
+      data-webapp-domain-contract-ready={
+        typeof worldState.webapp_domain_contract_ready === "boolean" ? String(worldState.webapp_domain_contract_ready) : ""
+      }
       data-active-cluster-contract-ready={
         typeof worldState.active_cluster_contract_ready === "boolean"
           ? String(worldState.active_cluster_contract_ready)
@@ -2889,6 +3007,11 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
         {districtAssetSummary.selectedCount ? (
           <span className="akrSceneWorldFocus">
             {`ASSET ${districtAssetSummary.loadedCount}/${districtAssetSummary.selectedCount} ${districtAssetSummary.activeFamilyKey || "district"}:${districtAssetSummary.activeAssetKey || districtAssetSummary.assetKeys.join(" · ")} | ${districtAssetSummary.activeAnchorKind || "manifest"}`}
+          </span>
+        ) : null}
+        {worldState.webapp_domain_line ? (
+          <span className={`akrSceneWorldFocus isDomain is-${worldState.webapp_domain_state_key || "missing"}`}>
+            {worldState.webapp_domain_line}
           </span>
         ) : null}
         {worldState.active_hotspot_label ? (
@@ -2981,6 +3104,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           ) : null}
           {renderSceneActionContextMeta(focusedCluster)}
           {renderPrimaryActionSummary(focusedCluster, { compact: true })}
+          {renderSceneRuntimeSummary(focusedCluster, { compact: true })}
           {renderSceneActionContextChips(focusedCluster)}
           <div className="akrSceneWorldRailActions">
             {focusedClusterActions.map((action) => {
@@ -3080,6 +3204,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           ) : null}
           {renderSceneActionContextMeta(worldState.interaction_sheet)}
           {renderPrimaryActionSummary(worldState.interaction_sheet, { compact: true })}
+          {renderSceneRuntimeSummary(worldState.interaction_sheet, { compact: true })}
           {renderSceneActionContextChips(worldState.interaction_sheet)}
           <div className="akrSceneWorldSheetRows">
             {worldState.interaction_sheet.rows.map((row: { label_key: string; value: string }) => (
@@ -3160,6 +3285,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           ) : null}
           {renderSceneActionContextMeta(worldState.interaction_surface)}
           {renderPrimaryActionSummary(worldState.interaction_surface, { compact: true })}
+          {renderSceneRuntimeSummary(worldState.interaction_surface, { compact: true })}
           {renderSceneActionContextChips(worldState.interaction_surface)}
           {worldState.interaction_entry ? (
             <div
@@ -3182,6 +3308,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
               ) : null}
               {renderSceneActionContextMeta(worldState.interaction_entry)}
               {renderPrimaryActionSummary(worldState.interaction_entry, { compact: true })}
+              {renderSceneRuntimeSummary(worldState.interaction_entry, { compact: true })}
               {renderSceneActionContextChips(worldState.interaction_entry)}
               <div className="akrSceneEntrySurfaceModeRows">
                 {worldState.interaction_entry.preview_rows.map((row: { label_key: string; value: string; status_key: string }) => (
@@ -3319,6 +3446,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           </div>
           {renderSceneActionContextMeta(worldState.interaction_terminal)}
           {renderPrimaryActionSummary(worldState.interaction_terminal, { compact: true })}
+          {renderSceneRuntimeSummary(worldState.interaction_terminal, { compact: true })}
           {renderSceneActionContextChips(worldState.interaction_terminal)}
           {worldState.interaction_terminal.focus_key || worldState.interaction_terminal.risk_focus_key ? (
             <div className="akrSceneTerminalConsoleContext">
@@ -3497,6 +3625,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           ) : null}
           {renderSceneActionContextMeta(worldState.interaction_modal)}
           {renderPrimaryActionSummary(worldState.interaction_modal, { compact: true })}
+          {renderSceneRuntimeSummary(worldState.interaction_modal, { compact: true })}
           {renderSceneActionContextChips(worldState.interaction_modal)}
           <div className="akrSceneInteractionModalGrid">
             <section className="akrSceneInteractionModalSection">
@@ -4381,6 +4510,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
           </div>
           {renderSceneActionContextMeta(worldState.interaction_flow)}
           {renderPrimaryActionSummary(worldState.interaction_flow, { compact: true })}
+          {renderSceneRuntimeSummary(worldState.interaction_flow, { compact: true })}
           <div className="akrSceneEntryFlowSteps">
             {worldState.interaction_flow.step_rows.map((row: { label_key: string; value: string; status_key: string }) => (
               <div key={`${worldState.interaction_flow.flow_key}:${row.label_key}`} className={`akrSceneEntryFlowStep is-${row.status_key}`}>

@@ -13,6 +13,17 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
         scene_profile: "cinematic"
       }
     },
+    data: {
+      local_manifest: {
+        webapp_domain_summary: {
+          host: "webapp.k99-exchange.xyz",
+          state_key: "ready",
+          contract_ready: true,
+          runtime_guard_matches_host: true,
+          webapp_status_code: 200
+        }
+      }
+    },
     homeFeed: {
       season: { progress_pct: 62 },
       mission: { active_count: 3 },
@@ -32,6 +43,12 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
   assert.equal(state.nodes[2].action_key, SHELL_ACTION_KEY.PLAYER_WALLET_CONNECT);
   assert.equal(state.district_theme_key, "central_hub");
   assert.equal(state.active_node_key, "season_arc");
+  assert.equal(state.webapp_domain_host, "webapp.k99-exchange.xyz");
+  assert.equal(state.webapp_domain_state_key, "ready");
+  assert.equal(state.webapp_domain_contract_ready, true);
+  assert.equal(state.webapp_domain_runtime_guard_matches_host, true);
+  assert.equal(state.webapp_domain_webapp_status_code, 200);
+  assert.equal(state.webapp_domain_line, "DOMAIN webapp.k99-exchange.xyz | READY | WEBAPP 200 | GUARD MATCH");
   assert.equal(state.camera_profile_key, "hub_glide");
   assert.equal(state.hud_profile_key, "central_hub");
   assert.equal(state.hud_density, "normal");
@@ -108,6 +125,14 @@ test("buildDistrictWorldState maps player home into central hub beacons", () => 
   assert.equal(state.interaction_sheet.primary_risk_focus_key, "central_hub:travel:travel_flow|green:stable:flat");
   assert.equal(state.interaction_sheet.primary_entry_kind_key, "world_entry_kind_hub_portal");
   assert.equal(state.interaction_sheet.primary_sequence_kind_key, "world_modal_kind_travel_gate");
+  assert.equal(state.interaction_sheet.runtime_summary_host, "webapp.k99-exchange.xyz");
+  assert.equal(state.interaction_sheet.runtime_summary_state_key, "ready");
+  assert.equal(state.interaction_sheet.runtime_summary_contract_ready, true);
+  assert.equal(state.interaction_sheet.runtime_summary_guard_matches_host, true);
+  assert.equal(
+    state.interaction_sheet.runtime_summary_line,
+    "DOMAIN webapp.k99-exchange.xyz | READY | WEBAPP 200 | GUARD MATCH"
+  );
   assert.equal(
     state.interaction_sheet.primary_action_context_signature,
     "travel_flow|central_hub:travel:travel_flow|world_entry_kind_hub_portal|world_modal_kind_travel_gate"
@@ -1576,6 +1601,17 @@ test("buildDistrictWorldState marks active node from navigation context shell ac
     navigationContext: {
       shell_action_key: SHELL_ACTION_KEY.PLAYER_PAYOUT_REQUEST
     },
+    data: {
+      local_manifest: {
+        webapp_domain_summary: {
+          host: "webapp.k99-exchange.xyz",
+          state_key: "partial",
+          contract_ready: false,
+          runtime_guard_matches_host: false,
+          webapp_status_code: 503
+        }
+      }
+    },
     vaultData: {
       wallet_session: { active: true },
       payout_status: { state: "ready", readiness_pct: 82 },
@@ -1585,6 +1621,12 @@ test("buildDistrictWorldState marks active node from navigation context shell ac
   });
 
   assert.equal(state.active_node_key, "payout_lift");
+  assert.equal(state.webapp_domain_host, "webapp.k99-exchange.xyz");
+  assert.equal(state.webapp_domain_state_key, "partial");
+  assert.equal(state.webapp_domain_contract_ready, false);
+  assert.equal(state.webapp_domain_runtime_guard_matches_host, false);
+  assert.equal(state.webapp_domain_webapp_status_code, 503);
+  assert.equal(state.webapp_domain_line, "DOMAIN webapp.k99-exchange.xyz | PARTIAL | WEBAPP 503 | GUARD DRIFT");
   assert.equal(state.active_action_key, SHELL_ACTION_KEY.PLAYER_PAYOUT_REQUEST);
   assert.equal(state.active_node_label_key, "world_node_payout_lift");
   assert.equal(state.active_hotspot_key, "payout_bay");
@@ -1613,6 +1655,13 @@ test("buildDistrictWorldState marks active node from navigation context shell ac
   assert.equal(state.interaction_sheet.action_contract_missing_count, 1);
   assert.equal(state.interaction_sheet.action_context_resolved_count, 2);
   assert.equal(state.interaction_sheet.action_contract_state_key, "partial");
+  assert.equal(state.interaction_sheet.runtime_summary_state_key, "partial");
+  assert.equal(state.interaction_sheet.runtime_summary_contract_ready, false);
+  assert.equal(state.interaction_sheet.runtime_summary_guard_matches_host, false);
+  assert.equal(
+    state.interaction_sheet.runtime_summary_line,
+    "DOMAIN webapp.k99-exchange.xyz | PARTIAL | WEBAPP 503 | GUARD DRIFT"
+  );
   assert.equal(state.interaction_surface.action_contract_ready_count, 1);
   assert.equal(state.interaction_surface.action_contract_state_key, "partial");
   assert.equal(state.interaction_flow.action_contract_ready_count, 1);

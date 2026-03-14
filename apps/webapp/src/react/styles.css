@@ -1978,6 +1978,11 @@ body {
   grid-template-columns: 1fr;
 }
 
+.akrSceneRuntimeContractSummary {
+  border-color: rgba(255, 211, 111, 0.22);
+  background: linear-gradient(145deg, rgba(18, 24, 38, 0.44), rgba(32, 27, 14, 0.28));
+}
+
 .akrSceneInteractionModalChip {
   display: grid;
   gap: 4px;
@@ -2439,6 +2444,30 @@ body {
 
 .akrSceneWorldFocus.isPersonality {
   color: #e7fbff;
+}
+
+.akrSceneWorldFocus.isDomain {
+  color: #ffe8a3;
+  border-color: rgba(255, 211, 111, 0.34);
+  background: rgba(255, 211, 111, 0.1);
+}
+
+.akrSceneWorldFocus.isDomain.is-ready {
+  color: #c9ffe5;
+  border-color: rgba(98, 255, 194, 0.34);
+  background: rgba(98, 255, 194, 0.1);
+}
+
+.akrSceneWorldFocus.isDomain.is-partial {
+  color: #ffe8a3;
+  border-color: rgba(255, 211, 111, 0.34);
+  background: rgba(255, 211, 111, 0.1);
+}
+
+.akrSceneWorldFocus.isDomain.is-missing {
+  color: #ffd1d9;
+  border-color: rgba(255, 111, 145, 0.34);
+  background: rgba(255, 111, 145, 0.1);
 }
 
 .akrSceneWorldFocus.isPersonality.is-aggressive {

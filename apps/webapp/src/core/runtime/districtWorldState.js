@@ -29,6 +29,78 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
+function readDistrictRuntimeLocation() {
+  if (typeof window !== "undefined" && window?.location) {
+    return window.location;
+  }
+  if (globalThis?.location && typeof globalThis.location === "object") {
+    return globalThis.location;
+  }
+  return null;
+}
+
+function readWebappDomainRuntimeSummary(input = {}) {
+  const data = asRecord(input.data);
+  const localManifest = asRecord(data.local_manifest);
+  const explicitSummary = asRecord(localManifest.webapp_domain_summary || data.webapp_domain_summary);
+  if (Object.keys(explicitSummary).length) {
+    return explicitSummary;
+  }
+  const runtimeLocation = readDistrictRuntimeLocation();
+  const host = toText(runtimeLocation?.host, "");
+  const pathname = toText(runtimeLocation?.pathname, "");
+  const origin = toText(runtimeLocation?.origin, host ? `https://${host}` : "");
+  if (!host && !origin) {
+    return {};
+  }
+  const onWebappPath = pathname.toLowerCase().includes("/webapp");
+  return {
+    host,
+    state_key: onWebappPath ? "ready" : "partial",
+    dns_ready: Boolean(host),
+    contract_ready: Boolean(host && onWebappPath),
+    runtime_guard_matches_host: Boolean(host),
+    public_url: origin ? `${origin}${pathname || "/webapp"}` : "",
+    runtime_guard_base_url: origin || "",
+    health_status_code: onWebappPath ? 200 : 0,
+    webapp_status_code: onWebappPath ? 200 : 0,
+    cname_targets: [],
+    a_records: []
+  };
+}
+
+function buildWebappDomainRuntimeLine(summary) {
+  const row = asRecord(summary);
+  const host = toText(row.host, "");
+  if (!host) {
+    return "";
+  }
+  const stateKey = toText(row.state_key, "missing").toUpperCase();
+  const webappCode = Math.round(toNum(row.webapp_status_code, 0));
+  const guardState = row.runtime_guard_matches_host === false ? "DRIFT" : "MATCH";
+  return `DOMAIN ${host} | ${stateKey} | WEBAPP ${webappCode} | GUARD ${guardState}`;
+}
+
+function attachRuntimeContractSummary(target, summary) {
+  const base = asRecord(target);
+  if (!Object.keys(base).length) {
+    return target;
+  }
+  const runtimeSummary = asRecord(summary);
+  return {
+    ...base,
+    runtime_summary_host: toText(runtimeSummary.host, ""),
+    runtime_summary_state_key: toText(runtimeSummary.state_key, ""),
+    runtime_summary_contract_ready:
+      typeof runtimeSummary.contract_ready === "boolean" ? runtimeSummary.contract_ready : undefined,
+    runtime_summary_guard_matches_host:
+      typeof runtimeSummary.runtime_guard_matches_host === "boolean"
+        ? runtimeSummary.runtime_guard_matches_host
+        : undefined,
+    runtime_summary_line: buildWebappDomainRuntimeLine(runtimeSummary)
+  };
+}
+
 function normalizeWorkspace(value) {
   return String(value || "").trim().toLowerCase() === "admin" ? "admin" : "player";
 }
@@ -7030,6 +7102,7 @@ export function buildDistrictWorldState(input = {}) {
   const sceneProfile = toText(capabilityProfile.scene_profile || (lowEndMode ? "lite" : effectiveQuality === "high" ? "cinematic" : "balanced"));
   const allowSecondaryHotspots = !lowEndMode && hudDensity !== "compact" && sceneProfile !== "lite";
   const modeLabelKey = resolveModeKey(sceneProfile, lowEndMode);
+  const webappDomainSummary = readWebappDomainRuntimeSummary(input);
 
   const rawNodes =
     workspace === "admin"
@@ -7266,34 +7339,52 @@ export function buildDistrictWorldState(input = {}) {
   const primaryRootAction = asRecord(asList(finalInteractionSurfaceBase?.action_items)[0]);
   const primaryTerminalAction = asRecord(asList(finalInteractionTerminalBase?.action_items)[0]);
   const primaryModalAction = asRecord(asList(finalInteractionModalBase?.action_items)[0]);
-  const finalInteractionSheet = attachContractCollectionMeta(
-    attachPrimaryActionMeta(finalInteractionSheetBase, primaryRootAction, rootInteractionMeta),
-    enrichedActiveCluster?.action_items
+  const finalInteractionSheet = attachRuntimeContractSummary(
+    attachContractCollectionMeta(
+      attachPrimaryActionMeta(finalInteractionSheetBase, primaryRootAction, rootInteractionMeta),
+      enrichedActiveCluster?.action_items
+    ),
+    webappDomainSummary
   );
-  const finalInteractionSurface = attachContractCollectionMeta(
-    attachPrimaryActionMeta(finalInteractionSurfaceBase, primaryRootAction, rootInteractionMeta)
+  const finalInteractionSurface = attachRuntimeContractSummary(
+    attachContractCollectionMeta(
+      attachPrimaryActionMeta(finalInteractionSurfaceBase, primaryRootAction, rootInteractionMeta)
+    ),
+    webappDomainSummary
   );
-  const finalInteractionFlow = attachContractCollectionMeta(
-    attachPrimaryActionMeta(finalInteractionFlowBase, primaryRootAction, rootInteractionMeta),
-    finalInteractionSurfaceBase?.action_items
+  const finalInteractionFlow = attachRuntimeContractSummary(
+    attachContractCollectionMeta(
+      attachPrimaryActionMeta(finalInteractionFlowBase, primaryRootAction, rootInteractionMeta),
+      finalInteractionSurfaceBase?.action_items
+    ),
+    webappDomainSummary
   );
-  const finalInteractionEntry = attachContractCollectionMeta(
-    attachPrimaryActionMeta(finalInteractionEntryBase, primaryRootAction, rootInteractionMeta),
-    finalInteractionSurfaceBase?.action_items
+  const finalInteractionEntry = attachRuntimeContractSummary(
+    attachContractCollectionMeta(
+      attachPrimaryActionMeta(finalInteractionEntryBase, primaryRootAction, rootInteractionMeta),
+      finalInteractionSurfaceBase?.action_items
+    ),
+    webappDomainSummary
   );
-  const finalInteractionTerminal = attachContractCollectionMeta(
-    attachPrimaryActionMeta(
-      finalInteractionTerminalBase,
-      toText(primaryTerminalAction.action_key, "") ? primaryTerminalAction : primaryRootAction,
-      rootInteractionMeta
-    )
+  const finalInteractionTerminal = attachRuntimeContractSummary(
+    attachContractCollectionMeta(
+      attachPrimaryActionMeta(
+        finalInteractionTerminalBase,
+        toText(primaryTerminalAction.action_key, "") ? primaryTerminalAction : primaryRootAction,
+        rootInteractionMeta
+      )
+    ),
+    webappDomainSummary
   );
-  const finalInteractionModal = attachContractCollectionMeta(
-    attachPrimaryActionMeta(
-      finalInteractionModalBase,
-      toText(primaryModalAction.action_key, "") ? primaryModalAction : primaryRootAction,
-      rootInteractionMeta
-    )
+  const finalInteractionModal = attachRuntimeContractSummary(
+    attachContractCollectionMeta(
+      attachPrimaryActionMeta(
+        finalInteractionModalBase,
+        toText(primaryModalAction.action_key, "") ? primaryModalAction : primaryRootAction,
+        rootInteractionMeta
+      )
+    ),
+    webappDomainSummary
   );
 
   return {
@@ -7309,6 +7400,16 @@ export function buildDistrictWorldState(input = {}) {
     hud_density: hudDensity,
     low_end_mode: lowEndMode,
     reduced_motion: reducedMotion,
+    webapp_domain_host: toText(webappDomainSummary.host, ""),
+    webapp_domain_state_key: toText(webappDomainSummary.state_key, ""),
+    webapp_domain_contract_ready:
+      typeof webappDomainSummary.contract_ready === "boolean" ? webappDomainSummary.contract_ready : undefined,
+    webapp_domain_runtime_guard_matches_host:
+      typeof webappDomainSummary.runtime_guard_matches_host === "boolean"
+        ? webappDomainSummary.runtime_guard_matches_host
+        : undefined,
+    webapp_domain_webapp_status_code: Math.round(toNum(webappDomainSummary.webapp_status_code, 0)),
+    webapp_domain_line: buildWebappDomainRuntimeLine(webappDomainSummary),
     ambient_energy: ambientEnergy,
     beacon_count: nodes.length,
     hot_nodes: hotNodes,
