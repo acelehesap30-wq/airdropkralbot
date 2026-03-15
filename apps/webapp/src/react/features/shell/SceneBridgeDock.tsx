@@ -1787,7 +1787,7 @@ function AdminBridgeCards(props: { lang: Lang }) {
 }
 
 export function SceneBridgeDock(props: SceneBridgeDockProps) {
-  if (!props.advanced && props.workspace !== "admin") {
+  if (!props.advanced) {
     return null;
   }
 

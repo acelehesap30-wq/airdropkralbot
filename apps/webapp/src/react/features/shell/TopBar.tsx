@@ -3,6 +3,8 @@ import { normalizeLang, t, type Lang } from "../../i18n";
 type TopBarProps = {
   lang: Lang;
   advanced: boolean;
+  showAdvancedToggle?: boolean;
+  showWorkspaceToggle?: boolean;
   reducedMotion: boolean;
   largeText: boolean;
   workspace: "player" | "admin";
@@ -26,14 +28,16 @@ export function TopBar(props: TopBarProps) {
         <button className="akrBtn akrBtnGhost" onClick={props.onRefresh}>
           {t(props.lang, "refresh")}
         </button>
-        <button
-          className="akrBtn akrBtnGhost"
-          onClick={() => {
-            props.onToggleAdvanced(!props.advanced);
-          }}
-        >
-          {props.advanced ? t(props.lang, "advanced_on") : t(props.lang, "advanced_off")}
-        </button>
+        {props.showAdvancedToggle ? (
+          <button
+            className="akrBtn akrBtnGhost"
+            onClick={() => {
+              props.onToggleAdvanced(!props.advanced);
+            }}
+          >
+            {props.advanced ? t(props.lang, "advanced_on") : t(props.lang, "advanced_off")}
+          </button>
+        ) : null}
         <button
           className="akrBtn akrBtnGhost"
           onClick={() => {
@@ -65,12 +69,14 @@ export function TopBar(props: TopBarProps) {
         >
           {t(props.lang, "language")}: {String(props.lang).toUpperCase()}
         </button>
-        <button
-          className="akrBtn akrBtnAccent"
-          onClick={() => props.onToggleWorkspace(props.workspace === "player" ? "admin" : "player")}
-        >
-          {props.workspace === "player" ? t(props.lang, "workspace_admin") : t(props.lang, "workspace_player")}
-        </button>
+        {props.showWorkspaceToggle ? (
+          <button
+            className="akrBtn akrBtnAccent"
+            onClick={() => props.onToggleWorkspace(props.workspace === "player" ? "admin" : "player")}
+          >
+            {props.workspace === "player" ? t(props.lang, "workspace_admin") : t(props.lang, "workspace_player")}
+          </button>
+        ) : null}
       </div>
     </header>
   );

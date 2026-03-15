@@ -16,12 +16,13 @@ export function resolveShellSurfaceVisibility(options = {}) {
     hudDensity: options.hudDensity,
     deviceClass: options.deviceClass
   });
-  const showOperatorSurfaces = workspace === "admin" || (advanced && !compactPlayerShell);
-  const showSceneRuntimeStrip =
-    workspace === "admin" || advanced || (sceneRuntimePhase && sceneRuntimePhase !== "ready") || Boolean(sceneRuntimeError);
-  const sceneChromeMode = workspace === "admin" ? "full" : compactPlayerShell ? "backdrop" : "full";
+  const adminAdvanced = workspace === "admin" && advanced;
+  const showOperatorSurfaces = adminAdvanced;
+  const showSceneRuntimeStrip = (sceneRuntimePhase && sceneRuntimePhase !== "ready") || Boolean(sceneRuntimeError);
+  const sceneChromeMode = adminAdvanced ? "full" : "backdrop";
 
   return {
+    adminAdvanced,
     compactPlayerShell,
     sceneChromeMode,
     showMetaStrip: showOperatorSurfaces,

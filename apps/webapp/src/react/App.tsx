@@ -565,13 +565,14 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
   });
   const shellSurfaceVisibility = resolveShellSurfaceVisibility({
     workspace,
-    advanced,
+    advanced: isAdmin && workspace === "admin" ? advanced : false,
     hudDensity,
     deviceClass,
     sceneRuntimePhase: sceneRuntime.phase,
     sceneRuntimeError: sceneRuntime.error,
     hasLaunchSummary: Boolean(launchSummary)
   });
+  const adminAdvanced = Boolean(shellSurfaceVisibility.adminAdvanced);
   const rootClassName = `akrReactRoot${reducedMotion ? " isReducedMotion" : ""}${largeText ? " isLargeText" : ""}${
     hudDensity === "compact" ? " isCompactHud" : ""
   }${effectiveQuality === "low" ? " isQualityLow" : effectiveQuality === "high" ? " isQualityHigh" : " isQualityMedium"}${
@@ -793,7 +794,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
     }),
     [adminRuntime.queue, adminRuntime.summary]
   );
-  const bridgeDockEnabled = advanced || workspace === "admin";
+  const bridgeDockEnabled = adminAdvanced;
   useSceneBridgeFeed({
     enabled: bridgeDockEnabled,
     workspace,
@@ -920,7 +921,9 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
       {!hidePlayerShellForOnboarding ? (
         <TopBar
           lang={lang}
-          advanced={advanced}
+          advanced={adminAdvanced}
+          showAdvancedToggle={Boolean(isAdmin && workspace === "admin")}
+          showWorkspaceToggle={Boolean(isAdmin)}
           reducedMotion={reducedMotion}
           largeText={largeText}
           workspace={workspace}
@@ -966,7 +969,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
         />
       ) : null}
       {!hidePlayerShellForOnboarding && shellSurfaceVisibility.showSceneBridgeDock ? (
-        <SceneBridgeDock lang={lang} workspace={workspace} tab={tab} advanced={advanced} />
+        <SceneBridgeDock lang={lang} workspace={workspace} tab={tab} advanced={adminAdvanced} />
       ) : null}
       <Suspense fallback={<WorkspaceLoadingFallback />}>
         {workspace === "player" && !hidePlayerShellForOnboarding && (
@@ -974,7 +977,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
             lang={lang}
             tab={tab}
             tabs={tabs}
-            advanced={advanced}
+            advanced={false}
             reducedMotion={reducedMotion}
             sceneProfile={{
               qualityMode: scene.qualityMode,
@@ -1055,7 +1058,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
           <AdminWorkspace
             lang={lang}
             isAdmin={isAdmin}
-            advanced={advanced}
+            advanced={adminAdvanced}
             reducedMotion={reducedMotion}
             trackUiEvent={trackUiEvent}
             adminRuntime={adminRuntime}

@@ -116,12 +116,14 @@ body {
 }
 
 .akrSceneWorldLayer[data-chrome-mode="backdrop"] {
-  opacity: 0.42;
+  opacity: 0.18;
 }
 
 .akrSceneWorldLayer[data-chrome-mode="backdrop"] .akrSceneWorldCanvas {
   pointer-events: none;
-  filter: saturate(0.78) contrast(0.88) blur(1.5px);
+  opacity: 0.68;
+  filter: saturate(0.52) contrast(0.7) brightness(0.42) blur(8px);
+  transform: scale(1.03);
 }
 
 .akrSceneWorldLayer[data-chrome-mode="backdrop"] .akrSceneWorldHud,
