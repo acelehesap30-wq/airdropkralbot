@@ -2,34 +2,35 @@ import { Suspense, lazy } from "react";
 import { t, type Lang } from "../../i18n";
 import { SHELL_ACTION_KEY } from "../../../core/navigation/shellActions.js";
 import { buildAdminSurfaceActionsView } from "../../../core/admin/adminSurfaceActions.js";
+import { lazyRetry } from "../../utils/lazyRetry";
 
 const AdminQueueCard = lazy(async () => {
-  const module = await import("./cards/AdminQueueCard");
+  const module = await lazyRetry(() => import("./cards/AdminQueueCard"), "admin-queue-card");
   return { default: module.AdminQueueCard };
 });
 
 const DynamicPolicyCard = lazy(async () => {
-  const module = await import("./cards/DynamicPolicyCard");
+  const module = await lazyRetry(() => import("./cards/DynamicPolicyCard"), "admin-dynamic-policy-card");
   return { default: module.DynamicPolicyCard };
 });
 
 const LiveOpsCampaignCard = lazy(async () => {
-  const module = await import("./cards/LiveOpsCampaignCard");
+  const module = await lazyRetry(() => import("./cards/LiveOpsCampaignCard"), "admin-live-ops-card");
   return { default: module.LiveOpsCampaignCard };
 });
 
 const RuntimeBotCard = lazy(async () => {
-  const module = await import("./cards/RuntimeBotCard");
+  const module = await lazyRetry(() => import("./cards/RuntimeBotCard"), "admin-runtime-bot-card");
   return { default: module.RuntimeBotCard };
 });
 
 const RuntimeFlagsCard = lazy(async () => {
-  const module = await import("./cards/RuntimeFlagsCard");
+  const module = await lazyRetry(() => import("./cards/RuntimeFlagsCard"), "admin-runtime-flags-card");
   return { default: module.RuntimeFlagsCard };
 });
 
 const RuntimeMetaCard = lazy(async () => {
-  const module = await import("./cards/RuntimeMetaCard");
+  const module = await lazyRetry(() => import("./cards/RuntimeMetaCard"), "admin-runtime-meta-card");
   return { default: module.RuntimeMetaCard };
 });
 

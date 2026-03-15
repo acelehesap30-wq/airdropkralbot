@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { resolveSceneBundlePlan } from "../../../core/runtime/sceneBundlePlan.js";
 
 type SceneRuntimeLoaderOptions = {
+  enabled?: boolean;
   workspace: "player" | "admin";
   tab: "home" | "pvp" | "tasks" | "vault";
   trackUiEvent: (payload: Record<string, unknown>) => void;
@@ -144,6 +145,21 @@ export function useSceneRuntimeLoader(options: SceneRuntimeLoaderOptions) {
   );
 
   useEffect(() => {
+    if (options.enabled === false) {
+      setStatus({
+        phase: "idle",
+        workspace: options.workspace,
+        tab: options.tab,
+        districtKey: plan.district_key,
+        profileKey: plan.profile_key,
+        effectiveQuality: plan.effective_quality,
+        lowEndMode: plan.low_end_mode,
+        loadedBundles: [],
+        skippedBundles: [],
+        error: ""
+      });
+      return;
+    }
     let cancelled = false;
     const requestKey = `${plan.workspace}:${plan.tab}:${plan.profile_key}:${plan.bundles.join(",")}:${plan.skipped_bundles.join(",")}`;
     const planWorkspace = plan.workspace as SceneRuntimeStatus["workspace"];
@@ -247,7 +263,7 @@ export function useSceneRuntimeLoader(options: SceneRuntimeLoaderOptions) {
     return () => {
       cancelled = true;
     };
-  }, [options.trackUiEvent, plan]);
+  }, [options.enabled, options.tab, options.trackUiEvent, options.workspace, plan]);
 
   return { sceneRuntime: status };
 }

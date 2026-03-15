@@ -96,25 +96,26 @@ import {
   useVaultOverviewV2Query
 } from "./redux/api/webappApi";
 import { navigationActions, sceneActions } from "./redux/slices/shellSlices";
+import { lazyRetry } from "./utils/lazyRetry";
 import "./styles.css";
 
 const PlayerWorkspace = lazy(async () => {
-  const mod = await import("./features/player/PlayerWorkspace");
+  const mod = await lazyRetry(() => import("./features/player/PlayerWorkspace"), "player-workspace");
   return { default: mod.PlayerWorkspace };
 });
 
 const AdminWorkspace = lazy(async () => {
-  const mod = await import("./features/admin/AdminWorkspace");
+  const mod = await lazyRetry(() => import("./features/admin/AdminWorkspace"), "admin-workspace");
   return { default: mod.AdminWorkspace };
 });
 
 const OnboardingOverlay = lazy(async () => {
-  const mod = await import("./features/onboarding/OnboardingOverlay");
+  const mod = await lazyRetry(() => import("./features/onboarding/OnboardingOverlay"), "onboarding-overlay");
   return { default: mod.OnboardingOverlay };
 });
 
 const BabylonDistrictSceneHost = lazy(async () => {
-  const mod = await import("./features/shell/BabylonDistrictSceneHost");
+  const mod = await lazyRetry(() => import("./features/shell/BabylonDistrictSceneHost"), "babylon-scene-host");
   return { default: mod.BabylonDistrictSceneHost };
 });
 
@@ -237,8 +238,10 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
   });
 
   const isAdmin = Boolean(data?.admin?.is_admin);
-  const effectiveWorkspace: "player" | "admin" =
-    isAdmin && String(navigationContext?.workspace || "").trim().toLowerCase() === "admin" ? "admin" : "player";
+  const effectiveWorkspace: "player" | "admin" = isAdmin ? "admin" : "player";
+  const effectiveOnboardingVisible = effectiveWorkspace === "player" && onboardingVisible;
+  const enableDistrictScene =
+    effectiveWorkspace === "player" && !effectiveOnboardingVisible && (tab === "home" || tab === "pvp");
   const tabs = useMemo<TabKey[]>(
     () => (Array.isArray(data?.ui_shell?.tabs) && data?.ui_shell?.tabs.length ? data.ui_shell.tabs : ["home", "pvp", "tasks", "vault"]),
     [data?.ui_shell?.tabs]
@@ -557,6 +560,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
     syncPrefs
   });
   const { sceneRuntime } = useSceneRuntimeLoader({
+    enabled: enableDistrictScene,
     workspace: effectiveWorkspace,
     tab,
     trackUiEvent,
@@ -578,7 +582,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
   const rootClassName = `akrReactRoot${reducedMotion ? " isReducedMotion" : ""}${largeText ? " isLargeText" : ""}${
     hudDensity === "compact" ? " isCompactHud" : ""
   }${effectiveQuality === "low" ? " isQualityLow" : effectiveQuality === "high" ? " isQualityHigh" : " isQualityMedium"}${
-    shellSurfaceVisibility.sceneChromeMode === "backdrop" ? " isBackdropScene" : ""
+    enableDistrictScene && shellSurfaceVisibility.sceneChromeMode === "backdrop" ? " isBackdropScene" : ""
   }`;
   const handleDistrictNodeAction = useCallback(
     (payload: {
@@ -617,6 +621,9 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
         return;
       }
       if (target.workspace === "admin" && !isAdmin) {
+        return;
+      }
+      if (isAdmin && target.workspace !== "admin") {
         return;
       }
 
@@ -894,32 +901,34 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
     monetizationPassPurchase,
     monetizationCosmeticPurchase
   });
-  const hidePlayerShellForOnboarding = onboardingVisible && effectiveWorkspace === "player";
+  const hidePlayerShellForOnboarding = effectiveOnboardingVisible;
 
   return (
     <div className={rootClassName}>
       <div className="akrBgAura" />
-      <Suspense fallback={null}>
-        <BabylonDistrictSceneHost
-          lang={lang}
-          workspace={effectiveWorkspace}
-          tab={tab}
-          sceneChromeMode={shellSurfaceVisibility.sceneChromeMode as "full" | "backdrop"}
-          navigationContext={(navigationContext as Record<string, unknown> | null) || null}
-          scene={(scene as Record<string, unknown>) || {}}
-          sceneRuntime={(sceneRuntime as Record<string, unknown>) || {}}
-          data={(data as Record<string, unknown> | null) || null}
-          homeFeed={(homeFeed as Record<string, unknown> | null) || null}
-          taskResult={(taskResult as Record<string, unknown> | null) || null}
-          pvpRuntime={(pvpRuntime.session as Record<string, unknown> | null) || null}
-          leagueOverview={(leagueOverview as Record<string, unknown> | null) || null}
-          pvpLive={pvpLiveState}
-          vaultData={(vaultData as Record<string, unknown> | null) || null}
-          adminRuntime={adminRuntimeState}
-          onNodeAction={handleDistrictNodeAction}
-          onLoopStateChange={handleDistrictLoopStateChange}
-        />
-      </Suspense>
+      {enableDistrictScene ? (
+        <Suspense fallback={null}>
+          <BabylonDistrictSceneHost
+            lang={lang}
+            workspace={effectiveWorkspace}
+            tab={tab}
+            sceneChromeMode={shellSurfaceVisibility.sceneChromeMode as "full" | "backdrop"}
+            navigationContext={(navigationContext as Record<string, unknown> | null) || null}
+            scene={(scene as Record<string, unknown>) || {}}
+            sceneRuntime={(sceneRuntime as Record<string, unknown>) || {}}
+            data={(data as Record<string, unknown> | null) || null}
+            homeFeed={(homeFeed as Record<string, unknown> | null) || null}
+            taskResult={(taskResult as Record<string, unknown> | null) || null}
+            pvpRuntime={(pvpRuntime.session as Record<string, unknown> | null) || null}
+            leagueOverview={(leagueOverview as Record<string, unknown> | null) || null}
+            pvpLive={pvpLiveState}
+            vaultData={(vaultData as Record<string, unknown> | null) || null}
+            adminRuntime={adminRuntimeState}
+            onNodeAction={handleDistrictNodeAction}
+            onLoopStateChange={handleDistrictLoopStateChange}
+          />
+        </Suspense>
+      ) : null}
       {!hidePlayerShellForOnboarding ? (
         <TopBar
           lang={lang}
@@ -1131,7 +1140,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
 
       <ShellStatus lang={lang} loading={loading} error={error} />
 
-      {onboardingVisible && (
+      {effectiveOnboardingVisible && (
         <Suspense fallback={null}>
           <OnboardingOverlay
             lang={lang}
