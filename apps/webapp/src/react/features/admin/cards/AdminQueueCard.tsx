@@ -42,6 +42,15 @@ function formatQueueStatus(status: string) {
   return asText(status, "unknown").replace(/_/g, " ");
 }
 
+function resolveStatusBadgeClass(status: string) {
+  const s = String(status || "").trim().toLowerCase();
+  if (s === "paid" || s === "completed" || s === "approved") return "akrBadgeSuccess";
+  if (s === "rejected" || s === "failed" || s === "blocked") return "akrBadgeDanger";
+  if (s === "pending" || s === "pending_review" || s === "awaiting") return "akrBadgeWarning";
+  if (s === "processing" || s === "in_progress") return "akrBadgeInfo";
+  return "akrBadgeMuted";
+}
+
 function formatAgeLabel(seconds: number) {
   if (seconds >= 3600) {
     return `${Math.round(seconds / 3600)}h`;
@@ -153,14 +162,14 @@ export function AdminQueueCard(props: AdminQueueCardProps) {
       </div>
 
       <div className="akrChipRow">
-        <span className="akrChip">
-          {t(props.lang, "admin_queue_pending_count")}: {pendingCount}
+        <span className="akrChip akrChipWarning">
+          ⏳ {t(props.lang, "admin_queue_pending_count")}: <strong>{pendingCount}</strong>
         </span>
-        <span className="akrChip">
-          {t(props.lang, "admin_queue_confirmation_count")}: {confirmationCount}
+        <span className="akrChip akrChipInfo">
+          🔐 {t(props.lang, "admin_queue_confirmation_count")}: <strong>{confirmationCount}</strong>
         </span>
-        <span className="akrChip">
-          {t(props.lang, "admin_queue_high_priority_count")}: {highPriorityCount}
+        <span className={`akrChip ${highPriorityCount > 0 ? "akrChipDanger" : "akrChipMuted"}`}>
+          🔥 {t(props.lang, "admin_queue_high_priority_count")}: <strong>{highPriorityCount}</strong>
         </span>
       </div>
 
@@ -174,7 +183,11 @@ export function AdminQueueCard(props: AdminQueueCardProps) {
             return (
               <li key={`${idx}_${String(row?.request_id || row?.queue_key || "q")}`}>
                 <span>
-                  <strong>{formatQueueKind(kind)}</strong> #{requestId} | {formatQueueStatus(String(row.status || ""))} | P{asInt(row.priority)} |{" "}
+                  <strong>{formatQueueKind(kind)}</strong> #{requestId} |{" "}
+                  <span className={resolveStatusBadgeClass(String(row.status || ""))}>
+                    {formatQueueStatus(String(row.status || ""))}
+                  </span>{" "}
+                  | P{asInt(row.priority)} |{" "}
                   {formatAgeLabel(asInt(row.queue_age_sec))}
                 </span>
                 <strong>{reasonText}</strong>
