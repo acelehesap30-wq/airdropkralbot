@@ -245,6 +245,13 @@ export async function mountReactWebAppV1(): Promise<void> {
   const launchContext = resolveLaunchContext(window.location.search);
   const prefs = payload.data.ui_prefs && typeof payload.data.ui_prefs === "object" ? payload.data.ui_prefs : {};
   const prefsJson = prefs.prefs_json && typeof prefs.prefs_json === "object" ? prefs.prefs_json : {};
+  const launchedWorkspace = launchContext.workspace === "admin" ? "admin" : "player";
+  const launchedAdvancedView =
+    launchedWorkspace === "admin"
+      ? typeof prefsJson.advanced_view === "boolean"
+        ? Boolean(prefsJson.advanced_view)
+        : Boolean(payload.data?.ux?.advanced_enabled)
+      : false;
   payload.data = {
     ...payload.data,
     launch_context: launchContext,
@@ -253,7 +260,8 @@ export async function mountReactWebAppV1(): Promise<void> {
       prefs_json: {
         ...prefsJson,
         last_tab: launchContext.tab || prefsJson.last_tab || "home",
-        workspace: launchContext.workspace || prefsJson.workspace || "player"
+        workspace: launchedWorkspace,
+        advanced_view: launchedAdvancedView
       }
     }
   };

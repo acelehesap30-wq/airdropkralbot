@@ -28,6 +28,7 @@ import { LaunchHandoffStrip } from "./features/shell/LaunchHandoffStrip";
 import { MetaStrip } from "./features/shell/MetaStrip";
 import { SceneBridgeDock } from "./features/shell/SceneBridgeDock";
 import { SceneRuntimeStrip } from "./features/shell/SceneRuntimeStrip";
+import { resolveShellSurfaceVisibility } from "./features/shell/shellSurfaceVisibility.js";
 import { useSceneBridgeFeed } from "./features/shell/useSceneBridgeFeed";
 import { useLaunchFocusController } from "./features/shell/useLaunchFocusController";
 import { usePlayerTabsController } from "./features/shell/usePlayerTabsController";
@@ -520,6 +521,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
   const effectiveQuality = String(scene.effectiveQuality || "medium");
   const hudDensity = String(scene.hudDensity || "normal");
   const capabilityProfile = (scene.capabilityProfile as Record<string, unknown> | null) || null;
+  const deviceClass = String(capabilityProfile?.device_class || "");
   const rootClassName = `akrReactRoot${reducedMotion ? " isReducedMotion" : ""}${largeText ? " isLargeText" : ""}${
     hudDensity === "compact" ? " isCompactHud" : ""
   }${effectiveQuality === "low" ? " isQualityLow" : effectiveQuality === "high" ? " isQualityHigh" : " isQualityMedium"}`;
@@ -563,6 +565,15 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
       effectiveQuality: scene.effectiveQuality,
       capabilityProfile
     }
+  });
+  const shellSurfaceVisibility = resolveShellSurfaceVisibility({
+    workspace,
+    advanced,
+    hudDensity,
+    deviceClass,
+    sceneRuntimePhase: sceneRuntime.phase,
+    sceneRuntimeError: sceneRuntime.error,
+    hasLaunchSummary: Boolean(launchSummary)
   });
   const handleDistrictNodeAction = useCallback(
     (payload: {
@@ -915,28 +926,32 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
         onToggleLanguage={onToggleLanguage}
         onToggleWorkspace={onToggleWorkspace}
       />
-      <MetaStrip
-        lang={lang}
-        variant={data?.experiment?.variant || ""}
-        sessionRef={data?.analytics?.session_ref || ""}
-        qualityMode={scene.qualityMode}
-        effectiveQuality={scene.effectiveQuality}
-        perfTier={String(capabilityProfile?.perf_tier || "-")}
-        deviceClass={String(capabilityProfile?.device_class || "-")}
-        sceneProfile={String(capabilityProfile?.scene_profile || "-")}
-      />
-      <SceneRuntimeStrip
-        lang={lang}
-        phase={sceneRuntime.phase}
-        districtKey={sceneRuntime.districtKey}
-        profileKey={sceneRuntime.profileKey}
-        effectiveQuality={sceneRuntime.effectiveQuality}
-        lowEndMode={sceneRuntime.lowEndMode}
-        loadedBundles={sceneRuntime.loadedBundles}
-        skippedBundles={sceneRuntime.skippedBundles}
-        error={sceneRuntime.error}
-      />
-      {launchSummary ? (
+      {shellSurfaceVisibility.showMetaStrip ? (
+        <MetaStrip
+          lang={lang}
+          variant={data?.experiment?.variant || ""}
+          sessionRef={data?.analytics?.session_ref || ""}
+          qualityMode={scene.qualityMode}
+          effectiveQuality={scene.effectiveQuality}
+          perfTier={String(capabilityProfile?.perf_tier || "-")}
+          deviceClass={String(capabilityProfile?.device_class || "-")}
+          sceneProfile={String(capabilityProfile?.scene_profile || "-")}
+        />
+      ) : null}
+      {shellSurfaceVisibility.showSceneRuntimeStrip ? (
+        <SceneRuntimeStrip
+          lang={lang}
+          phase={sceneRuntime.phase}
+          districtKey={sceneRuntime.districtKey}
+          profileKey={sceneRuntime.profileKey}
+          effectiveQuality={sceneRuntime.effectiveQuality}
+          lowEndMode={sceneRuntime.lowEndMode}
+          loadedBundles={sceneRuntime.loadedBundles}
+          skippedBundles={sceneRuntime.skippedBundles}
+          error={sceneRuntime.error}
+        />
+      ) : null}
+      {shellSurfaceVisibility.showLaunchHandoffStrip && launchSummary ? (
         <LaunchHandoffStrip
           lang={lang}
           routeLabel={launchSummary.routeLabel}
@@ -944,7 +959,9 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
           focusLabel={launchSummary.focusLabel}
         />
       ) : null}
-      <SceneBridgeDock lang={lang} workspace={workspace} tab={tab} advanced={advanced} />
+      {shellSurfaceVisibility.showSceneBridgeDock ? (
+        <SceneBridgeDock lang={lang} workspace={workspace} tab={tab} advanced={advanced} />
+      ) : null}
       <Suspense fallback={<WorkspaceLoadingFallback />}>
         {workspace === "player" && (
           <PlayerWorkspace

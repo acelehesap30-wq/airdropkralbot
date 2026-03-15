@@ -99,6 +99,7 @@ export function useReactShellStore(): ReactShellState {
             tab: ui.tab,
             workspace: ui.workspace,
             lang: ui.lang,
+            advanced: ui.advanced,
             onboardingVisible: ui.onboardingVisible
           })
         )
@@ -114,7 +115,7 @@ export function useReactShellStore(): ReactShellState {
         })
       );
     },
-    [dispatch, ui.tab, ui.workspace, ui.lang, ui.onboardingVisible]
+    [dispatch, ui.tab, ui.workspace, ui.lang, ui.advanced, ui.onboardingVisible]
   );
 
   const patchData = useCallback(

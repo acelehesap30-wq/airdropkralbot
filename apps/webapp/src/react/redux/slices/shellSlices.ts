@@ -2,6 +2,7 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { normalizeLang, type Lang } from "../../i18n";
 import type { BootstrapV2Data, ExperimentAssignment, LaunchContext, TabKey, WebAppAuth, WorkspaceKey } from "../../types";
 import { buildLaunchContextToken, normalizeLaunchContext } from "../../../core/navigation/launchContextState.js";
+import { deriveBootstrapUiState } from "./bootstrapUi.js";
 
 const TAB_KEYS: TabKey[] = ["home", "pvp", "tasks", "vault"];
 
@@ -106,26 +107,9 @@ type NavigationState = {
 
 export function deriveUiFromBootstrap(
   data: BootstrapV2Data,
-  current: Pick<UiState, "tab" | "workspace" | "lang" | "onboardingVisible">
+  current: Pick<UiState, "tab" | "workspace" | "lang" | "advanced" | "onboardingVisible">
 ): BootstrapDerivedUi {
-  const shell = data?.ui_shell || null;
-  const shellTabs = Array.isArray(shell?.tabs) && shell?.tabs.length ? shell.tabs.filter((entry) => isTabKey(entry)) : TAB_KEYS;
-  const prefsJson = data?.ui_prefs?.prefs_json && typeof data.ui_prefs.prefs_json === "object" ? data.ui_prefs.prefs_json : {};
-  const preferredTab = sanitizeTab(prefsJson.last_tab || shell?.default_tab || current.tab || "home", "home");
-  const nextTab = shellTabs.includes(preferredTab) ? preferredTab : sanitizeTab(shell?.default_tab || "home", "home");
-  const nextLang = normalizeLang(prefsJson.language || data?.ux?.language || current.lang);
-  const advancedPref =
-    typeof prefsJson.advanced_view === "boolean" ? Boolean(prefsJson.advanced_view) : Boolean(data?.ux?.advanced_enabled);
-  const onboardingCompleted = Boolean(prefsJson.onboarding_completed);
-  const nextWorkspace = sanitizeWorkspace(prefsJson.workspace || current.workspace || "player", "player");
-
-  return {
-    tab: nextTab,
-    workspace: nextWorkspace,
-    lang: nextLang,
-    advanced: advancedPref,
-    onboardingVisible: onboardingCompleted ? false : current.onboardingVisible
-  };
+  return deriveBootstrapUiState(data, current) as BootstrapDerivedUi;
 }
 
 const sessionSlice = createSlice({
