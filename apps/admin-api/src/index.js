@@ -1445,7 +1445,8 @@ function issueWebAppSession(uid) {
   };
 }
 
-function verifyWebAppAuth(uidRaw, tsRaw, sigRaw) {
+function verifyWebAppAuth(uidRaw, tsRaw, sigRaw, options = {}) {
+  const ignoreExpiration = Boolean(options.ignoreExpiration);
   if (!WEBAPP_HMAC_SECRET) {
     return { ok: false, reason: "webapp_secret_missing" };
   }
@@ -1465,7 +1466,7 @@ function verifyWebAppAuth(uidRaw, tsRaw, sigRaw) {
   if (ageSec < -30) {
     return { ok: false, reason: "skew" };
   }
-  if (ageSec > WEBAPP_AUTH_TTL_SEC) {
+  if (!ignoreExpiration && ageSec > WEBAPP_AUTH_TTL_SEC) {
     return { ok: false, reason: "expired" };
   }
 
@@ -6224,12 +6225,25 @@ fastify.get("/webapp", async (request, reply) => {
     const currentVersionState = await resolveWebAppVersion(null);
     const requestedVersion = sanitizeWebAppVersion(request.query?.v || "");
     const currentVersion = sanitizeWebAppVersion(currentVersionState?.version || "");
-    if (!requestedVersion || (currentVersion && requestedVersion !== currentVersion)) {
+    let refreshedSession = null;
+    const authUid = String(request.query?.uid || "").trim();
+    const authTs = String(request.query?.ts || "").trim();
+    const authSig = String(request.query?.sig || "").trim();
+    if (authUid && authTs && authSig) {
+      const authState = verifyWebAppAuth(authUid, authTs, authSig);
+      if (!authState.ok && authState.reason === "expired") {
+        const refreshableAuth = verifyWebAppAuth(authUid, authTs, authSig, { ignoreExpiration: true });
+        if (refreshableAuth.ok) {
+          refreshedSession = issueWebAppSession(refreshableAuth.uid);
+        }
+      }
+    }
+    if (refreshedSession || !requestedVersion || (currentVersion && requestedVersion !== currentVersion)) {
       reply
         .code(302)
         .header("Cache-Control", "no-store, no-cache, must-revalidate")
         .header("Pragma", "no-cache")
-        .redirect(buildCanonicalVersionedWebappPath(request.raw.url || "/webapp", currentVersion));
+        .redirect(buildCanonicalVersionedWebappPath(request.raw.url || "/webapp", currentVersion, refreshedSession));
       return;
     }
     const variant = resolveFastWebAppVariant() || (client = await pool.connect(), await resolveWebAppVariant(client));
