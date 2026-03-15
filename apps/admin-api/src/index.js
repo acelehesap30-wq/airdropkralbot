@@ -120,7 +120,7 @@ const WEBAPP_HMAC_SECRET = process.env.WEBAPP_HMAC_SECRET || "";
 const BOT_TOKEN = String(process.env.BOT_TOKEN || "").trim();
 const BOT_USERNAME = String(process.env.BOT_USERNAME || "airdropkral_2026_bot").trim();
 const WEBAPP_AUTH_TTL_SEC = Number(process.env.WEBAPP_AUTH_TTL_SEC || 900);
-const WEBAPP_BOOTSTRAP_TIMEOUT_MS = Math.max(3000, Number(process.env.WEBAPP_BOOTSTRAP_TIMEOUT_MS || 12000));
+const WEBAPP_BOOTSTRAP_TIMEOUT_MS = Math.max(3000, Number(process.env.WEBAPP_BOOTSTRAP_TIMEOUT_MS || 8000));
 const TOKEN_TX_VERIFY = process.env.TOKEN_TX_VERIFY === "1";
 const TOKEN_TX_VERIFY_STRICT = process.env.TOKEN_TX_VERIFY_STRICT === "1";
 const HC_TO_BTC_RATE = Number(process.env.HC_TO_BTC_RATE || 0.00001);

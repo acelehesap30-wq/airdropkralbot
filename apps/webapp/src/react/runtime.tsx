@@ -8,7 +8,7 @@ import { appStore } from "./redux/store";
 import * as navigationContract from "../core/shared/navigationContract.js";
 
 const { decodeStartAppPayload, resolveLaunchTarget } = navigationContract;
-const BOOTSTRAP_FETCH_TIMEOUT_MS = 15000;
+const BOOTSTRAP_FETCH_TIMEOUT_MS = 25000;
 
 type FatalBoundaryProps = {
   children: React.ReactNode;
