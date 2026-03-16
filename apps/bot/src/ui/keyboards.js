@@ -87,7 +87,21 @@ const BOT_UI_TEXT = Object.freeze({
     help_category_economy: "💰 Ekonomi",
     help_category_progression: "📈 İlerleme",
     help_category_system: "⚙️ Sistem",
-    help_category_admin: "🛡 Admin"
+    help_category_admin: "🛡 Admin",
+    daily_claim: "🎁 Ödülü Al",
+    daily_tasks: "📋 Görevlere Git",
+    daily_pvp: "⚔️ Hızlı PvP",
+    daily_shop: "🛒 Boost Al",
+    kingdom_xp_boost: "⚡ XP Boost",
+    kingdom_war: "🏰 War Room",
+    kingdom_shop: "🛒 Dükkan",
+    boss_attack: "⚔️ Saldır",
+    boss_refresh: "🔄 HP Yenile",
+    boss_team: "👥 Takım Gör",
+    pass_buy: "👑 Pass Satın Al",
+    pass_info: "📊 Detay Gör",
+    streak_protect: "🛡️ Streak Koru (300 HC)",
+    streak_tasks: "📋 Hızlı Görev"
   }),
   en: Object.freeze({
     task_label: "Select Task",
@@ -173,7 +187,21 @@ const BOT_UI_TEXT = Object.freeze({
     help_category_economy: "💰 Economy",
     help_category_progression: "📈 Progression",
     help_category_system: "⚙️ System",
-    help_category_admin: "🛡 Admin"
+    help_category_admin: "🛡 Admin",
+    daily_claim: "🎁 Claim Reward",
+    daily_tasks: "📋 Go to Tasks",
+    daily_pvp: "⚔️ Quick PvP",
+    daily_shop: "🛒 Buy Boost",
+    kingdom_xp_boost: "⚡ XP Boost",
+    kingdom_war: "🏰 War Room",
+    kingdom_shop: "🛒 Shop",
+    boss_attack: "⚔️ Attack",
+    boss_refresh: "🔄 Refresh HP",
+    boss_team: "👥 View Team",
+    pass_buy: "👑 Buy Pass",
+    pass_info: "📊 View Details",
+    streak_protect: "🛡️ Protect Streak (300 HC)",
+    streak_tasks: "📋 Quick Task"
   })
 });
 
@@ -707,6 +735,62 @@ function buildAdminTokenActionKeyboard(row = {}, lang = "tr") {
   );
 }
 
+function buildDailyKeyboard(lang = "tr") {
+  return Markup.inlineKeyboard([
+    [
+      Markup.button.callback(uiText(lang, "daily_claim"), "DAILY_CLAIM"),
+      Markup.button.callback(uiText(lang, "daily_tasks"), "OPEN_TASKS")
+    ],
+    [
+      Markup.button.callback(uiText(lang, "daily_pvp"), "OPEN_PVP"),
+      Markup.button.callback(uiText(lang, "daily_shop"), "OPEN_SHOP")
+    ]
+  ]);
+}
+
+function buildKingdomKeyboard(lang = "tr") {
+  return Markup.inlineKeyboard([
+    [
+      Markup.button.callback(uiText(lang, "kingdom_xp_boost"), "SHOP_BUY:xp_boost"),
+      Markup.button.callback(uiText(lang, "kingdom_war"), "OPEN_WAR")
+    ],
+    [
+      Markup.button.callback(uiText(lang, "kingdom_shop"), "OPEN_SHOP"),
+      Markup.button.callback(uiText(lang, "open_leaderboard_panel"), "OPEN_LEADERBOARD")
+    ]
+  ]);
+}
+
+function buildBossKeyboard(bossId, lang = "tr") {
+  return Markup.inlineKeyboard([
+    [
+      Markup.button.callback(uiText(lang, "boss_attack"), `BOSS_ATTACK:${bossId || 0}`),
+      Markup.button.callback(uiText(lang, "boss_refresh"), `BOSS_REFRESH:${bossId || 0}`)
+    ],
+    [
+      Markup.button.callback(uiText(lang, "boss_team"), `BOSS_TEAM:${bossId || 0}`),
+      Markup.button.callback(uiText(lang, "open_tasks"), "OPEN_TASKS")
+    ]
+  ]);
+}
+
+function buildPassKeyboard(lang = "tr") {
+  return Markup.inlineKeyboard([
+    [Markup.button.callback(uiText(lang, "pass_buy"), "PASS_BUY")],
+    [Markup.button.callback(uiText(lang, "pass_info"), "PASS_INFO")]
+  ]);
+}
+
+function buildStreakKeyboard(lang = "tr") {
+  return Markup.inlineKeyboard([
+    [Markup.button.callback(uiText(lang, "streak_protect"), "STREAK_PROTECT")],
+    [
+      Markup.button.callback(uiText(lang, "streak_tasks"), "OPEN_TASKS"),
+      Markup.button.callback(uiText(lang, "daily_pvp"), "OPEN_PVP")
+    ]
+  ]);
+}
+
 module.exports = {
   buildTaskKeyboard,
   buildStartKeyboard,
@@ -738,5 +822,10 @@ module.exports = {
   buildAdminWorkspaceKeyboard,
   buildAdminPayoutActionKeyboard,
   buildAdminTokenActionKeyboard,
+  buildDailyKeyboard,
+  buildKingdomKeyboard,
+  buildBossKeyboard,
+  buildPassKeyboard,
+  buildStreakKeyboard,
   mergeInlineKeyboards
 };

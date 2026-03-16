@@ -530,9 +530,11 @@ function formatTokenDecisionUpdate(request, options = {}) {
 function formatDaily(profile, daily, board, balances, anomaly, contract) {
   const dailyCap = Number(daily?.dailyCap || 0);
   const tasksDone = Number(daily?.tasksDone || 0);
-  const progress = progressBar(tasksDone, Math.max(1, dailyCap), 12);
+  const streak = Number(profile?.streak_days || 0);
+  const streakMult = 1 + Math.min(streak, 30) * 0.05;
   const claimable = { sc: 0, hc: 0, rc: 0 };
-  const missionLines = (board || []).map((mission) => {
+  const statusMap = { ALINDI: '✅', HAZIR: '🎁', DEVAM: '🔄' };
+  const missionLines = (board || []).map((mission, idx) => {
     const done = mission.completed;
     const claimed = mission.claimed;
     if (done && !claimed) {
@@ -540,24 +542,44 @@ function formatDaily(profile, daily, board, balances, anomaly, contract) {
       claimable.hc += Number(mission.reward.hc || 0);
       claimable.rc += Number(mission.reward.rc || 0);
     }
-    const status = claimed ? "ALINDI" : done ? "HAZIR" : "DEVAM";
-    return `${mission.title}: ${mission.progress}/${mission.target} [${status}]`;
+    const tag = claimed ? "ALINDI" : done ? "HAZIR" : "DEVAM";
+    const emoji = statusMap[tag] || '🔄';
+    const bar = progressBar(mission.progress, mission.target, 8);
+    const rewardParts = [];
+    if (mission.reward.sc > 0) rewardParts.push(`${mission.reward.sc} SC`);
+    if (mission.reward.hc > 0) rewardParts.push(`${mission.reward.hc} HC`);
+    if (mission.reward.rc > 0) rewardParts.push(`${mission.reward.rc} RC`);
+    return (
+      `${emoji} *${escapeMarkdown(mission.title)}*\n` +
+      `   ${mission.progress}/${mission.target} ${bar} │ 💰 ${rewardParts.join(" + ")}`
+    );
   });
 
   const anomalyLine = anomaly
-    ? `\nNexus: *${escapeMarkdown(anomaly.title)}* (${anomaly.pressure_pct}% basinc, ${anomaly.preferred_mode})`
+    ? `\n🌀 *Nexus:* ${escapeMarkdown(anomaly.title)} (${anomaly.pressure_pct}% basınç)`
     : "";
   const contractLine = contract
-    ? `\nKontrat: *${escapeMarkdown(contract.title)}* [${escapeMarkdown(contract.required_mode)}]`
+    ? `\n📜 *Kontrat:* ${escapeMarkdown(contract.title)} \`${escapeMarkdown(contract.required_mode)}\``
     : "";
+
+  const totalEarnable = Math.round((claimable.sc + (dailyCap - tasksDone) * 80) * streakMult);
+
   return (
-    `*Gunluk Operasyon*\n` +
-    `Kral: *${escapeMarkdown(profile.public_name)}*\n` +
-    `Gorev: *${tasksDone}/${dailyCap}*\n` +
-    `Cap HUD: ${progress}\n` +
-    `Bakiye: ${balances.SC} SC / ${balances.HC} HC / ${balances.RC} RC${anomalyLine}${contractLine}\n\n` +
-    `Bekleyen Misyon Odulu: *${claimable.sc} SC + ${claimable.hc} HC + ${claimable.rc} RC*\n` +
-    `${missionLines.join("\n")}`
+    `🌅 *Günlük Kontrol Paneli*\n\n` +
+    `👤 *${escapeMarkdown(profile.public_name)}*\n` +
+    `📅 Görev: *${tasksDone}/${dailyCap}* │ 🔥 Streak: *${streak} gün*\n` +
+    `${progressBar(tasksDone, Math.max(1, dailyCap), 14)} %${Math.round((tasksDone / Math.max(1, dailyCap)) * 100)}\n\n` +
+    `┌──────────────────────────┐\n` +
+    `│ 🪙 SC  *${String(balances.SC).padStart(7)}*  │\n` +
+    `│ 💎 HC  *${String(balances.HC).padStart(7)}*  │\n` +
+    `│ 🔮 RC  *${String(balances.RC).padStart(7)}*  │\n` +
+    `└──────────────────────────┘\n` +
+    `📊 Streak Çarpanı: *x${streakMult.toFixed(2)}* (+${Math.round((streakMult - 1) * 100)}% SC)` +
+    anomalyLine + contractLine +
+    `\n\n📋 *Günlük Hedefler:*\n\n` +
+    missionLines.join("\n\n") +
+    `\n\n💎 Bekleyen Ödül: *${claimable.sc} SC + ${claimable.hc} HC + ${claimable.rc} RC*` +
+    `\n💰 Bugün kazanılabilir: ~*${totalEarnable} SC*`
   );
 }
 
@@ -585,26 +607,41 @@ function formatLeaderboard(season, rows) {
 }
 
 function formatShop(offers, balances, activeEffects) {
+  const emojiMap = {
+    xp_boost: '⚡', sc_boost: '💰', streak_shield: '🛡️',
+    task_reroll: '🎯', hc_drop: '💎', premium_pass: '👑'
+  };
   const lines = offers.map((offer, idx) => {
     const title = offer.benefit_json?.title || offer.offer_type;
+    const emoji = emojiMap[offer.offer_type] || '🛍️';
     const price = `${Number(offer.price)} ${offer.currency}`;
-    return `${idx + 1}) *${escapeMarkdown(title)}* - ${price}`;
+    const desc = offer.benefit_json?.description || '';
+    return (
+      `${idx + 1}️⃣ ${emoji} *${escapeMarkdown(title)}* — ${price}` +
+      (desc ? `\n   _${escapeMarkdown(desc)}_` : '')
+    );
   });
-  const effects =
-    !activeEffects || activeEffects.length === 0
-      ? "Yok"
-      : activeEffects
-          .map((effect) => {
-            const exp = new Date(effect.expires_at).toISOString().slice(0, 16).replace("T", " ");
-            return `${effect.effect_key} (${exp})`;
-          })
-          .join(", ");
+
+  let effectLines = '';
+  if (activeEffects && activeEffects.length > 0) {
+    effectLines = activeEffects.map((effect) => {
+      const remaining = Math.max(0, new Date(effect.expires_at).getTime() - Date.now());
+      const hours = Math.floor(remaining / 3600000);
+      const mins = Math.floor((remaining % 3600000) / 60000);
+      const emoji = emojiMap[effect.effect_key] || '✨';
+      return `  ${emoji} ${effect.effect_key} — ${hours}s ${mins}dk kaldı`;
+    }).join('\n');
+  }
+
   return (
-    `*Kral Dukkani*\n` +
-    `Bakiye: ${balances.SC} SC / ${balances.HC} HC / ${balances.RC} RC\n\n` +
-    `${lines.join("\n")}\n\n` +
-    `Aktif Etkiler: ${escapeMarkdown(effects)}\n` +
-    `Bir urune dokun ve satin al.`
+    `🛒 *Boost Dükkanı*\n\n` +
+    `💰 Bakiye: *${balances.SC}* SC │ *${balances.HC}* HC │ *${balances.RC}* RC\n\n` +
+    (effectLines
+      ? `📦 *Aktif Boost'lar:*\n${effectLines}\n\n`
+      : `📦 Aktif boost yok\n\n`) +
+    `🛍️ *Katalog:*\n\n` +
+    `${lines.join("\n\n")}\n\n` +
+    `💡 Satın almak için ürün numarasına tıkla!`
   );
 }
 
@@ -670,40 +707,196 @@ function formatMissionClaim(result) {
 }
 
 function formatWar(status, season) {
-  const nextLine = status.next ? `${Math.max(0, status.next - status.value)} puan sonra ${status.tier} üzeri` : "🏆 Maksimum tier";
+  const value = Math.floor(Number(status.value || 0));
+  const next = Number(status.next || 0);
+  const tier = Number(status.tier || 0);
+  const gap = next > 0 ? Math.max(0, next - value) : 0;
+  const bar = progressBar(value, next || Math.max(1, value), 14);
+  const pctVal = next > 0 ? Math.round((value / next) * 100) : 100;
+  const tierStars = '⭐'.repeat(Math.min(tier, 5));
+
+  const rewardTiers = [
+    { t: 1, reward: '500 SC' },
+    { t: 2, reward: '1,000 SC + 10 HC' },
+    { t: 3, reward: '2,000 SC + 25 HC' },
+    { t: 4, reward: '5,000 SC + 50 HC + 5 RC' },
+    { t: 5, reward: '10,000 SC + 100 HC + 20 RC' }
+  ];
+  const currentReward = rewardTiers.find(r => r.t === tier);
+  const nextReward = rewardTiers.find(r => r.t === tier + 1);
+
   return (
-    `⚔️ *War Room*\n\n` +
-    `📅 Sezon: *S${season.seasonId}*\n` +
-    `🏰 Topluluk Havuzu: *${Math.floor(status.value)}*\n` +
-    `🎖 Tier: *${status.tier}*\n` +
-    `${nextLine}\n\n` +
-    `${progressBar(status.value, status.next || Math.max(1, status.value), 14)}`
+    `⚔️ *Topluluk Savaşı // War Room*\n\n` +
+    `📅 Sezon: *S${season.seasonId}* │ ⏳ *${season.daysLeft} gün* kaldı\n\n` +
+    `🏰 *Topluluk Havuzu:* ${value.toLocaleString()} puan\n` +
+    `🎖️ *Tier:* ${tier} ${tierStars}\n` +
+    `${bar} %${pctVal}\n\n` +
+    (gap > 0
+      ? `📈 Sonraki tier'e: *${gap.toLocaleString()} puan*\n`
+      : `🏆 *Maksimum tier'e ulaşıldı!*\n`) +
+    `\n💰 *Sezon Sonu Ödülleri:*\n` +
+    (currentReward ? `  🎁 Mevcut (T${currentReward.t}): ${currentReward.reward}\n` : '') +
+    (nextReward ? `  🔓 Sonraki (T${nextReward.t}): ${nextReward.reward}\n` : '') +
+    `\n🎯 Görev ve PvP ile topluluk puanına katkı sağla!`
   );
 }
 
 function formatKingdom(profile, state) {
-  const history = (state.history || []).length
-    ? state.history
-        .map((row) => {
-          const date = new Date(row.created_at).toISOString().slice(0, 10);
-          return `${date}: T${row.from_tier} -> T${row.to_tier}`;
-        })
-        .join("\n")
-    : "Kayit yok";
+  const tier = Number(profile.kingdom_tier || 0);
+  const rep = Number(profile.reputation_score || 0);
+  const toNext = Number(state.toNext || 0);
+  const tierNames = ['Çırak', 'Asker', 'Şövalye', 'Kaptan', 'Komutan', 'General', 'Lord', 'Kral'];
+  const tierName = tierNames[Math.min(tier, tierNames.length - 1)] || `T${tier}`;
+  const tierStars = '⭐'.repeat(Math.min(tier, 7));
+  const bar = progressBar(state.progressValue || 0, state.progressMax || 1, 12);
+  const pctVal = Math.round(((state.progressValue || 0) / Math.max(1, state.progressMax || 1)) * 100);
 
-  const nextTierLine =
-    state.nextThreshold === null
-      ? "Maks tierdesin"
-      : `Sonraki Tier: *T${state.nextTier}* (${state.toNext} puan)`;
+  const unlocks = {
+    1: ['📋 Temel görevler açık'],
+    2: ['⚔️ PvP Raid erişimi', '💰 Günlük SC cap +20%'],
+    3: ['🎯 ELITE görevler açık', '💎 Günlük HC cap: 5'],
+    4: ['🏰 War Room katılımı', '💎 Günlük HC cap: 8', '💰 Payout çarpanı x1.5'],
+    5: ['👑 Premium görevler', '💎 Günlük HC cap: 12', '💰 Payout çarpanı x2'],
+    6: ['🔥 Boss Raid erişimi', '🛡️ Streak koruması ücretsiz'],
+    7: ['🏆 Topluluk lideri rozeti', '💰 Payout çarpanı x3']
+  };
+
+  const currentUnlocks = unlocks[tier] || [];
+  const nextUnlocks = unlocks[tier + 1] || [];
+
+  const historyLines = (state.history || []).slice(0, 5).map((row) => {
+    const date = new Date(row.created_at).toISOString().slice(0, 10);
+    return `  📌 ${date}: T${row.from_tier} → T${row.to_tier}`;
+  });
 
   return (
-    `*Kingdom Console*\n` +
-    `Kral: *${escapeMarkdown(profile.public_name)}*\n` +
-    `Tier: *${profile.kingdom_tier}*\n` +
-    `Reputasyon: *${profile.reputation_score}*\n` +
-    `${nextTierLine}\n` +
-    `Tier HUD: ${progressBar(state.progressValue, state.progressMax, 12)}\n\n` +
-    `Son Hareketler:\n${history}`
+    `👑 *Kingdom // Tier Paneli*\n\n` +
+    `👤 *${escapeMarkdown(profile.public_name)}*\n` +
+    `⚔️ Tier: *${tier}* — ${tierName} ${tierStars}\n` +
+    `🏅 Reputasyon: *${rep.toLocaleString()}*\n` +
+    `${bar} %${pctVal}\n\n` +
+    (state.nextThreshold !== null
+      ? `📈 Sonraki Tier *T${state.nextTier}*: *${toNext} puan* kaldı\n\n`
+      : `🏆 *Maksimum tier'e ulaştın!*\n\n`) +
+    (currentUnlocks.length
+      ? `🔓 *Mevcut Avantajlar (T${tier}):*\n${currentUnlocks.map(u => `  ${u}`).join('\n')}\n\n`
+      : '') +
+    (nextUnlocks.length
+      ? `🔮 *T${tier + 1} Açılınca:*\n${nextUnlocks.map(u => `  ${u}`).join('\n')}\n\n`
+      : '') +
+    (historyLines.length
+      ? `📜 *Son Hareketler:*\n${historyLines.join('\n')}`
+      : '📜 Henüz tier hareketi yok')
+  );
+}
+
+function formatBossFight(boss, playerDamage, participants) {
+  const hp = Number(boss?.hp || 0);
+  const maxHp = Number(boss?.max_hp || 1);
+  const hpPct = Math.round((hp / Math.max(1, maxHp)) * 100);
+  const bar = progressBar(maxHp - hp, maxHp, 12);
+  const dmg = Number(playerDamage || 0);
+  const count = Number(participants || 0);
+  const weakType = boss?.weak_type || 'NONE';
+  const weakEmoji = { LIGHTNING: '⚡', FIRE: '🔥', ICE: '❄️', POISON: '☠️', NONE: '❓' };
+  const rewardSc = Number(boss?.reward_sc || 0);
+  const rewardHc = Number(boss?.reward_hc || 0);
+  const remaining = boss?.remaining_minutes || 0;
+
+  return (
+    `🐉 *BOSS FIGHT — ${escapeMarkdown(boss?.name || 'Unknown')}*\n\n` +
+    `❤️ HP: ${bar} ${hp.toLocaleString()}/${maxHp.toLocaleString()} (%${hpPct})\n` +
+    `⚔️ Senin Hasarın: *${dmg.toLocaleString()}*\n` +
+    `👥 Katılımcı: *${count}* oyuncu\n\n` +
+    `🎯 Zayıf Nokta: ${weakEmoji[weakType] || '❓'} *${weakType}*\n` +
+    `💰 Ödül Havuzu: *${rewardSc.toLocaleString()} SC* + *${rewardHc} HC*\n\n` +
+    `⏰ Kalan: *${remaining} dk*\n\n` +
+    `💡 Boss'un zayıf noktasına uygun görev modu ile hasar artır!`
+  );
+}
+
+function formatChainQuest(chain) {
+  const steps = chain?.steps || [];
+  const currentStep = Number(chain?.current_step || 0);
+  const totalSteps = steps.length || 5;
+  const bar = progressBar(currentStep, totalSteps, 10);
+  const pctVal = Math.round((currentStep / Math.max(1, totalSteps)) * 100);
+  const bonusSc = Number(chain?.bonus_sc || 0);
+  const bonusHc = Number(chain?.bonus_hc || 0);
+
+  const stepLines = steps.map((step, idx) => {
+    const num = idx + 1;
+    if (num < currentStep) {
+      return `  ✅ ${num}. ${escapeMarkdown(step.title)}`;
+    }
+    if (num === currentStep) {
+      const stepBar = progressBar(step.progress || 0, step.target || 1, 8);
+      return `  🔄 ${num}. *${escapeMarkdown(step.title)}* (aktif)\n     ${step.progress || 0}/${step.target || 1} ${stepBar}`;
+    }
+    return `  ⬜ ${num}. ${escapeMarkdown(step.title)}`;
+  });
+
+  return (
+    `🔗 *Zincir Görev — ${escapeMarkdown(chain?.title || 'Bilinmeyen')}*\n\n` +
+    `Adım ${currentStep}/${totalSteps}: ${bar} %${pctVal}\n\n` +
+    `📋 *Zincir:*\n${stepLines.join('\n')}\n\n` +
+    `💎 Zincir Bonusu: *${bonusSc.toLocaleString()} SC + ${bonusHc} HC*\n` +
+    `🏆 Tüm adımları tamamla, büyük ödülü kap!`
+  );
+}
+
+function formatStreakWarning(profile) {
+  const streak = Number(profile?.streak_days || 0);
+  const mult = 1 + Math.min(streak, 30) * 0.05;
+  const extraSc = Math.round((mult - 1) * 80 * streak);
+  const hoursLeft = Number(profile?.streak_hours_left || 0);
+  const h = Math.floor(hoursLeft);
+  const m = Math.round((hoursLeft - h) * 60);
+
+  return (
+    `⚠️ *STREAK UYARISI*\n\n` +
+    `🔥 *${streak} günlük* streak'in risk altında!\n` +
+    `⏰ Kalan süre: *${h}s ${m}dk*\n\n` +
+    `❌ Kaybedersen:\n` +
+    `  → x${mult.toFixed(2)} SC çarpanı → x1.00\n` +
+    `  → ~${extraSc} SC ekstra gelir kaybolur\n` +
+    `  → ${streak} günlük ilerleme sıfırlanır\n\n` +
+    `🛡️ Streak Koruması: *300 HC*\n` +
+    `📋 Hızlı görev: /tasks\n` +
+    `⚔️ Hızlı PvP: /pvp\n\n` +
+    `💡 Giriş yap veya 1 görev tamamla!`
+  );
+}
+
+function formatPassOffer(season, currentTier) {
+  const tier = Number(currentTier || 0);
+  const daysLeft = Number(season?.daysLeft || 0);
+  const seasonId = season?.seasonId || 1;
+
+  return (
+    `👑 *Premium Arena Pass — Sezon ${seasonId}*\n\n` +
+    `🎁 *İçerik:*\n` +
+    `  → 💎 Günlük HC: 2 → *5*\n` +
+    `  → ⚡ XP Çarpanı: *x2*\n` +
+    `  → 🎯 Özel görevler (*ELITE* tier)\n` +
+    `  → 🏆 Özel rozet + leaderboard\n` +
+    `  → 💰 Payout çarpanı: *x2*\n` +
+    `  → 🛡️ Haftalık ücretsiz streak koruması\n\n` +
+    `📊 *Free vs Premium:*\n` +
+    `┌──────────────┬───────┬─────────┐\n` +
+    `│              │ Free  │ Premium │\n` +
+    `├──────────────┼───────┼─────────┤\n` +
+    `│ Günlük HC    │   2   │    5    │\n` +
+    `│ XP Çarpanı   │  x1   │   x2    │\n` +
+    `│ Payout Çarp. │  x1   │   x2    │\n` +
+    `│ ELITE Görev  │  ❌   │   ✅    │\n` +
+    `│ Streak Kalkan│  ❌   │   ✅    │\n` +
+    `└──────────────┴───────┴─────────┘\n\n` +
+    `💲 Fiyat: *5 TON* (≈$5)\n` +
+    `⏰ Sezon sonu: *${daysLeft} gün*\n\n` +
+    (tier >= 3
+      ? `🔓 Tier ${tier} — Premium'a uygunsun!`
+      : `⚠️ Tier 3+ gerekli (Mevcut: T${tier})`)
   );
 }
 
@@ -1355,6 +1548,10 @@ module.exports = {
   formatMissionClaim,
   formatWar,
   formatKingdom,
+  formatBossFight,
+  formatChainQuest,
+  formatStreakWarning,
+  formatPassOffer,
   formatPayout,
   formatPayoutDecisionUpdate,
   formatFreezeMessage,
