@@ -1,6 +1,8 @@
 'use client';
 
 import { useTelegram } from '@/lib/telegram';
+import { useBootstrap } from '@/hooks/useBootstrap';
+import { useAppStore } from '@/store/useAppStore';
 
 /**
  * Blueprint Section 3: First run — hub with panel=onboarding
@@ -9,9 +11,24 @@ import { useTelegram } from '@/lib/telegram';
  */
 export default function HubPage() {
   const { user, locale } = useTelegram();
+  const { isLoading, isError } = useBootstrap();
+  const { balances, bootstrapped, kingdomTier } = useAppStore();
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Loading / Error states */}
+      {isLoading && (
+        <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-secondary)' }}>
+          ⏳ {locale === 'tr' ? 'Yükleniyor...' : 'Loading...'}
+        </div>
+      )}
+
+      {isError && (
+        <div style={{ textAlign: 'center', padding: 20, color: '#ff6b6b', background: 'rgba(255,107,107,0.08)', borderRadius: 'var(--radius-md)' }}>
+          ⚠️ {locale === 'tr' ? 'Bağlantı hatası. Tekrar dene.' : 'Connection error. Try again.'}
+        </div>
+      )}
+
       {/* Welcome card */}
       <div
         style={{
@@ -30,6 +47,22 @@ export default function HubPage() {
             : 'Nexus Arena awaits. Accept your first mission and unlock your reward path.'}
         </p>
       </div>
+
+      {/* Blueprint: Unified currency display — SC, HC, RC, payout_available */}
+      {bootstrapped && (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, 1fr)',
+            gap: 8,
+          }}
+        >
+          <CurrencyBadge label="SC" value={balances.sc} color="#00e5ff" />
+          <CurrencyBadge label="HC" value={balances.hc} color="#ffd740" />
+          <CurrencyBadge label="RC" value={balances.rc} color="#e040fb" />
+          <CurrencyBadge label={locale === 'tr' ? 'Çekilebilir' : 'Payout'} value={balances.payout_available} color="#69f0ae" />
+        </div>
+      )}
 
       {/* Quick actions — Blueprint: one clear action per message */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -59,6 +92,25 @@ export default function HubPage() {
           href="/vault"
         />
       </div>
+    </div>
+  );
+}
+
+function CurrencyBadge({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <div
+      style={{
+        background: 'var(--color-surface)',
+        border: '1px solid var(--color-border)',
+        borderRadius: 'var(--radius-md)',
+        padding: '10px 12px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
+      }}
+    >
+      <span style={{ fontSize: 11, color: 'var(--color-text-secondary)', fontWeight: 500 }}>{label}</span>
+      <span style={{ fontSize: 18, fontWeight: 700, color }}>{value.toLocaleString()}</span>
     </div>
   );
 }
