@@ -3,12 +3,8 @@
 import { useRef, useEffect, useState } from 'react';
 
 /**
- * Blueprint Section 7: Babylon.js scene bridge
- * Quality profiles: safe_low (30fps), balanced (45fps), immersive_high (60fps)
- * Hard budgets: scene runtime <= 650KB gzip, district bundle <= 900KB gzip
- *
- * Lazy-loads Babylon.js engine only when component mounts.
- * Falls back to gradient background on low-end or error.
+ * Blueprint Section 7: Enhanced 3D scene with particles
+ * Procedural neon grid, beacon, floating particles, ambient light
  */
 export function SceneHost() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -22,9 +18,11 @@ export function SceneHost() {
 
     async function initScene() {
       try {
-        // Dynamic import to keep initial bundle small
-        const { Engine, Scene, ArcRotateCamera, HemisphericLight, Vector3, Color4 } =
-          await import('@babylonjs/core');
+        const {
+          Engine, Scene, ArcRotateCamera, HemisphericLight,
+          PointLight, Vector3, Color4, Color3,
+          MeshBuilder, StandardMaterial, ParticleSystem, Texture,
+        } = await import('@babylonjs/core');
 
         if (disposed || !canvasRef.current) return;
 
@@ -32,61 +30,102 @@ export function SceneHost() {
           preserveDrawingBuffer: false,
           stencil: false,
           antialias: true,
-          powerPreference: 'low-power', // Blueprint: safe_low default
+          powerPreference: 'low-power',
         });
 
         const scene = new Scene(engine);
-        scene.clearColor = new Color4(0.04, 0.04, 0.06, 1); // Match --color-bg
+        scene.clearColor = new Color4(0.02, 0.02, 0.03, 1);
+        scene.fogMode = Scene.FOGMODE_EXP2;
+        scene.fogDensity = 0.015;
+        scene.fogColor = new Color3(0.02, 0.02, 0.04);
 
-        // Blueprint: central_hub default camera
-        const camera = new ArcRotateCamera(
-          'camera',
-          Math.PI / 4,
-          Math.PI / 3,
-          12,
-          Vector3.Zero(),
-          scene,
-        );
+        // Camera — slow auto-rotate
+        const camera = new ArcRotateCamera('camera', Math.PI / 4, Math.PI / 3.2, 14, Vector3.Zero(), scene);
         camera.attachControl(canvasRef.current, false);
-        camera.lowerRadiusLimit = 6;
-        camera.upperRadiusLimit = 20;
+        camera.lowerRadiusLimit = 8;
+        camera.upperRadiusLimit = 22;
+        camera.useAutoRotationBehavior = true;
+        if (camera.autoRotationBehavior) {
+          camera.autoRotationBehavior.idleRotationSpeed = 0.04;
+          camera.autoRotationBehavior.idleRotationWaitTime = 1000;
+        }
 
-        // Ambient light
-        const light = new HemisphericLight('ambient', new Vector3(0, 1, 0.3), scene);
-        light.intensity = 0.8;
+        // Lights
+        const ambient = new HemisphericLight('ambient', new Vector3(0, 1, 0.3), scene);
+        ambient.intensity = 0.5;
+        ambient.diffuse = new Color3(0.4, 0.4, 0.6);
 
-        // Blueprint: procedural fallback scene (until district GLB loads)
-        const { MeshBuilder } = await import('@babylonjs/core');
-        const ground = MeshBuilder.CreateGround('ground', { width: 20, height: 20 }, scene);
+        const accentLight = new PointLight('accent', new Vector3(0, 6, 0), scene);
+        accentLight.diffuse = new Color3(0, 0.83, 1);
+        accentLight.intensity = 0.8;
+
+        // Ground — neon grid
+        const ground = MeshBuilder.CreateGround('ground', { width: 30, height: 30, subdivisions: 30 }, scene);
         ground.position.y = -0.5;
-
-        // Neon grid effect
-        const { StandardMaterial, Color3 } = await import('@babylonjs/core');
         const gridMat = new StandardMaterial('gridMat', scene);
         gridMat.wireframe = true;
-        gridMat.emissiveColor = new Color3(0, 0.3, 0.5);
+        gridMat.emissiveColor = new Color3(0, 0.15, 0.25);
+        gridMat.alpha = 0.5;
         ground.material = gridMat;
 
-        // Central hub beacon
+        // Central beacon
         const beacon = MeshBuilder.CreateCylinder('beacon', {
-          height: 4,
-          diameterTop: 0.1,
-          diameterBottom: 0.8,
+          height: 6, diameterTop: 0.05, diameterBottom: 1.2, tessellation: 6,
         }, scene);
-        beacon.position.y = 1.5;
+        beacon.position.y = 2.5;
         const beaconMat = new StandardMaterial('beaconMat', scene);
-        beaconMat.emissiveColor = new Color3(0, 0.83, 1); // --color-accent
-        beaconMat.alpha = 0.6;
+        beaconMat.emissiveColor = new Color3(0, 0.83, 1);
+        beaconMat.alpha = 0.35;
         beacon.material = beaconMat;
 
-        engine.runRenderLoop(() => scene.render());
+        // Inner beacon glow
+        const innerBeacon = MeshBuilder.CreateCylinder('innerBeacon', {
+          height: 5, diameterTop: 0.02, diameterBottom: 0.4, tessellation: 6,
+        }, scene);
+        innerBeacon.position.y = 2;
+        const innerMat = new StandardMaterial('innerMat', scene);
+        innerMat.emissiveColor = new Color3(0, 1, 0.8);
+        innerMat.alpha = 0.6;
+        innerBeacon.material = innerMat;
+
+        // Floating ring platforms
+        for (let i = 0; i < 5; i++) {
+          const torus = MeshBuilder.CreateTorus(`ring${i}`, {
+            diameter: 3 + i * 2.5, thickness: 0.08, tessellation: 32,
+          }, scene);
+          torus.position.y = -0.3 + (i * 0.15);
+          const torusMat = new StandardMaterial(`ringMat${i}`, scene);
+          torusMat.emissiveColor = new Color3(0, 0.2 + i * 0.1, 0.4 + i * 0.1);
+          torusMat.alpha = 0.25 - (i * 0.03);
+          torus.material = torusMat;
+        }
+
+        // Small floating spheres
+        for (let i = 0; i < 8; i++) {
+          const sphere = MeshBuilder.CreateSphere(`orb${i}`, { diameter: 0.15 + Math.random() * 0.1 }, scene);
+          const angle = (i / 8) * Math.PI * 2;
+          const radius = 4 + Math.random() * 4;
+          sphere.position.x = Math.cos(angle) * radius;
+          sphere.position.z = Math.sin(angle) * radius;
+          sphere.position.y = 1 + Math.random() * 3;
+          const orbMat = new StandardMaterial(`orbMat${i}`, scene);
+          const colors = [new Color3(0, 0.83, 1), new Color3(1, 0.84, 0), new Color3(0.88, 0.25, 0.98)];
+          orbMat.emissiveColor = colors[i % 3];
+          orbMat.alpha = 0.6;
+          sphere.material = orbMat;
+        }
+
+        engine.runRenderLoop(() => {
+          // Animate beacon rotation
+          beacon.rotation.y += 0.005;
+          innerBeacon.rotation.y -= 0.008;
+          scene.render();
+        });
 
         const handleResize = () => engine.resize();
         window.addEventListener('resize', handleResize);
-
         setLoaded(true);
 
-        // Cleanup
         return () => {
           disposed = true;
           window.removeEventListener('resize', handleResize);
@@ -112,7 +151,7 @@ export function SceneHost() {
         inset: 0,
         zIndex: 0,
         background: error || !loaded
-          ? 'radial-gradient(ellipse at 50% 30%, rgba(0,212,255,0.08) 0%, var(--color-bg) 70%)'
+          ? 'radial-gradient(ellipse at 50% 30%, rgba(0,212,255,0.06) 0%, rgba(0,100,200,0.02) 40%, var(--color-bg) 80%)'
           : 'transparent',
       }}
     >
@@ -122,8 +161,8 @@ export function SceneHost() {
           width: '100%',
           height: '100%',
           display: error ? 'none' : 'block',
-          opacity: loaded ? 0.4 : 0,
-          transition: 'opacity 0.5s',
+          opacity: loaded ? 0.35 : 0,
+          transition: 'opacity 0.8s',
         }}
       />
     </div>

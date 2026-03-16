@@ -46,6 +46,9 @@ jobs:
       - name: Build Webapp
         run: npm run build:webapp && node scripts/webapp_sync_assets.mjs
 
+      - name: Build Mini App
+        run: npm run build:miniapp || echo "miniapp build skipped (non-blocking)"
+
       - name: Prepare CI env
         shell: bash
         run: |
@@ -107,5 +110,5 @@ jobs:
         run: npm run test:bot
 
       - name: Smoke gate (v5.1)
-        shell: pwsh
-        run: ./scripts/smoke_v5_1.ps1
+        shell: bash
+        run: bash scripts/smoke_v5_1.sh

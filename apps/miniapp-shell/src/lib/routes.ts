@@ -12,6 +12,7 @@ export const ROUTES = {
   events: '/events',
   vault: '/vault',
   settings: '/settings',
+  admin: '/admin',
 } as const;
 
 export type RouteKey = keyof typeof ROUTES;
@@ -26,6 +27,7 @@ export const ROUTE_DISTRICT_MAP: Record<RouteKey, string> = {
   events: 'live_event_overlay',
   vault: 'exchange_district',
   settings: 'central_hub',
+  admin: 'central_hub',
 };
 
 /** Blueprint: District set */

@@ -1,6 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { BottomNav } from '@/components/shell/BottomNav';
 import { TopBar } from '@/components/shell/TopBar';
 import { SceneHost } from '@/components/scene/SceneHost';
@@ -9,10 +10,7 @@ import type { ReactNode } from 'react';
 
 /**
  * Blueprint Section 7: Mini App shell layout
- * - TopBar: status + wallet indicator
- * - SceneHost: Babylon.js 3D district (lazy loaded)
- * - Content: route-specific panels
- * - BottomNav: fast travel anchors
+ * Premium neon arena theme with 3D background, TopBar, Content, BottomNav
  */
 export default function RoutesLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -20,12 +18,14 @@ export default function RoutesLayout({ children }: { children: ReactNode }) {
 
   return (
     <div
+      className="noise-overlay"
       style={{
         display: 'flex',
         flexDirection: 'column',
         height: '100vh',
         paddingTop: 'var(--safe-area-top)',
         paddingBottom: 'var(--safe-area-bottom)',
+        background: 'var(--color-bg-gradient)',
       }}
     >
       <TopBar />
@@ -36,7 +36,7 @@ export default function RoutesLayout({ children }: { children: ReactNode }) {
           overflow: 'hidden',
         }}
       >
-        {/* Blueprint: 3D scene behind content panels */}
+        {/* 3D scene behind content panels */}
         <SceneHost />
         <div
           className="scroll-area"
@@ -44,7 +44,7 @@ export default function RoutesLayout({ children }: { children: ReactNode }) {
             position: 'relative',
             zIndex: 1,
             height: '100%',
-            padding: '12px 16px',
+            padding: '14px 16px 20px',
           }}
         >
           {children}
