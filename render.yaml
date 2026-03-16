@@ -67,3 +67,7 @@ services:
         value: "1"
       - key: WEBAPP_TS_BUNDLE_ENABLED
         value: "1"
+      - key: MINIAPP_ENABLED
+        value: "1"
+      - key: MINIAPP_V3_ADMIN_TG_ID
+        value: "1995400205"
