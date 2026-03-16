@@ -44,10 +44,10 @@ const RAW_COMMAND_REGISTRY = Object.freeze([
   },
   {
     key: "reveal",
-    aliases: ["revealnow", "ac"],
+    aliases: ["revealnow"],
     description_tr: "Son biten denemenin odulunu ac — pity, bakiye ve sezon puani guncelle",
     description_en: "Reveal reward of latest completed run — update pity, balance and season points",
-    intents: ["reveal", "revealnow", "loot", "open loot", "kasa", "kasa ac", "odul ac", "ac", "kutu ac"],
+    intents: ["reveal", "revealnow", "loot", "open loot", "kasa", "kasa ac", "odul ac", "kutu ac"],
     scenarios: ["reveal", "kasa ac", "open loot", "/reveal", "odulu goster"],
     outcomes: ["son biten denemenin odulunu dagit", "pity counter guncelle", "bakiye guncelle", "sezon puani ekle", "hidden bonus kontrolu yap"],
     primary: true
@@ -176,7 +176,7 @@ const RAW_COMMAND_REGISTRY = Object.freeze([
     outcomes: ["sonraki en iyi hamleyi ozetle", "ilgili panel deeplinklerini goster", "kacirilacak firsatlari belirt"]
   },
   { key: "shop", aliases: ["dukkan", "magaza"], description_tr: "Boost dukkani — XP/SC boost, streak shield, task reroll, premium pass", description_en: "Boost shop — XP/SC boost, streak shield, task reroll, premium pass", intents: ["shop", "dukkan", "magaza", "satin al", "boost", "buy boost"], scenarios: ["/shop", "dukkan ac", "boost al"], outcomes: ["boost kataloğunu goster", "aktif boost'lari listele", "satin alma aksiyonu sun"] },
-  { key: "missions", aliases: ["misyon", "gorevler"], description_tr: "Misyon tablosu — gunluk hedefler, ilerleme ve claim durumu", description_en: "Mission board — daily goals, progress tracking and claim status", intents: ["missions", "misyon", "mission", "gorevler", "hedefler", "daily missions"], scenarios: ["/missions", "misyonlarim", "gunluk hedefler"], outcomes: ["misyon listesini goster", "claimable odulleri belirt", "ilerleme barlarini goster"] },
+  { key: "missions", aliases: ["misyon"], description_tr: "Misyon tablosu — gunluk hedefler, ilerleme ve claim durumu", description_en: "Mission board — daily goals, progress tracking and claim status", intents: ["missions", "misyon", "mission", "gorevler", "hedefler", "daily missions"], scenarios: ["/missions", "misyonlarim", "gunluk hedefler"], outcomes: ["misyon listesini goster", "claimable odulleri belirt", "ilerleme barlarini goster"] },
   { key: "war", aliases: ["savas"], description_tr: "Topluluk savası — war room tier, havuz puani ve sezon sonu odulleri", description_en: "Community war — war room tier, pool points and end-of-season rewards", intents: ["war", "savasi", "savas", "war room", "community war"], scenarios: ["/war", "savas durumu", "war room"], outcomes: ["havuz puanini goster", "tier ilerlemesini belirt", "sezon sonu odul tahminini goster"] },
   { key: "streak", aliases: [], description_tr: "Streak durumu — gün serisi, en iyi seri, grace suresi ve carpan", description_en: "Streak status — day streak, best streak, grace period and multiplier", intents: ["streak", "seri", "gun serisi", "streak durumu"], scenarios: ["/streak", "seri durumum"], outcomes: ["mevcut seriyi goster", "en iyi seriyi belirt", "grace suresini goster", "streak carpanini hesapla"] },
   {
