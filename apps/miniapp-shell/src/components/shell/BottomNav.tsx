@@ -4,9 +4,9 @@ import Link from 'next/link';
 
 const NAV_ITEMS = [
   { key: 'hub', label: 'Hub', icon: '⚡', href: '/hub' },
-  { key: 'missions', label: 'Görevler', icon: '⚔️', href: '/missions' },
-  { key: 'forge', label: 'Forge', icon: '🔮', href: '/forge' },
-  { key: 'exchange', label: 'Borsa', icon: '💎', href: '/exchange' },
+  { key: 'missions', label: 'Görevler', icon: '🎯', href: '/missions' },
+  { key: 'arena', label: 'Arena', icon: '⚔️', href: '/arena' },
+  { key: 'forge', label: 'Forge', icon: '🔥', href: '/forge' },
   { key: 'vault', label: 'Vault', icon: '🔐', href: '/vault' },
 ] as const;
 

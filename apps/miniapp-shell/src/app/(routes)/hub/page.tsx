@@ -1,222 +1,231 @@
 'use client';
 
-import Link from 'next/link';
 import { useTelegram } from '@/lib/telegram';
-import { useBootstrap } from '@/hooks/useBootstrap';
 import { useAppStore } from '@/store/useAppStore';
-import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import dynamic from 'next/dynamic';
+
+const SceneHost = dynamic(() => import('@/components/scene/SceneHost').then(m => ({ default: m.SceneHost })), { ssr: false });
+
+/* ═══════════════════════════════════════
+   Blueprint: Hub — Game Command Center
+   Features: 3D scene, greeting, currency dashboard,
+   quick actions, active anomaly, tier progress,
+   streak tracker, next best move engine
+   ═══════════════════════════════════════ */
+
+function getGreeting(isTr: boolean): { text: string; icon: string } {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 12) return { text: isTr ? 'Günaydın' : 'Good morning', icon: '☀️' };
+  if (h >= 12 && h < 18) return { text: isTr ? 'İyi günler' : 'Good afternoon', icon: '🌤️' };
+  if (h >= 18 && h < 22) return { text: isTr ? 'İyi akşamlar' : 'Good evening', icon: '🌆' };
+  return { text: isTr ? 'Gece kuşu' : 'Night owl', icon: '🌙' };
+}
 
 export default function HubPage() {
-  const { user, locale } = useTelegram();
-  const { isLoading, isError, refetch } = useBootstrap();
-  const { balances, bootstrapped, kingdomTier, passActive, bootstrapData } = useAppStore();
-  const [streakDays, setStreakDays] = useState(0);
-  const [greeting, setGreeting] = useState('');
+  const { locale, user } = useTelegram();
+  const { balances, kingdomTier, passActive, bootstrapped, username } = useAppStore();
+  const isTr = locale === 'tr';
+  const greeting = getGreeting(isTr);
+  const displayName = username || user?.first_name || (isTr ? 'Kaşif' : 'Explorer');
 
-  useEffect(() => {
-    const hour = new Date().getHours();
-    if (hour < 6) setGreeting(locale === 'tr' ? 'Gece kuşu' : 'Night owl');
-    else if (hour < 12) setGreeting(locale === 'tr' ? 'Günaydın' : 'Good morning');
-    else if (hour < 18) setGreeting(locale === 'tr' ? 'İyi günler' : 'Good afternoon');
-    else setGreeting(locale === 'tr' ? 'İyi akşamlar' : 'Good evening');
+  // Simulated game state
+  const streakDays = 7;
+  const streakMultiplier = 1 + streakDays * 0.05;
+  const dailyTasksCompleted = 3;
+  const dailyTasksTotal = 5;
+  const seasonDay = 14;
+  const seasonDaysLeft = 16;
+  const seasonPoints = 2450;
+  const tierProgress = 65; // out of 100
 
-    if (bootstrapData?.streak?.current_streak) {
-      setStreakDays(bootstrapData.streak.current_streak);
-    }
-  }, [locale, bootstrapData]);
-
-  if (isLoading) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60vh', gap: 16 }}>
-        <div className="neon-spinner" />
-        <div style={{ color: 'var(--color-text-secondary)', fontSize: 13 }}>
-          {locale === 'tr' ? 'Nexus yükleniyor...' : 'Loading Nexus...'}
-        </div>
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="empty-state">
-        <div className="empty-state-icon">⚠️</div>
-        <div className="empty-state-title" style={{ color: 'var(--color-danger)' }}>
-          {locale === 'tr' ? 'Bağlantı Hatası' : 'Connection Error'}
-        </div>
-        <div className="empty-state-desc">
-          {locale === 'tr' 
-            ? 'Sunucuya ulaşılamıyor. Lütfen tekrar dene.' 
-            : 'Cannot reach server. Please try again.'}
-        </div>
-        <button className="neon-btn danger" onClick={() => refetch()}>
-          {locale === 'tr' ? '🔄 Tekrar Dene' : '🔄 Retry'}
-        </button>
-      </div>
-    );
-  }
-
-  const tierNames = ['Rookie', 'Scout', 'Warrior', 'Elite', 'Champion', 'Legend', 'Mythic', 'Nexus', 'Apex', 'Overlord'];
-  const tierName = tierNames[Math.min(kingdomTier, tierNames.length - 1)] || 'Rookie';
-  const tierProgress = Math.min(100, Math.round(((balances.sc || 0) / Math.max(1, (kingdomTier + 1) * 500)) * 100));
+  const QUICK_ACTIONS = [
+    { href: '/missions', icon: '🎯', label_tr: 'Görevler', label_en: 'Missions', glow: '#00d2ff', badge: `${dailyTasksCompleted}/${dailyTasksTotal}` },
+    { href: '/arena', icon: '⚔️', label_tr: 'PvP Arena', label_en: 'PvP Arena', glow: '#ff4444', badge: '3/5' },
+    { href: '/forge', icon: '🔥', label_tr: 'Forge', label_en: 'Forge', glow: '#ffd700', badge: '2 📦' },
+    { href: '/exchange', icon: '💱', label_tr: 'Borsa', label_en: 'Exchange', glow: '#e040fb', badge: null },
+    { href: '/vault', icon: '🏦', label_tr: 'Vault', label_en: 'Vault', glow: '#00ff88', badge: null },
+    { href: '/season', icon: '🏆', label_tr: 'Sezon', label_en: 'Season', glow: '#ffd700', badge: `D${seasonDay}` },
+  ];
 
   return (
     <div className="stagger-children" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      {/* ── Hero Banner ──────────────────────────────────────── */}
-      <div className="hero-banner" style={{ position: 'relative' }}>
-        <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 4 }}>
-          {greeting} 👋
-        </div>
-        <h1 className="hero-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {user?.first_name ?? 'Pilot'}
-          {passActive && (
-            <span className="neon-badge premium" style={{ fontSize: 9 }}>
-              👑 PREMIUM
-            </span>
-          )}
-        </h1>
-        <p className="hero-desc">
-          {locale === 'tr'
-            ? 'Nexus Arena seni bekliyor. Görevleri tamamla, ödüller kazan, tier atla.'
-            : 'Nexus Arena awaits. Complete missions, earn rewards, level up.'}
-        </p>
-
-        {/* Streak indicator */}
-        {streakDays > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12 }}>
-            <span className="neon-badge success">
-              🔥 {streakDays} {locale === 'tr' ? 'gün serisi' : 'day streak'}
-            </span>
+      {/* 3D Scene */}
+      <div style={{ borderRadius: 12, overflow: 'hidden', height: 200, position: 'relative' }}>
+        <SceneHost />
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'linear-gradient(180deg, transparent 50%, rgba(10,10,26,0.9) 100%)',
+          display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 16,
+        }}>
+          <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{greeting.icon} {greeting.text}</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--color-text-primary)' }}>
+            {displayName}
           </div>
-        )}
+          <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+            <span className="neon-badge accent">T{kingdomTier}</span>
+            {passActive && <span className="neon-badge" style={{ background: 'rgba(224,64,251,0.15)', color: '#e040fb', border: '1px solid rgba(224,64,251,0.3)' }}>⭐ Pass</span>}
+            <span className="neon-badge" style={{ background: 'rgba(255,68,68,0.1)', color: '#ff4444', border: '1px solid rgba(255,68,68,0.2)' }}>🔥 {streakDays} {isTr ? 'gün' : 'days'}</span>
+          </div>
+        </div>
       </div>
 
-      {/* ── Tier Progress ────────────────────────────────────── */}
-      <div
-        className="glass-card"
-        style={{ padding: '14px 16px' }}
-      >
+      {/* Currency Dashboard */}
+      <div className="glass-card" style={{ padding: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 4, textAlign: 'center' }}>
+          {[
+            { key: 'SC', value: balances.sc, color: 'var(--color-sc, #00ff88)', icon: '💰' },
+            { key: 'HC', value: balances.hc, color: 'var(--color-hc, #00d2ff)', icon: '💎' },
+            { key: 'RC', value: balances.rc, color: 'var(--color-premium, #e040fb)', icon: '🌀' },
+            { key: 'NXT', value: balances.nxt, color: '#ffd700', icon: '🪙' },
+            { key: 'BTC', value: balances.payout_available, color: '#ff8800', icon: '₿' },
+          ].map(c => (
+            <div key={c.key}>
+              <div style={{ fontSize: 9, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>{c.icon} {c.key}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: c.color, fontFamily: 'var(--font-mono)' }}>
+                {typeof c.value === 'number' ? (c.value > 1000 ? `${(c.value / 1000).toFixed(1)}k` : c.value) : c.value}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Active Anomaly Ticker */}
+      <div className="glass-card" style={{ padding: 10, borderColor: 'rgba(255,68,68,0.3)', background: 'rgba(255,68,68,0.03)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 16 }}>🔥</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#ff4444' }}>
+              {isTr ? 'AKTİF ANOMALİ: Çift SC Haftası' : 'ACTIVE ANOMALY: Double SC Week'}
+            </div>
+            <div style={{ fontSize: 9, color: 'var(--color-text-muted)' }}>
+              {isTr ? 'Tüm görevlerden 2x SC → 4 gün 12 saat kaldı' : 'All tasks earn 2x SC → 4d 12h left'}
+            </div>
+          </div>
+          <Link href="/events" style={{ fontSize: 10, color: 'var(--color-accent)', textDecoration: 'none', fontWeight: 600 }}>
+            {isTr ? 'Detay →' : 'Details →'}
+          </Link>
+        </div>
+      </div>
+
+      {/* Quick Actions Grid */}
+      <div>
+        <div className="section-header">
+          <span className="section-title">⚡ {isTr ? 'Hızlı Erişim' : 'Quick Actions'}</span>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+          {QUICK_ACTIONS.map(action => (
+            <Link key={action.href} href={action.href} style={{ textDecoration: 'none', color: 'inherit' }}>
+              <div className="glass-card" style={{
+                padding: '12px 8px', textAlign: 'center', cursor: 'pointer',
+                border: `1px solid ${action.glow}22`,
+                transition: 'all 0.2s',
+              }}>
+                <div style={{ fontSize: 24, marginBottom: 4 }}>{action.icon}</div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                  {isTr ? action.label_tr : action.label_en}
+                </div>
+                {action.badge && (
+                  <span className="neon-badge" style={{ marginTop: 4, display: 'inline-block', fontSize: 9 }}>
+                    {action.badge}
+                  </span>
+                )}
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* Tier & Streak Progress */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        <div className="glass-card" style={{ padding: 12 }}>
+          <div style={{ fontSize: 10, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: 6 }}>
+            🏰 {isTr ? 'Tier İlerlemesi' : 'Tier Progress'}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-accent)' }}>T{kingdomTier}</span>
+            <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{tierProgress}%</span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text-muted)' }}>T{kingdomTier + 1}</span>
+          </div>
+          <div className="neon-progress" style={{ height: 6 }}>
+            <div className="neon-progress-bar" style={{ width: `${tierProgress}%` }} />
+          </div>
+        </div>
+
+        <div className="glass-card" style={{ padding: 12 }}>
+          <div style={{ fontSize: 10, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: 6 }}>
+            🔥 {isTr ? 'Streak Çarpanı' : 'Streak Multiplier'}
+          </div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--color-premium)', textAlign: 'center' }}>
+            x{streakMultiplier.toFixed(2)}
+          </div>
+          <div style={{ fontSize: 9, color: 'var(--color-text-muted)', textAlign: 'center' }}>
+            {streakDays} {isTr ? 'gün üst üste' : 'consecutive days'}
+          </div>
+        </div>
+      </div>
+
+      {/* Season Summary */}
+      <div className="glass-card" style={{ padding: 12 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 16 }}>🏰</span>
-            {tierName}
-            <span className="neon-badge accent" style={{ fontSize: 9 }}>
-              Tier {kingdomTier}
-            </span>
+          <div style={{ fontSize: 10, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+            🏆 {isTr ? 'Sezon Durumu' : 'Season Status'}
           </div>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--color-accent)' }}>
-            {tierProgress}%
+          <span className="neon-badge" style={{ background: 'rgba(255,215,0,0.1)', color: '#ffd700', border: '1px solid rgba(255,215,0,0.2)' }}>
+            {seasonDaysLeft} {isTr ? 'gün kaldı' : 'days left'}
           </span>
         </div>
-        <div className="neon-progress">
-          <div className="neon-progress-bar" style={{ width: `${tierProgress}%` }} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, textAlign: 'center' }}>
+          <div>
+            <div style={{ fontSize: 9, color: 'var(--color-text-muted)' }}>{isTr ? 'Puan' : 'Points'}</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--color-accent)' }}>{seasonPoints}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 9, color: 'var(--color-text-muted)' }}>{isTr ? 'Sıralama' : 'Rank'}</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--color-success)' }}>#47</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 9, color: 'var(--color-text-muted)' }}>{isTr ? 'Sonraki Ödül' : 'Next Reward'}</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--color-premium)' }}>500 pts</div>
+          </div>
+        </div>
+        <div className="neon-progress" style={{ height: 4, marginTop: 8 }}>
+          <div className="neon-progress-bar" style={{ width: '62%', background: 'linear-gradient(90deg, #ffd700, #ff8800)' }} />
         </div>
       </div>
 
-      {/* ── Currency Grid ────────────────────────────────────── */}
-      {bootstrapped && (
-        <div className="currency-grid">
-          <CurrencyCard label="SC" icon="💠" value={balances.sc} color="var(--color-sc)" />
-          <CurrencyCard label="HC" icon="🪙" value={balances.hc} color="var(--color-hc)" />
-          <CurrencyCard label="RC" icon="💎" value={balances.rc} color="var(--color-rc)" />
-          <CurrencyCard
-            label={locale === 'tr' ? 'ÇEKIM' : 'PAYOUT'}
-            icon="💰"
-            value={balances.payout_available ?? 0}
-            color="var(--color-payout)"
-          />
+      {/* Next Best Move — Discovery Engine */}
+      <div className="glass-card" style={{ padding: 12, borderColor: 'rgba(0,210,255,0.2)' }}>
+        <div style={{ fontSize: 10, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: 6 }}>
+          🧭 {isTr ? 'Sonraki En İyi Hamle' : 'Next Best Move'}
         </div>
-      )}
-
-      {/* ── Quick Actions ────────────────────────────────────── */}
-      <div style={{ marginTop: 4 }}>
-        <div className="section-header">
-          <span className="section-title">
-            {locale === 'tr' ? '⚡ Hızlı Erişim' : '⚡ Quick Actions'}
-          </span>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <ActionCard
-            icon="⚔️"
-            title={locale === 'tr' ? 'Görevler' : 'Missions'}
-            subtitle={locale === 'tr' ? 'Günlük görev havuzu • Ödüller kazan' : 'Daily mission pool • Earn rewards'}
-            href="/missions"
-            accent
-          />
-          <ActionCard
-            icon="🔮"
-            title={locale === 'tr' ? 'Forge Atölyesi' : 'Forge Workshop'}
-            subtitle={locale === 'tr' ? 'Loot kutuları • Ödül açılımı' : 'Loot boxes • Reward reveals'}
-            href="/forge"
-          />
-          <ActionCard
-            icon="💎"
-            title={locale === 'tr' ? 'Token Borsası' : 'Token Exchange'}
-            subtitle={locale === 'tr' ? 'Mint • Alım • Cüzdan işlemleri' : 'Mint • Buy • Wallet operations'}
-            href="/exchange"
-          />
-          <ActionCard
-            icon="🔐"
-            title={locale === 'tr' ? 'Güvenli Kasa' : 'Secure Vault'}
-            subtitle={locale === 'tr' ? 'BTC çekim • Payout durumu' : 'BTC withdrawal • Payout status'}
-            href="/vault"
-          />
-        </div>
-      </div>
-
-      {/* ── Explore Grid ─────────────────────────────────────── */}
-      <div style={{ marginTop: 4 }}>
-        <div className="section-header">
-          <span className="section-title">
-            {locale === 'tr' ? '🧭 Keşfet' : '🧭 Explore'}
-          </span>
-        </div>
-
-        <div className="mini-card-grid">
-          <Link href="/events" className="mini-card">
-            <span className="mini-card-icon">🎪</span>
-            <span className="mini-card-label">Events</span>
-          </Link>
-          <Link href="/season" className="mini-card">
-            <span className="mini-card-icon">🏆</span>
-            <span className="mini-card-label">Season</span>
-          </Link>
-          <Link href="/settings" className="mini-card">
-            <span className="mini-card-icon">⚙️</span>
-            <span className="mini-card-label">{locale === 'tr' ? 'Ayarlar' : 'Settings'}</span>
-          </Link>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 14 }}>🎯</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 11, fontWeight: 600 }}>{isTr ? '2 kalan günlük görev' : '2 remaining daily tasks'}</div>
+              <div style={{ fontSize: 9, color: 'var(--color-text-muted)' }}>{isTr ? '+80-160 SC kazanabilirsin' : '+80-160 SC potential'}</div>
+            </div>
+            <Link href="/missions" style={{ fontSize: 10, color: 'var(--color-accent)', textDecoration: 'none' }}>→</Link>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 14 }}>📦</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 11, fontWeight: 600 }}>{isTr ? '2 kutu açılmayı bekliyor' : '2 boxes await opening'}</div>
+              <div style={{ fontSize: 9, color: 'var(--color-text-muted)' }}>{isTr ? 'Pity: 7/10 — epik+ garantili' : 'Pity: 7/10 — epic+ guaranteed'}</div>
+            </div>
+            <Link href="/forge" style={{ fontSize: 10, color: 'var(--color-accent)', textDecoration: 'none' }}>→</Link>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 14 }}>⚔️</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 11, fontWeight: 600 }}>{isTr ? 'PvP combo zinciri aktif' : 'PvP combo chain active'}</div>
+              <div style={{ fontSize: 9, color: 'var(--color-text-muted)' }}>{isTr ? '3 zafer serisi — x1.15 bonus' : '3 win streak — x1.15 bonus'}</div>
+            </div>
+            <Link href="/arena" style={{ fontSize: 10, color: 'var(--color-accent)', textDecoration: 'none' }}>→</Link>
+          </div>
         </div>
       </div>
     </div>
-  );
-}
-
-function CurrencyCard({ label, icon, value, color }: { label: string; icon: string; value: number; color: string }) {
-  return (
-    <div className="currency-card">
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        <span style={{ fontSize: 14 }}>{icon}</span>
-        <span className="currency-label">{label}</span>
-      </div>
-      <span className="currency-value" style={{ color }}>
-        {value.toLocaleString('tr-TR')}
-      </span>
-    </div>
-  );
-}
-
-function ActionCard({
-  icon, title, subtitle, href, accent,
-}: {
-  icon: string; title: string; subtitle: string; href: string; accent?: boolean;
-}) {
-  return (
-    <Link href={href} className={`action-card ${accent ? 'accent-border' : ''}`}>
-      <div className="action-icon">{icon}</div>
-      <div style={{ flex: 1 }}>
-        <div className="action-title">{title}</div>
-        <div className="action-subtitle">{subtitle}</div>
-      </div>
-    </Link>
   );
 }
