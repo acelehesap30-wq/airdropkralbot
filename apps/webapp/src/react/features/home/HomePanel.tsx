@@ -94,11 +94,23 @@ export function HomePanel(props: HomePanelProps) {
         </div>
         <div className="akrGameHeroStats">
           <span className="akrChip">{summary.player_name}</span>
-          <span className="akrChip">{t(props.lang, "home_stat_tier")} {Math.floor(summary.kingdom_tier)}</span>
-          <span className="akrChip">{t(props.lang, "home_stat_streak")} {Math.floor(summary.streak)}</span>
-          <span className="akrChip">{t(props.lang, "home_stat_season")} #{Math.floor(summary.season_id)}</span>
-          <span className="akrChip">{Math.floor(summary.season_days_left)}d</span>
-          <span className="akrChip">{t(props.lang, "home_action_points")} {Math.floor(summary.season_points)}</span>
+          <span className="akrChip akrChipInfo">⚔️ {t(props.lang, "home_stat_tier")} {Math.floor(summary.kingdom_tier)}</span>
+          <span className={`akrChip ${summary.streak > 0 ? "akrChipDanger akrStreakFlame" : ""}`}>
+            🔥 {t(props.lang, "home_stat_streak")} {Math.floor(summary.streak)}
+          </span>
+          <span className="akrChip">📅 {t(props.lang, "home_stat_season")} #{Math.floor(summary.season_id)} • {Math.floor(summary.season_days_left)}d</span>
+          <span className="akrChip">⭐ {Math.floor(summary.season_points)} pts</span>
+        </div>
+        <div className="akrCurrencyHud">
+          <span className="akrCurrencyChip akrCurrencySC">🪙 SC {Math.floor(summary.sc_earned || 0)}</span>
+          <span className="akrCurrencyChip akrCurrencyHC">💎 HC {Math.floor(summary.hc_earned || 0)}</span>
+          <span className="akrCurrencyChip akrCurrencyRC">🔮 RC {Math.floor(summary.rc_earned || 0)}</span>
+        </div>
+        <div className="akrDailyProgress">
+          <span className="akrDailyLabel">📊 {Math.floor(summary.tasks_done)}/{Math.floor(summary.daily_cap)}</span>
+          <div className="akrDailyBar">
+            <div className="akrDailyBarFill" style={{ width: `${Math.min(100, Math.round((summary.tasks_done / Math.max(1, summary.daily_cap)) * 100))}%` }} />
+          </div>
         </div>
       </div>
 

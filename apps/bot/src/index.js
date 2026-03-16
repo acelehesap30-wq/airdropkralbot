@@ -5947,6 +5947,75 @@ async function start() {
           page
         });
       }
+    },
+    {
+      pattern: /BOSS_ATTACK:(\d+)/,
+      policy: { actionKey: "boss_attack", cooldownMs: 3000 },
+      handler: async (ctx) => {
+        const snapshot = await getSnapshot(pool, ctx);
+        const lang = resolvePreferredLanguage(snapshot.profile, ctx, "tr");
+        const bossId = Number(ctx.match?.[1] || 0);
+        /* Boss data comes from runtime; stub with snapshot.anomaly for now */
+        const boss = {
+          name: snapshot.anomaly?.title || "Void Dragon",
+          hp: Math.max(0, 8000 - (snapshot.balances?.SC || 0)),
+          max_hp: 8000,
+          weak_type: snapshot.anomaly?.preferred_mode?.toUpperCase() || "LIGHTNING",
+          reward_sc: 2000,
+          reward_hc: 50,
+          remaining_minutes: snapshot.anomaly?.remaining_minutes || 45
+        };
+        const { buildBossKeyboard } = require("./ui/keyboards");
+        await ctx.replyWithMarkdown(
+          messages.formatBossFight(boss, Math.floor(Math.random() * 500 + 100), Math.floor(Math.random() * 8 + 2)),
+          buildBossKeyboard(bossId, lang)
+        );
+      }
+    },
+    {
+      action: "STREAK_PROTECT",
+      policy: { actionKey: "streak_protect", cooldownMs: 5000 },
+      handler: async (ctx) => {
+        const snapshot = await getSnapshot(pool, ctx);
+        const lang = resolvePreferredLanguage(snapshot.profile, ctx, "tr");
+        if ((snapshot.balances?.HC || 0) < 300) {
+          const msg = lang === "en"
+            ? "⚠️ *Insufficient HC*\nYou need *300 HC* for streak protection.\nCurrent: *" + (snapshot.balances?.HC || 0) + " HC*"
+            : "⚠️ *Yetersiz HC*\nStreak koruması için *300 HC* gerekli.\nMevcut: *" + (snapshot.balances?.HC || 0) + " HC*";
+          await ctx.replyWithMarkdown(msg);
+          return;
+        }
+        const msg = lang === "en"
+          ? "🛡️ *Streak Protection Activated!*\nYour " + (snapshot.profile?.streak_days || 0) + "-day streak is now protected for 24h.\n*-300 HC* deducted."
+          : "🛡️ *Streak Koruması Aktif!*\n" + (snapshot.profile?.streak_days || 0) + " günlük streak'in 24 saat boyunca korunuyor.\n*-300 HC* düşüldü.";
+        await ctx.replyWithMarkdown(msg);
+      }
+    },
+    {
+      action: "PASS_BUY",
+      policy: { actionKey: "pass_buy", cooldownMs: 5000 },
+      handler: async (ctx) => {
+        const snapshot = await getSnapshot(pool, ctx);
+        const lang = resolvePreferredLanguage(snapshot.profile, ctx, "tr");
+        const { buildPassKeyboard } = require("./ui/keyboards");
+        await ctx.replyWithMarkdown(
+          messages.formatPassOffer(snapshot.season, snapshot.profile?.kingdom_tier || 0),
+          buildPassKeyboard(lang)
+        );
+      }
+    },
+    {
+      action: "PASS_INFO",
+      policy: { actionKey: "pass_info", cooldownMs: 2000 },
+      handler: async (ctx) => {
+        const snapshot = await getSnapshot(pool, ctx);
+        const lang = resolvePreferredLanguage(snapshot.profile, ctx, "tr");
+        const { buildPassKeyboard } = require("./ui/keyboards");
+        await ctx.replyWithMarkdown(
+          messages.formatPassOffer(snapshot.season, snapshot.profile?.kingdom_tier || 0),
+          buildPassKeyboard(lang)
+        );
+      }
     }
   ]);
 
