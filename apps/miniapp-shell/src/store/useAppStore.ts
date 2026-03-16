@@ -11,6 +11,13 @@ interface WalletState {
   address: string | null;
 }
 
+interface SessionState {
+  uid: string;
+  ts: string;
+  sig: string;
+  ttl_sec: number;
+}
+
 interface AppState {
   // Bootstrap
   bootstrapped: boolean;
@@ -20,6 +27,12 @@ interface AppState {
   username: string | null;
   kingdomTier: number;
   locale: 'tr' | 'en';
+
+  // Session — HMAC auth for API calls
+  session: SessionState | null;
+
+  // Raw bootstrap payload for pages that need full data
+  bootstrapData: any | null;
 
   // Economy — Blueprint: unified currency model
   balances: CurrencyBalance;
@@ -35,6 +48,8 @@ interface AppState {
 
   // Actions
   setBootstrap: (data: BootstrapResponse) => void;
+  setSession: (session: SessionState) => void;
+  setBootstrapData: (data: any) => void;
   setLocale: (locale: 'tr' | 'en') => void;
   setBalances: (balances: Partial<CurrencyBalance>) => void;
   setWallet: (wallet: Partial<WalletState>) => void;
@@ -63,10 +78,15 @@ export const useAppStore = create<AppState>((set) => ({
   username: null,
   kingdomTier: 0,
   locale: 'tr',
+  session: null,
+  bootstrapData: null,
   balances: { ...initialBalances },
   wallet: { ...initialWallet },
   passActive: false,
   runtimeFlags: {},
+
+  setSession: (session) => set({ session }),
+  setBootstrapData: (data) => set({ bootstrapData: data }),
 
   setBootstrap: (data) =>
     set({

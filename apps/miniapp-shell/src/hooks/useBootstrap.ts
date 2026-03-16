@@ -28,7 +28,7 @@ async function fetchBootstrap(initData: string): Promise<BootstrapResponse> {
 
 export function useBootstrap() {
   const { initData, isReady, locale: tgLocale } = useTelegram();
-  const { setBootstrap, setLocale, bootstrapped } = useAppStore();
+  const { setBootstrap, setLocale, setSession, setBootstrapData, bootstrapped } = useAppStore();
 
   const query = useQuery({
     queryKey: ['bootstrap', initData],
@@ -42,6 +42,12 @@ export function useBootstrap() {
   useEffect(() => {
     if (query.data && !bootstrapped) {
       setBootstrap(query.data);
+      setBootstrapData(query.data);
+
+      // Store session if present
+      if (query.data.session) {
+        setSession(query.data.session);
+      }
 
       // Blueprint: locale precedence — stored override > Telegram > profile > region > TR
       const serverLocale = query.data.user?.locale;
