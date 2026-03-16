@@ -43,6 +43,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build Webapp
+        run: npm run build:webapp && node scripts/webapp_sync_assets.mjs
+
       - name: Prepare CI env
         shell: bash
         run: |
