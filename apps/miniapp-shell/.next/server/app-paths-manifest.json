@@ -1,0 +1,14 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/page": "app/page.js",
+  "/(routes)/admin/page": "app/(routes)/admin/page.js",
+  "/(routes)/arena/page": "app/(routes)/arena/page.js",
+  "/(routes)/events/page": "app/(routes)/events/page.js",
+  "/(routes)/exchange/page": "app/(routes)/exchange/page.js",
+  "/(routes)/hub/page": "app/(routes)/hub/page.js",
+  "/(routes)/forge/page": "app/(routes)/forge/page.js",
+  "/(routes)/season/page": "app/(routes)/season/page.js",
+  "/(routes)/missions/page": "app/(routes)/missions/page.js",
+  "/(routes)/settings/page": "app/(routes)/settings/page.js",
+  "/(routes)/vault/page": "app/(routes)/vault/page.js"
+}

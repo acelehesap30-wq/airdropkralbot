@@ -73,7 +73,7 @@ export default function MissionsPage() {
   const [showResult, setShowResult] = useState<{ task: GameTask; success: boolean; rewards: { sc: number; hc: number; rc: number; xp: number } } | null>(null);
   const [pityCounter, setPityCounter] = useState(0);
   const [combo, setCombo] = useState(0);
-  const timerRef = useRef<NodeJS.Timeout>();
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Anomaly effect — simulated live pressure
   const [anomalyActive] = useState(Math.random() > 0.4);
@@ -97,7 +97,7 @@ export default function MissionsPage() {
   useEffect(() => {
     if (activeTask && timeLeft > 0) {
       timerRef.current = setTimeout(() => setTimeLeft(t => t - 1), 1000);
-      return () => clearTimeout(timerRef.current);
+      return () => { if (timerRef.current) clearTimeout(timerRef.current); };
     }
     if (activeTask && timeLeft === 0) {
       finishTask();

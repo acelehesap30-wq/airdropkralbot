@@ -44,9 +44,10 @@ export function useBootstrap() {
       setBootstrap(query.data);
       setBootstrapData(query.data);
 
-      // Store session if present
-      if (query.data.session) {
-        setSession(query.data.session);
+      // Store session if present (may come from extended API response)
+      const responseData = query.data as Record<string, unknown>;
+      if (responseData.session) {
+        setSession(responseData.session as { uid: string; ts: string; sig: string; ttl_sec: number });
       }
 
       // Blueprint: locale precedence — stored override > Telegram > profile > region > TR

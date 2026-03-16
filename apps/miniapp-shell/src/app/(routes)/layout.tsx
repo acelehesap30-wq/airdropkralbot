@@ -1,18 +1,15 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import Link from 'next/link';
 import { BottomNav } from '@/components/shell/BottomNav';
 import { TopBar } from '@/components/shell/TopBar';
-import { SceneHost } from '@/components/scene/SceneHost';
 import { useBackButton } from '@/hooks/useBackButton';
-import type { ReactNode } from 'react';
 
 /**
  * Blueprint Section 7: Mini App shell layout
- * Premium neon arena theme with 3D background, TopBar, Content, BottomNav
+ * Premium neon arena theme with TopBar, Content, BottomNav
  */
-export default function RoutesLayout({ children }: { children: ReactNode }) {
+export default function RoutesLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   useBackButton(pathname);
 
@@ -33,17 +30,16 @@ export default function RoutesLayout({ children }: { children: ReactNode }) {
         style={{
           flex: 1,
           position: 'relative',
-          overflow: 'hidden',
+          overflowY: 'auto',
+          overflowX: 'hidden',
         }}
       >
-        {/* 3D scene behind content panels */}
-        <SceneHost />
         <div
           className="scroll-area"
           style={{
             position: 'relative',
             zIndex: 1,
-            height: '100%',
+            minHeight: '100%',
             padding: '14px 16px 20px',
           }}
         >
@@ -54,3 +50,4 @@ export default function RoutesLayout({ children }: { children: ReactNode }) {
     </div>
   );
 }
+
