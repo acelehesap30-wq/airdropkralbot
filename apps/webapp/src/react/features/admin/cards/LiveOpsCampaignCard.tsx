@@ -328,6 +328,12 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
   const dispatchSummary = asRecord(props.liveOpsCampaignDispatchData);
   const warnings = Array.isArray(approvalSummary.warnings) ? approvalSummary.warnings.map((row) => String(row || "").trim()).filter(Boolean) : [];
   if (!props.advanced) {
+    const approvalState = asText(approvalSummary.current_state || snapshot.approval_state);
+    const gateReady =
+      schedulerSummary.ready_for_dispatch === true
+        ? t(props.lang, "admin_live_ops_gate_ready")
+        : t(props.lang, "admin_live_ops_gate_blocked");
+    const latestDispatch = asText(dispatchSummary.status || schedulerSummary.latest_dispatch_state);
     return (
       <section className="akrCard akrCardWide" data-akr-panel-key="panel_admin_live_ops" data-akr-focus-key="live_ops_campaign">
         <h3>{t(props.lang, "admin_live_ops_title")}</h3>
@@ -348,19 +354,15 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
         <div className="akrSplit">
           <section className="akrMiniPanel">
             <h4>{t(props.lang, "admin_live_ops_latest_title")}</h4>
+            <p className="akrMuted akrMiniPanelBody">
+              {t(props.lang, "admin_live_ops_status_label")}: {asText(snapshot.status)} • {t(props.lang, "admin_live_ops_approval_state_label")}: {approvalState}
+            </p>
             <div className="akrChipRow">
-              <span className="akrChip">
-                {t(props.lang, "admin_live_ops_status_label")}: {asText(snapshot.status)}
-              </span>
-              <span className="akrChip">
-                {t(props.lang, "admin_live_ops_approval_state_label")}: {asText(approvalSummary.current_state || snapshot.approval_state)}
-              </span>
-              <span className="akrChip">
-                {t(props.lang, "admin_live_ops_segment_label")}: {asText(snapshot.segment_key)}
-              </span>
+              <span className="akrChip">{asText(snapshot.segment_key)}</span>
               <span className="akrChip">
                 {t(props.lang, "admin_live_ops_recipients_label")}: {asCount(snapshot.recipient_cap)}
               </span>
+              <span className="akrChip">{approvalState}</span>
             </div>
             <p className="akrMutedLine">
               {t(props.lang, "admin_live_ops_last_saved_label")}: {asText(snapshot.updated_at || snapshot.saved_at)}
@@ -371,16 +373,12 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
           </section>
           <section className="akrMiniPanel">
             <h4>{t(props.lang, "admin_live_ops_gate_title")}</h4>
+            <p className="akrMuted akrMiniPanelBody">
+              {t(props.lang, "admin_live_ops_scheduler_reason_label")}: {asText(schedulerSummary.reason_code || snapshot.scheduler_reason_code)}
+            </p>
             <div className="akrChipRow">
-              <span className="akrChip">
-                {t(props.lang, "admin_live_ops_scheduler_ready_label")}:{" "}
-                {schedulerSummary.ready_for_dispatch === true
-                  ? t(props.lang, "admin_live_ops_gate_ready")
-                  : t(props.lang, "admin_live_ops_gate_blocked")}
-              </span>
-              <span className="akrChip">
-                {t(props.lang, "admin_live_ops_scheduler_latest_label")}: {asText(dispatchSummary.status || schedulerSummary.latest_dispatch_state)}
-              </span>
+              <span className="akrChip">{gateReady}</span>
+              <span className="akrChip">{latestDispatch}</span>
               <span className="akrChip">
                 {t(props.lang, "admin_live_ops_delivery_24h")}: {asCount(deliverySummary.sent_24h)}
               </span>
@@ -388,9 +386,6 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
                 {t(props.lang, "admin_live_ops_delivery_7d")}: {asCount(deliverySummary.sent_7d)}
               </span>
             </div>
-            <p className="akrMutedLine">
-              {t(props.lang, "admin_live_ops_scheduler_reason_label")}: {asText(schedulerSummary.reason_code || snapshot.scheduler_reason_code)}
-            </p>
             <p className="akrMutedLine">
               {t(props.lang, "admin_live_ops_schedule_start_label")}: {asText(snapshot.schedule_start_at)} |{" "}
               {t(props.lang, "admin_live_ops_schedule_end_label")}: {asText(snapshot.schedule_end_at)}
@@ -409,9 +404,9 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
             </ul>
           </section>
         ) : null}
-        {props.liveOpsCampaignError ? <p className="akrErrorLine">{props.liveOpsCampaignError}</p> : null}
-        {props.liveOpsCampaignApprovalError ? <p className="akrErrorLine">{props.liveOpsCampaignApprovalError}</p> : null}
-        {props.liveOpsCampaignDispatchError ? <p className="akrErrorLine">{props.liveOpsCampaignDispatchError}</p> : null}
+        {props.liveOpsCampaignError || props.liveOpsCampaignApprovalError || props.liveOpsCampaignDispatchError ? (
+          <p className="akrErrorLine">{props.liveOpsCampaignDispatchError || props.liveOpsCampaignApprovalError || props.liveOpsCampaignError}</p>
+        ) : null}
       </section>
     );
   }

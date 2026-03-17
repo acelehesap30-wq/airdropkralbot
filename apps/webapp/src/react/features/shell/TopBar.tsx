@@ -19,11 +19,12 @@ type TopBarProps = {
 
 export function TopBar(props: TopBarProps) {
   const subtitleKey = props.workspace === "admin" ? "app_subtitle_admin" : "app_subtitle";
+  const titleKey = props.workspace === "admin" ? "admin_console_title" : "app_title";
   return (
     <header className="akrTopbar akrGlass">
       <div className="akrBrand">
         <p className="akrKicker">AirdropKralBot</p>
-        <h1>{t(props.lang, "app_title")}</h1>
+        <h1>{t(props.lang, titleKey)}</h1>
         <p className="akrMuted">{t(props.lang, subtitleKey)}</p>
       </div>
       <div className="akrTopbarActions">

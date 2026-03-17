@@ -25,6 +25,50 @@ export function HomePanel(props: HomePanelProps) {
     homeFeed: props.homeFeed,
     bootstrap: props.data
   });
+  const summary = view.summary;
+  const prefs =
+    (props.data?.ui_prefs as {
+      reduced_motion?: boolean;
+      large_text?: boolean;
+      sound_enabled?: boolean;
+    } | null) || { reduced_motion: false, large_text: false, sound_enabled: true };
+  const copy =
+    props.lang === "tr"
+      ? {
+          heroBody: "Oyuncu hub'i burada rapor okumaz. Seni direkt bir sonraki oynanabilir hamleye iter.",
+          arenaHint: "arena acik",
+          missionHint: "claim hazir",
+          vaultHint: "wallet route",
+          discoverHint: "yeni rota",
+          rhythmTitle: "Bugunun ritmi",
+          rhythmBody: "Gunluk loop, wallet ve premium hattini tek bakista oku.",
+          goalsTitle: "Anlik hedefler",
+          goalsBody: "Simdi kapatman gereken gorevler burada.",
+          supportTitle: "Odul bay",
+          supportBody: "Oduller, premium etkiler ve hizli destek hareketleri burada.",
+          walletLive: "wallet hazir",
+          walletIdle: "wallet bekliyor",
+          seasonRun: "sezon kosusu",
+          readyWord: "hazir"
+        }
+      : {
+          heroBody: "This player hub does not read like a report. It pushes you straight into the next playable move.",
+          arenaHint: "arena live",
+          missionHint: "claim ready",
+          vaultHint: "wallet route",
+          discoverHint: "new route",
+          rhythmTitle: "Today’s rhythm",
+          rhythmBody: "Read the daily loop, wallet, and premium lane at a glance.",
+          goalsTitle: "Immediate targets",
+          goalsBody: "The objectives you should close right now.",
+          supportTitle: "Reward bay",
+          supportBody: "Rewards, premium effects, and quick support moves live here.",
+          walletLive: "wallet ready",
+          walletIdle: "wallet waiting",
+          seasonRun: "season run",
+          readyWord: "ready"
+        };
+
   const resolveSurfaceActionKey = (sectionKey: string, slotKey: string, fallbackActionKey: string) => {
     const rows = Array.isArray((view.surface_actions as Record<string, Array<Record<string, unknown>>> | undefined)?.[sectionKey])
       ? ((view.surface_actions as Record<string, Array<Record<string, unknown>>>)[sectionKey] || [])
@@ -56,12 +100,7 @@ export function HomePanel(props: HomePanelProps) {
       sourcePanelKey: "panel_home"
     });
   };
-  const summary = view.summary;
-  const prefs = (props.data?.ui_prefs as {
-    reduced_motion?: boolean;
-    large_text?: boolean;
-    sound_enabled?: boolean;
-  } | null) || { reduced_motion: false, large_text: false, sound_enabled: true };
+
   const openArena = () =>
     props.onRouteTarget({
       routeKey: "pvp",
@@ -90,33 +129,44 @@ export function HomePanel(props: HomePanelProps) {
         <div className="akrGameHeroCopy">
           <p className="akrKicker">{t(props.lang, "home_hub_kicker")}</p>
           <h2>{t(props.lang, "home_hub_title")}</h2>
-          <p>{t(props.lang, "home_hub_body")}</p>
+          <p>{copy.heroBody}</p>
         </div>
         <div className="akrGameHeroStats">
           <span className="akrChip">{summary.player_name}</span>
-          <span className="akrChip akrChipInfo">⚔️ {t(props.lang, "home_stat_tier")} {Math.floor(summary.kingdom_tier)}</span>
-          <span className={`akrChip ${summary.streak > 0 ? "akrChipDanger akrStreakFlame" : ""}`}>
-            🔥 {t(props.lang, "home_stat_streak")} {Math.floor(summary.streak)}
+          <span className="akrChip akrChipInfo">
+            {t(props.lang, "home_stat_tier")} {Math.floor(summary.kingdom_tier)}
           </span>
-          <span className="akrChip">📅 {t(props.lang, "home_stat_season")} #{Math.floor(summary.season_id)} • {Math.floor(summary.season_days_left)}d</span>
-          <span className="akrChip">⭐ {Math.floor(summary.season_points)} pts</span>
+          <span className={`akrChip ${summary.streak > 0 ? "akrChipDanger akrStreakFlame" : ""}`}>
+            {t(props.lang, "home_stat_streak")} {Math.floor(summary.streak)}
+          </span>
+          <span className="akrChip">
+            {t(props.lang, "home_stat_season")} #{Math.floor(summary.season_id)} / {Math.floor(summary.season_days_left)}d
+          </span>
+          <span className="akrChip">
+            {Math.floor(summary.season_points)} {copy.seasonRun}
+          </span>
         </div>
         <div className="akrCurrencyHud">
-          <span className="akrCurrencyChip akrCurrencySC">🪙 SC {Math.floor(summary.sc_earned || 0)}</span>
-          <span className="akrCurrencyChip akrCurrencyHC">💎 HC {Math.floor(summary.hc_earned || 0)}</span>
-          <span className="akrCurrencyChip akrCurrencyRC">🔮 RC {Math.floor(summary.rc_earned || 0)}</span>
+          <span className="akrCurrencyChip akrCurrencySC">SC {Math.floor(summary.sc_earned || 0)}</span>
+          <span className="akrCurrencyChip akrCurrencyHC">HC {Math.floor(summary.hc_earned || 0)}</span>
+          <span className="akrCurrencyChip akrCurrencyRC">RC {Math.floor(summary.rc_earned || 0)}</span>
         </div>
         <div className="akrDailyProgress">
-          <span className="akrDailyLabel">📊 {Math.floor(summary.tasks_done)}/{Math.floor(summary.daily_cap)}</span>
+          <span className="akrDailyLabel">
+            {Math.floor(summary.tasks_done)}/{Math.floor(summary.daily_cap)}
+          </span>
           <div className="akrDailyBar">
-            <div className="akrDailyBarFill" style={{ width: `${Math.min(100, Math.round((summary.tasks_done / Math.max(1, summary.daily_cap)) * 100))}%` }} />
+            <div
+              className="akrDailyBarFill"
+              style={{ width: `${Math.min(100, Math.round((summary.tasks_done / Math.max(1, summary.daily_cap)) * 100))}%` }}
+            />
           </div>
         </div>
       </div>
 
       <div className="akrGameActionGrid">
         <button className="akrActionFeatureCard isPrimary" onClick={openArena}>
-          <p className="akrKicker">{t(props.lang, "home_action_arena_kicker")}</p>
+          <p className="akrKicker">{copy.arenaHint}</p>
           <h3>{t(props.lang, "home_action_arena_title")}</h3>
           <p>{t(props.lang, "home_action_arena_body")}</p>
           <span className="akrChip">
@@ -124,21 +174,21 @@ export function HomePanel(props: HomePanelProps) {
           </span>
         </button>
         <button className="akrActionFeatureCard" onClick={openMissions}>
-          <p className="akrKicker">{t(props.lang, "home_action_missions_kicker")}</p>
+          <p className="akrKicker">{copy.missionHint}</p>
           <h3>{t(props.lang, "home_action_missions_title")}</h3>
           <p>{t(props.lang, "home_action_missions_body")}</p>
           <span className="akrChip">
-            {Math.floor(summary.mission_ready)}/{Math.floor(summary.mission_total)} {t(props.lang, "home_action_ready")}
+            {Math.floor(summary.mission_ready)}/{Math.floor(summary.mission_total)} {copy.readyWord}
           </span>
         </button>
         <button className="akrActionFeatureCard" onClick={openVault}>
-          <p className="akrKicker">{t(props.lang, "home_action_vault_kicker")}</p>
+          <p className="akrKicker">{copy.vaultHint}</p>
           <h3>{t(props.lang, "home_action_vault_title")}</h3>
           <p>{t(props.lang, "home_action_vault_body")}</p>
-          <span className="akrChip">{t(props.lang, walletStateKey as any)}</span>
+          <span className="akrChip">{summary.wallet_active ? copy.walletLive : copy.walletIdle}</span>
         </button>
         <button className="akrActionFeatureCard" onClick={openDiscover}>
-          <p className="akrKicker">{t(props.lang, "home_action_discover_kicker")}</p>
+          <p className="akrKicker">{copy.discoverHint}</p>
           <h3>{t(props.lang, "home_action_discover_title")}</h3>
           <p>{t(props.lang, "home_action_discover_body")}</p>
           <span className="akrChip">{t(props.lang, "home_action_discover_chip")}</span>
@@ -147,14 +197,14 @@ export function HomePanel(props: HomePanelProps) {
 
       <div className="akrStatRail">
         <div className="akrMetricCard">
-          <span>{t(props.lang, "home_metric_daily")}</span>
+          <span>{copy.rhythmTitle}</span>
           <strong>
             {Math.floor(summary.tasks_done)}/{Math.floor(summary.daily_cap)}
           </strong>
         </div>
         <div className="akrMetricCard">
           <span>{t(props.lang, "home_metric_wallet")}</span>
-          <strong>{summary.wallet_chain || (summary.wallet_active ? "active" : "inactive")}</strong>
+          <strong>{summary.wallet_chain || (summary.wallet_active ? copy.walletLive : copy.walletIdle)}</strong>
         </div>
         <div className="akrMetricCard">
           <span>{t(props.lang, "home_metric_premium")}</span>
@@ -168,14 +218,16 @@ export function HomePanel(props: HomePanelProps) {
 
       <div className="akrGameFocusGrid">
         <section className="akrMiniPanel" data-akr-panel-key="status" data-akr-focus-key="mission_status">
-          <h4>{t(props.lang, "home_mission_title")}</h4>
-          <p className="akrMuted akrMiniPanelBody">{t(props.lang, "home_mission_caption")}</p>
+          <h4>{copy.goalsTitle}</h4>
+          <p className="akrMuted akrMiniPanelBody">{copy.goalsBody}</p>
           {view.mission_preview.length ? (
             <ul className="akrList">
               {view.mission_preview.slice(0, 3).map((row) => (
                 <li key={row.mission_key || row.title}>
                   <strong>{row.title || row.mission_key}</strong>
-                  <span>{row.claimed ? t(props.lang, "home_task_claimed") : row.completed ? t(props.lang, "home_task_ready") : t(props.lang, "home_task_open")}</span>
+                  <span>
+                    {row.claimed ? t(props.lang, "home_task_claimed") : row.completed ? t(props.lang, "home_task_ready") : t(props.lang, "home_task_open")}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -183,43 +235,34 @@ export function HomePanel(props: HomePanelProps) {
             <p className="akrMuted">{t(props.lang, "home_mission_empty")}</p>
           )}
           <div className="akrActionRow">
-            <button
-              className="akrBtn akrBtnGhost"
-              onClick={() => runSurfaceAction("home_mission", "tasks", SHELL_ACTION_KEY.PLAYER_TASKS_BOARD)}
-            >
+            <button className="akrBtn akrBtnGhost" onClick={() => runSurfaceAction("home_mission", "tasks", SHELL_ACTION_KEY.PLAYER_TASKS_BOARD)}>
               {t(props.lang, "shell_panel_go_tasks")}
             </button>
           </div>
         </section>
 
         <section className="akrMiniPanel" data-akr-panel-key="status" data-akr-focus-key="system_status">
-          <h4>{t(props.lang, "home_wallet_title")}</h4>
-          <p className="akrMuted akrMiniPanelBody">{t(props.lang, "home_wallet_caption")}</p>
+          <h4>{copy.rhythmTitle}</h4>
+          <p className="akrMuted akrMiniPanelBody">{copy.rhythmBody}</p>
           <div className="akrChipRow">
-            <span className="akrChip">{t(props.lang, walletStateKey as any)}</span>
+            <span className="akrChip">{summary.wallet_active ? copy.walletLive : copy.walletIdle}</span>
             <span className="akrChip">{summary.wallet_chain || "-"}</span>
             <span className="akrChip">{summary.wallet_kyc_status || "-"}</span>
           </div>
           <p className="akrMuted">{summary.wallet_address_masked || "-"}</p>
           <div className="akrActionRow">
-            <button
-              className="akrBtn akrBtnGhost"
-              onClick={() => runSurfaceAction("home_wallet", "wallet", SHELL_ACTION_KEY.PLAYER_WALLET_CONNECT)}
-            >
+            <button className="akrBtn akrBtnGhost" onClick={() => runSurfaceAction("home_wallet", "wallet", SHELL_ACTION_KEY.PLAYER_WALLET_CONNECT)}>
               {t(props.lang, "shell_panel_go_wallet")}
             </button>
-            <button
-              className="akrBtn akrBtnGhost"
-              onClick={() => runSurfaceAction("home_wallet", "payout", SHELL_ACTION_KEY.PLAYER_PAYOUT_REQUEST)}
-            >
+            <button className="akrBtn akrBtnGhost" onClick={() => runSurfaceAction("home_wallet", "payout", SHELL_ACTION_KEY.PLAYER_PAYOUT_REQUEST)}>
               {t(props.lang, "shell_panel_go_payout")}
             </button>
           </div>
         </section>
 
         <section className="akrMiniPanel" data-akr-panel-key="rewards" data-akr-focus-key="premium_status">
-          <h4>{t(props.lang, "home_rewards_title")}</h4>
-          <p className="akrMuted akrMiniPanelBody">{t(props.lang, "home_rewards_caption")}</p>
+          <h4>{copy.supportTitle}</h4>
+          <p className="akrMuted akrMiniPanelBody">{copy.supportBody}</p>
           <div className="akrChipRow">
             <span className="akrChip">{t(props.lang, premiumStateKey as any)}</span>
             <span className="akrChip">
@@ -251,9 +294,7 @@ export function HomePanel(props: HomePanelProps) {
         <span className="akrChip">{prefs.sound_enabled === false ? t(props.lang, "home_sound_off") : t(props.lang, "home_sound_on")}</span>
       </div>
 
-      {props.advanced ? (
-        <pre className="akrJsonBlock">{JSON.stringify(props.homeFeed || props.data || {}, null, 2)}</pre>
-      ) : null}
+      {props.advanced ? <pre className="akrJsonBlock">{JSON.stringify(props.homeFeed || props.data || {}, null, 2)}</pre> : null}
     </section>
   );
 }

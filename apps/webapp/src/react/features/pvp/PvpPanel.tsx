@@ -33,6 +33,43 @@ export function PvpPanel(props: PvpPanelProps) {
   });
   const summary = view.summary;
   const league = view.league;
+  const copy =
+    props.lang === "tr"
+      ? {
+          heroBody: "Arena burada rapor okumaz; gunluk duel, ladder ve boss penceresini tek savas tahtasinda toplar.",
+          clashTitle: "Canli karsilasma",
+          clashBody: "Acilacak ya da devam edecek savas hattin.",
+          duelTitle: "Gunluk duel",
+          duelBody: "Bugunun ritmini kuran hizli cekisme.",
+          ladderTitle: "Haftalik ladder",
+          ladderBody: "Promotion zone'a yaklasan kosu.",
+          bossTitle: "Arc boss",
+          bossBody: "Sezonun toplu baski penceresi.",
+          leaderboardTitle: "Ust sira",
+          leaderboardBody: "En yakindaki rakipler.",
+          clashHistoryTitle: "Son carpismalar",
+          clashHistoryBody: "Son rating kaymalari ve sonuc izi.",
+          liveWord: "canli",
+          queueWord: "sirada"
+        }
+      : {
+          heroBody: "The arena is not a report. It keeps the daily duel, ladder, and boss window on one combat board.",
+          clashTitle: "Live clash",
+          clashBody: "Your next or current fight lane.",
+          duelTitle: "Daily duel",
+          duelBody: "Fast pressure fight that sets today’s rhythm.",
+          ladderTitle: "Weekly ladder",
+          ladderBody: "Promotion-zone climb.",
+          bossTitle: "Arc boss",
+          bossBody: "Season pressure window for the whole run.",
+          leaderboardTitle: "Top board",
+          leaderboardBody: "Closest rivals worth chasing.",
+          clashHistoryTitle: "Recent clashes",
+          clashHistoryBody: "Recent rating swings and outcomes.",
+          liveWord: "live",
+          queueWord: "queued"
+        };
+
   const pressureLevel =
     summary.p95_latency_ms >= 1200 || summary.accept_rate_pct < 45
       ? "critical"
@@ -43,93 +80,72 @@ export function PvpPanel(props: PvpPanelProps) {
           : "low";
 
   return (
-    <section className="akrCard akrCardWide akrArenaPanel">
+    <section className="akrCard akrCardWide akrArenaPanel" data-akr-panel-key="pvp" data-akr-focus-key="arena_command">
       <div className="akrGameHero akrArenaHero">
         <div className="akrGameHeroCopy">
           <p className="akrKicker">{t(props.lang, "pvp_hub_kicker")}</p>
           <h2>{t(props.lang, "pvp_hub_title")}</h2>
-          <p>{t(props.lang, "pvp_hub_body")}</p>
+          <p>{copy.heroBody}</p>
         </div>
         <div className="akrGameHeroStats">
-          <span className="akrChip">{summary.session_status || "-"}</span>
+          <span className="akrChip">{summary.session_status || copy.queueWord}</span>
           <span className="akrChip">R {Math.floor(league.session_snapshot.rating)}</span>
           <span className="akrChip">#{Math.floor(league.weekly_ladder.rank)}</span>
           <span className="akrChip">{Math.floor(league.daily_duel.win_rate_pct)}%</span>
         </div>
       </div>
 
-      <div className="akrActionRow">
-        <button className="akrBtn akrBtnAccent" disabled={!props.canStart} onClick={props.onStart}>
-          {t(props.lang, "pvp_start")}
+      <div className="akrGameActionGrid">
+        <button className="akrActionFeatureCard isPrimary" disabled={!props.canStart} onClick={props.onStart}>
+          <p className="akrKicker">{copy.clashTitle}</p>
+          <h3>{t(props.lang, "pvp_start")}</h3>
+          <p>{copy.clashBody}</p>
+          <span className="akrChip">{summary.session_ref || copy.queueWord}</span>
         </button>
-        <button className="akrBtn akrBtnGhost" disabled={!props.canRefreshState} onClick={props.onRefreshState}>
-          {t(props.lang, "pvp_refresh")}
+        <button className="akrActionFeatureCard" disabled={!props.canStrike} onClick={props.onStrike}>
+          <p className="akrKicker">{copy.duelTitle}</p>
+          <h3>{t(props.lang, "pvp_strike")}</h3>
+          <p>{copy.duelBody}</p>
+          <span className="akrChip">{summary.next_expected_action || copy.liveWord}</span>
         </button>
-        <button className="akrBtn akrBtnGhost" disabled={!props.canStrike} onClick={props.onStrike}>
-          {t(props.lang, "pvp_strike")}
+        <button className="akrActionFeatureCard" disabled={!props.canResolve} onClick={props.onResolve}>
+          <p className="akrKicker">{copy.ladderTitle}</p>
+          <h3>{t(props.lang, "pvp_resolve")}</h3>
+          <p>{copy.ladderBody}</p>
+          <span className="akrChip">{league.weekly_ladder.tier || "-"}</span>
         </button>
-        <button className="akrBtn akrBtnGhost" disabled={!props.canResolve} onClick={props.onResolve}>
-          {t(props.lang, "pvp_resolve")}
-        </button>
-        <button
-          className="akrBtn akrBtnGhost"
-          onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PVP_DAILY_DUEL, "panel_pvp")}
-        >
-          {t(props.lang, "pvp_focus_daily_duel")}
-        </button>
-        <button
-          className="akrBtn akrBtnGhost"
-          onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PVP_WEEKLY_LADDER, "panel_pvp")}
-        >
-          {t(props.lang, "pvp_focus_weekly_ladder")}
-        </button>
-        <button
-          className="akrBtn akrBtnGhost"
-          onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PVP_LEADERBOARD, "panel_pvp")}
-        >
-          {t(props.lang, "pvp_focus_leaderboard")}
-        </button>
-        <button className="akrBtn akrBtnGhost" onClick={props.onRefreshLeague}>
-          {t(props.lang, "pvp_refresh_league")}
-        </button>
-        <button className="akrBtn akrBtnGhost" onClick={props.onRefreshLive}>
-          {t(props.lang, "pvp_refresh_live")}
+        <button className="akrActionFeatureCard" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PVP_LEADERBOARD, "panel_pvp")}>
+          <p className="akrKicker">{copy.leaderboardTitle}</p>
+          <h3>{t(props.lang, "pvp_focus_leaderboard")}</h3>
+          <p>{copy.leaderboardBody}</p>
+          <span className="akrChip">#{Math.floor(league.session_snapshot.rank)}</span>
         </button>
       </div>
-      <div className="pvpMomentumStrip">
-        <section className="pvpMomentumCell">
-          <p className="akrKicker">{t(props.lang, "pvp_live_clash_title")}</p>
-          <h4>{summary.session_ref || t(props.lang, "pvp_session_idle")}</h4>
-          <p className="akrMuted">
-            {summary.session_status || "-"} | {summary.next_expected_action || t(props.lang, "pvp_session_waiting")}
-          </p>
-        </section>
-        <section className="pvpMomentumCell">
-          <p className="akrKicker">{t(props.lang, "pvp_live_score_title")}</p>
-          <h4>
-            {Math.floor(summary.self_score)} - {Math.floor(summary.opponent_score)}
-          </h4>
-          <p className="akrMuted">
-            {Math.floor(summary.self_actions)} / {Math.floor(summary.opponent_actions)} {t(props.lang, "pvp_action_count_label")}
-          </p>
-        </section>
-        <section className="pvpMomentumCell">
-          <p className="akrKicker">{t(props.lang, "pvp_live_tempo_title")}</p>
-          <h4>{Math.floor(summary.accept_rate_pct)}%</h4>
-          <p className="akrMuted">
-            {Math.floor(summary.tick_ms)}ms tick | {Math.floor(summary.action_window_ms)}ms {t(props.lang, "pvp_window_label")}
-          </p>
-        </section>
-        <section className="pvpMomentumCell">
-          <p className="akrKicker">{t(props.lang, "pvp_live_link_title")}</p>
-          <h4>{summary.transport || "-"}</h4>
-          <p className="akrMuted">P95 {Math.floor(summary.p95_latency_ms)}ms</p>
-        </section>
+
+      <div className="akrStatRail">
+        <div className="akrMetricCard">
+          <span>{copy.clashTitle}</span>
+          <strong>{summary.session_status || "-"}</strong>
+        </div>
+        <div className="akrMetricCard">
+          <span>{copy.duelTitle}</span>
+          <strong>
+            {Math.floor(league.daily_duel.wins)}W / {Math.floor(league.daily_duel.losses)}L
+          </strong>
+        </div>
+        <div className="akrMetricCard">
+          <span>{copy.ladderTitle}</span>
+          <strong>#{Math.floor(league.weekly_ladder.rank)}</strong>
+        </div>
+        <div className="akrMetricCard">
+          <span>{copy.bossTitle}</span>
+          <strong>{Math.floor(league.season_arc_boss.hp_pct)}%</strong>
+        </div>
       </div>
 
       <div className="pvpObjectiveGrid">
         <article className={`pvpObjectiveCard ${league.daily_duel.win_rate_pct >= 55 ? "advantage pulse" : "neutral"}`} data-akr-focus-key="daily_duel">
-          <p className="label">{t(props.lang, "pvp_daily_duel_title")}</p>
+          <p className="label">{copy.duelTitle}</p>
           <p className="value">
             {Math.floor(league.daily_duel.wins)}W / {Math.floor(league.daily_duel.losses)}L
           </p>
@@ -138,26 +154,26 @@ export function PvpPanel(props: PvpPanelProps) {
           </p>
         </article>
         <article className={`pvpObjectiveCard ${league.weekly_ladder.promotion_zone ? "advantage" : "neutral"}`} data-akr-focus-key="weekly_ladder">
-          <p className="label">{t(props.lang, "pvp_weekly_ladder_title")}</p>
+          <p className="label">{copy.ladderTitle}</p>
           <p className="value">
             #{Math.floor(league.weekly_ladder.rank)} | {league.weekly_ladder.tier || "-"}
           </p>
           <p className="micro">{Math.floor(league.weekly_ladder.points)} {t(props.lang, "pvp_points_label")}</p>
         </article>
         <article className={`pvpObjectiveCard ${league.season_arc_boss.hp_pct <= 25 ? "danger" : league.season_arc_boss.hp_pct <= 55 ? "warning" : "neutral"}`} data-akr-focus-key="arc_boss">
-          <p className="label">{t(props.lang, "pvp_arc_boss_title")}</p>
+          <p className="label">{copy.bossTitle}</p>
           <p className="value">{league.season_arc_boss.phase || "-"}</p>
           <p className="micro">
             {league.season_arc_boss.stage || "-"} | HP {Math.floor(league.season_arc_boss.hp_pct)}%
           </p>
         </article>
         <article className="pvpObjectiveCard neutral">
-          <p className="label">{t(props.lang, "pvp_snapshot_title")}</p>
+          <p className="label">{copy.clashTitle}</p>
           <p className="value">
-            R {Math.floor(league.session_snapshot.rating)} | #{Math.floor(league.session_snapshot.rank)}
+            {Math.floor(summary.self_score)} - {Math.floor(summary.opponent_score)}
           </p>
           <p className="micro">
-            {Math.floor(league.session_snapshot.wins)}W / {Math.floor(league.session_snapshot.losses)}L
+            {Math.floor(summary.self_actions)} / {Math.floor(summary.opponent_actions)} {t(props.lang, "pvp_action_count_label")}
           </p>
         </article>
       </div>
@@ -176,18 +192,19 @@ export function PvpPanel(props: PvpPanelProps) {
         <section className="combatHudCell">
           <p className="akrKicker">{t(props.lang, "pvp_transport_title")}</p>
           <strong>{summary.transport || "-"}</strong>
-          <span className="akrMuted">Tick #{Math.floor(summary.server_tick)}</span>
+          <span className="akrMuted">P95 {Math.floor(summary.p95_latency_ms)}ms</span>
         </section>
         <section className="combatHudCell">
           <p className="akrKicker">{t(props.lang, "pvp_next_call_title")}</p>
           <strong>{summary.next_expected_action || t(props.lang, "pvp_session_waiting")}</strong>
-          <span className="akrMuted">{t(props.lang, "pvp_next_call_caption")}</span>
+          <span className="akrMuted">Tick #{Math.floor(summary.server_tick)}</span>
         </section>
       </div>
 
-      <div className="pvpTheaterStrip">
-        <section className="pvpTheaterCell" data-akr-panel-key="leaderboard" data-akr-focus-key="leaderboard">
-          <h3>{t(props.lang, "pvp_leaderboard_title")}</h3>
+      <div className="akrSplit">
+        <section className="akrMiniPanel">
+          <h4>{copy.leaderboardTitle}</h4>
+          <p className="akrMuted akrMiniPanelBody">{copy.leaderboardBody}</p>
           {view.leaderboard.length ? (
             <ul className="akrList">
               {view.leaderboard.slice(0, 5).map((row) => (
@@ -204,9 +221,18 @@ export function PvpPanel(props: PvpPanelProps) {
           ) : (
             <p className="akrMuted">{t(props.lang, "pvp_live_empty")}</p>
           )}
+          <div className="akrActionRow">
+            <button className="akrBtn akrBtnGhost" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PVP_DAILY_DUEL, "panel_pvp")}>
+              {t(props.lang, "pvp_focus_daily_duel")}
+            </button>
+            <button className="akrBtn akrBtnGhost" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PVP_WEEKLY_LADDER, "panel_pvp")}>
+              {t(props.lang, "pvp_focus_weekly_ladder")}
+            </button>
+          </div>
         </section>
-        <section className="pvpTheaterCell">
-          <h3>{t(props.lang, "pvp_recent_clashes_title")}</h3>
+        <section className="akrMiniPanel">
+          <h4>{copy.clashHistoryTitle}</h4>
+          <p className="akrMuted akrMiniPanelBody">{copy.clashHistoryBody}</p>
           {league.trend.length ? (
             <ul className="akrList">
               {league.trend.slice(0, 5).map((row) => (
@@ -221,6 +247,17 @@ export function PvpPanel(props: PvpPanelProps) {
           ) : (
             <p className="akrMuted">{t(props.lang, "pvp_trend_empty")}</p>
           )}
+          <div className="akrActionRow">
+            <button className="akrBtn akrBtnGhost" disabled={!props.canRefreshState} onClick={props.onRefreshState}>
+              {t(props.lang, "pvp_refresh")}
+            </button>
+            <button className="akrBtn akrBtnGhost" onClick={props.onRefreshLeague}>
+              {t(props.lang, "pvp_refresh_league")}
+            </button>
+            <button className="akrBtn akrBtnGhost" onClick={props.onRefreshLive}>
+              {t(props.lang, "pvp_refresh_live")}
+            </button>
+          </div>
         </section>
       </div>
 
@@ -237,22 +274,7 @@ export function PvpPanel(props: PvpPanelProps) {
             <span className="akrChip">Accept: {Math.round(summary.accept_rate_pct)}%</span>
             <span className="akrChip">P95: {Math.floor(summary.p95_latency_ms)}ms</span>
           </div>
-          <h3>{t(props.lang, "pvp_reject_mix_title")}</h3>
-          {view.reject_mix.length ? (
-            <ul className="akrList">
-              {view.reject_mix.map((row) => (
-                <li key={`${row.reason_code}_${row.hit_count}`}>
-                  <strong>{row.reason_code}</strong>
-                  <span>{Math.floor(row.hit_count)}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="akrMuted">{t(props.lang, "pvp_live_reject_empty")}</p>
-          )}
-          <h3>{t(props.lang, "pvp_league_title")}</h3>
           <pre className="akrJsonBlock">{JSON.stringify(props.leagueOverview || null, null, 2)}</pre>
-          <h3>{t(props.lang, "pvp_live_title")}</h3>
           <pre className="akrJsonBlock">{JSON.stringify(props.liveLeaderboard || null, null, 2)}</pre>
           <pre className="akrJsonBlock">{JSON.stringify(props.liveDiagnostics || null, null, 2)}</pre>
           <pre className="akrJsonBlock">{JSON.stringify(props.liveTick || null, null, 2)}</pre>
