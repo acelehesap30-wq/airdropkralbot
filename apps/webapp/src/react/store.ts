@@ -1,6 +1,6 @@
 import type { BootstrapV2Data, ExperimentAssignment, LaunchContext, TabKey, WebAppAuth, WorkspaceKey } from "./types";
 import { type Lang } from "./i18n";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "./redux/hooks";
 import {
   adminActions,
@@ -84,11 +84,19 @@ export function useReactShellStore(): ReactShellState {
   const navigationContext = useAppSelector(selectNavigationLaunchContext);
   const navigationRequestKey = useAppSelector(selectNavigationRequestKey);
 
+  // Use refs to break circular dependency in setBootstrap
+  const navigationContextRef = useRef(navigationContext);
+  navigationContextRef.current = navigationContext;
+  const uiRef = useRef(ui);
+  uiRef.current = ui;
+  const sceneRef = useRef(scene);
+  sceneRef.current = scene;
+
   const setBootstrap = useCallback(
     (nextData: BootstrapV2Data) => {
       const rawLaunchContext =
         nextData?.launch_context && typeof nextData.launch_context === "object" ? nextData.launch_context : null;
-      const effectiveLaunchContext = rawLaunchContext || navigationContext || null;
+      const effectiveLaunchContext = rawLaunchContext || navigationContextRef.current || null;
       const rawUiPrefs =
         nextData?.ui_prefs && typeof nextData.ui_prefs === "object" ? (nextData.ui_prefs as Record<string, unknown>) : {};
       const rawPrefsJson =
@@ -114,16 +122,17 @@ export function useReactShellStore(): ReactShellState {
         reducedMotion: Boolean(normalizedData?.ui_prefs?.reduced_motion),
         largeText: Boolean(normalizedData?.ui_prefs?.large_text)
       });
+      const currentUi = uiRef.current;
       dispatch(playerActions.setBootstrap(normalizedData));
       dispatch(navigationActions.hydrateLaunchContext(effectiveLaunchContext));
       dispatch(
         uiActions.applyBootstrapUi(
           deriveUiFromBootstrap(normalizedData, {
-            tab: ui.tab,
-            workspace: ui.workspace,
-            lang: ui.lang,
-            advanced: ui.advanced,
-            onboardingVisible: ui.onboardingVisible
+            tab: currentUi.tab,
+            workspace: currentUi.workspace,
+            lang: currentUi.lang,
+            advanced: currentUi.advanced,
+            onboardingVisible: currentUi.onboardingVisible
           })
         )
       );
@@ -138,7 +147,7 @@ export function useReactShellStore(): ReactShellState {
         })
       );
     },
-    [dispatch, navigationContext, ui.tab, ui.workspace, ui.lang, ui.advanced, ui.onboardingVisible]
+    [dispatch]
   );
 
   const patchData = useCallback(
@@ -150,11 +159,12 @@ export function useReactShellStore(): ReactShellState {
       if (Object.prototype.hasOwnProperty.call(patch || {}, "ui_prefs")) {
         const nextPrefs = patch?.ui_prefs && typeof patch.ui_prefs === "object" ? patch.ui_prefs : {};
         const nextPrefsRecord = nextPrefs as Record<string, unknown>;
+        const currentScene = sceneRef.current;
         const capabilityProfile = collectCapabilityProfile({
-          qualityMode: String(nextPrefsRecord.quality_mode || scene.qualityMode || "auto"),
+          qualityMode: String(nextPrefsRecord.quality_mode || currentScene.qualityMode || "auto"),
           reducedMotion:
-            typeof nextPrefsRecord.reduced_motion === "boolean" ? Boolean(nextPrefsRecord.reduced_motion) : scene.reducedMotion,
-          largeText: typeof nextPrefsRecord.large_text === "boolean" ? Boolean(nextPrefsRecord.large_text) : scene.largeText
+            typeof nextPrefsRecord.reduced_motion === "boolean" ? Boolean(nextPrefsRecord.reduced_motion) : currentScene.reducedMotion,
+          largeText: typeof nextPrefsRecord.large_text === "boolean" ? Boolean(nextPrefsRecord.large_text) : currentScene.largeText
         });
         dispatch(
           sceneActions.setScenePreferences({
@@ -168,7 +178,7 @@ export function useReactShellStore(): ReactShellState {
         );
       }
     },
-    [dispatch, scene.qualityMode, scene.reducedMotion, scene.largeText, scene.hudDensity]
+    [dispatch]
   );
 
   const setAuth = useCallback((nextAuth: WebAppAuth) => {
