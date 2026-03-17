@@ -2,9 +2,7 @@
 
 import { useTelegram } from '@/lib/telegram';
 import { useAppStore } from '@/store/useAppStore';
-import { useState, useEffect } from 'react';
-
-const ADMIN_TELEGRAM_ID = 1995400205;
+import { useState } from 'react';
 
 export default function AdminPage() {
   const { user, locale } = useTelegram();
@@ -12,7 +10,25 @@ export default function AdminPage() {
   const isTr = locale === 'tr';
   const [activeTab, setActiveTab] = useState<'queue' | 'metrics' | 'config' | 'ops'>('queue');
 
-  const isAdmin = Number(telegramId || user?.id || 0) === ADMIN_TELEGRAM_ID;
+  const resolvedTelegramId = Number(bootstrapData?.admin?.telegram_id || telegramId || user?.id || 0);
+  const configuredAdminId = Number(bootstrapData?.admin?.configured_admin_id || 0);
+  const isAdmin = Boolean(bootstrapData?.admin?.is_admin) && configuredAdminId > 0 && resolvedTelegramId === configuredAdminId;
+
+  if (!bootstrapped) {
+    return (
+      <div className="empty-state" style={{ height: '70vh' }}>
+        <div className="empty-state-icon">🛰️</div>
+        <div className="empty-state-title">
+          {isTr ? 'Admin kimligi dogrulaniyor' : 'Verifying admin identity'}
+        </div>
+        <div className="empty-state-desc">
+          {isTr
+            ? 'Onay, odeme ve runtime islemlerini gostermeden once canli oturum bilgisi dogrulaniyor.'
+            : 'Live session metadata is being verified before approval, payout and runtime controls are shown.'}
+        </div>
+      </div>
+    );
+  }
 
   if (!isAdmin) {
     return (
@@ -23,11 +39,11 @@ export default function AdminPage() {
         </div>
         <div className="empty-state-desc">
           {isTr
-            ? 'Bu sayfa sadece admin kullanıcılara açıktır. Telegram ID\'niz doğrulanmadı.'
+            ? 'Bu sayfa sadece konfigured admin hesabina aciktir. Telegram kimliginiz canli admin kaydiyla eslesmedi.'
             : 'This page is only accessible to admin users. Your Telegram ID was not verified.'}
         </div>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--color-text-muted)', marginTop: 8 }}>
-          ID: {String(telegramId || user?.id || '—')} ≠ ADMIN
+          ID: {String(resolvedTelegramId || '—')} ≠ {configuredAdminId > 0 ? String(configuredAdminId) : 'ADMIN'}
         </div>
       </div>
     );
@@ -60,13 +76,13 @@ export default function AdminPage() {
         <div className="admin-panel-header">
           🛡️ ADMIN PANEL — {user?.first_name ?? 'Admin'}
           <span className="neon-badge danger" style={{ marginLeft: 'auto', fontSize: 8 }}>
-            ID: {ADMIN_TELEGRAM_ID}
+            ID: {configuredAdminId}
           </span>
         </div>
         <div className="admin-panel-body">
           <p style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>
             {isTr
-              ? 'Onaylama, reddetme, konfigürasyon ve sistem yönetimi işlemlerini buradan yapabilirsiniz.'
+              ? 'Onay, red, payout ve runtime islemleri sadece dogrulanmis admin Telegram kimligiyle bu panelden yonetilir.'
               : 'Manage approvals, rejections, configurations and system operations here.'}
           </p>
         </div>

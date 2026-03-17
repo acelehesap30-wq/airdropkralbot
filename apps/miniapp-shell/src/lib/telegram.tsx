@@ -1,11 +1,11 @@
 'use client';
 
 import {
+  createElement,
   createContext,
   useContext,
   useEffect,
   useState,
-  type ReactNode,
 } from 'react';
 
 // Blueprint: Telegram WebApp SDK types
@@ -86,7 +86,7 @@ export function useTelegram() {
   return useContext(TelegramCtx);
 }
 
-export function TelegramProvider({ children }: { children: ReactNode }) {
+export function TelegramProvider({ children }: { children: React.ReactNode }): any {
   const [ctx, setCtx] = useState<TelegramContext>({
     webApp: null,
     user: null,
@@ -121,5 +121,5 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  return <TelegramCtx.Provider value={ctx}>{children}</TelegramCtx.Provider>;
+  return createElement(TelegramCtx.Provider, { value: ctx }, children) as any;
 }

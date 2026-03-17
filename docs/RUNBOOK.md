@@ -5,6 +5,12 @@
 2. Worker kullanilmiyorsa `BOT_ENABLED=1`, `KEEP_ADMIN_ON_BOT_EXIT=1`, `BOT_AUTO_RESTART=1`.
 3. Telegram polling conflict icin ayni tokenla ikinci bot instance calistirma.
 
+## Blueprint-aligned incident runbooks
+1. Payout delay, wallet degradation, localization outage ve event misfire operator akisleri icin:
+`docs/LIVE_SYSTEM_INCIDENT_RUNBOOKS_TR.md`
+2. WebApp kurulum + hata kurtarma runbook'u:
+`docs/WEBAPP_SYSTEM_RUNBOOK_TR.md`
+
 ## Admin authority lock
 1. Telegram'da `/whoami` calistir ve `Telegram ID` degerini al.
 2. Bu degeri local `.env` + Render `ADMIN_TELEGRAM_ID` icin birebir kullan.

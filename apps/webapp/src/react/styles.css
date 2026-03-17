@@ -4157,3 +4157,412 @@ body {
   height: 100%; border-radius: 3px; transition: width .5s ease;
   background: linear-gradient(90deg, #38d0ff, #a78bfa);
 }
+
+/* ═══════════════════════════════════════════════
+   PREMIUM NEON ARENA THEME OVERHAUL
+   Glassmorphism + glow effects + micro-animations
+   ═══════════════════════════════════════════════ */
+
+/* — Root enhancements — */
+.akrReactModeBody {
+  background:
+    radial-gradient(ellipse at 15% 5%, rgba(0, 214, 255, 0.12), transparent 40%),
+    radial-gradient(ellipse at 85% 95%, rgba(167, 139, 250, 0.08), transparent 40%),
+    radial-gradient(ellipse at 50% 50%, rgba(47, 255, 181, 0.04), transparent 50%),
+    linear-gradient(165deg, #030918 0%, #061022 30%, #0a1628 60%, #0f1d35 100%);
+}
+
+/* — Card glassmorphism — */
+.akrCard {
+  border-radius: 20px;
+  border: 1px solid rgba(0, 214, 255, 0.12);
+  background: linear-gradient(160deg, rgba(8, 22, 43, 0.95), rgba(11, 37, 69, 0.75));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.akrCard:hover {
+  border-color: rgba(0, 214, 255, 0.25);
+  box-shadow: 0 12px 40px rgba(0, 214, 255, 0.08), 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.akrCard h2, .akrCard h3 {
+  background: linear-gradient(135deg, #e9f5ff, #38d0ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+}
+
+/* — Buttons neon glow — */
+.akrBtn {
+  border-radius: 12px;
+  border: 1px solid rgba(0, 214, 255, 0.25);
+  background: linear-gradient(135deg, rgba(0, 214, 255, 0.1), rgba(99, 102, 241, 0.1));
+  backdrop-filter: blur(10px);
+  padding: 10px 18px;
+  color: var(--akr-ink);
+  font-weight: 600;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  position: relative;
+  overflow: hidden;
+}
+
+.akrBtn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(0, 214, 255, 0.15), transparent);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.akrBtn:hover {
+  border-color: rgba(0, 214, 255, 0.5);
+  box-shadow: 0 0 20px rgba(0, 214, 255, 0.2), 0 4px 16px rgba(0, 0, 0, 0.3);
+  transform: translateY(-1px);
+}
+
+.akrBtn:hover::before {
+  opacity: 1;
+}
+
+.akrBtn.isPrimary, .akrBtn.isAccent {
+  background: linear-gradient(135deg, rgba(0, 214, 255, 0.2), rgba(99, 102, 241, 0.15));
+  border-color: rgba(0, 214, 255, 0.4);
+  color: #38d0ff;
+}
+
+.akrBtn.isDanger {
+  background: linear-gradient(135deg, rgba(255, 95, 127, 0.15), rgba(255, 60, 90, 0.1));
+  border-color: rgba(255, 95, 127, 0.3);
+  color: #ff5f7f;
+}
+
+.akrBtn.isDanger:hover {
+  border-color: rgba(255, 95, 127, 0.5);
+  box-shadow: 0 0 20px rgba(255, 95, 127, 0.2);
+}
+
+.akrBtn.isSuccess {
+  background: linear-gradient(135deg, rgba(47, 255, 181, 0.15), rgba(0, 214, 160, 0.1));
+  border-color: rgba(47, 255, 181, 0.3);
+  color: #2fffb5;
+}
+
+/* — Tabs neon underline — */
+.akrTab {
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: rgba(8, 22, 43, 0.4);
+  padding: 10px 16px;
+  color: var(--akr-muted);
+  font-weight: 600;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.akrTab::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 20%;
+  right: 20%;
+  height: 2px;
+  background: var(--akr-accent);
+  border-radius: 1px;
+  opacity: 0;
+  transition: opacity 0.2s ease, left 0.2s ease, right 0.2s ease;
+}
+
+.akrTab:hover {
+  color: var(--akr-ink);
+  background: rgba(0, 214, 255, 0.05);
+}
+
+.akrTab.isActive, .akrTab[data-active="true"] {
+  border-color: rgba(0, 214, 255, 0.3);
+  background: linear-gradient(160deg, rgba(0, 214, 255, 0.08), rgba(99, 102, 241, 0.05));
+  color: var(--akr-accent);
+  box-shadow: 0 0 16px rgba(0, 214, 255, 0.1);
+}
+
+.akrTab.isActive::after, .akrTab[data-active="true"]::after {
+  opacity: 1;
+  left: 10%;
+  right: 10%;
+  box-shadow: 0 0 8px var(--akr-accent);
+}
+
+/* — TopBar neon — */
+.akrTopBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  background: linear-gradient(180deg, rgba(6, 16, 34, 0.98), rgba(6, 16, 34, 0.85));
+  border-bottom: 1px solid rgba(0, 214, 255, 0.1);
+  backdrop-filter: blur(20px);
+  position: relative;
+}
+
+.akrTopBar::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 214, 255, 0.4), transparent);
+}
+
+.akrTopBar h1, .akrTopBar .akrLogo {
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, #38d0ff 0%, #a78bfa 50%, #2fffb5 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* — Chips neon — */
+.akrChip {
+  border: 1px solid rgba(0, 214, 255, 0.2);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+  background: rgba(0, 214, 255, 0.06);
+  color: #88d8f7;
+  backdrop-filter: blur(8px);
+  transition: all 0.15s ease;
+}
+
+.akrChip:hover {
+  border-color: rgba(0, 214, 255, 0.4);
+  background: rgba(0, 214, 255, 0.1);
+}
+
+.akrChip.isAccent { border-color: rgba(0, 214, 255, 0.35); color: #38d0ff; }
+.akrChip.isWarm { border-color: rgba(255, 178, 94, 0.35); color: #ffb25e; }
+.akrChip.isDanger { border-color: rgba(255, 95, 127, 0.35); color: #ff5f7f; }
+.akrChip.isSuccess { border-color: rgba(47, 255, 181, 0.35); color: #2fffb5; }
+
+/* — MiniPanel / Admin glassmorphism — */
+.akrMiniPanel {
+  margin-top: 14px;
+  border: 1px solid rgba(0, 214, 255, 0.1);
+  border-radius: 16px;
+  padding: 14px;
+  background: linear-gradient(160deg, rgba(7, 23, 46, 0.8), rgba(10, 30, 60, 0.6));
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  transition: border-color 0.2s ease;
+}
+
+.akrMiniPanel:hover {
+  border-color: rgba(0, 214, 255, 0.2);
+}
+
+.akrMiniPanel h4 {
+  font-size: 0.88rem;
+  color: var(--akr-accent);
+  letter-spacing: 0.04em;
+}
+
+/* — Hero section — */
+.akrGameHero {
+  padding: 24px;
+  border: 1px solid rgba(0, 214, 255, 0.15);
+  border-radius: 24px;
+  background:
+    radial-gradient(ellipse at top right, rgba(0, 214, 255, 0.15), transparent 40%),
+    radial-gradient(ellipse at bottom left, rgba(167, 139, 250, 0.08), transparent 40%),
+    linear-gradient(160deg, rgba(7, 18, 38, 0.98), rgba(8, 24, 48, 0.92));
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.akrHeroName {
+  font-size: 1.6rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #e9f5ff, #38d0ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* — Values & metrics neon glow — */
+.akrValue {
+  font-size: 1.35rem;
+  font-weight: 700;
+  font-family: "IBM Plex Mono", monospace;
+  color: var(--akr-accent);
+  text-shadow: 0 0 12px rgba(0, 214, 255, 0.3);
+}
+
+.akrKicker {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--akr-muted);
+  opacity: 0.85;
+}
+
+.akrMuted {
+  color: var(--akr-muted);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+/* — Input / textarea neon — */
+.akrInput, .akrTextarea, .akrSelect, 
+input, textarea, select {
+  border-radius: 10px;
+  border: 1px solid rgba(0, 214, 255, 0.15);
+  background: rgba(6, 16, 34, 0.8);
+  color: var(--akr-ink);
+  padding: 10px 14px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.82rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: rgba(0, 214, 255, 0.4);
+  box-shadow: 0 0 0 3px rgba(0, 214, 255, 0.08), 0 0 16px rgba(0, 214, 255, 0.1);
+}
+
+/* — Scrollbar neon — */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: rgba(6, 16, 34, 0.4); }
+::-webkit-scrollbar-thumb { background: rgba(0, 214, 255, 0.2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0, 214, 255, 0.4); }
+
+/* — Animations — */
+@keyframes akrNeonPulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(0, 214, 255, 0.1); }
+  50% { box-shadow: 0 0 20px rgba(0, 214, 255, 0.25); }
+}
+
+@keyframes akrGlowScan {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes akrFadeSlideIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.akrCard, .akrMiniPanel {
+  animation: akrFadeSlideIn 0.4s ease-out both;
+}
+
+/* — Admin panel shimmer header — */
+.akrCard h2 {
+  position: relative;
+}
+
+/* — Grid panel hover micro-animation — */
+.akrPanelGrid > .akrCard {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.akrPanelGrid > .akrCard:hover {
+  transform: translateY(-2px);
+  border-color: rgba(0, 214, 255, 0.3);
+  box-shadow: 0 16px 48px rgba(0, 214, 255, 0.08), 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* — Status Badge neon — */
+.akrStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.akrStatusBadge.isLive {
+  background: rgba(47, 255, 181, 0.1);
+  border: 1px solid rgba(47, 255, 181, 0.3);
+  color: #2fffb5;
+  animation: akrNeonPulse 2s ease-in-out infinite;
+}
+
+.akrStatusBadge.isPending {
+  background: rgba(255, 178, 94, 0.1);
+  border: 1px solid rgba(255, 178, 94, 0.3);
+  color: #ffb25e;
+}
+
+.akrStatusBadge.isError {
+  background: rgba(255, 95, 127, 0.1);
+  border: 1px solid rgba(255, 95, 127, 0.3);
+  color: #ff5f7f;
+}
+
+/* — Workspace panel premium spacing — */
+.akrPanelGrid {
+  gap: 16px;
+}
+
+/* — Tab row premium — */
+.akrTabRow {
+  display: flex;
+  gap: 8px;
+  padding: 4px;
+  background: rgba(6, 16, 34, 0.5);
+  border-radius: 14px;
+  border: 1px solid rgba(0, 214, 255, 0.08);
+}
+
+/* — Section divider neon line — */
+hr, .akrDivider {
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 214, 255, 0.2), transparent);
+  margin: 16px 0;
+}
+
+/* — Action row spacing — */
+.akrActionRow {
+  gap: 8px;
+}
+
+/* — Admin header bar — */
+.akrAdminHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-radius: 20px;
+  border: 1px solid rgba(167, 139, 250, 0.15);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(167, 139, 250, 0.05));
+  margin-bottom: 16px;
+}
+
+/* — Responsive mobile touch — */
+@media (max-width: 640px) {
+  .akrReactRoot { padding: 12px 10px 20px; }
+  .akrGameHero { grid-template-columns: 1fr; padding: 16px; }
+  .akrCard { padding: 14px; }
+  .akrSplit { grid-template-columns: 1fr; }
+}
+

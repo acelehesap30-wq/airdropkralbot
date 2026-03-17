@@ -3,19 +3,12 @@
  * Holds bootstrap data, balances, wallet state, locale
  */
 import { create } from 'zustand';
-import type { CurrencyBalance, BootstrapResponse } from '@airdropkralbot/contracts';
+import type { BootstrapResponse, CurrencyBalance, BootstrapSession } from '@airdropkralbot/contracts';
 
 interface WalletState {
   linked: boolean;
   chain: string | null;
   address: string | null;
-}
-
-interface SessionState {
-  uid: string;
-  ts: string;
-  sig: string;
-  ttl_sec: number;
 }
 
 interface AppState {
@@ -29,10 +22,10 @@ interface AppState {
   locale: 'tr' | 'en';
 
   // Session — HMAC auth for API calls
-  session: SessionState | null;
+  session: BootstrapSession | null;
 
   // Raw bootstrap payload for pages that need full data
-  bootstrapData: any | null;
+  bootstrapData: BootstrapResponse | null;
 
   // Economy — Blueprint: unified currency model
   balances: CurrencyBalance;
@@ -48,8 +41,8 @@ interface AppState {
 
   // Actions
   setBootstrap: (data: BootstrapResponse) => void;
-  setSession: (session: SessionState) => void;
-  setBootstrapData: (data: any) => void;
+  setSession: (session: BootstrapSession) => void;
+  setBootstrapData: (data: BootstrapResponse) => void;
   setLocale: (locale: 'tr' | 'en') => void;
   setBalances: (balances: Partial<CurrencyBalance>) => void;
   setWallet: (wallet: Partial<WalletState>) => void;
@@ -130,6 +123,8 @@ export const useAppStore = create<AppState>((set) => ({
       username: null,
       kingdomTier: 0,
       locale: 'tr',
+      session: null,
+      bootstrapData: null,
       balances: { ...initialBalances },
       wallet: { ...initialWallet },
       passActive: false,

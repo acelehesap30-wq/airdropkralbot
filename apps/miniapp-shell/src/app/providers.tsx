@@ -2,7 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TonConnectUIProvider } from '@tonconnect/ui-react';
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { TelegramProvider } from '@/lib/telegram';
 
 // Blueprint: TON is the only primary wallet chain
@@ -10,7 +10,7 @@ const TON_MANIFEST_URL =
   process.env.NEXT_PUBLIC_TON_MANIFEST_URL ??
   'https://webapp.k99-exchange.xyz/tonconnect-manifest.json';
 
-export function Providers({ children }: { children: ReactNode }) {
+export function Providers({ children }: { children: React.ReactNode }): any {
   const [queryClient] = useState(
     () =>
       new QueryClient({

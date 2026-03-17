@@ -15,6 +15,23 @@ export const CurrencyBalanceSchema = z.object({
 
 export type CurrencyBalance = z.infer<typeof CurrencyBalanceSchema>;
 
+export const BootstrapSessionSchema = z.object({
+  uid: z.string(),
+  ts: z.string(),
+  sig: z.string(),
+  ttl_sec: z.number(),
+});
+
+export const BootstrapAdminSchema = z.object({
+  is_admin: z.boolean(),
+  telegram_id: z.number(),
+  configured_admin_id: z.number(),
+  summary: z.unknown().nullable().optional(),
+});
+
+export type BootstrapSession = z.infer<typeof BootstrapSessionSchema>;
+export type BootstrapAdmin = z.infer<typeof BootstrapAdminSchema>;
+
 // Blueprint: v2 bootstrap response
 export const BootstrapResponseSchema = z.object({
   api_version: z.string(),
@@ -53,6 +70,8 @@ export const BootstrapResponseSchema = z.object({
     pass_active: z.boolean(),
     pass_expires_at: z.string().nullable(),
   }).optional(),
+  session: BootstrapSessionSchema.optional(),
+  admin: BootstrapAdminSchema.optional(),
 });
 
 export type BootstrapResponse = z.infer<typeof BootstrapResponseSchema>;
