@@ -73,3 +73,29 @@ test("buildHomeFeedViewModel handles empty payload safely", async () => {
   assert.equal(vm.command_hints.length, 0);
   assert.equal(vm.has_data, false);
 });
+
+test("buildHomeFeedViewModel keeps full mission totals while preview rows stay capped", async () => {
+  const mod = await loadModule();
+  const listPreview = [
+    { mission_key: "ready_1", completed: true, claimed: false },
+    { mission_key: "ready_2", completed: true, claimed: false },
+    ...Array.from({ length: 6 }, (_, index) => ({
+      mission_key: `open_${index + 1}`,
+      completed: false,
+      claimed: false
+    })),
+    { mission_key: "claimed_1", completed: true, claimed: true }
+  ];
+  const vm = mod.buildHomeFeedViewModel({
+    homeFeed: {
+      mission: {
+        list_preview: listPreview
+      }
+    }
+  });
+
+  assert.equal(vm.summary.mission_total, 9);
+  assert.equal(vm.summary.mission_ready, 2);
+  assert.equal(vm.summary.mission_open, 8);
+  assert.equal(vm.mission_preview.length, 6);
+});

@@ -82,6 +82,13 @@ export function useAdminQueueController(options: AdminQueueControllerOptions) {
         request_id: payload.request_id
       }
     });
+    options.setQueueAction((prev) => ({
+      ...prev,
+      request_id: "",
+      tx_hash: "",
+      reason: "",
+      confirm_token: ""
+    }));
     await options.refreshAdmin();
   }, [options]);
 

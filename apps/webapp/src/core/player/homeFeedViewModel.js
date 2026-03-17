@@ -103,7 +103,7 @@ export function buildHomeFeedViewModel(input = {}) {
       tab: toText(item.tab || fallbackTarget?.tab || "")
     };
   });
-  const missionPreview = asArray(mission.list_preview || mission.list).slice(0, 6).map((row) => {
+  const missionRows = asArray(mission.list_preview || mission.list).map((row) => {
     const item = asRecord(row);
     return {
       mission_key: toText(item.mission_key || item.key || ""),
@@ -112,6 +112,10 @@ export function buildHomeFeedViewModel(input = {}) {
       claimed: toBool(item.claimed)
     };
   });
+  const missionPreview = missionRows.slice(0, 6);
+  const missionReady = Math.max(0, toNum(mission.ready, missionRows.filter((row) => row.completed && !row.claimed).length));
+  const missionOpen = Math.max(0, toNum(mission.open, missionRows.filter((row) => !row.claimed).length));
+  const missionTotal = Math.max(0, toNum(mission.total, missionRows.length));
 
   const tasksDone = Math.max(0, toNum(daily.tasks_done || 0));
   const dailyCap = Math.max(0, toNum(daily.daily_cap || 0));
@@ -131,9 +135,9 @@ export function buildHomeFeedViewModel(input = {}) {
       sc_earned: Math.max(0, toNum(daily.sc_earned || balances.SC || 0)),
       rc_earned: Math.max(0, toNum(daily.rc_earned || balances.RC || 0)),
       hc_earned: Math.max(0, toNum(daily.hc_earned || balances.HC || 0)),
-      mission_total: Math.max(0, toNum(mission.total || missionPreview.length || 0)),
-      mission_ready: Math.max(0, toNum(mission.ready || 0)),
-      mission_open: Math.max(0, toNum(mission.open || 0)),
+      mission_total: missionTotal,
+      mission_ready: missionReady,
+      mission_open: missionOpen,
       wallet_active: toBool(walletQuick.active),
       wallet_chain: toText(walletQuick.chain || ""),
       wallet_address_masked: toText(walletQuick.address_masked || walletQuick.address || ""),
