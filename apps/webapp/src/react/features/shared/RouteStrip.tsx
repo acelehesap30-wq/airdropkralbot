@@ -28,7 +28,7 @@ export function RouteStrip(props: RouteStripProps) {
           const toneClassName =
             step.tone === "active" ? "akrRouteStep isActive" : step.tone === "done" ? "akrRouteStep isDone" : "akrRouteStep";
           return (
-            <button key={`${props.focusKey}_${index}_${step.title}`} className={toneClassName} onClick={step.onClick}>
+            <button type="button" key={`${props.focusKey}_${index}_${step.title}`} className={toneClassName} onClick={step.onClick}>
               <span className="akrRouteStepIndex">{String(index + 1).padStart(2, "0")}</span>
               <span className="akrKicker">{step.kicker}</span>
               <strong>{step.title}</strong>

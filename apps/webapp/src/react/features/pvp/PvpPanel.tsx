@@ -114,7 +114,7 @@ export function PvpPanel(props: PvpPanelProps) {
           clashTitle: "Live clash",
           clashBody: "Your next or current fight lane.",
           duelTitle: "Daily duel",
-          duelBody: "Fast pressure fight that sets today’s rhythm.",
+          duelBody: "Fast pressure fight that sets today's rhythm.",
           ladderTitle: "Weekly ladder",
           ladderBody: "Promotion-zone climb.",
           bossTitle: "Arc boss",

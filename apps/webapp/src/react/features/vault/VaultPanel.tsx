@@ -87,6 +87,7 @@ export function VaultPanel(props: VaultPanelProps) {
           stateLive: "canli",
           stateReady: "hazir",
           stateLocked: "kilitli",
+          balanceShort: "BAL",
           signalRewards: "odul",
           routeSideTitle: "Bagli koridorlar",
           routeSideBody: "Ayni odadan acilan wallet, payout ve reward cikislari.",
@@ -143,6 +144,7 @@ export function VaultPanel(props: VaultPanelProps) {
           stateLive: "live",
           stateReady: "ready",
           stateLocked: "locked",
+          balanceShort: "BAL",
           signalRewards: "items",
           routeSideTitle: "Linked corridors",
           routeSideBody: "Wallet, payout and reward exits that open from the same chamber.",
@@ -226,7 +228,7 @@ export function VaultPanel(props: VaultPanelProps) {
         <div className="akrGameHeroStats">
           <span className="akrChip">{summary.token_symbol || "-"}</span>
           <span className="akrChip">{summary.token_chain || "-"}</span>
-          <span className="akrChip">Bal {Math.floor(summary.token_balance)}</span>
+          <span className="akrChip">{copy.balanceShort} {Math.floor(summary.token_balance)}</span>
           <span className="akrChip">{summary.wallet_chain || shortStatus(summary.wallet_active ? "1" : "", copy.walletOn, copy.walletOff)}</span>
           <span className="akrChip">{summary.premium_active ? copy.premium : copy.standard}</span>
         </div>
@@ -252,7 +254,7 @@ export function VaultPanel(props: VaultPanelProps) {
               {summary.payout_can_request ? copy.payoutReady : copy.payoutLocked}
             </span>
             <span className="akrChip">
-              {catalog.passes.length + catalog.cosmetics.length} items
+              {catalog.passes.length + catalog.cosmetics.length} {copy.signalRewards}
             </span>
           </div>
           <div className="akrActionRow">
@@ -298,7 +300,7 @@ export function VaultPanel(props: VaultPanelProps) {
             title: t(props.lang, "tasks_focus_claims"),
             body: copy.chainMissionBody,
             stateLabel: copy.stateComplete,
-            signals: [summary.route_status || "-", `${summary.active_pass_count} rewards`],
+            signals: [summary.route_status || "-", `${summary.active_pass_count} ${copy.signalRewards}`],
             tone: "done",
             onClick: () => props.onShellAction(SHELL_ACTION_KEY.PLAYER_TASKS_CLAIMS, "panel_vault")
           },
@@ -352,7 +354,7 @@ export function VaultPanel(props: VaultPanelProps) {
           <h3>{t(props.lang, "shell_panel_open_rewards")}</h3>
           <p>{copy.rewardsBody}</p>
           <span className="akrChip">
-            {catalog.passes.length + catalog.cosmetics.length} items
+            {catalog.passes.length + catalog.cosmetics.length} {copy.signalRewards}
           </span>
         </button>
       </div>
