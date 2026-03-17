@@ -49,6 +49,14 @@ export function TasksPanel(props: TasksPanelProps) {
           routeLabelAttempt: "active attempt",
           routeLabelOffer: "offer route",
           routeLabelFallback: "board refresh",
+          chainTitle: "Combat -> mission -> vault",
+          chainBody: "Arena'dan cikan tempo burada gorevi kapatir, sonra odul ve payout koridoruna akar.",
+          chainArena: "Arena baskisi",
+          chainArenaBody: "Duel veya ladder sonucu seni bu mission board'a iter.",
+          chainMission: "Claim push",
+          chainMissionBody: "Hazir gorev ya kapanir ya da reveal/complete ile claim'e dondurulur.",
+          chainVault: "Vault cikisi",
+          chainVaultBody: "Mission kapandiginda odul, payout ve proof koridoru acilir.",
           sideRouteTitle: "Bagli cikislar",
           sideRouteBody: "Mission loop kapaninca hangi lane'e sicrarsin burada gorunur.",
           rewardsExit: "Odul cikisi",
@@ -94,6 +102,14 @@ export function TasksPanel(props: TasksPanelProps) {
           routeLabelAttempt: "active attempt",
           routeLabelOffer: "offer route",
           routeLabelFallback: "board refresh",
+          chainTitle: "Combat -> mission -> vault",
+          chainBody: "Arena tempo lands here, closes the objective, then spills into rewards and payout.",
+          chainArena: "Arena pressure",
+          chainArenaBody: "A duel or ladder result pushes you into this mission board.",
+          chainMission: "Claim push",
+          chainMissionBody: "A ready mission closes now or an active attempt resolves into a claim.",
+          chainVault: "Vault exit",
+          chainVaultBody: "When the mission closes, the reward, payout, and proof corridor opens.",
           sideRouteTitle: "Linked exits",
           sideRouteBody: "See where the mission loop hands you off after the close.",
           rewardsExit: "Rewards exit",
@@ -256,6 +272,30 @@ export function TasksPanel(props: TasksPanelProps) {
               <strong>{t(props.lang, "tasks_focus_claims")}</strong>
             </button>
           </div>
+        </div>
+      </section>
+
+      <section className="akrRouteStrip" data-akr-panel-key="tasks" data-akr-focus-key="mission_chain">
+        <div className="akrRouteStripHeader">
+          <p className="akrKicker">{copy.chainTitle}</p>
+          <p className="akrMuted">{copy.chainBody}</p>
+        </div>
+        <div className="akrRouteStripGrid">
+          <button className="akrRouteStep" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PVP_DAILY_DUEL, "panel_tasks")}>
+            <span className="akrKicker">{copy.chainArena}</span>
+            <strong>{t(props.lang, "shell_panel_go_pvp")}</strong>
+            <p>{copy.chainArenaBody}</p>
+          </button>
+          <button className="akrRouteStep isActive" onClick={nextRoute.onPress}>
+            <span className="akrKicker">{copy.chainMission}</span>
+            <strong>{nextRoute.title}</strong>
+            <p>{copy.chainMissionBody}</p>
+          </button>
+          <button className="akrRouteStep" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PAYOUT_REQUEST, "panel_tasks")}>
+            <span className="akrKicker">{copy.chainVault}</span>
+            <strong>{t(props.lang, "shell_panel_go_payout")}</strong>
+            <p>{copy.chainVaultBody}</p>
+          </button>
         </div>
       </section>
 

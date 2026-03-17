@@ -2863,6 +2863,68 @@ body {
   gap: 12px;
 }
 
+.akrRouteStrip {
+  border: 1px solid rgba(120, 181, 225, 0.14);
+  border-radius: 16px;
+  padding: 16px;
+  background: linear-gradient(160deg, rgba(7, 21, 42, 0.72), rgba(8, 26, 48, 0.58));
+  display: grid;
+  gap: 12px;
+}
+
+.akrRouteStripHeader {
+  display: grid;
+  gap: 6px;
+}
+
+.akrRouteStripHeader p {
+  margin: 0;
+}
+
+.akrRouteStripGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.akrRouteStep {
+  text-align: left;
+  border: 1px solid rgba(120, 181, 225, 0.14);
+  border-radius: 14px;
+  padding: 14px;
+  background: rgba(7, 21, 42, 0.54);
+  color: var(--akr-ink);
+  display: grid;
+  gap: 8px;
+  cursor: pointer;
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.akrRouteStep strong,
+.akrRouteStep p {
+  margin: 0;
+}
+
+.akrRouteStep p {
+  color: var(--akr-muted);
+  line-height: 1.5;
+}
+
+.akrRouteStep:hover {
+  transform: translateY(-1px);
+  border-color: rgba(120, 181, 225, 0.28);
+  box-shadow: 0 10px 20px rgba(4, 14, 28, 0.18);
+}
+
+.akrRouteStep.isActive {
+  border-color: rgba(47, 255, 181, 0.3);
+  box-shadow: 0 0 0 1px rgba(47, 255, 181, 0.08), 0 16px 26px rgba(4, 14, 28, 0.18);
+}
+
+.akrCompactWarnings .akrChipRow {
+  margin-top: 8px;
+}
+
 .akrQuickHintCard {
   border: 1px solid rgba(120, 181, 225, 0.16);
   border-radius: 14px;
@@ -4011,7 +4073,8 @@ body {
   .akrGameSpotlight,
   .akrGameActionGrid,
   .akrGameFocusGrid,
-  .akrStatRail {
+  .akrStatRail,
+  .akrRouteStripGrid {
     grid-template-columns: 1fr;
   }
 

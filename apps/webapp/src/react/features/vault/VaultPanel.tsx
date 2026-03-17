@@ -74,6 +74,14 @@ export function VaultPanel(props: VaultPanelProps) {
           routeLabelPayout: "cashout window",
           routeLabelRewards: "prize market",
           routeLabelTrade: "mint route",
+          chainTitle: "Mission -> proof -> cashout",
+          chainBody: "Mission'dan gelen odul burada wallet proof ile acilir, sonra cashout veya reward market'e dagilir.",
+          chainMission: "Mission close",
+          chainMissionBody: "Claim edilen gorev seni wallet ve odul odasina iter.",
+          chainProof: "Proof gate",
+          chainProofBody: "Wallet verify payout penceresini ve premium odulleri gercekten acar.",
+          chainExit: "Cashout / prize",
+          chainExitBody: "Proof temizse payout request veya reward market sonraki cikistir.",
           routeSideTitle: "Bagli koridorlar",
           routeSideBody: "Ayni odadan acilan wallet, payout ve reward cikislari.",
           rewardsExit: "Prize market",
@@ -117,6 +125,14 @@ export function VaultPanel(props: VaultPanelProps) {
           routeLabelPayout: "cashout window",
           routeLabelRewards: "prize market",
           routeLabelTrade: "mint route",
+          chainTitle: "Mission -> proof -> cashout",
+          chainBody: "A mission payout enters here, clears wallet proof, then splits into cashout or prize routes.",
+          chainMission: "Mission close",
+          chainMissionBody: "A claimed objective pushes you into the wallet and rewards chamber.",
+          chainProof: "Proof gate",
+          chainProofBody: "Wallet verify is what truly opens payout and premium rewards.",
+          chainExit: "Cashout / prize",
+          chainExitBody: "Once proof clears, payout request or reward market becomes the next exit.",
           routeSideTitle: "Linked corridors",
           routeSideBody: "Wallet, payout and reward exits that open from the same chamber.",
           rewardsExit: "Prize market",
@@ -257,6 +273,30 @@ export function VaultPanel(props: VaultPanelProps) {
               <strong>{t(props.lang, "shell_panel_open_rewards")}</strong>
             </button>
           </div>
+        </div>
+      </section>
+
+      <section className="akrRouteStrip" data-akr-panel-key="vault" data-akr-focus-key="vault_chain">
+        <div className="akrRouteStripHeader">
+          <p className="akrKicker">{copy.chainTitle}</p>
+          <p className="akrMuted">{copy.chainBody}</p>
+        </div>
+        <div className="akrRouteStripGrid">
+          <button className="akrRouteStep" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_TASKS_CLAIMS, "panel_vault")}>
+            <span className="akrKicker">{copy.chainMission}</span>
+            <strong>{t(props.lang, "tasks_focus_claims")}</strong>
+            <p>{copy.chainMissionBody}</p>
+          </button>
+          <button className={`akrRouteStep ${!summary.wallet_active ? "isActive" : ""}`} onClick={props.onWalletVerify}>
+            <span className="akrKicker">{copy.chainProof}</span>
+            <strong>{t(props.lang, "vault_wallet_verify")}</strong>
+            <p>{copy.chainProofBody}</p>
+          </button>
+          <button className={`akrRouteStep ${summary.wallet_active ? "isActive" : ""}`} onClick={nextVaultRoute.onPress}>
+            <span className="akrKicker">{copy.chainExit}</span>
+            <strong>{nextVaultRoute.title}</strong>
+            <p>{copy.chainExitBody}</p>
+          </button>
         </div>
       </section>
 

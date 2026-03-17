@@ -413,15 +413,15 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
           </section>
         </div>
         {warnings.length ? (
-          <section className="akrMiniPanel">
+          <section className="akrMiniPanel akrCompactWarnings">
             <h4>{compactCopy.warningsCard}</h4>
-            <ul className="akrList">
+            <div className="akrChipRow">
               {warnings.slice(0, 4).map((warning, index) => (
-                <li key={`${warning}_${index}`}>
-                  <span>{formatWarningCode(warning)}</span>
-                </li>
+                <span key={`${warning}_${index}`} className="akrChip akrChipWarning">
+                  {formatWarningCode(warning)}
+                </span>
               ))}
-            </ul>
+            </div>
           </section>
         ) : null}
         {props.liveOpsCampaignError || props.liveOpsCampaignApprovalError || props.liveOpsCampaignDispatchError ? (
