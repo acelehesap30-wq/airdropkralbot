@@ -82,6 +82,10 @@ export function VaultPanel(props: VaultPanelProps) {
           chainProofBody: "Wallet verify payout penceresini ve premium odulleri gercekten acar.",
           chainExit: "Cashout / prize",
           chainExitBody: "Proof temizse payout request veya reward market sonraki cikistir.",
+          stateComplete: "tamam",
+          stateLive: "canli",
+          stateReady: "hazir",
+          stateLocked: "kilitli",
           routeSideTitle: "Bagli koridorlar",
           routeSideBody: "Ayni odadan acilan wallet, payout ve reward cikislari.",
           rewardsExit: "Prize market",
@@ -133,6 +137,10 @@ export function VaultPanel(props: VaultPanelProps) {
           chainProofBody: "Wallet verify is what truly opens payout and premium rewards.",
           chainExit: "Cashout / prize",
           chainExitBody: "Once proof clears, payout request or reward market becomes the next exit.",
+          stateComplete: "complete",
+          stateLive: "live",
+          stateReady: "ready",
+          stateLocked: "locked",
           routeSideTitle: "Linked corridors",
           routeSideBody: "Wallet, payout and reward exits that open from the same chamber.",
           rewardsExit: "Prize market",
@@ -285,16 +293,19 @@ export function VaultPanel(props: VaultPanelProps) {
           <button className="akrRouteStep" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_TASKS_CLAIMS, "panel_vault")}>
             <span className="akrKicker">{copy.chainMission}</span>
             <strong>{t(props.lang, "tasks_focus_claims")}</strong>
+            <span className="akrRouteStepStatus">{copy.stateComplete}</span>
             <p>{copy.chainMissionBody}</p>
           </button>
           <button className={`akrRouteStep ${!summary.wallet_active ? "isActive" : ""}`} onClick={props.onWalletVerify}>
             <span className="akrKicker">{copy.chainProof}</span>
             <strong>{t(props.lang, "vault_wallet_verify")}</strong>
+            <span className="akrRouteStepStatus">{summary.wallet_active ? copy.stateComplete : copy.stateLive}</span>
             <p>{copy.chainProofBody}</p>
           </button>
           <button className={`akrRouteStep ${summary.wallet_active ? "isActive" : ""}`} onClick={nextVaultRoute.onPress}>
             <span className="akrKicker">{copy.chainExit}</span>
             <strong>{nextVaultRoute.title}</strong>
+            <span className="akrRouteStepStatus">{summary.wallet_active ? copy.stateReady : copy.stateLocked}</span>
             <p>{copy.chainExitBody}</p>
           </button>
         </div>

@@ -59,6 +59,11 @@ export function HomePanel(props: HomePanelProps) {
           seasonChainMissionBody: "Hazir objective kapanir ve odul rotasi acilir.",
           seasonChainVault: "Vault exit",
           seasonChainVaultBody: "Proof, payout ve prize market sezon kosusunu tamamlar.",
+          stateLive: "canli",
+          stateQueued: "sirada",
+          stateReady: "hazir",
+          stateComplete: "tamam",
+          stateLocked: "kilitli",
           hintTitle: "Hizli rota kartlari",
           hintBody: "Bot'un onerdigi bir sonraki lane veya komut buradan acilir.",
           rhythmTitle: "Bugunun ritmi",
@@ -97,6 +102,11 @@ export function HomePanel(props: HomePanelProps) {
           seasonChainMissionBody: "A ready objective closes and opens the reward route.",
           seasonChainVault: "Vault exit",
           seasonChainVaultBody: "Proof, payout, and prize market close the season run.",
+          stateLive: "live",
+          stateQueued: "queued",
+          stateReady: "ready",
+          stateComplete: "complete",
+          stateLocked: "locked",
           hintTitle: "Quick route cards",
           hintBody: "Launch the bot's next suggested lane or command from here.",
           rhythmTitle: "Today's rhythm",
@@ -210,6 +220,32 @@ export function HomePanel(props: HomePanelProps) {
       onPress: openArena
     };
   })();
+  const seasonRouteFocus = summary.mission_ready > 0 ? "mission" : !summary.wallet_active ? "vault" : quickHints.length ? "home" : "arena";
+  const seasonRouteBadge = (step: "home" | "arena" | "mission" | "vault") => {
+    if (step === "home") {
+      return seasonRouteFocus === "home" ? copy.stateLive : copy.stateComplete;
+    }
+    if (step === "arena") {
+      return seasonRouteFocus === "arena" ? copy.stateLive : seasonRouteFocus === "mission" || seasonRouteFocus === "vault" ? copy.stateComplete : copy.stateQueued;
+    }
+    if (step === "mission") {
+      return seasonRouteFocus === "mission" ? copy.stateReady : seasonRouteFocus === "vault" ? copy.stateComplete : copy.stateQueued;
+    }
+    return seasonRouteFocus === "vault" ? (summary.wallet_active ? copy.stateReady : copy.stateLive) : copy.stateLocked;
+  };
+  const seasonRouteClassName = (step: "home" | "arena" | "mission" | "vault") => {
+    if (step === seasonRouteFocus) {
+      return "akrRouteStep isActive";
+    }
+    if (
+      step === "home" ||
+      (step === "arena" && (seasonRouteFocus === "mission" || seasonRouteFocus === "vault")) ||
+      (step === "mission" && seasonRouteFocus === "vault")
+    ) {
+      return "akrRouteStep isDone";
+    }
+    return "akrRouteStep";
+  };
 
   return (
     <section className="akrCard akrCardWide akrGameHub" data-akr-panel-key="profile" data-akr-focus-key="identity">
@@ -306,24 +342,28 @@ export function HomePanel(props: HomePanelProps) {
           <p className="akrMuted">{copy.seasonChainBody}</p>
         </div>
         <div className="akrRouteStripGrid">
-          <button className="akrRouteStep isActive" onClick={props.onRefresh}>
+          <button className={seasonRouteClassName("home")} onClick={props.onRefresh}>
             <span className="akrKicker">{copy.seasonChainHome}</span>
             <strong>{t(props.lang, "home_hub_title")}</strong>
+            <span className="akrRouteStepStatus">{seasonRouteBadge("home")}</span>
             <p>{copy.seasonChainHomeBody}</p>
           </button>
-          <button className="akrRouteStep" onClick={openArena}>
+          <button className={seasonRouteClassName("arena")} onClick={openArena}>
             <span className="akrKicker">{copy.seasonChainArena}</span>
             <strong>{t(props.lang, "shell_panel_go_pvp")}</strong>
+            <span className="akrRouteStepStatus">{seasonRouteBadge("arena")}</span>
             <p>{copy.seasonChainArenaBody}</p>
           </button>
-          <button className="akrRouteStep" onClick={openMissions}>
+          <button className={seasonRouteClassName("mission")} onClick={openMissions}>
             <span className="akrKicker">{copy.seasonChainMission}</span>
             <strong>{t(props.lang, "shell_panel_go_tasks")}</strong>
+            <span className="akrRouteStepStatus">{seasonRouteBadge("mission")}</span>
             <p>{copy.seasonChainMissionBody}</p>
           </button>
-          <button className="akrRouteStep" onClick={openVault}>
+          <button className={seasonRouteClassName("vault")} onClick={openVault}>
             <span className="akrKicker">{copy.seasonChainVault}</span>
             <strong>{t(props.lang, "shell_panel_go_vault")}</strong>
+            <span className="akrRouteStepStatus">{seasonRouteBadge("vault")}</span>
             <p>{copy.seasonChainVaultBody}</p>
           </button>
         </div>

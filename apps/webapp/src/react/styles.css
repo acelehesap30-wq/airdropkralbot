@@ -2921,6 +2921,35 @@ body {
   box-shadow: 0 0 0 1px rgba(47, 255, 181, 0.08), 0 16px 26px rgba(4, 14, 28, 0.18);
 }
 
+.akrRouteStep.isDone {
+  border-color: rgba(120, 181, 225, 0.26);
+  box-shadow: 0 0 0 1px rgba(120, 181, 225, 0.08), 0 12px 22px rgba(4, 14, 28, 0.14);
+}
+
+.akrRouteStepStatus {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(120, 181, 225, 0.16);
+  background: rgba(9, 31, 55, 0.68);
+  color: var(--akr-muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.akrRouteStep.isActive .akrRouteStepStatus {
+  border-color: rgba(47, 255, 181, 0.28);
+  color: rgba(225, 255, 245, 0.94);
+}
+
+.akrRouteStep.isDone .akrRouteStepStatus {
+  border-color: rgba(120, 181, 225, 0.22);
+  color: rgba(216, 233, 247, 0.9);
+}
+
 .akrCompactWarnings .akrChipRow {
   margin-top: 8px;
 }

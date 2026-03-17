@@ -57,6 +57,10 @@ export function TasksPanel(props: TasksPanelProps) {
           chainMissionBody: "Hazir gorev ya kapanir ya da reveal/complete ile claim'e dondurulur.",
           chainVault: "Vault cikisi",
           chainVaultBody: "Mission kapandiginda odul, payout ve proof koridoru acilir.",
+          stateComplete: "tamam",
+          stateLive: "canli",
+          stateReady: "hazir",
+          stateQueued: "sirada",
           sideRouteTitle: "Bagli cikislar",
           sideRouteBody: "Mission loop kapaninca hangi lane'e sicrarsin burada gorunur.",
           rewardsExit: "Odul cikisi",
@@ -110,6 +114,10 @@ export function TasksPanel(props: TasksPanelProps) {
           chainMissionBody: "A ready mission closes now or an active attempt resolves into a claim.",
           chainVault: "Vault exit",
           chainVaultBody: "When the mission closes, the reward, payout, and proof corridor opens.",
+          stateComplete: "complete",
+          stateLive: "live",
+          stateReady: "ready",
+          stateQueued: "queued",
           sideRouteTitle: "Linked exits",
           sideRouteBody: "See where the mission loop hands you off after the close.",
           rewardsExit: "Rewards exit",
@@ -183,6 +191,7 @@ export function TasksPanel(props: TasksPanelProps) {
       onPress: props.onReroll
     };
   })();
+  const vaultChainState = readyMission ? copy.stateReady : summary.revealable_attempt_id || summary.active_attempt_id ? copy.stateQueued : copy.stateQueued;
 
   return (
     <section className="akrCard akrCardWide akrGameHub" data-akr-panel-key="tasks" data-akr-focus-key="mission_command">
@@ -284,16 +293,19 @@ export function TasksPanel(props: TasksPanelProps) {
           <button className="akrRouteStep" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PVP_DAILY_DUEL, "panel_tasks")}>
             <span className="akrKicker">{copy.chainArena}</span>
             <strong>{t(props.lang, "shell_panel_go_pvp")}</strong>
+            <span className="akrRouteStepStatus">{copy.stateComplete}</span>
             <p>{copy.chainArenaBody}</p>
           </button>
           <button className="akrRouteStep isActive" onClick={nextRoute.onPress}>
             <span className="akrKicker">{copy.chainMission}</span>
             <strong>{nextRoute.title}</strong>
+            <span className="akrRouteStepStatus">{readyMission ? copy.stateReady : copy.stateLive}</span>
             <p>{copy.chainMissionBody}</p>
           </button>
           <button className="akrRouteStep" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PAYOUT_REQUEST, "panel_tasks")}>
             <span className="akrKicker">{copy.chainVault}</span>
             <strong>{t(props.lang, "shell_panel_go_payout")}</strong>
+            <span className="akrRouteStepStatus">{vaultChainState}</span>
             <p>{copy.chainVaultBody}</p>
           </button>
         </div>

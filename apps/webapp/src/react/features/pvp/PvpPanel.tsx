@@ -54,6 +54,10 @@ export function PvpPanel(props: PvpPanelProps) {
           chainMissionBody: "Arena kapandiginda gorev claim hattina gecilir ve streak korunur.",
           chainVault: "Reward exit",
           chainVaultBody: "Claim kapaninca payout ve prize market koridoru acilir.",
+          stateLive: "canli",
+          stateQueued: "sirada",
+          stateReady: "hazir",
+          stateLocked: "kilitli",
           routeSideTitle: "Bagli koridorlar",
           routeSideBody: "Arena kapaninca gorev ve vault cebe giden cikislar burada.",
           missionsExit: "Mission quarter",
@@ -93,6 +97,10 @@ export function PvpPanel(props: PvpPanelProps) {
           chainMissionBody: "When the arena closes, the mission claim lane carries the streak forward.",
           chainVault: "Reward exit",
           chainVaultBody: "Once the claim closes, payout and prize-market corridors open.",
+          stateLive: "live",
+          stateQueued: "queued",
+          stateReady: "ready",
+          stateLocked: "locked",
           routeSideTitle: "Linked corridors",
           routeSideBody: "Mission and vault exits that become useful after the arena close.",
           missionsExit: "Mission quarter",
@@ -162,6 +170,8 @@ export function PvpPanel(props: PvpPanelProps) {
       onPress: () => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PVP_LEADERBOARD, "panel_pvp")
     };
   })();
+  const missionRouteState = props.canResolve ? copy.stateReady : copy.stateQueued;
+  const vaultRouteState = props.canResolve ? copy.stateQueued : copy.stateLocked;
 
   return (
     <section className="akrCard akrCardWide akrArenaPanel" data-akr-panel-key="pvp" data-akr-focus-key="arena_command">
@@ -229,16 +239,19 @@ export function PvpPanel(props: PvpPanelProps) {
           <button className="akrRouteStep isActive" onClick={nextRoute.onPress}>
             <span className="akrKicker">{copy.chainArena}</span>
             <strong>{nextRoute.title}</strong>
+            <span className="akrRouteStepStatus">{copy.stateLive}</span>
             <p>{copy.chainArenaBody}</p>
           </button>
           <button className="akrRouteStep" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_TASKS_BOARD, "panel_pvp")}>
             <span className="akrKicker">{copy.chainMission}</span>
             <strong>{t(props.lang, "shell_panel_go_tasks")}</strong>
+            <span className="akrRouteStepStatus">{missionRouteState}</span>
             <p>{copy.chainMissionBody}</p>
           </button>
           <button className="akrRouteStep" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PAYOUT_REQUEST, "panel_pvp")}>
             <span className="akrKicker">{copy.chainVault}</span>
             <strong>{t(props.lang, "shell_panel_go_payout")}</strong>
+            <span className="akrRouteStepStatus">{vaultRouteState}</span>
             <p>{copy.chainVaultBody}</p>
           </button>
         </div>
