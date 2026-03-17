@@ -247,6 +247,16 @@ export function HomePanel(props: HomePanelProps) {
     }
     return "akrRouteStep";
   };
+  const seasonRouteTone = (step: "home" | "arena" | "mission" | "vault"): "active" | "done" | "idle" => {
+    const className = seasonRouteClassName(step);
+    if (className.includes("isActive")) {
+      return "active";
+    }
+    if (className.includes("isDone")) {
+      return "done";
+    }
+    return "idle";
+  };
 
   return (
     <section className="akrCard akrCardWide akrGameHub" data-akr-panel-key="profile" data-akr-focus-key="identity">
@@ -348,7 +358,8 @@ export function HomePanel(props: HomePanelProps) {
             title: t(props.lang, "home_hub_title"),
             body: copy.seasonChainHomeBody,
             stateLabel: seasonRouteBadge("home"),
-            tone: seasonRouteFocus === "home" ? "active" : "done",
+            signals: [`${Math.floor(summary.streak)} streak`, `${Math.floor(summary.tasks_done)}/${Math.floor(summary.daily_cap)}`],
+            tone: seasonRouteTone("home"),
             onClick: props.onRefresh
           },
           {
@@ -356,11 +367,8 @@ export function HomePanel(props: HomePanelProps) {
             title: t(props.lang, "shell_panel_go_pvp"),
             body: copy.seasonChainArenaBody,
             stateLabel: seasonRouteBadge("arena"),
-            tone: seasonRouteClassName("arena").includes("isActive")
-              ? "active"
-              : seasonRouteClassName("arena").includes("isDone")
-                ? "done"
-                : "idle",
+            signals: [`${Math.floor(summary.season_points)} pts`, `T${Math.floor(summary.kingdom_tier)}`],
+            tone: seasonRouteTone("arena"),
             onClick: openArena
           },
           {
@@ -368,11 +376,8 @@ export function HomePanel(props: HomePanelProps) {
             title: t(props.lang, "shell_panel_go_tasks"),
             body: copy.seasonChainMissionBody,
             stateLabel: seasonRouteBadge("mission"),
-            tone: seasonRouteClassName("mission").includes("isActive")
-              ? "active"
-              : seasonRouteClassName("mission").includes("isDone")
-                ? "done"
-                : "idle",
+            signals: [`${Math.floor(summary.mission_ready)} ready`, `${Math.floor(summary.mission_total)} total`],
+            tone: seasonRouteTone("mission"),
             onClick: openMissions
           },
           {
@@ -380,11 +385,8 @@ export function HomePanel(props: HomePanelProps) {
             title: t(props.lang, "shell_panel_go_vault"),
             body: copy.seasonChainVaultBody,
             stateLabel: seasonRouteBadge("vault"),
-            tone: seasonRouteClassName("vault").includes("isActive")
-              ? "active"
-              : seasonRouteClassName("vault").includes("isDone")
-                ? "done"
-                : "idle",
+            signals: [summary.wallet_active ? copy.walletLive : copy.walletIdle, `${Math.floor(summary.active_pass_count)} passes`],
+            tone: seasonRouteTone("vault"),
             onClick: openVault
           }
         ]}

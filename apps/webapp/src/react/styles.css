@@ -2955,6 +2955,15 @@ body {
   text-transform: uppercase;
 }
 
+.akrRouteStepSignals {
+  gap: 6px;
+  margin: -2px 0 2px;
+}
+
+.akrRouteStepSignals .akrChip {
+  background: rgba(9, 31, 55, 0.62);
+}
+
 .akrRouteStep.isActive .akrRouteStepStatus {
   border-color: rgba(47, 255, 181, 0.28);
   color: rgba(225, 255, 245, 0.94);

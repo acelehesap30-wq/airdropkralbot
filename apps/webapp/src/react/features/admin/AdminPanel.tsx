@@ -286,21 +286,23 @@ export function AdminPanel(props: AdminPanelProps) {
                 <article className="akrDecisionCard">
                   <span className="akrKicker">{copy.usersLane}</span>
                   <strong>{registeredUsers}</strong>
+                  <div className="akrChipRow">
+                    <span className="akrChip">{copy.active}: {activeUsers}</span>
+                    <span className="akrChip">{recentUsers.length ? asText(recentUsers[0]?.public_name, `Player #${asInt(recentUsers[0]?.user_id)}`) : "-"}</span>
+                  </div>
                   <p className="akrMutedLine">
-                    {copy.active}: {activeUsers}
-                  </p>
-                  <p className="akrMutedLine">
-                    {recentUsers.length ? asText(recentUsers[0]?.public_name, `Player #${asInt(recentUsers[0]?.user_id)}`) : "-"}
+                    {copy.registered}: {registeredUsers}
                   </p>
                 </article>
                 <article className="akrDecisionCard">
                   <span className="akrKicker">{copy.queueLane}</span>
                   <strong>{queueCount}</strong>
+                  <div className="akrChipRow">
+                    <span className="akrChip">{copy.payouts}: {pendingPayouts}</span>
+                    <span className="akrChip">{copy.reviews}: {pendingReviews}</span>
+                  </div>
                   <p className="akrMutedLine">
-                    {copy.payouts}: {pendingPayouts}
-                  </p>
-                  <p className="akrMutedLine">
-                    {copy.reviews}: {pendingReviews}
+                    {t(props.lang, "admin_console_pending")}: {queueCount}
                   </p>
                   <div className="akrActionRow">
                     <button
@@ -318,11 +320,15 @@ export function AdminPanel(props: AdminPanelProps) {
                       ? t(props.lang, "admin_live_ops_gate_ready")
                       : t(props.lang, "admin_live_ops_gate_blocked")}
                   </strong>
+                  <div className="akrChipRow">
+                    <span className="akrChip">{t(props.lang, "admin_live_ops_approval_state_label")}: {asText(liveOpsApprovalSummary.current_state || liveOpsSnapshot.approval_state)}</span>
+                    <span className="akrChip">{asText(props.liveOpsCampaignDispatchData?.status || liveOpsSchedulerSummary.latest_dispatch_state)}</span>
+                  </div>
                   <p className="akrMutedLine">
-                    {t(props.lang, "admin_live_ops_approval_state_label")}: {asText(liveOpsApprovalSummary.current_state || liveOpsSnapshot.approval_state)}
-                  </p>
-                  <p className="akrMutedLine">
-                    {t(props.lang, "admin_live_ops_last_dispatch_label")}: {asText(props.liveOpsCampaignDispatchData?.status || liveOpsSchedulerSummary.latest_dispatch_state)}
+                    {t(props.lang, "admin_console_gate")}:{" "}
+                    {liveOpsSchedulerSummary.ready_for_dispatch === true
+                      ? t(props.lang, "admin_live_ops_gate_ready")
+                      : t(props.lang, "admin_live_ops_gate_blocked")}
                   </p>
                   <div className="akrActionRow">
                     <button

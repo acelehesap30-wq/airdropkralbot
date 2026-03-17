@@ -296,6 +296,7 @@ export function VaultPanel(props: VaultPanelProps) {
             title: t(props.lang, "tasks_focus_claims"),
             body: copy.chainMissionBody,
             stateLabel: copy.stateComplete,
+            signals: [summary.route_status || "-", `${summary.active_pass_count} rewards`],
             tone: "done",
             onClick: () => props.onShellAction(SHELL_ACTION_KEY.PLAYER_TASKS_CLAIMS, "panel_vault")
           },
@@ -304,6 +305,7 @@ export function VaultPanel(props: VaultPanelProps) {
             title: t(props.lang, "vault_wallet_verify"),
             body: copy.chainProofBody,
             stateLabel: summary.wallet_active ? copy.stateComplete : copy.stateLive,
+            signals: [summary.wallet_chain || "-", summary.wallet_active ? copy.walletOn : copy.walletOff],
             tone: summary.wallet_active ? "done" : "active",
             onClick: props.onWalletVerify
           },
@@ -312,6 +314,7 @@ export function VaultPanel(props: VaultPanelProps) {
             title: nextVaultRoute.title,
             body: copy.chainExitBody,
             stateLabel: summary.wallet_active ? copy.stateReady : copy.stateLocked,
+            signals: [`${summary.payout_requestable_btc.toFixed(8)} BTC`, `${catalog.passes.length + catalog.cosmetics.length} items`],
             tone: summary.wallet_active ? "active" : "idle",
             onClick: nextVaultRoute.onPress
           }

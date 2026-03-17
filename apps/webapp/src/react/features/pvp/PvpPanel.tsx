@@ -242,6 +242,7 @@ export function PvpPanel(props: PvpPanelProps) {
             title: nextRoute.title,
             body: copy.chainArenaBody,
             stateLabel: copy.stateLive,
+            signals: [summary.session_status || copy.queueWord, `R ${Math.floor(league.session_snapshot.rating)}`],
             tone: "active",
             onClick: nextRoute.onPress
           },
@@ -250,6 +251,7 @@ export function PvpPanel(props: PvpPanelProps) {
             title: t(props.lang, "shell_panel_go_tasks"),
             body: copy.chainMissionBody,
             stateLabel: missionRouteState,
+            signals: [`${Math.floor(summary.accept_rate_pct)}% accept`, `#${Math.floor(league.weekly_ladder.rank)}`],
             tone: props.canResolve ? "done" : "idle",
             onClick: () => props.onShellAction(SHELL_ACTION_KEY.PLAYER_TASKS_BOARD, "panel_pvp")
           },
@@ -258,6 +260,7 @@ export function PvpPanel(props: PvpPanelProps) {
             title: t(props.lang, "shell_panel_go_payout"),
             body: copy.chainVaultBody,
             stateLabel: vaultRouteState,
+            signals: [`${Math.floor(league.daily_duel.win_rate_pct)}% win`, `${Math.floor(summary.self_score)}-${Math.floor(summary.opponent_score)}`],
             tone: "idle",
             onClick: () => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PAYOUT_REQUEST, "panel_pvp")
           }

@@ -3,6 +3,7 @@ type RouteStripStep = {
   title: string;
   body: string;
   stateLabel: string;
+  signals?: string[];
   tone?: "active" | "done" | "idle";
   onClick?: () => void;
 };
@@ -32,6 +33,15 @@ export function RouteStrip(props: RouteStripProps) {
               <span className="akrKicker">{step.kicker}</span>
               <strong>{step.title}</strong>
               <span className="akrRouteStepStatus">{step.stateLabel}</span>
+              {step.signals?.length ? (
+                <div className="akrChipRow akrRouteStepSignals">
+                  {step.signals.map((signal) => (
+                    <span key={`${props.focusKey}_${index}_${signal}`} className="akrChip">
+                      {signal}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
               <p>{step.body}</p>
             </button>
           );

@@ -296,6 +296,7 @@ export function TasksPanel(props: TasksPanelProps) {
             title: t(props.lang, "shell_panel_go_pvp"),
             body: copy.chainArenaBody,
             stateLabel: copy.stateComplete,
+            signals: [`${summary.daily_progress_pct}% pace`, `${summary.daily_tasks_done}/${summary.daily_cap}`],
             tone: "done",
             onClick: () => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PVP_DAILY_DUEL, "panel_tasks")
           },
@@ -304,6 +305,7 @@ export function TasksPanel(props: TasksPanelProps) {
             title: nextRoute.title,
             body: copy.chainMissionBody,
             stateLabel: readyMission ? copy.stateReady : copy.stateLive,
+            signals: [`${summary.missions_ready} ready`, `${summary.offers_total} offers`],
             tone: "active",
             onClick: nextRoute.onPress
           },
@@ -312,6 +314,7 @@ export function TasksPanel(props: TasksPanelProps) {
             title: t(props.lang, "shell_panel_go_payout"),
             body: copy.chainVaultBody,
             stateLabel: vaultChainState,
+            signals: [readyMission ? copy.claimNow : copy.routeLabelFallback, `${summary.missions_open} open`],
             tone: readyMission ? "done" : "idle",
             onClick: () => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PAYOUT_REQUEST, "panel_tasks")
           }
