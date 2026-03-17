@@ -23,8 +23,10 @@ function toBool(value) {
   return Boolean(value);
 }
 
-function normalizeOffers(rows) {
-  return asArray(rows).slice(0, 12).map((row) => {
+function normalizeOffers(rows, limit = 12) {
+  const source = asArray(rows);
+  const visibleRows = Number.isFinite(limit) ? source.slice(0, Math.max(0, limit)) : source;
+  return visibleRows.map((row) => {
     const item = asRecord(row);
     return {
       id: Math.max(0, toNum(item.id || 0)),
@@ -35,8 +37,10 @@ function normalizeOffers(rows) {
   });
 }
 
-function normalizeMissions(rows) {
-  return asArray(rows).slice(0, 16).map((row) => {
+function normalizeMissions(rows, limit = 16) {
+  const source = asArray(rows);
+  const visibleRows = Number.isFinite(limit) ? source.slice(0, Math.max(0, limit)) : source;
+  return visibleRows.map((row) => {
     const item = asRecord(row);
     const key = toText(item.mission_key || item.key || "");
     return {
@@ -50,24 +54,26 @@ function normalizeMissions(rows) {
 }
 
 export function buildTasksViewModel(input = {}) {
-  const offers = normalizeOffers(input.offers);
-  const missions = normalizeMissions(input.missions);
+  const allOffers = normalizeOffers(input.offers, Number.POSITIVE_INFINITY);
+  const offers = allOffers.slice(0, 12);
+  const allMissions = normalizeMissions(input.missions, Number.POSITIVE_INFINITY);
+  const missions = allMissions.slice(0, 16);
   const attempts = asRecord(input.attempts);
   const activeAttempt = asRecord(attempts.active);
   const revealableAttempt = asRecord(attempts.revealable);
   const daily = asRecord(input.daily);
   const taskResult = asRecord(input.taskResult);
-  const missionsReady = missions.filter((row) => row.can_claim).length;
-  const missionsClaimed = missions.filter((row) => row.claimed).length;
-  const missionsOpen = missions.filter((row) => !row.claimed).length;
+  const missionsReady = allMissions.filter((row) => row.can_claim).length;
+  const missionsClaimed = allMissions.filter((row) => row.claimed).length;
+  const missionsOpen = allMissions.filter((row) => !row.claimed && !row.can_claim).length;
   const dailyTasksDone = Math.max(0, toNum(daily.tasks_done || 0));
   const dailyCap = Math.max(0, toNum(daily.daily_cap || 0));
   const dailyPct = dailyCap > 0 ? Math.min(100, Math.round((dailyTasksDone / dailyCap) * 100)) : 0;
 
   return {
     summary: {
-      offers_total: offers.length,
-      missions_total: missions.length,
+      offers_total: allOffers.length,
+      missions_total: allMissions.length,
       missions_ready: missionsReady,
       missions_claimed: missionsClaimed,
       missions_open: missionsOpen,
@@ -82,7 +88,6 @@ export function buildTasksViewModel(input = {}) {
     },
     offers,
     missions,
-    has_data: Boolean(offers.length || missions.length || Object.keys(activeAttempt).length || Object.keys(taskResult).length)
+    has_data: Boolean(allOffers.length || allMissions.length || Object.keys(activeAttempt).length || Object.keys(taskResult).length)
   };
 }
-

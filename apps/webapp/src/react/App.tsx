@@ -510,6 +510,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
     refreshHome,
     refreshLeagueOverview,
     refreshPvpLive,
+    refreshBootstrap,
     refreshVault,
     asError
   });

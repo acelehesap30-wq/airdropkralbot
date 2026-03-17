@@ -49,6 +49,7 @@ type ShellDataSyncControllerOptions = {
   refreshHome: () => Promise<any>;
   refreshLeagueOverview: () => Promise<any>;
   refreshPvpLive: (sessionRefHint?: string) => Promise<any>;
+  refreshBootstrap: () => Promise<any>;
   refreshVault: () => Promise<any>;
   asError: (payload: WebAppApiResponse | null | undefined, fallback?: string) => string;
 };
@@ -288,6 +289,10 @@ export function useShellDataSyncController(options: ShellDataSyncControllerOptio
     }
     if (options.tab === "pvp") {
       void Promise.all([options.refreshLeagueOverview(), options.refreshPvpLive()]);
+      return;
+    }
+    if (options.tab === "tasks") {
+      void options.refreshBootstrap();
       return;
     }
     if (options.tab === "vault") {
