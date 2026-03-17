@@ -16,6 +16,7 @@ type MutationRunner = (payload: Record<string, unknown>) => { unwrap: () => Prom
 
 type AdminRuntimeControllerOptions = {
   adminQueryEnabled: boolean;
+  adminDiagnosticsEnabled: boolean;
   activeAuth: WebAppAuth;
   dynamicPolicyTokenSymbol: string;
   dynamicPolicyDraft: string;
@@ -83,14 +84,14 @@ export function useAdminRuntimeController(options: AdminRuntimeControllerOptions
       options.adminQueueQuery.refetch().catch(() => null),
       options.adminMetricsQuery.refetch().catch(() => null),
       options.adminLiveOpsCampaignQuery.refetch().catch(() => null),
-      options.adminOpsKpiLatestQuery.refetch().catch(() => null),
-      options.adminAssetsQuery.refetch().catch(() => null),
-      options.adminRuntimeFlagsQuery.refetch().catch(() => null),
-      options.adminRuntimeBotQuery.refetch().catch(() => null),
-      options.adminDeployStatusQuery.refetch().catch(() => null),
-      options.adminAuditPhaseStatusQuery.refetch().catch(() => null),
-      options.adminAuditIntegrityQuery.refetch().catch(() => null),
-      options.adminDynamicPolicyQuery.refetch().catch(() => null)
+      options.adminDiagnosticsEnabled ? options.adminOpsKpiLatestQuery.refetch().catch(() => null) : Promise.resolve(null),
+      options.adminDiagnosticsEnabled ? options.adminAssetsQuery.refetch().catch(() => null) : Promise.resolve(null),
+      options.adminDiagnosticsEnabled ? options.adminRuntimeFlagsQuery.refetch().catch(() => null) : Promise.resolve(null),
+      options.adminDiagnosticsEnabled ? options.adminRuntimeBotQuery.refetch().catch(() => null) : Promise.resolve(null),
+      options.adminDiagnosticsEnabled ? options.adminDeployStatusQuery.refetch().catch(() => null) : Promise.resolve(null),
+      options.adminDiagnosticsEnabled ? options.adminAuditPhaseStatusQuery.refetch().catch(() => null) : Promise.resolve(null),
+      options.adminDiagnosticsEnabled ? options.adminAuditIntegrityQuery.refetch().catch(() => null) : Promise.resolve(null),
+      options.adminDiagnosticsEnabled ? options.adminDynamicPolicyQuery.refetch().catch(() => null) : Promise.resolve(null)
     ]);
     const summary = (summaryRefetch?.data || null) as WebAppApiResponse | null;
     const queue = (queueRefetch?.data || null) as WebAppApiResponse | null;
@@ -524,6 +525,7 @@ export function useAdminRuntimeController(options: AdminRuntimeControllerOptions
 
   const refreshRuntimeMeta = useCallback(async () => {
     if (!options.adminQueryEnabled) return;
+    if (!options.adminDiagnosticsEnabled) return;
     if (!options.ensureAdminPanelEnabled("runtimeMeta")) return;
     const [opsKpiRefetch, deployRefetch, assetsRefetch, auditPhaseRefetch, auditIntegrityRefetch] = await Promise.all([
       options.adminOpsKpiLatestQuery.refetch().catch(() => null),
@@ -544,6 +546,7 @@ export function useAdminRuntimeController(options: AdminRuntimeControllerOptions
 
   const refreshOpsKpi = useCallback(async () => {
     if (!options.adminQueryEnabled) return;
+    if (!options.adminDiagnosticsEnabled) return;
     if (!options.ensureAdminPanelEnabled("runtimeMeta")) return;
     options.setOpsKpiRunError("");
     const refetch = await options.adminOpsKpiLatestQuery.refetch().catch(() => null);
@@ -560,6 +563,7 @@ export function useAdminRuntimeController(options: AdminRuntimeControllerOptions
 
   const runOpsKpiBundle = useCallback(async () => {
     if (!options.adminQueryEnabled) return;
+    if (!options.adminDiagnosticsEnabled) return;
     if (!options.ensureAdminPanelEnabled("runtimeMeta")) return;
     options.setOpsKpiRunError("");
     options.trackUiEvent({
@@ -615,6 +619,7 @@ export function useAdminRuntimeController(options: AdminRuntimeControllerOptions
 
   const reloadAssets = useCallback(async () => {
     if (!options.adminQueryEnabled) return;
+    if (!options.adminDiagnosticsEnabled) return;
     if (!options.ensureAdminPanelEnabled("runtimeMeta")) return;
     const payload = await options.adminAssetsReload({ auth: options.activeAuth })
       .unwrap()

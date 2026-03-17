@@ -240,6 +240,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
 
   const isAdmin = Boolean(data?.admin?.is_admin);
   const effectiveWorkspace: "player" | "admin" = isAdmin ? "admin" : "player";
+  const adminAdvanced = false;
   const effectiveOnboardingVisible = effectiveWorkspace === "player" && onboardingVisible;
   const enableDistrictScene =
     effectiveWorkspace === "player" && !effectiveOnboardingVisible && (tab === "home" || tab === "pvp");
@@ -265,24 +266,25 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
   const walletSessionQuery = useWalletSessionV2Query({ auth: activeAuth }, { skip: !hasActiveAuth });
   const payoutStatusQuery = usePayoutStatusV2Query({ auth: activeAuth }, { skip: !hasActiveAuth });
   const adminQueryEnabled = hasActiveAuth && effectiveWorkspace === "admin" && isAdmin;
+  const adminDiagnosticsEnabled = adminQueryEnabled && adminAdvanced;
   const adminBootstrapQuery = useAdminBootstrapV2Query({ auth: activeAuth }, { skip: !adminQueryEnabled });
   const adminUsersRecentQuery = useAdminUsersRecentV2Query({ auth: activeAuth, limit: 12 }, { skip: !adminQueryEnabled });
   const adminQueueQuery = useAdminUnifiedQueueV2Query({ auth: activeAuth, limit: 80 }, { skip: !adminQueryEnabled });
   const adminMetricsQuery = useAdminMetricsV2Query({ auth: activeAuth }, { skip: !adminQueryEnabled });
   const adminLiveOpsCampaignQuery = useAdminLiveOpsCampaignV2Query({ auth: activeAuth }, { skip: !adminQueryEnabled });
-  const adminOpsKpiLatestQuery = useAdminOpsKpiLatestV2Query({ auth: activeAuth }, { skip: !adminQueryEnabled });
-  const adminAssetsQuery = useAdminAssetsStatusV2Query({ auth: activeAuth }, { skip: !adminQueryEnabled });
-  const adminRuntimeFlagsQuery = useAdminRuntimeFlagsV2Query({ auth: activeAuth }, { skip: !adminQueryEnabled });
-  const adminRuntimeBotQuery = useAdminRuntimeBotV2Query({ auth: activeAuth, limit: 40 }, { skip: !adminQueryEnabled });
-  const adminDeployStatusQuery = useAdminDeployStatusV2Query({ auth: activeAuth }, { skip: !adminQueryEnabled });
-  const adminAuditPhaseStatusQuery = useAdminAuditPhaseStatusV2Query({ auth: activeAuth }, { skip: !adminQueryEnabled });
-  const adminAuditIntegrityQuery = useAdminAuditDataIntegrityV2Query({ auth: activeAuth }, { skip: !adminQueryEnabled });
+  const adminOpsKpiLatestQuery = useAdminOpsKpiLatestV2Query({ auth: activeAuth }, { skip: !adminDiagnosticsEnabled });
+  const adminAssetsQuery = useAdminAssetsStatusV2Query({ auth: activeAuth }, { skip: !adminDiagnosticsEnabled });
+  const adminRuntimeFlagsQuery = useAdminRuntimeFlagsV2Query({ auth: activeAuth }, { skip: !adminDiagnosticsEnabled });
+  const adminRuntimeBotQuery = useAdminRuntimeBotV2Query({ auth: activeAuth, limit: 40 }, { skip: !adminDiagnosticsEnabled });
+  const adminDeployStatusQuery = useAdminDeployStatusV2Query({ auth: activeAuth }, { skip: !adminDiagnosticsEnabled });
+  const adminAuditPhaseStatusQuery = useAdminAuditPhaseStatusV2Query({ auth: activeAuth }, { skip: !adminDiagnosticsEnabled });
+  const adminAuditIntegrityQuery = useAdminAuditDataIntegrityV2Query({ auth: activeAuth }, { skip: !adminDiagnosticsEnabled });
   const adminDynamicPolicyQuery = useAdminDynamicAutoPolicyV2Query(
     {
       auth: activeAuth,
       token_symbol: String(dynamicPolicyTokenSymbol || "").trim().toUpperCase() || undefined
     },
-    { skip: !adminQueryEnabled }
+    { skip: !adminDiagnosticsEnabled }
   );
   const [patchUiPreferences] = usePatchUiPreferencesV2Mutation();
   const [adminQueueAction] = useAdminQueueActionV2Mutation();
@@ -375,6 +377,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
     reloadAssets
   } = useAdminRuntimeController({
     adminQueryEnabled,
+    adminDiagnosticsEnabled,
     activeAuth,
     dynamicPolicyTokenSymbol,
     dynamicPolicyDraft,
@@ -581,7 +584,6 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
     sceneRuntimeError: sceneRuntime.error,
     hasLaunchSummary: Boolean(launchSummary)
   });
-  const adminAdvanced = false;
   const rootClassName = `akrReactRoot${reducedMotion ? " isReducedMotion" : ""}${largeText ? " isLargeText" : ""}${
     hudDensity === "compact" ? " isCompactHud" : ""
   }${effectiveQuality === "low" ? " isQualityLow" : effectiveQuality === "high" ? " isQualityHigh" : " isQualityMedium"}${
