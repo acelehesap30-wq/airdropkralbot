@@ -65,6 +65,20 @@ export function VaultPanel(props: VaultPanelProps) {
           kicker: "Vault Command",
           title: "Odul ve wallet rotasi",
           body: "Burada mint acilir, wallet proof tamamlanir ve cashout hattina gecilir.",
+          routeTitle: "Sonraki cikis rotasi",
+          routeWalletBody: "Wallet proof kapanmadan payout ve reward kapilari tam acilmaz.",
+          routePayoutBody: "Payout hazir; cikisi kilitlemeden request gonder.",
+          routeRewardsBody: "Vault acikken pass ve cosmetic odullerini topla.",
+          routeTradeBody: "Henuz trade lane acik; quote ve intent ile rotayi ileri it.",
+          routeLabelWallet: "proof gate",
+          routeLabelPayout: "cashout window",
+          routeLabelRewards: "prize market",
+          routeLabelTrade: "mint route",
+          routeSideTitle: "Bagli koridorlar",
+          routeSideBody: "Ayni odadan acilan wallet, payout ve reward cikislari.",
+          rewardsExit: "Prize market",
+          walletExit: "Proof lane",
+          payoutExit: "Cashout window",
           tradeLane: "Mint rotasi",
           tradeBody: "Quote al, intent kilitle ve gerekiyorsa zincir adimini tamamla.",
           walletLane: "Proof lane",
@@ -94,6 +108,20 @@ export function VaultPanel(props: VaultPanelProps) {
           kicker: "Vault Command",
           title: "Rewards and wallet route",
           body: "This is the route where mint starts, wallet proof clears, and cashout opens.",
+          routeTitle: "Next exit route",
+          routeWalletBody: "Until wallet proof clears, payout and reward gates stay only partially open.",
+          routePayoutBody: "Payout is ready; send the request before the route cools down.",
+          routeRewardsBody: "With the vault open, harvest pass and cosmetic rewards next.",
+          routeTradeBody: "Trade lane is still the active route; move it forward with quote and intent.",
+          routeLabelWallet: "proof gate",
+          routeLabelPayout: "cashout window",
+          routeLabelRewards: "prize market",
+          routeLabelTrade: "mint route",
+          routeSideTitle: "Linked corridors",
+          routeSideBody: "Wallet, payout and reward exits that open from the same chamber.",
+          rewardsExit: "Prize market",
+          walletExit: "Proof lane",
+          payoutExit: "Cashout window",
           tradeLane: "Mint route",
           tradeBody: "Get a quote, lock an intent, and only touch chain steps when needed.",
           walletLane: "Proof lane",
@@ -119,6 +147,46 @@ export function VaultPanel(props: VaultPanelProps) {
           challengeHint: "Challenge ref",
           signatureHint: "Wallet signature"
         };
+  const nextVaultRoute = (() => {
+    if (!summary.wallet_active) {
+      return {
+        kicker: copy.routeTitle,
+        title: t(props.lang, "vault_wallet_verify"),
+        body: copy.routeWalletBody,
+        label: copy.routeLabelWallet,
+        cta: t(props.lang, "vault_wallet_verify"),
+        onPress: props.onWalletVerify
+      };
+    }
+    if (summary.payout_can_request) {
+      return {
+        kicker: copy.routeTitle,
+        title: t(props.lang, "vault_payout_request"),
+        body: copy.routePayoutBody,
+        label: copy.routeLabelPayout,
+        cta: t(props.lang, "vault_payout_request"),
+        onPress: props.onPayoutRequest
+      };
+    }
+    if (catalog.passes.length || catalog.cosmetics.length) {
+      return {
+        kicker: copy.routeTitle,
+        title: t(props.lang, "shell_panel_open_rewards"),
+        body: copy.routeRewardsBody,
+        label: copy.routeLabelRewards,
+        cta: t(props.lang, "shell_panel_open_rewards"),
+        onPress: () => props.onShellAction(SHELL_ACTION_KEY.PLAYER_REWARDS_PANEL, "panel_vault")
+      };
+    }
+    return {
+      kicker: copy.routeTitle,
+      title: t(props.lang, "vault_buy_intent"),
+      body: copy.routeTradeBody,
+      label: copy.routeLabelTrade,
+      cta: t(props.lang, "vault_buy_intent"),
+      onPress: props.onBuyIntent
+    };
+  })();
 
   return (
     <section className="akrCard akrCardWide akrGameHub" data-akr-panel-key="vault" data-akr-focus-key="vault_route">
@@ -141,6 +209,56 @@ export function VaultPanel(props: VaultPanelProps) {
           <span className="akrCurrencyChip akrCurrencyRC">{summary.route_status || "-"}</span>
         </div>
       </div>
+
+      <section className="akrGameSpotlight" data-akr-panel-key="vault" data-akr-focus-key="vault_exit_route">
+        <div className="akrGameSpotlightMain">
+          <p className="akrKicker">
+            {nextVaultRoute.kicker} | {nextVaultRoute.label}
+          </p>
+          <h3>{nextVaultRoute.title}</h3>
+          <p>{nextVaultRoute.body}</p>
+          <div className="akrChipRow">
+            <span className="akrChip akrChipInfo">
+              {summary.wallet_chain || shortStatus(summary.wallet_active ? "1" : "", copy.walletOn, copy.walletOff)}
+            </span>
+            <span className="akrChip">
+              {summary.payout_can_request ? copy.payoutReady : copy.payoutLocked}
+            </span>
+            <span className="akrChip">
+              {catalog.passes.length + catalog.cosmetics.length} items
+            </span>
+          </div>
+          <div className="akrActionRow">
+            <button className="akrBtn akrBtnAccent" onClick={nextVaultRoute.onPress}>
+              {nextVaultRoute.cta}
+            </button>
+            <button className="akrBtn akrBtnGhost" onClick={props.onRefresh}>
+              {t(props.lang, "vault_refresh")}
+            </button>
+          </div>
+        </div>
+        <div className="akrGameSpotlightAside">
+          <h4>{copy.routeSideTitle}</h4>
+          <p className="akrMuted akrMiniPanelBody">{copy.routeSideBody}</p>
+          <div className="akrQuickHintGrid">
+            <button className="akrQuickHintCard" onClick={props.onWalletVerify}>
+              <span className="akrKicker">{copy.walletExit}</span>
+              <strong>{t(props.lang, "vault_wallet_verify")}</strong>
+            </button>
+            <button className="akrQuickHintCard" onClick={props.onPayoutRequest}>
+              <span className="akrKicker">{copy.payoutExit}</span>
+              <strong>{t(props.lang, "vault_payout_request")}</strong>
+            </button>
+            <button
+              className="akrQuickHintCard"
+              onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_REWARDS_PANEL, "panel_vault")}
+            >
+              <span className="akrKicker">{copy.rewardsExit}</span>
+              <strong>{t(props.lang, "shell_panel_open_rewards")}</strong>
+            </button>
+          </div>
+        </div>
+      </section>
 
       <div className="akrGameActionGrid">
         <button className="akrActionFeatureCard isPrimary" onClick={props.onBuyIntent}>

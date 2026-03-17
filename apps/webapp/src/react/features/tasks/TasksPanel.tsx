@@ -40,6 +40,20 @@ export function TasksPanel(props: TasksPanelProps) {
           kicker: "Mission Command",
           title: "Gorev desteni hazir",
           body: "Bugunun ritmini buradan yonet: uygun offer sec, reveal penceresini ac ve claim hazir gorevleri kapat.",
+          routeTitle: "Sonraki gorev rotasi",
+          routeReadyBody: "Claim hazir gorev once kapanir, sonra odul hattina gecilir.",
+          routeAttemptBody: "Reveal veya complete ile aktif denemeyi kapat, sonra claim zincirine gec.",
+          routeOfferBody: "Siradaki oynanabilir hamle acik bir offer'dan baslar.",
+          routeFallbackBody: "Yeni rota acmak icin board'u yenile ve en uygun gorevi cek.",
+          routeLabelReady: "claim chain",
+          routeLabelAttempt: "active attempt",
+          routeLabelOffer: "offer route",
+          routeLabelFallback: "board refresh",
+          sideRouteTitle: "Bagli cikislar",
+          sideRouteBody: "Mission loop kapaninca hangi lane'e sicrarsin burada gorunur.",
+          rewardsExit: "Odul cikisi",
+          vaultExit: "Vault cikisi",
+          boardExit: "Board cikisi",
           laneOffers: "Teklif hatti",
           laneOffersBody: "Hizli baslangic icin acik task offer'lari.",
           laneMissions: "Hazir claim hatti",
@@ -71,6 +85,20 @@ export function TasksPanel(props: TasksPanelProps) {
           kicker: "Mission Command",
           title: "Your mission deck is live",
           body: "Run today's loop from here: pick an offer, open the reveal window, and close claim-ready objectives.",
+          routeTitle: "Next mission route",
+          routeReadyBody: "Close the ready claim first, then move straight into the reward lane.",
+          routeAttemptBody: "Resolve the active attempt with reveal or complete, then return to the claim chain.",
+          routeOfferBody: "The next playable move starts from an open offer.",
+          routeFallbackBody: "Refresh the board to pull the next playable objective.",
+          routeLabelReady: "claim chain",
+          routeLabelAttempt: "active attempt",
+          routeLabelOffer: "offer route",
+          routeLabelFallback: "board refresh",
+          sideRouteTitle: "Linked exits",
+          sideRouteBody: "See where the mission loop hands you off after the close.",
+          rewardsExit: "Rewards exit",
+          vaultExit: "Vault exit",
+          boardExit: "Board exit",
           laneOffers: "Offer lane",
           laneOffersBody: "Open task offers for the next move.",
           laneMissions: "Ready claims",
@@ -98,6 +126,47 @@ export function TasksPanel(props: TasksPanelProps) {
           resultCached: "response cached",
           resultWaiting: "waiting for next action"
         };
+  const firstOffer = view.offers[0] || null;
+  const nextRoute = (() => {
+    if (readyMission) {
+      return {
+        kicker: copy.routeTitle,
+        title: readyMission.title,
+        body: copy.routeReadyBody,
+        label: copy.routeLabelReady,
+        cta: copy.claimNow,
+        onPress: () => props.onClaim(readyMission.mission_key)
+      };
+    }
+    if (summary.revealable_attempt_id || summary.active_attempt_id) {
+      return {
+        kicker: copy.routeTitle,
+        title: summary.active_attempt_task_type || copy.activeAttempt,
+        body: copy.routeAttemptBody,
+        label: copy.routeLabelAttempt,
+        cta: summary.revealable_attempt_id ? t(props.lang, "tasks_reveal") : t(props.lang, "tasks_complete"),
+        onPress: summary.revealable_attempt_id ? props.onReveal : props.onComplete
+      };
+    }
+    if (firstOffer) {
+      return {
+        kicker: copy.routeTitle,
+        title: `${asText(firstOffer.task_type).replace(/_/g, " ")} | D${firstOffer.difficulty}`,
+        body: copy.routeOfferBody,
+        label: copy.routeLabelOffer,
+        cta: copy.acceptNow,
+        onPress: () => props.onAccept(firstOffer.id)
+      };
+    }
+    return {
+      kicker: copy.routeTitle,
+      title: t(props.lang, "tasks_focus_board"),
+      body: copy.routeFallbackBody,
+      label: copy.routeLabelFallback,
+      cta: t(props.lang, "tasks_reroll"),
+      onPress: props.onReroll
+    };
+  })();
 
   return (
     <section className="akrCard akrCardWide akrGameHub" data-akr-panel-key="tasks" data-akr-focus-key="mission_command">
@@ -130,6 +199,65 @@ export function TasksPanel(props: TasksPanelProps) {
           </div>
         </div>
       </div>
+
+      <section className="akrGameSpotlight" data-akr-panel-key="tasks" data-akr-focus-key="mission_route">
+        <div className="akrGameSpotlightMain">
+          <p className="akrKicker">
+            {nextRoute.kicker} | {nextRoute.label}
+          </p>
+          <h3>{nextRoute.title}</h3>
+          <p>{nextRoute.body}</p>
+          <div className="akrChipRow">
+            <span className="akrChip akrChipInfo">
+              {copy.ready} {summary.missions_ready}
+            </span>
+            <span className="akrChip">
+              {copy.open} {summary.missions_open}
+            </span>
+            <span className="akrChip">
+              {copy.offers} {summary.offers_total}
+            </span>
+          </div>
+          <div className="akrActionRow">
+            <button className="akrBtn akrBtnAccent" onClick={nextRoute.onPress}>
+              {nextRoute.cta}
+            </button>
+            <button
+              className="akrBtn akrBtnGhost"
+              onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_TASKS_BOARD, "panel_tasks")}
+            >
+              {t(props.lang, "tasks_focus_board")}
+            </button>
+          </div>
+        </div>
+        <div className="akrGameSpotlightAside">
+          <h4>{copy.sideRouteTitle}</h4>
+          <p className="akrMuted akrMiniPanelBody">{copy.sideRouteBody}</p>
+          <div className="akrQuickHintGrid">
+            <button
+              className="akrQuickHintCard"
+              onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_REWARDS_PANEL, "panel_tasks")}
+            >
+              <span className="akrKicker">{copy.rewardsExit}</span>
+              <strong>{t(props.lang, "tasks_focus_rewards")}</strong>
+            </button>
+            <button
+              className="akrQuickHintCard"
+              onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PAYOUT_REQUEST, "panel_tasks")}
+            >
+              <span className="akrKicker">{copy.vaultExit}</span>
+              <strong>{t(props.lang, "shell_panel_go_payout")}</strong>
+            </button>
+            <button
+              className="akrQuickHintCard"
+              onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_TASKS_CLAIMS, "panel_tasks")}
+            >
+              <span className="akrKicker">{copy.boardExit}</span>
+              <strong>{t(props.lang, "tasks_focus_claims")}</strong>
+            </button>
+          </div>
+        </div>
+      </section>
 
       <div className="akrGameActionGrid">
         <button className="akrActionFeatureCard isPrimary" onClick={props.onReveal}>
