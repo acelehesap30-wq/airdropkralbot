@@ -4566,3 +4566,27 @@ hr, .akrDivider {
   .akrSplit { grid-template-columns: 1fr; }
 }
 
+.akrDisclosureCard {
+  overflow: hidden;
+}
+
+.akrDisclosureCard summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 700;
+}
+
+.akrDisclosureCard summary::-webkit-details-marker {
+  display: none;
+}
+
+.akrDisclosureBody {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+}
+

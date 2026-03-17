@@ -18,12 +18,13 @@ type TopBarProps = {
 };
 
 export function TopBar(props: TopBarProps) {
+  const subtitleKey = props.workspace === "admin" ? "app_subtitle_admin" : "app_subtitle";
   return (
     <header className="akrTopbar akrGlass">
       <div className="akrBrand">
         <p className="akrKicker">AirdropKralBot</p>
         <h1>{t(props.lang, "app_title")}</h1>
-        <p className="akrMuted">{t(props.lang, "app_subtitle")}</p>
+        <p className="akrMuted">{t(props.lang, subtitleKey)}</p>
       </div>
       <div className="akrTopbarActions">
         <button className="akrBtn akrBtnGhost" onClick={props.onRefresh}>
