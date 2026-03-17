@@ -37,6 +37,20 @@ export function PvpPanel(props: PvpPanelProps) {
     props.lang === "tr"
       ? {
           heroBody: "Arena burada rapor okumaz; gunluk duel, ladder ve boss penceresini tek savas tahtasinda toplar.",
+          routeTitle: "Sonraki combat rotasi",
+          routeStartBody: "Yeni clash baslat, sonra gorev ve odul zincirini ac.",
+          routeStrikeBody: "Tempo sende; strike ile baskiyi buyut ve sonra claim hattina gec.",
+          routeResolveBody: "Bu carpismayi kapat, rating'i topla ve odul cikisini ac.",
+          routeBoardBody: "Canli leaderboard ve ladder takibi sonraki savas rotasini belirler.",
+          routeLabelStart: "clash start",
+          routeLabelStrike: "tempo strike",
+          routeLabelResolve: "resolve finish",
+          routeLabelBoard: "board chase",
+          routeSideTitle: "Bagli koridorlar",
+          routeSideBody: "Arena kapaninca gorev ve vault cebe giden cikislar burada.",
+          missionsExit: "Mission quarter",
+          vaultExit: "Vault route",
+          leaderboardExit: "Top board",
           clashTitle: "Canli karsilasma",
           clashBody: "Acilacak ya da devam edecek savas hattin.",
           duelTitle: "Gunluk duel",
@@ -54,6 +68,20 @@ export function PvpPanel(props: PvpPanelProps) {
         }
       : {
           heroBody: "The arena is not a report. It keeps the daily duel, ladder, and boss window on one combat board.",
+          routeTitle: "Next combat route",
+          routeStartBody: "Start the next clash, then roll the mission and reward chain forward.",
+          routeStrikeBody: "You hold tempo; strike now and push into the claim route after the hit.",
+          routeResolveBody: "Close this clash, bank the rating swing, and open the reward exit.",
+          routeBoardBody: "The live leaderboard and ladder chase define the next fight route.",
+          routeLabelStart: "clash start",
+          routeLabelStrike: "tempo strike",
+          routeLabelResolve: "resolve finish",
+          routeLabelBoard: "board chase",
+          routeSideTitle: "Linked corridors",
+          routeSideBody: "Mission and vault exits that become useful after the arena close.",
+          missionsExit: "Mission quarter",
+          vaultExit: "Vault route",
+          leaderboardExit: "Top board",
           clashTitle: "Live clash",
           clashBody: "Your next or current fight lane.",
           duelTitle: "Daily duel",
@@ -78,6 +106,46 @@ export function PvpPanel(props: PvpPanelProps) {
         : summary.p95_latency_ms >= 400 || summary.accept_rate_pct < 78
           ? "medium"
           : "low";
+  const nextRoute = (() => {
+    if (props.canResolve) {
+      return {
+        kicker: copy.routeTitle,
+        title: t(props.lang, "pvp_resolve"),
+        body: copy.routeResolveBody,
+        label: copy.routeLabelResolve,
+        cta: t(props.lang, "pvp_resolve"),
+        onPress: props.onResolve
+      };
+    }
+    if (props.canStrike) {
+      return {
+        kicker: copy.routeTitle,
+        title: t(props.lang, "pvp_strike"),
+        body: copy.routeStrikeBody,
+        label: copy.routeLabelStrike,
+        cta: t(props.lang, "pvp_strike"),
+        onPress: props.onStrike
+      };
+    }
+    if (props.canStart) {
+      return {
+        kicker: copy.routeTitle,
+        title: t(props.lang, "pvp_start"),
+        body: copy.routeStartBody,
+        label: copy.routeLabelStart,
+        cta: t(props.lang, "pvp_start"),
+        onPress: props.onStart
+      };
+    }
+    return {
+      kicker: copy.routeTitle,
+      title: t(props.lang, "pvp_focus_leaderboard"),
+      body: copy.routeBoardBody,
+      label: copy.routeLabelBoard,
+      cta: t(props.lang, "pvp_focus_leaderboard"),
+      onPress: () => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PVP_LEADERBOARD, "panel_pvp")
+    };
+  })();
 
   return (
     <section className="akrCard akrCardWide akrArenaPanel" data-akr-panel-key="pvp" data-akr-focus-key="arena_command">
@@ -94,6 +162,47 @@ export function PvpPanel(props: PvpPanelProps) {
           <span className="akrChip">{Math.floor(league.daily_duel.win_rate_pct)}%</span>
         </div>
       </div>
+
+      <section className="akrGameSpotlight" data-akr-panel-key="pvp" data-akr-focus-key="combat_route">
+        <div className="akrGameSpotlightMain">
+          <p className="akrKicker">
+            {nextRoute.kicker} | {nextRoute.label}
+          </p>
+          <h3>{nextRoute.title}</h3>
+          <p>{nextRoute.body}</p>
+          <div className="akrChipRow">
+            <span className="akrChip akrChipInfo">{summary.session_status || copy.queueWord}</span>
+            <span className="akrChip">R {Math.floor(league.session_snapshot.rating)}</span>
+            <span className="akrChip">#{Math.floor(league.weekly_ladder.rank)}</span>
+          </div>
+          <div className="akrActionRow">
+            <button className="akrBtn akrBtnAccent" onClick={nextRoute.onPress}>
+              {nextRoute.cta}
+            </button>
+            <button className="akrBtn akrBtnGhost" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_TASKS_BOARD, "panel_pvp")}>
+              {t(props.lang, "shell_panel_go_tasks")}
+            </button>
+          </div>
+        </div>
+        <div className="akrGameSpotlightAside">
+          <h4>{copy.routeSideTitle}</h4>
+          <p className="akrMuted akrMiniPanelBody">{copy.routeSideBody}</p>
+          <div className="akrQuickHintGrid">
+            <button className="akrQuickHintCard" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_TASKS_BOARD, "panel_pvp")}>
+              <span className="akrKicker">{copy.missionsExit}</span>
+              <strong>{t(props.lang, "shell_panel_go_tasks")}</strong>
+            </button>
+            <button className="akrQuickHintCard" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_REWARDS_PANEL, "panel_pvp")}>
+              <span className="akrKicker">{copy.vaultExit}</span>
+              <strong>{t(props.lang, "shell_panel_go_vault")}</strong>
+            </button>
+            <button className="akrQuickHintCard" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PVP_LEADERBOARD, "panel_pvp")}>
+              <span className="akrKicker">{copy.leaderboardExit}</span>
+              <strong>{t(props.lang, "pvp_focus_leaderboard")}</strong>
+            </button>
+          </div>
+        </div>
+      </section>
 
       <div className="akrGameActionGrid">
         <button className="akrActionFeatureCard isPrimary" disabled={!props.canStart} onClick={props.onStart}>

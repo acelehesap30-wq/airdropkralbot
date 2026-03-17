@@ -2,6 +2,7 @@ import { Suspense, lazy } from "react";
 import { t, type Lang } from "../../i18n";
 import { buildAdminSurfaceActionsView } from "../../../core/admin/adminSurfaceActions.js";
 import { lazyRetry } from "../../utils/lazyRetry";
+import { SHELL_ACTION_KEY } from "../../../core/navigation/shellActions.js";
 
 const AdminQueueCard = lazy(async () => {
   const module = await lazyRetry(() => import("./cards/AdminQueueCard"), "admin-queue-card");
@@ -164,6 +165,11 @@ export function AdminPanel(props: AdminPanelProps) {
           active: "Aktif 24s",
           payouts: "Payout bekleyen",
           reviews: "Inceleme bekleyen",
+          lanesTitle: "Onay koridorlari",
+          lanesBody: "Normal mod sadece kullanici kontrolu, queue onayi ve canli gonderim kapisini acik tutar.",
+          usersLane: "Oyuncu gozetimi",
+          queueLane: "Queue onayi",
+          liveOpsLane: "Canli gonderim",
           usersTitle: "Son aktif oyuncular",
           usersBody: "Hizli kontrol icin son gorulen oyuncular.",
           queueTitle: "Bekleyen onaylar",
@@ -176,6 +182,11 @@ export function AdminPanel(props: AdminPanelProps) {
           active: "Active 24h",
           payouts: "Pending payouts",
           reviews: "Pending reviews",
+          lanesTitle: "Approval lanes",
+          lanesBody: "Normal mode keeps only user review, queue approvals and live dispatch gates visible.",
+          usersLane: "Player watch",
+          queueLane: "Queue approval",
+          liveOpsLane: "Live dispatch",
           usersTitle: "Recently active players",
           usersBody: "Most recent players for quick checks.",
           queueTitle: "Pending approvals",
@@ -266,9 +277,63 @@ export function AdminPanel(props: AdminPanelProps) {
                 {asText(liveOpsApprovalSummary.current_state || liveOpsSnapshot.approval_state)}
               </span>
             </div>
+            {showCompactOpsOnly ? (
+              <section className="akrDecisionDeck">
+                <article className="akrDecisionCard">
+                  <span className="akrKicker">{copy.usersLane}</span>
+                  <strong>{registeredUsers}</strong>
+                  <p className="akrMutedLine">
+                    {copy.active}: {activeUsers}
+                  </p>
+                  <p className="akrMutedLine">
+                    {recentUsers.length ? asText(recentUsers[0]?.public_name, `Player #${asInt(recentUsers[0]?.user_id)}`) : "-"}
+                  </p>
+                </article>
+                <article className="akrDecisionCard">
+                  <span className="akrKicker">{copy.queueLane}</span>
+                  <strong>{queueCount}</strong>
+                  <p className="akrMutedLine">
+                    {copy.payouts}: {pendingPayouts}
+                  </p>
+                  <p className="akrMutedLine">
+                    {copy.reviews}: {pendingReviews}
+                  </p>
+                  <div className="akrActionRow">
+                    <button
+                      className="akrBtn akrBtnAccent"
+                      onClick={() => runSurfaceAction("admin_summary", "queue", SHELL_ACTION_KEY.ADMIN_QUEUE_PANEL)}
+                    >
+                      {t(props.lang, "admin_queue_title")}
+                    </button>
+                  </div>
+                </article>
+                <article className="akrDecisionCard">
+                  <span className="akrKicker">{copy.liveOpsLane}</span>
+                  <strong>
+                    {liveOpsSchedulerSummary.ready_for_dispatch === true
+                      ? t(props.lang, "admin_live_ops_gate_ready")
+                      : t(props.lang, "admin_live_ops_gate_blocked")}
+                  </strong>
+                  <p className="akrMutedLine">
+                    {t(props.lang, "admin_live_ops_approval_state_label")}: {asText(liveOpsApprovalSummary.current_state || liveOpsSnapshot.approval_state)}
+                  </p>
+                  <p className="akrMutedLine">
+                    {t(props.lang, "admin_live_ops_last_dispatch_label")}: {asText(props.liveOpsCampaignDispatchData?.status || liveOpsSchedulerSummary.latest_dispatch_state)}
+                  </p>
+                  <div className="akrActionRow">
+                    <button
+                      className="akrBtn akrBtnAccent"
+                      onClick={() => runSurfaceAction("admin_summary", "live_ops", SHELL_ACTION_KEY.ADMIN_LIVE_OPS_PANEL)}
+                    >
+                      {t(props.lang, "admin_live_ops_title")}
+                    </button>
+                  </div>
+                </article>
+              </section>
+            ) : null}
           </>
         ) : null}
-        {props.isAdmin ? (
+        {props.isAdmin && !showCompactOpsOnly ? (
           <div className="akrSplit">
             <section className="akrMiniPanel">
               <h4>{copy.usersTitle}</h4>
