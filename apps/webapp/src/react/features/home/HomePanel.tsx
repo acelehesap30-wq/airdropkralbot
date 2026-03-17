@@ -1,6 +1,7 @@
 import { buildHomeFeedViewModel } from "../../../core/player/homeFeedViewModel.js";
 import { resolvePlayerCommandHintNavigation } from "../../../core/player/commandHintNavigation.js";
 import { SHELL_ACTION_KEY } from "../../../core/navigation/shellActions.js";
+import { RouteStrip } from "../shared/RouteStrip";
 import { t, type Lang } from "../../i18n";
 import type { BootstrapV2Data } from "../../types";
 
@@ -336,38 +337,58 @@ export function HomePanel(props: HomePanelProps) {
         </div>
       </section>
 
-      <section className="akrRouteStrip" data-akr-panel-key="status" data-akr-focus-key="season_chain">
-        <div className="akrRouteStripHeader">
-          <p className="akrKicker">{copy.seasonChainTitle}</p>
-          <p className="akrMuted">{copy.seasonChainBody}</p>
-        </div>
-        <div className="akrRouteStripGrid">
-          <button className={seasonRouteClassName("home")} onClick={props.onRefresh}>
-            <span className="akrKicker">{copy.seasonChainHome}</span>
-            <strong>{t(props.lang, "home_hub_title")}</strong>
-            <span className="akrRouteStepStatus">{seasonRouteBadge("home")}</span>
-            <p>{copy.seasonChainHomeBody}</p>
-          </button>
-          <button className={seasonRouteClassName("arena")} onClick={openArena}>
-            <span className="akrKicker">{copy.seasonChainArena}</span>
-            <strong>{t(props.lang, "shell_panel_go_pvp")}</strong>
-            <span className="akrRouteStepStatus">{seasonRouteBadge("arena")}</span>
-            <p>{copy.seasonChainArenaBody}</p>
-          </button>
-          <button className={seasonRouteClassName("mission")} onClick={openMissions}>
-            <span className="akrKicker">{copy.seasonChainMission}</span>
-            <strong>{t(props.lang, "shell_panel_go_tasks")}</strong>
-            <span className="akrRouteStepStatus">{seasonRouteBadge("mission")}</span>
-            <p>{copy.seasonChainMissionBody}</p>
-          </button>
-          <button className={seasonRouteClassName("vault")} onClick={openVault}>
-            <span className="akrKicker">{copy.seasonChainVault}</span>
-            <strong>{t(props.lang, "shell_panel_go_vault")}</strong>
-            <span className="akrRouteStepStatus">{seasonRouteBadge("vault")}</span>
-            <p>{copy.seasonChainVaultBody}</p>
-          </button>
-        </div>
-      </section>
+      <RouteStrip
+        panelKey="status"
+        focusKey="season_chain"
+        title={copy.seasonChainTitle}
+        body={copy.seasonChainBody}
+        steps={[
+          {
+            kicker: copy.seasonChainHome,
+            title: t(props.lang, "home_hub_title"),
+            body: copy.seasonChainHomeBody,
+            stateLabel: seasonRouteBadge("home"),
+            tone: seasonRouteFocus === "home" ? "active" : "done",
+            onClick: props.onRefresh
+          },
+          {
+            kicker: copy.seasonChainArena,
+            title: t(props.lang, "shell_panel_go_pvp"),
+            body: copy.seasonChainArenaBody,
+            stateLabel: seasonRouteBadge("arena"),
+            tone: seasonRouteClassName("arena").includes("isActive")
+              ? "active"
+              : seasonRouteClassName("arena").includes("isDone")
+                ? "done"
+                : "idle",
+            onClick: openArena
+          },
+          {
+            kicker: copy.seasonChainMission,
+            title: t(props.lang, "shell_panel_go_tasks"),
+            body: copy.seasonChainMissionBody,
+            stateLabel: seasonRouteBadge("mission"),
+            tone: seasonRouteClassName("mission").includes("isActive")
+              ? "active"
+              : seasonRouteClassName("mission").includes("isDone")
+                ? "done"
+                : "idle",
+            onClick: openMissions
+          },
+          {
+            kicker: copy.seasonChainVault,
+            title: t(props.lang, "shell_panel_go_vault"),
+            body: copy.seasonChainVaultBody,
+            stateLabel: seasonRouteBadge("vault"),
+            tone: seasonRouteClassName("vault").includes("isActive")
+              ? "active"
+              : seasonRouteClassName("vault").includes("isDone")
+                ? "done"
+                : "idle",
+            onClick: openVault
+          }
+        ]}
+      />
 
       <div className="akrGameActionGrid">
         <button className="akrActionFeatureCard isPrimary" onClick={openArena}>

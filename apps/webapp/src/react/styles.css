@@ -2900,6 +2900,21 @@ body {
   transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
 }
 
+.akrRouteStepIndex {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid rgba(120, 181, 225, 0.14);
+  background: rgba(9, 31, 55, 0.74);
+  color: rgba(216, 233, 247, 0.88);
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+}
+
 .akrRouteStep strong,
 .akrRouteStep p {
   margin: 0;
@@ -2945,7 +2960,17 @@ body {
   color: rgba(225, 255, 245, 0.94);
 }
 
+.akrRouteStep.isActive .akrRouteStepIndex {
+  border-color: rgba(47, 255, 181, 0.28);
+  color: rgba(225, 255, 245, 0.96);
+}
+
 .akrRouteStep.isDone .akrRouteStepStatus {
+  border-color: rgba(120, 181, 225, 0.22);
+  color: rgba(216, 233, 247, 0.9);
+}
+
+.akrRouteStep.isDone .akrRouteStepIndex {
   border-color: rgba(120, 181, 225, 0.22);
   color: rgba(216, 233, 247, 0.9);
 }

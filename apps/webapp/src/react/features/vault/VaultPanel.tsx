@@ -1,6 +1,7 @@
 import { buildVaultViewModel } from "../../../core/player/vaultViewModel.js";
 import { SHELL_ACTION_KEY } from "../../../core/navigation/shellActions.js";
 import { t, type Lang } from "../../i18n";
+import { RouteStrip } from "../shared/RouteStrip";
 
 type VaultPanelProps = {
   lang: Lang;
@@ -284,32 +285,38 @@ export function VaultPanel(props: VaultPanelProps) {
         </div>
       </section>
 
-      <section className="akrRouteStrip" data-akr-panel-key="vault" data-akr-focus-key="vault_chain">
-        <div className="akrRouteStripHeader">
-          <p className="akrKicker">{copy.chainTitle}</p>
-          <p className="akrMuted">{copy.chainBody}</p>
-        </div>
-        <div className="akrRouteStripGrid">
-          <button className="akrRouteStep" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_TASKS_CLAIMS, "panel_vault")}>
-            <span className="akrKicker">{copy.chainMission}</span>
-            <strong>{t(props.lang, "tasks_focus_claims")}</strong>
-            <span className="akrRouteStepStatus">{copy.stateComplete}</span>
-            <p>{copy.chainMissionBody}</p>
-          </button>
-          <button className={`akrRouteStep ${!summary.wallet_active ? "isActive" : ""}`} onClick={props.onWalletVerify}>
-            <span className="akrKicker">{copy.chainProof}</span>
-            <strong>{t(props.lang, "vault_wallet_verify")}</strong>
-            <span className="akrRouteStepStatus">{summary.wallet_active ? copy.stateComplete : copy.stateLive}</span>
-            <p>{copy.chainProofBody}</p>
-          </button>
-          <button className={`akrRouteStep ${summary.wallet_active ? "isActive" : ""}`} onClick={nextVaultRoute.onPress}>
-            <span className="akrKicker">{copy.chainExit}</span>
-            <strong>{nextVaultRoute.title}</strong>
-            <span className="akrRouteStepStatus">{summary.wallet_active ? copy.stateReady : copy.stateLocked}</span>
-            <p>{copy.chainExitBody}</p>
-          </button>
-        </div>
-      </section>
+      <RouteStrip
+        panelKey="vault"
+        focusKey="vault_chain"
+        title={copy.chainTitle}
+        body={copy.chainBody}
+        steps={[
+          {
+            kicker: copy.chainMission,
+            title: t(props.lang, "tasks_focus_claims"),
+            body: copy.chainMissionBody,
+            stateLabel: copy.stateComplete,
+            tone: "done",
+            onClick: () => props.onShellAction(SHELL_ACTION_KEY.PLAYER_TASKS_CLAIMS, "panel_vault")
+          },
+          {
+            kicker: copy.chainProof,
+            title: t(props.lang, "vault_wallet_verify"),
+            body: copy.chainProofBody,
+            stateLabel: summary.wallet_active ? copy.stateComplete : copy.stateLive,
+            tone: summary.wallet_active ? "done" : "active",
+            onClick: props.onWalletVerify
+          },
+          {
+            kicker: copy.chainExit,
+            title: nextVaultRoute.title,
+            body: copy.chainExitBody,
+            stateLabel: summary.wallet_active ? copy.stateReady : copy.stateLocked,
+            tone: summary.wallet_active ? "active" : "idle",
+            onClick: nextVaultRoute.onPress
+          }
+        ]}
+      />
 
       <div className="akrGameActionGrid">
         <button className="akrActionFeatureCard isPrimary" onClick={props.onBuyIntent}>

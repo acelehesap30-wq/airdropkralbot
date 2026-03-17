@@ -1,6 +1,7 @@
 import { t, type Lang } from "../../i18n";
 import { buildPvpLiveViewModel } from "../../../core/player/pvpLiveViewModel.js";
 import { SHELL_ACTION_KEY } from "../../../core/navigation/shellActions.js";
+import { RouteStrip } from "../shared/RouteStrip";
 
 type PvpPanelProps = {
   lang: Lang;
@@ -230,32 +231,38 @@ export function PvpPanel(props: PvpPanelProps) {
         </div>
       </section>
 
-      <section className="akrRouteStrip" data-akr-panel-key="pvp" data-akr-focus-key="combat_chain">
-        <div className="akrRouteStripHeader">
-          <p className="akrKicker">{copy.chainTitle}</p>
-          <p className="akrMuted">{copy.chainBody}</p>
-        </div>
-        <div className="akrRouteStripGrid">
-          <button className="akrRouteStep isActive" onClick={nextRoute.onPress}>
-            <span className="akrKicker">{copy.chainArena}</span>
-            <strong>{nextRoute.title}</strong>
-            <span className="akrRouteStepStatus">{copy.stateLive}</span>
-            <p>{copy.chainArenaBody}</p>
-          </button>
-          <button className="akrRouteStep" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_TASKS_BOARD, "panel_pvp")}>
-            <span className="akrKicker">{copy.chainMission}</span>
-            <strong>{t(props.lang, "shell_panel_go_tasks")}</strong>
-            <span className="akrRouteStepStatus">{missionRouteState}</span>
-            <p>{copy.chainMissionBody}</p>
-          </button>
-          <button className="akrRouteStep" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PAYOUT_REQUEST, "panel_pvp")}>
-            <span className="akrKicker">{copy.chainVault}</span>
-            <strong>{t(props.lang, "shell_panel_go_payout")}</strong>
-            <span className="akrRouteStepStatus">{vaultRouteState}</span>
-            <p>{copy.chainVaultBody}</p>
-          </button>
-        </div>
-      </section>
+      <RouteStrip
+        panelKey="pvp"
+        focusKey="combat_chain"
+        title={copy.chainTitle}
+        body={copy.chainBody}
+        steps={[
+          {
+            kicker: copy.chainArena,
+            title: nextRoute.title,
+            body: copy.chainArenaBody,
+            stateLabel: copy.stateLive,
+            tone: "active",
+            onClick: nextRoute.onPress
+          },
+          {
+            kicker: copy.chainMission,
+            title: t(props.lang, "shell_panel_go_tasks"),
+            body: copy.chainMissionBody,
+            stateLabel: missionRouteState,
+            tone: props.canResolve ? "done" : "idle",
+            onClick: () => props.onShellAction(SHELL_ACTION_KEY.PLAYER_TASKS_BOARD, "panel_pvp")
+          },
+          {
+            kicker: copy.chainVault,
+            title: t(props.lang, "shell_panel_go_payout"),
+            body: copy.chainVaultBody,
+            stateLabel: vaultRouteState,
+            tone: "idle",
+            onClick: () => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PAYOUT_REQUEST, "panel_pvp")
+          }
+        ]}
+      />
 
       <div className="akrGameActionGrid">
         <button className="akrActionFeatureCard isPrimary" disabled={!props.canStart} onClick={props.onStart}>
