@@ -46,6 +46,14 @@ export function PvpPanel(props: PvpPanelProps) {
           routeLabelStrike: "tempo strike",
           routeLabelResolve: "resolve finish",
           routeLabelBoard: "board chase",
+          chainTitle: "Arena -> mission -> vault",
+          chainBody: "Combat sonucu claim baskisina, oradan reward ve payout cikisina akar.",
+          chainArena: "Combat tempo",
+          chainArenaBody: "Clash'i baslat, strike ile baskiyi kur veya resolve ile rating'i kilitle.",
+          chainMission: "Mission pressure",
+          chainMissionBody: "Arena kapandiginda gorev claim hattina gecilir ve streak korunur.",
+          chainVault: "Reward exit",
+          chainVaultBody: "Claim kapaninca payout ve prize market koridoru acilir.",
           routeSideTitle: "Bagli koridorlar",
           routeSideBody: "Arena kapaninca gorev ve vault cebe giden cikislar burada.",
           missionsExit: "Mission quarter",
@@ -77,6 +85,14 @@ export function PvpPanel(props: PvpPanelProps) {
           routeLabelStrike: "tempo strike",
           routeLabelResolve: "resolve finish",
           routeLabelBoard: "board chase",
+          chainTitle: "Arena -> mission -> vault",
+          chainBody: "Combat results spill into claim pressure, then into rewards and payout exits.",
+          chainArena: "Combat tempo",
+          chainArenaBody: "Start the clash, strike to build pressure, or resolve to lock the rating swing.",
+          chainMission: "Mission pressure",
+          chainMissionBody: "When the arena closes, the mission claim lane carries the streak forward.",
+          chainVault: "Reward exit",
+          chainVaultBody: "Once the claim closes, payout and prize-market corridors open.",
           routeSideTitle: "Linked corridors",
           routeSideBody: "Mission and vault exits that become useful after the arena close.",
           missionsExit: "Mission quarter",
@@ -201,6 +217,30 @@ export function PvpPanel(props: PvpPanelProps) {
               <strong>{t(props.lang, "pvp_focus_leaderboard")}</strong>
             </button>
           </div>
+        </div>
+      </section>
+
+      <section className="akrRouteStrip" data-akr-panel-key="pvp" data-akr-focus-key="combat_chain">
+        <div className="akrRouteStripHeader">
+          <p className="akrKicker">{copy.chainTitle}</p>
+          <p className="akrMuted">{copy.chainBody}</p>
+        </div>
+        <div className="akrRouteStripGrid">
+          <button className="akrRouteStep isActive" onClick={nextRoute.onPress}>
+            <span className="akrKicker">{copy.chainArena}</span>
+            <strong>{nextRoute.title}</strong>
+            <p>{copy.chainArenaBody}</p>
+          </button>
+          <button className="akrRouteStep" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_TASKS_BOARD, "panel_pvp")}>
+            <span className="akrKicker">{copy.chainMission}</span>
+            <strong>{t(props.lang, "shell_panel_go_tasks")}</strong>
+            <p>{copy.chainMissionBody}</p>
+          </button>
+          <button className="akrRouteStep" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PAYOUT_REQUEST, "panel_pvp")}>
+            <span className="akrKicker">{copy.chainVault}</span>
+            <strong>{t(props.lang, "shell_panel_go_payout")}</strong>
+            <p>{copy.chainVaultBody}</p>
+          </button>
         </div>
       </section>
 

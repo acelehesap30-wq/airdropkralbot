@@ -119,7 +119,7 @@ function countHighPriorityRows(rows: Array<Record<string, unknown>>) {
 
 export function AdminQueueCard(props: AdminQueueCardProps) {
   const queueRows = Array.isArray(props.adminRuntime.queue) ? props.adminRuntime.queue : [];
-  const visibleRows = queueRows.slice(0, props.advanced ? 40 : 4);
+  const visibleRows = queueRows.slice(0, props.advanced ? 40 : 3);
   const selectedKind = String(props.queueAction.kind || "").trim().toLowerCase();
   const selectedRequestId = String(props.queueAction.request_id || "").trim();
   const selectedActionKey = String(props.queueAction.action_key || "").trim().toLowerCase();
@@ -130,6 +130,22 @@ export function AdminQueueCard(props: AdminQueueCardProps) {
   const payoutCount = queueRows.filter((row) => String(row.kind || "").trim().toLowerCase() === "payout_request").length;
   const tokenCount = queueRows.filter((row) => String(row.kind || "").trim().toLowerCase().startsWith("token_")).length;
   const kycCount = queueRows.filter((row) => String(row.kind || "").trim().toLowerCase() === "kyc_manual_review").length;
+  const compactCopy =
+    props.lang === "tr"
+      ? {
+          body: "Normal modda sadece siradaki kritik kararlar ve secili onay penceresi acik kalir.",
+          pendingLane: "Bekleyen kararlar",
+          focusLane: "Secili onay",
+          focusHint: "Bir kart sec; tx hash, neden veya onay tokeni sadece gereken yerde acilir.",
+          noSelection: "Onay penceresini acmak icin ustten bir karar karti sec."
+        }
+      : {
+          body: "Normal mode keeps only the next critical decisions and the selected approval window open.",
+          pendingLane: "Pending decisions",
+          focusLane: "Selected approval",
+          focusHint: "Pick a card; tx hash, reason, or confirm token only opens when needed.",
+          noSelection: "Select a decision card above to open the approval window."
+        };
 
   const prefillAction = (row: Record<string, unknown>, actionKey?: string) => {
     const kind = String(row.kind || "").trim().toLowerCase();
@@ -169,26 +185,45 @@ export function AdminQueueCard(props: AdminQueueCardProps) {
         ) : null}
       </div>
 
-      <div className="akrChipRow">
-        <span className="akrChip akrChipWarning">
-          {t(props.lang, "admin_queue_pending_count")}: <strong>{pendingCount}</strong>
-        </span>
-        <span className="akrChip akrChipInfo">
-          Payout: <strong>{payoutCount}</strong>
-        </span>
-        <span className="akrChip">
-          Token: <strong>{tokenCount}</strong>
-        </span>
-        <span className="akrChip">
-          KYC: <strong>{kycCount}</strong>
-        </span>
-        <span className="akrChip">
-          {t(props.lang, "admin_queue_confirmation_count")}: <strong>{confirmationCount}</strong>
-        </span>
-        <span className={`akrChip ${highPriorityCount > 0 ? "akrChipDanger" : "akrChipMuted"}`}>
-          {t(props.lang, "admin_queue_high_priority_count")}: <strong>{highPriorityCount}</strong>
-        </span>
-      </div>
+      {props.advanced ? (
+        <div className="akrChipRow">
+          <span className="akrChip akrChipWarning">
+            {t(props.lang, "admin_queue_pending_count")}: <strong>{pendingCount}</strong>
+          </span>
+          <span className="akrChip akrChipInfo">
+            Payout: <strong>{payoutCount}</strong>
+          </span>
+          <span className="akrChip">
+            Token: <strong>{tokenCount}</strong>
+          </span>
+          <span className="akrChip">
+            KYC: <strong>{kycCount}</strong>
+          </span>
+          <span className="akrChip">
+            {t(props.lang, "admin_queue_confirmation_count")}: <strong>{confirmationCount}</strong>
+          </span>
+          <span className={`akrChip ${highPriorityCount > 0 ? "akrChipDanger" : "akrChipMuted"}`}>
+            {t(props.lang, "admin_queue_high_priority_count")}: <strong>{highPriorityCount}</strong>
+          </span>
+        </div>
+      ) : (
+        <div className="akrDecisionDeck">
+          <article className="akrDecisionCard">
+            <span className="akrKicker">{compactCopy.pendingLane}</span>
+            <strong>{pendingCount}</strong>
+            <p className="akrMutedLine">Payout {payoutCount} | Token {tokenCount} | KYC {kycCount}</p>
+            <p className="akrMutedLine">
+              {t(props.lang, "admin_queue_confirmation_count")}: {confirmationCount} | {t(props.lang, "admin_queue_high_priority_count")}: {highPriorityCount}
+            </p>
+          </article>
+          <article className="akrDecisionCard">
+            <span className="akrKicker">{compactCopy.focusLane}</span>
+            <strong>{selectedRequestId ? `#${selectedRequestId}` : "-"}</strong>
+            <p className="akrMutedLine">{selectedRequestId ? `${formatQueueKind(selectedKind)} | ${formatActionLabel(props.lang, selectedActionKey)}` : compactCopy.noSelection}</p>
+            <p className="akrMutedLine">{compactCopy.focusHint}</p>
+          </article>
+        </div>
+      )}
 
       {visibleRows.length ? (
         props.advanced ? (
@@ -329,7 +364,7 @@ export function AdminQueueCard(props: AdminQueueCardProps) {
             </button>
           </>
         ) : (
-          <p className="akrMuted">{t(props.lang, "admin_queue_select_request")}</p>
+          <p className="akrMuted">{props.advanced ? t(props.lang, "admin_queue_select_request") : compactCopy.noSelection}</p>
         )}
       </section>
 
