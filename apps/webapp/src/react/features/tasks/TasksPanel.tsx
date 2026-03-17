@@ -60,12 +60,17 @@ export function TasksPanel(props: TasksPanelProps) {
           acceptNow: "Bu offer'i al",
           activeAttempt: "Aktif deneme",
           revealAttempt: "Reveal denemesi",
-          lastAction: "Son request"
+          lastAction: "Son request",
+          stateClaimed: "claimed",
+          stateClaimReady: "claim-ready",
+          stateOpen: "open",
+          resultCached: "response cached",
+          resultWaiting: "waiting for next action"
         }
       : {
           kicker: "Mission Command",
           title: "Your mission deck is live",
-          body: "Run today’s loop from here: pick an offer, open the reveal window, and close claim-ready objectives.",
+          body: "Run today's loop from here: pick an offer, open the reveal window, and close claim-ready objectives.",
           laneOffers: "Offer lane",
           laneOffersBody: "Open task offers for the next move.",
           laneMissions: "Ready claims",
@@ -86,7 +91,12 @@ export function TasksPanel(props: TasksPanelProps) {
           acceptNow: "Take this offer",
           activeAttempt: "Active attempt",
           revealAttempt: "Reveal attempt",
-          lastAction: "Last request"
+          lastAction: "Last request",
+          stateClaimed: "claimed",
+          stateClaimReady: "claim-ready",
+          stateOpen: "open",
+          resultCached: "response cached",
+          resultWaiting: "waiting for next action"
         };
 
   return (
@@ -211,7 +221,7 @@ export function TasksPanel(props: TasksPanelProps) {
                 <li key={`mission_${row.mission_key}`}>
                   <strong>{row.title}</strong>
                   <span>
-                    {row.claimed ? "claimed" : row.can_claim ? "claim-ready" : "open"}
+                    {row.claimed ? copy.stateClaimed : row.can_claim ? copy.stateClaimReady : copy.stateOpen}
                     {row.can_claim ? (
                       <button className="akrBtn akrBtnAccent" onClick={() => props.onClaim(row.mission_key)}>
                         {copy.claimNow}
@@ -270,7 +280,7 @@ export function TasksPanel(props: TasksPanelProps) {
             </span>
             <span className="akrChip">{summary.last_snapshot_present ? "snapshot" : "live"}</span>
           </div>
-          <p className="akrMuted">{summary.last_snapshot_present ? "response cached" : "waiting for next action"}</p>
+          <p className="akrMuted">{summary.last_snapshot_present ? copy.resultCached : copy.resultWaiting}</p>
           <div className="akrActionRow">
             <button
               className="akrBtn akrBtnGhost"
@@ -287,3 +297,4 @@ export function TasksPanel(props: TasksPanelProps) {
     </section>
   );
 }
+

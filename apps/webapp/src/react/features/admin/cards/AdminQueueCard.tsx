@@ -108,6 +108,11 @@ function countConfirmationRows(rows: Array<Record<string, unknown>>) {
   }).length;
 }
 
+function rowRequiresConfirmation(row: Record<string, unknown>) {
+  const actionPolicy = row.action_policy && typeof row.action_policy === "object" ? row.action_policy : {};
+  return Object.values(actionPolicy).some((policy) => Boolean(policy && typeof policy === "object" && (policy as any).confirmation_required));
+}
+
 function countHighPriorityRows(rows: Array<Record<string, unknown>>) {
   return rows.filter((row) => asInt(row.priority) >= 80).length;
 }
@@ -186,37 +191,81 @@ export function AdminQueueCard(props: AdminQueueCardProps) {
       </div>
 
       {visibleRows.length ? (
-        <ul className="akrList">
-          {visibleRows.map((row, idx) => {
-            const kind = String(row.kind || "").trim().toLowerCase();
-            const actions = resolveQuickActions(kind);
-            const requestId = asInt(row.request_id);
-            const reasonText = asText(row.policy_reason_text || row.policy_reason_code, "-");
-            return (
-              <li key={`${idx}_${String(row?.request_id || row?.queue_key || "q")}`}>
-                <span>
-                  <strong>{formatQueueKind(kind)}</strong> #{requestId} |{" "}
-                  <span className={resolveStatusBadgeClass(String(row.status || ""))}>{formatQueueStatus(String(row.status || ""))}</span> | P
-                  {asInt(row.priority)} | {formatAgeLabel(asInt(row.queue_age_sec))}
-                </span>
-                <strong>{reasonText}</strong>
-                {actions.length ? (
-                  <div className="akrActionRow">
-                    {actions.map((actionKey) => (
-                      <button
-                        key={`${requestId}_${actionKey}`}
-                        className="akrBtn akrBtnGhost"
-                        onClick={() => prefillAction(row, actionKey)}
-                      >
-                        {formatActionLabel(props.lang, actionKey)}
-                      </button>
-                    ))}
+        props.advanced ? (
+          <ul className="akrList">
+            {visibleRows.map((row, idx) => {
+              const kind = String(row.kind || "").trim().toLowerCase();
+              const actions = resolveQuickActions(kind);
+              const requestId = asInt(row.request_id);
+              const reasonText = asText(row.policy_reason_text || row.policy_reason_code, "-");
+              return (
+                <li key={`${idx}_${String(row?.request_id || row?.queue_key || "q")}`}>
+                  <span>
+                    <strong>{formatQueueKind(kind)}</strong> #{requestId} |{" "}
+                    <span className={resolveStatusBadgeClass(String(row.status || ""))}>{formatQueueStatus(String(row.status || ""))}</span> | P
+                    {asInt(row.priority)} | {formatAgeLabel(asInt(row.queue_age_sec))}
+                  </span>
+                  <strong>{reasonText}</strong>
+                  {actions.length ? (
+                    <div className="akrActionRow">
+                      {actions.map((actionKey) => (
+                        <button
+                          key={`${requestId}_${actionKey}`}
+                          className="akrBtn akrBtnGhost"
+                          onClick={() => prefillAction(row, actionKey)}
+                        >
+                          {formatActionLabel(props.lang, actionKey)}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <div className="akrGameFocusGrid">
+            {visibleRows.map((row, idx) => {
+              const kind = String(row.kind || "").trim().toLowerCase();
+              const actions = resolveQuickActions(kind);
+              const requestId = asInt(row.request_id);
+              const reasonText = asText(row.policy_reason_text || row.policy_reason_code, "-");
+              const statusText = formatQueueStatus(String(row.status || ""));
+              const selected = selectedRequestId === String(row.request_id || "");
+              return (
+                <section
+                  key={`${idx}_${String(row?.request_id || row?.queue_key || "q")}`}
+                  className="akrMiniPanel"
+                  data-akr-focus-key="queue_decision_card"
+                >
+                  <h4>
+                    {formatQueueKind(kind)} #{requestId}
+                  </h4>
+                  <p className="akrMuted akrMiniPanelBody">{reasonText}</p>
+                  <div className="akrChipRow">
+                    <span className={`akrChip ${selected ? "akrChipAccent" : ""}`}>{statusText}</span>
+                    <span className="akrChip">P{asInt(row.priority)}</span>
+                    <span className="akrChip">{formatAgeLabel(asInt(row.queue_age_sec))}</span>
+                    {rowRequiresConfirmation(row) ? <span className="akrChip akrChipWarning">confirm</span> : null}
                   </div>
-                ) : null}
-              </li>
-            );
-          })}
-        </ul>
+                  {actions.length ? (
+                    <div className="akrActionRow">
+                      {actions.map((actionKey) => (
+                        <button
+                          key={`${requestId}_${actionKey}`}
+                          className={`akrBtn ${selected && selectedActionKey === actionKey ? "akrBtnAccent" : "akrBtnGhost"}`}
+                          onClick={() => prefillAction(row, actionKey)}
+                        >
+                          {formatActionLabel(props.lang, actionKey)}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                </section>
+              );
+            })}
+          </div>
+        )
       ) : (
         <p className="akrMuted">{t(props.lang, "admin_queue_empty")}</p>
       )}
