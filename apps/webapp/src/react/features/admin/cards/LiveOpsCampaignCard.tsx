@@ -334,67 +334,87 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
         ? t(props.lang, "admin_live_ops_gate_ready")
         : t(props.lang, "admin_live_ops_gate_blocked");
     const latestDispatch = asText(dispatchSummary.status || schedulerSummary.latest_dispatch_state);
+    const compactCopy =
+      props.lang === "tr"
+        ? {
+            body: "Normal mod sadece onay, gate ve canli gonderim kararini ekranda tutar.",
+            approvalCard: "Onay akisi",
+            dispatchCard: "Canli gonderim",
+            scheduleCard: "Window",
+            warningsCard: "Bloklayici nedenler",
+            savedLabel: "Son kayit",
+            approvedByLabel: "Onaylayan"
+          }
+        : {
+            body: "Normal mode keeps only approval, gate and live dispatch decisions on screen.",
+            approvalCard: "Approval flow",
+            dispatchCard: "Live dispatch",
+            scheduleCard: "Window",
+            warningsCard: "Blocking reasons",
+            savedLabel: "Last save",
+            approvedByLabel: "Approved by"
+          };
     return (
       <section className="akrCard akrCardWide" data-akr-panel-key="panel_admin_live_ops" data-akr-focus-key="live_ops_campaign">
         <h3>{t(props.lang, "admin_live_ops_title")}</h3>
-        <div className="akrActionRow">
-          <button className="akrBtn akrBtnGhost" onClick={props.onRefreshLiveOpsCampaign}>
-            {t(props.lang, "admin_live_ops_refresh")}
-          </button>
-          <button className="akrBtn akrBtnGhost" onClick={props.onRequestLiveOpsCampaignApproval} disabled={props.liveOpsCampaignApprovaling}>
-            {t(props.lang, "admin_live_ops_request_approval")}
-          </button>
-          <button className="akrBtn akrBtnGhost" onClick={props.onApproveLiveOpsCampaign} disabled={props.liveOpsCampaignApprovaling}>
-            {t(props.lang, "admin_live_ops_approve")}
-          </button>
-          <button className="akrBtn akrBtnAccent" onClick={props.onDispatchLiveOpsCampaign} disabled={props.liveOpsCampaignDispatching}>
-            {t(props.lang, "admin_live_ops_dispatch")}
-          </button>
-        </div>
-        <div className="akrSplit">
-          <section className="akrMiniPanel">
-            <h4>{t(props.lang, "admin_live_ops_latest_title")}</h4>
-            <p className="akrMuted akrMiniPanelBody">
-              {t(props.lang, "admin_live_ops_status_label")}: {asText(snapshot.status)} • {t(props.lang, "admin_live_ops_approval_state_label")}: {approvalState}
+        <p className="akrMuted">{compactCopy.body}</p>
+        <div className="akrDecisionDeck">
+          <section className="akrDecisionCard">
+            <span className="akrKicker">{compactCopy.approvalCard}</span>
+            <strong>{approvalState}</strong>
+            <p className="akrMutedLine">
+              {t(props.lang, "admin_live_ops_status_label")}: {asText(snapshot.status)}
             </p>
-            <div className="akrChipRow">
-              <span className="akrChip">{asText(snapshot.segment_key)}</span>
-              <span className="akrChip">
-                {t(props.lang, "admin_live_ops_recipients_label")}: {asCount(snapshot.recipient_cap)}
-              </span>
-              <span className="akrChip">{approvalState}</span>
+            <p className="akrMutedLine">
+              {compactCopy.approvedByLabel}: {asText(approvalSummary.approved_by || snapshot.approved_by)}
+            </p>
+            <div className="akrActionRow">
+              <button className="akrBtn akrBtnGhost" onClick={props.onRequestLiveOpsCampaignApproval} disabled={props.liveOpsCampaignApprovaling}>
+                {t(props.lang, "admin_live_ops_request_approval")}
+              </button>
+              <button className="akrBtn akrBtnGhost" onClick={props.onApproveLiveOpsCampaign} disabled={props.liveOpsCampaignApprovaling}>
+                {t(props.lang, "admin_live_ops_approve")}
+              </button>
             </div>
-            <p className="akrMutedLine">
-              {t(props.lang, "admin_live_ops_last_saved_label")}: {asText(snapshot.updated_at || snapshot.saved_at)}
-            </p>
-            <p className="akrMutedLine">
-              {t(props.lang, "admin_live_ops_approved_by_label")}: {asText(approvalSummary.approved_by || snapshot.approved_by)}
-            </p>
           </section>
-          <section className="akrMiniPanel">
-            <h4>{t(props.lang, "admin_live_ops_gate_title")}</h4>
-            <p className="akrMuted akrMiniPanelBody">
+          <section className="akrDecisionCard">
+            <span className="akrKicker">{compactCopy.dispatchCard}</span>
+            <strong>{gateReady}</strong>
+            <p className="akrMutedLine">
               {t(props.lang, "admin_live_ops_scheduler_reason_label")}: {asText(schedulerSummary.reason_code || snapshot.scheduler_reason_code)}
             </p>
-            <div className="akrChipRow">
-              <span className="akrChip">{gateReady}</span>
-              <span className="akrChip">{latestDispatch}</span>
-              <span className="akrChip">
-                {t(props.lang, "admin_live_ops_delivery_24h")}: {asCount(deliverySummary.sent_24h)}
-              </span>
-              <span className="akrChip">
-                {t(props.lang, "admin_live_ops_delivery_7d")}: {asCount(deliverySummary.sent_7d)}
-              </span>
-            </div>
             <p className="akrMutedLine">
-              {t(props.lang, "admin_live_ops_schedule_start_label")}: {asText(snapshot.schedule_start_at)} |{" "}
+              {t(props.lang, "admin_live_ops_last_dispatch_label")}: {latestDispatch}
+            </p>
+            <div className="akrActionRow">
+              <button className="akrBtn akrBtnGhost" onClick={props.onRefreshLiveOpsCampaign}>
+                {t(props.lang, "admin_live_ops_refresh")}
+              </button>
+              <button className="akrBtn akrBtnAccent" onClick={props.onDispatchLiveOpsCampaign} disabled={props.liveOpsCampaignDispatching}>
+                {t(props.lang, "admin_live_ops_dispatch")}
+              </button>
+            </div>
+          </section>
+          <section className="akrDecisionCard">
+            <span className="akrKicker">{compactCopy.scheduleCard}</span>
+            <strong>{asText(snapshot.segment_key)}</strong>
+            <p className="akrMutedLine">
+              {t(props.lang, "admin_live_ops_recipients_label")}: {asCount(snapshot.recipient_cap)}
+            </p>
+            <p className="akrMutedLine">
+              {t(props.lang, "admin_live_ops_schedule_start_label")}: {asText(snapshot.schedule_start_at)}
+            </p>
+            <p className="akrMutedLine">
               {t(props.lang, "admin_live_ops_schedule_end_label")}: {asText(snapshot.schedule_end_at)}
+            </p>
+            <p className="akrMutedLine">
+              {compactCopy.savedLabel}: {asText(snapshot.updated_at || snapshot.saved_at)}
             </p>
           </section>
         </div>
         {warnings.length ? (
           <section className="akrMiniPanel">
-            <h4>{t(props.lang, "admin_live_ops_warnings_title")}</h4>
+            <h4>{compactCopy.warningsCard}</h4>
             <ul className="akrList">
               {warnings.slice(0, 4).map((warning, index) => (
                 <li key={`${warning}_${index}`}>

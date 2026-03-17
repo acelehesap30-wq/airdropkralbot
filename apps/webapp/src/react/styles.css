@@ -2821,6 +2821,75 @@ body {
   gap: 14px;
 }
 
+.akrGameSpotlight {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.9fr);
+  gap: 14px;
+}
+
+.akrGameSpotlightMain,
+.akrGameSpotlightAside,
+.akrDecisionCard {
+  border: 1px solid rgba(120, 181, 225, 0.18);
+  border-radius: 16px;
+  padding: 16px;
+  background: linear-gradient(160deg, rgba(7, 21, 42, 0.92), rgba(8, 26, 48, 0.86));
+  display: grid;
+  gap: 10px;
+}
+
+.akrGameSpotlightMain {
+  box-shadow: 0 0 0 1px rgba(47, 255, 181, 0.08), 0 18px 30px rgba(4, 14, 28, 0.2);
+}
+
+.akrGameSpotlightMain h3,
+.akrGameSpotlightMain p,
+.akrGameSpotlightAside h4,
+.akrDecisionCard strong,
+.akrDecisionCard p {
+  margin: 0;
+}
+
+.akrGameSpotlightMain p:not(.akrKicker),
+.akrGameSpotlightAside p {
+  color: var(--akr-muted);
+  line-height: 1.55;
+}
+
+.akrQuickHintGrid,
+.akrDecisionDeck {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.akrQuickHintCard {
+  border: 1px solid rgba(120, 181, 225, 0.16);
+  border-radius: 14px;
+  padding: 12px;
+  background: rgba(7, 21, 42, 0.62);
+  color: var(--akr-ink);
+  text-align: left;
+  display: grid;
+  gap: 8px;
+  cursor: pointer;
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.akrQuickHintCard:hover {
+  transform: translateY(-1px);
+  border-color: rgba(47, 255, 181, 0.28);
+  box-shadow: 0 10px 20px rgba(4, 14, 28, 0.2);
+}
+
+.akrQuickHintCard.isEmpty {
+  cursor: default;
+}
+
+.akrDecisionCard .akrActionRow {
+  margin-top: auto;
+}
+
 .akrActionFeatureCard {
   text-align: left;
   border: 1px solid rgba(120, 181, 225, 0.18);
@@ -3939,6 +4008,7 @@ body {
   }
 
   .akrGameHero,
+  .akrGameSpotlight,
   .akrGameActionGrid,
   .akrGameFocusGrid,
   .akrStatRail {

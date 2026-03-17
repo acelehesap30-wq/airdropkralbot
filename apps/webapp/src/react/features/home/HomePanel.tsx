@@ -40,6 +40,17 @@ export function HomePanel(props: HomePanelProps) {
           missionHint: "claim hazir",
           vaultHint: "wallet route",
           discoverHint: "yeni rota",
+          nextMoveTitle: "Sonraki hamle",
+          nextMoveBodyMissions: "Claim hazir gorevleri kapat, streak'i koru ve gunluk cap'i ilerlet.",
+          nextMoveBodyVault: "Wallet hattini ac, payout penceresini kontrol et ve odul rotasini temizle.",
+          nextMoveBodyArena: "Arena'ya don, ladder baskisini kur ve sezon puanini yukari cek.",
+          nextMoveBodyDiscover: "Bot'un one cikardigi hizli rotayi calistir ve bir sonraki lane'e ziplat.",
+          nextMoveLabelMissions: "Missions lane",
+          nextMoveLabelVault: "Vault lane",
+          nextMoveLabelArena: "Arena lane",
+          nextMoveLabelDiscover: "Fast route",
+          hintTitle: "Hizli rota kartlari",
+          hintBody: "Bot'un onerdigi bir sonraki lane veya komut buradan acilir.",
           rhythmTitle: "Bugunun ritmi",
           rhythmBody: "Gunluk loop, wallet ve premium hattini tek bakista oku.",
           goalsTitle: "Anlik hedefler",
@@ -57,7 +68,18 @@ export function HomePanel(props: HomePanelProps) {
           missionHint: "claim ready",
           vaultHint: "wallet route",
           discoverHint: "new route",
-          rhythmTitle: "Today’s rhythm",
+          nextMoveTitle: "Next move",
+          nextMoveBodyMissions: "Close claim-ready objectives, protect the streak and keep the daily cap moving.",
+          nextMoveBodyVault: "Open the wallet lane, check the payout window and clear the reward route.",
+          nextMoveBodyArena: "Jump back into the arena, pressure the ladder and push the season score higher.",
+          nextMoveBodyDiscover: "Run the bot's fastest suggestion and pivot into the next lane.",
+          nextMoveLabelMissions: "Missions lane",
+          nextMoveLabelVault: "Vault lane",
+          nextMoveLabelArena: "Arena lane",
+          nextMoveLabelDiscover: "Fast route",
+          hintTitle: "Quick route cards",
+          hintBody: "Launch the bot's next suggested lane or command from here.",
+          rhythmTitle: "Today's rhythm",
           rhythmBody: "Read the daily loop, wallet, and premium lane at a glance.",
           goalsTitle: "Immediate targets",
           goalsBody: "The objectives you should close right now.",
@@ -122,6 +144,52 @@ export function HomePanel(props: HomePanelProps) {
   const openDiscover = () => runSurfaceAction("home_discover", "discover", SHELL_ACTION_KEY.PLAYER_DISCOVER_CENTER);
   const walletStateKey = summary.wallet_active ? "home_wallet_live" : "home_wallet_dormant";
   const premiumStateKey = summary.premium_active ? "home_premium_live" : "home_premium_standard";
+  const nextMission = view.mission_preview.find((row) => !row.claimed && row.completed) || view.mission_preview.find((row) => !row.claimed) || null;
+  const quickHints = view.command_hints.slice(0, 3);
+  const nextMove = (() => {
+    if (summary.mission_ready > 0) {
+      return {
+        kicker: copy.missionHint,
+        title:
+          props.lang === "tr"
+            ? `${Math.floor(summary.mission_ready)} gorev claim bekliyor`
+            : `${Math.floor(summary.mission_ready)} missions are ready to claim`,
+        body: nextMission?.title ? `${nextMission.title} | ${copy.nextMoveBodyMissions}` : copy.nextMoveBodyMissions,
+        label: copy.nextMoveLabelMissions,
+        cta: t(props.lang, "shell_panel_go_tasks"),
+        onPress: openMissions
+      };
+    }
+    if (!summary.wallet_active) {
+      return {
+        kicker: copy.vaultHint,
+        title: props.lang === "tr" ? "Wallet hattini bagla" : "Open the wallet route",
+        body: copy.nextMoveBodyVault,
+        label: copy.nextMoveLabelVault,
+        cta: t(props.lang, "shell_panel_go_vault"),
+        onPress: openVault
+      };
+    }
+    if (quickHints.length) {
+      const primaryHint = quickHints[0];
+      return {
+        kicker: copy.discoverHint,
+        title: String(primaryHint.description || primaryHint.key || t(props.lang, "home_action_discover_title")),
+        body: copy.nextMoveBodyDiscover,
+        label: copy.nextMoveLabelDiscover,
+        cta: t(props.lang, "home_action_discover_title"),
+        onPress: () => runCommandHint(primaryHint)
+      };
+    }
+    return {
+      kicker: copy.arenaHint,
+      title: t(props.lang, "home_action_arena_title"),
+      body: copy.nextMoveBodyArena,
+      label: copy.nextMoveLabelArena,
+      cta: t(props.lang, "shell_panel_go_pvp"),
+      onPress: openArena
+    };
+  })();
 
   return (
     <section className="akrCard akrCardWide akrGameHub" data-akr-panel-key="profile" data-akr-focus-key="identity">
@@ -163,6 +231,54 @@ export function HomePanel(props: HomePanelProps) {
           </div>
         </div>
       </div>
+
+      <section className="akrGameSpotlight" data-akr-panel-key="status" data-akr-focus-key="next_move">
+        <div className="akrGameSpotlightMain">
+          <p className="akrKicker">
+            {copy.nextMoveTitle} | {nextMove.kicker}
+          </p>
+          <h3>{nextMove.title}</h3>
+          <p>{nextMove.body}</p>
+          <div className="akrChipRow">
+            <span className="akrChip akrChipInfo">{nextMove.label}</span>
+            <span className="akrChip">
+              {Math.floor(summary.mission_ready)}/{Math.floor(summary.mission_total)} {copy.readyWord}
+            </span>
+            <span className="akrChip">{summary.wallet_active ? copy.walletLive : copy.walletIdle}</span>
+          </div>
+          <div className="akrActionRow">
+            <button className="akrBtn akrBtnAccent" onClick={nextMove.onPress}>
+              {nextMove.cta}
+            </button>
+            <button className="akrBtn akrBtnGhost" onClick={openArena}>
+              {t(props.lang, "shell_panel_go_pvp")}
+            </button>
+          </div>
+        </div>
+        <div className="akrGameSpotlightAside">
+          <h4>{copy.hintTitle}</h4>
+          <p className="akrMuted akrMiniPanelBody">{copy.hintBody}</p>
+          <div className="akrQuickHintGrid">
+            {quickHints.length ? (
+              quickHints.map((row) => (
+                <button
+                  key={String(row.key || row.description || "hint")}
+                  className="akrQuickHintCard"
+                  onClick={() => runCommandHint(row)}
+                >
+                  <span className="akrKicker">{String(row.key || "route").replace(/^\/+/, "")}</span>
+                  <strong>{String(row.description || row.key || t(props.lang, "home_action_discover_title"))}</strong>
+                </button>
+              ))
+            ) : (
+              <div className="akrQuickHintCard isEmpty">
+                <span className="akrKicker">{copy.discoverHint}</span>
+                <strong>{t(props.lang, "home_action_discover_body")}</strong>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
 
       <div className="akrGameActionGrid">
         <button className="akrActionFeatureCard isPrimary" onClick={openArena}>
