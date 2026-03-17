@@ -62,6 +62,8 @@ export function TasksPanel(props: TasksPanelProps) {
           stateLive: "canli",
           stateReady: "hazir",
           stateQueued: "sirada",
+          signalOffers: "offer",
+          signalOpen: "acik",
           sideRouteTitle: "Bagli cikislar",
           sideRouteBody: "Mission loop kapaninca hangi lane'e sicrarsin burada gorunur.",
           rewardsExit: "Odul cikisi",
@@ -119,6 +121,8 @@ export function TasksPanel(props: TasksPanelProps) {
           stateLive: "live",
           stateReady: "ready",
           stateQueued: "queued",
+          signalOffers: "offers",
+          signalOpen: "open",
           sideRouteTitle: "Linked exits",
           sideRouteBody: "See where the mission loop hands you off after the close.",
           rewardsExit: "Rewards exit",
@@ -305,7 +309,7 @@ export function TasksPanel(props: TasksPanelProps) {
             title: nextRoute.title,
             body: copy.chainMissionBody,
             stateLabel: readyMission ? copy.stateReady : copy.stateLive,
-            signals: [`${summary.missions_ready} ready`, `${summary.offers_total} offers`],
+            signals: [`${summary.missions_ready} ${copy.ready.toLowerCase()}`, `${summary.offers_total} ${copy.signalOffers}`],
             tone: "active",
             onClick: nextRoute.onPress
           },
@@ -314,7 +318,7 @@ export function TasksPanel(props: TasksPanelProps) {
             title: t(props.lang, "shell_panel_go_payout"),
             body: copy.chainVaultBody,
             stateLabel: vaultChainState,
-            signals: [readyMission ? copy.claimNow : copy.routeLabelFallback, `${summary.missions_open} open`],
+            signals: [readyMission ? copy.claimNow : copy.routeLabelFallback, `${summary.missions_open} ${copy.signalOpen}`],
             tone: readyMission ? "done" : "idle",
             onClick: () => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PAYOUT_REQUEST, "panel_tasks")
           }

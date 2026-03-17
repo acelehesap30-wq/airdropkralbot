@@ -87,6 +87,7 @@ export function VaultPanel(props: VaultPanelProps) {
           stateLive: "canli",
           stateReady: "hazir",
           stateLocked: "kilitli",
+          signalRewards: "odul",
           routeSideTitle: "Bagli koridorlar",
           routeSideBody: "Ayni odadan acilan wallet, payout ve reward cikislari.",
           rewardsExit: "Prize market",
@@ -142,6 +143,7 @@ export function VaultPanel(props: VaultPanelProps) {
           stateLive: "live",
           stateReady: "ready",
           stateLocked: "locked",
+          signalRewards: "items",
           routeSideTitle: "Linked corridors",
           routeSideBody: "Wallet, payout and reward exits that open from the same chamber.",
           rewardsExit: "Prize market",
@@ -314,7 +316,7 @@ export function VaultPanel(props: VaultPanelProps) {
             title: nextVaultRoute.title,
             body: copy.chainExitBody,
             stateLabel: summary.wallet_active ? copy.stateReady : copy.stateLocked,
-            signals: [`${summary.payout_requestable_btc.toFixed(8)} BTC`, `${catalog.passes.length + catalog.cosmetics.length} items`],
+            signals: [`${summary.payout_requestable_btc.toFixed(8)} BTC`, `${catalog.passes.length + catalog.cosmetics.length} ${copy.signalRewards}`],
             tone: summary.wallet_active ? "active" : "idle",
             onClick: nextVaultRoute.onPress
           }

@@ -65,6 +65,10 @@ export function HomePanel(props: HomePanelProps) {
           stateReady: "hazir",
           stateComplete: "tamam",
           stateLocked: "kilitli",
+          signalStreak: "streak",
+          signalReady: "hazir",
+          signalTotal: "toplam",
+          signalPasses: "pass",
           hintTitle: "Hizli rota kartlari",
           hintBody: "Bot'un onerdigi bir sonraki lane veya komut buradan acilir.",
           rhythmTitle: "Bugunun ritmi",
@@ -108,6 +112,10 @@ export function HomePanel(props: HomePanelProps) {
           stateReady: "ready",
           stateComplete: "complete",
           stateLocked: "locked",
+          signalStreak: "streak",
+          signalReady: "ready",
+          signalTotal: "total",
+          signalPasses: "passes",
           hintTitle: "Quick route cards",
           hintBody: "Launch the bot's next suggested lane or command from here.",
           rhythmTitle: "Today's rhythm",
@@ -358,7 +366,7 @@ export function HomePanel(props: HomePanelProps) {
             title: t(props.lang, "home_hub_title"),
             body: copy.seasonChainHomeBody,
             stateLabel: seasonRouteBadge("home"),
-            signals: [`${Math.floor(summary.streak)} streak`, `${Math.floor(summary.tasks_done)}/${Math.floor(summary.daily_cap)}`],
+            signals: [`${Math.floor(summary.streak)} ${copy.signalStreak}`, `${Math.floor(summary.tasks_done)}/${Math.floor(summary.daily_cap)}`],
             tone: seasonRouteTone("home"),
             onClick: props.onRefresh
           },
@@ -376,7 +384,7 @@ export function HomePanel(props: HomePanelProps) {
             title: t(props.lang, "shell_panel_go_tasks"),
             body: copy.seasonChainMissionBody,
             stateLabel: seasonRouteBadge("mission"),
-            signals: [`${Math.floor(summary.mission_ready)} ready`, `${Math.floor(summary.mission_total)} total`],
+            signals: [`${Math.floor(summary.mission_ready)} ${copy.signalReady}`, `${Math.floor(summary.mission_total)} ${copy.signalTotal}`],
             tone: seasonRouteTone("mission"),
             onClick: openMissions
           },
@@ -385,7 +393,7 @@ export function HomePanel(props: HomePanelProps) {
             title: t(props.lang, "shell_panel_go_vault"),
             body: copy.seasonChainVaultBody,
             stateLabel: seasonRouteBadge("vault"),
-            signals: [summary.wallet_active ? copy.walletLive : copy.walletIdle, `${Math.floor(summary.active_pass_count)} passes`],
+            signals: [summary.wallet_active ? copy.walletLive : copy.walletIdle, `${Math.floor(summary.active_pass_count)} ${copy.signalPasses}`],
             tone: seasonRouteTone("vault"),
             onClick: openVault
           }

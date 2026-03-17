@@ -59,6 +59,8 @@ export function PvpPanel(props: PvpPanelProps) {
           stateQueued: "sirada",
           stateReady: "hazir",
           stateLocked: "kilitli",
+          signalAccept: "accept",
+          signalWin: "win",
           routeSideTitle: "Bagli koridorlar",
           routeSideBody: "Arena kapaninca gorev ve vault cebe giden cikislar burada.",
           missionsExit: "Mission quarter",
@@ -102,6 +104,8 @@ export function PvpPanel(props: PvpPanelProps) {
           stateQueued: "queued",
           stateReady: "ready",
           stateLocked: "locked",
+          signalAccept: "accept",
+          signalWin: "win",
           routeSideTitle: "Linked corridors",
           routeSideBody: "Mission and vault exits that become useful after the arena close.",
           missionsExit: "Mission quarter",
@@ -251,7 +255,7 @@ export function PvpPanel(props: PvpPanelProps) {
             title: t(props.lang, "shell_panel_go_tasks"),
             body: copy.chainMissionBody,
             stateLabel: missionRouteState,
-            signals: [`${Math.floor(summary.accept_rate_pct)}% accept`, `#${Math.floor(league.weekly_ladder.rank)}`],
+            signals: [`${Math.floor(summary.accept_rate_pct)}% ${copy.signalAccept}`, `#${Math.floor(league.weekly_ladder.rank)}`],
             tone: props.canResolve ? "done" : "idle",
             onClick: () => props.onShellAction(SHELL_ACTION_KEY.PLAYER_TASKS_BOARD, "panel_pvp")
           },
@@ -260,7 +264,7 @@ export function PvpPanel(props: PvpPanelProps) {
             title: t(props.lang, "shell_panel_go_payout"),
             body: copy.chainVaultBody,
             stateLabel: vaultRouteState,
-            signals: [`${Math.floor(league.daily_duel.win_rate_pct)}% win`, `${Math.floor(summary.self_score)}-${Math.floor(summary.opponent_score)}`],
+            signals: [`${Math.floor(league.daily_duel.win_rate_pct)}% ${copy.signalWin}`, `${Math.floor(summary.self_score)}-${Math.floor(summary.opponent_score)}`],
             tone: "idle",
             onClick: () => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PAYOUT_REQUEST, "panel_pvp")
           }
