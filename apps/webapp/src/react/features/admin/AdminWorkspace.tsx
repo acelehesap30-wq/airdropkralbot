@@ -23,6 +23,7 @@ type AdminWorkspaceProps = {
     queue: Array<Record<string, unknown>>;
   };
   adminPanels: Record<string, unknown> | null;
+  usersRecentData: Record<string, unknown> | null;
   queueAction: QueueActionState;
   panelVisibility: {
     queue: boolean;
@@ -118,6 +119,7 @@ export function AdminWorkspace(props: AdminWorkspaceProps) {
       onShellAction={runShellAction}
       adminRuntime={props.adminRuntime}
       adminPanels={props.adminPanels}
+      usersRecentData={props.usersRecentData}
       queueAction={props.queueAction}
       onQueueActionChange={props.onQueueActionChange}
       onRefresh={props.onRefresh}

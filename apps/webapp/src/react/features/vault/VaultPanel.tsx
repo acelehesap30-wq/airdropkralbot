@@ -5,7 +5,7 @@ import { t, type Lang } from "../../i18n";
 type VaultPanelProps = {
   lang: Lang;
   advanced: boolean;
-  vaultData: Record<string, unknown>;
+  vaultData: Record<string, unknown> | null;
   quoteUsd: string;
   quoteChain: string;
   submitRequestId: string;
@@ -43,83 +43,192 @@ type VaultPanelProps = {
   onPayoutCurrencyChange: (value: string) => void;
 };
 
+function asText(value: unknown, fallback = "-") {
+  const text = String(value ?? "").trim();
+  return text || fallback;
+}
+
+function shortStatus(value: string, onText: string, offText: string) {
+  return value ? onText : offText;
+}
+
 export function VaultPanel(props: VaultPanelProps) {
   const view = buildVaultViewModel({
     vaultData: props.vaultData
   });
   const summary = view.summary;
-  const catalog = view.catalog;
   const latest = view.latest;
+  const catalog = view.catalog;
+  const copy =
+    props.lang === "tr"
+      ? {
+          kicker: "Vault Route",
+          title: "Odul ve wallet hatti",
+          body: "Buradan token al, wallet bagla, payout ac ve premium etkileri yonet.",
+          tradeLane: "Trade lane",
+          tradeBody: "Quote al, intent baslat ve gerekiyorsa tx gonder.",
+          walletLane: "Wallet lane",
+          walletBody: "Cuzdani bagla, challenge dogrula ve payout yolunu ac.",
+          payoutLane: "Payout lane",
+          payoutBody: "Hazir bakiyeyi secilen para biriminde payout istegine cevir.",
+          rewardsLane: "Odul marketi",
+          rewardsBody: "Pass ve cosmetic secimleri burada.",
+          latestLane: "Son hareket",
+          latestBody: "En son quote, intent ve payout izleri.",
+          manualTools: "Manuel araclar",
+          manualBody: "Tx hash, request id ve imza gibi agir araclari burada tut.",
+          walletOn: "wallet acik",
+          walletOff: "wallet kapali",
+          payoutReady: "payout hazir",
+          payoutLocked: "payout kilitli",
+          premium: "premium",
+          standard: "standard",
+          quoteHint: "USD miktari",
+          chainHint: "Chain",
+          addressHint: "Wallet adresi",
+          currencyHint: "Payout para birimi",
+          challengeHint: "Challenge ref",
+          signatureHint: "Wallet signature"
+        }
+      : {
+          kicker: "Vault Route",
+          title: "Rewards and wallet lane",
+          body: "Buy token, link the wallet, unlock payout, and manage premium effects from one place.",
+          tradeLane: "Trade lane",
+          tradeBody: "Get a quote, start intent, and submit tx only when needed.",
+          walletLane: "Wallet lane",
+          walletBody: "Link the wallet, verify the challenge, and unlock payout.",
+          payoutLane: "Payout lane",
+          payoutBody: "Turn available balance into a payout request in the selected currency.",
+          rewardsLane: "Reward market",
+          rewardsBody: "Pass and cosmetic choices live here.",
+          latestLane: "Latest move",
+          latestBody: "Most recent quote, intent, and payout traces.",
+          manualTools: "Manual tools",
+          manualBody: "Keep tx hash, request id, and signature tools here instead of the main lane.",
+          walletOn: "wallet live",
+          walletOff: "wallet idle",
+          payoutReady: "payout ready",
+          payoutLocked: "payout locked",
+          premium: "premium",
+          standard: "standard",
+          quoteHint: "USD amount",
+          chainHint: "Chain",
+          addressHint: "Wallet address",
+          currencyHint: "Payout currency",
+          challengeHint: "Challenge ref",
+          signatureHint: "Wallet signature"
+        };
 
   return (
-    <section className="akrCard akrCardWide">
-      <div className="akrActionRow">
-        <button className="akrBtn akrBtnGhost" onClick={props.onRefresh}>
-          {t(props.lang, "vault_refresh")}
+    <section className="akrCard akrCardWide akrGameHub" data-akr-panel-key="vault" data-akr-focus-key="vault_route">
+      <div className="akrGameHero">
+        <div className="akrGameHeroCopy">
+          <p className="akrKicker">{copy.kicker}</p>
+          <h2>{t(props.lang, "vault_title")}</h2>
+          <p>{copy.body}</p>
+        </div>
+        <div className="akrGameHeroStats">
+          <span className="akrChip">{summary.token_symbol || "-"}</span>
+          <span className="akrChip">{summary.token_chain || "-"}</span>
+          <span className="akrChip">Bal {Math.floor(summary.token_balance)}</span>
+          <span className="akrChip">{summary.wallet_chain || shortStatus(summary.wallet_active ? "1" : "", copy.walletOn, copy.walletOff)}</span>
+          <span className="akrChip">{summary.premium_active ? copy.premium : copy.standard}</span>
+        </div>
+        <div className="akrCurrencyHud">
+          <span className="akrCurrencyChip akrCurrencySC">{summary.token_symbol || "TOK"} ${summary.token_price_usd.toFixed(4)}</span>
+          <span className="akrCurrencyChip akrCurrencyHC">{summary.payout_requestable_btc.toFixed(8)} BTC</span>
+          <span className="akrCurrencyChip akrCurrencyRC">{summary.route_status || "-"}</span>
+        </div>
+      </div>
+
+      <div className="akrGameActionGrid">
+        <button className="akrActionFeatureCard isPrimary" onClick={props.onBuyIntent}>
+          <p className="akrKicker">{copy.tradeLane}</p>
+          <h3>{t(props.lang, "vault_buy_intent")}</h3>
+          <p>{copy.tradeBody}</p>
+          <span className="akrChip">
+            {props.quoteUsd || "0"} {props.quoteChain || "-"}
+          </span>
         </button>
-        <button className="akrBtn akrBtnGhost" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_REWARDS_PANEL, "panel_vault")}>
-          {t(props.lang, "shell_panel_open_rewards")}
+        <button className="akrActionFeatureCard" onClick={props.onWalletVerify}>
+          <p className="akrKicker">{copy.walletLane}</p>
+          <h3>{t(props.lang, "vault_wallet_verify")}</h3>
+          <p>{summary.wallet_address_masked || copy.walletBody}</p>
+          <span className="akrChip">{summary.wallet_active ? copy.walletOn : copy.walletOff}</span>
         </button>
-        <button className="akrBtn akrBtnGhost" onClick={props.onQuote}>
-          {t(props.lang, "vault_quote")}
+        <button className="akrActionFeatureCard" onClick={props.onPayoutRequest}>
+          <p className="akrKicker">{copy.payoutLane}</p>
+          <h3>{t(props.lang, "vault_payout_request")}</h3>
+          <p>{copy.payoutBody}</p>
+          <span className="akrChip">{summary.payout_can_request ? copy.payoutReady : copy.payoutLocked}</span>
         </button>
-        <button className="akrBtn akrBtnAccent" onClick={props.onBuyIntent}>
-          {t(props.lang, "vault_buy_intent")}
-        </button>
-        <button className="akrBtn akrBtnGhost" onClick={props.onSubmitTx}>
-          {t(props.lang, "vault_submit_tx")}
+        <button
+          className="akrActionFeatureCard"
+          onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_REWARDS_PANEL, "panel_vault")}
+        >
+          <p className="akrKicker">{copy.rewardsLane}</p>
+          <h3>{t(props.lang, "shell_panel_open_rewards")}</h3>
+          <p>{copy.rewardsBody}</p>
+          <span className="akrChip">
+            {catalog.passes.length + catalog.cosmetics.length} items
+          </span>
         </button>
       </div>
-      <div className="akrChipRow">
-        <span className="akrChip">{summary.token_symbol || "-"}</span>
-        <span className="akrChip">{summary.token_chain || "-"}</span>
-        <span className="akrChip">Bal {Math.floor(summary.token_balance)}</span>
-        <span className="akrChip">Price ${summary.token_price_usd.toFixed(4)}</span>
-        <span className="akrChip">{summary.wallet_active ? "wallet_on" : "wallet_off"}</span>
-        <span className="akrChip">{summary.wallet_chain || "-"}</span>
-        <span className="akrChip">{summary.wallet_kyc_status || "-"}</span>
-      </div>
-      <div className="akrInputRow">
-        <input value={props.quoteUsd} onChange={(e) => props.onQuoteUsdChange(e.target.value)} aria-label="quote-usd" />
-        <input value={props.quoteChain} onChange={(e) => props.onQuoteChainChange(e.target.value)} aria-label="quote-chain" />
-        <input
-          value={props.submitRequestId}
-          onChange={(e) => props.onSubmitRequestIdChange(e.target.value)}
-          aria-label="submit-request-id"
-        />
-        <input value={props.submitTxHash} onChange={(e) => props.onSubmitTxHashChange(e.target.value)} aria-label="submit-tx-hash" />
+
+      <div className="akrStatRail">
+        <div className="akrMetricCard">
+          <span>{copy.tradeLane}</span>
+          <strong>{summary.token_symbol || "-"}</strong>
+        </div>
+        <div className="akrMetricCard">
+          <span>{copy.walletLane}</span>
+          <strong>{summary.wallet_chain || shortStatus(summary.wallet_active ? "1" : "", copy.walletOn, copy.walletOff)}</strong>
+        </div>
+        <div className="akrMetricCard">
+          <span>{copy.payoutLane}</span>
+          <strong>{summary.payout_can_request ? copy.payoutReady : copy.payoutLocked}</strong>
+        </div>
+        <div className="akrMetricCard">
+          <span>{copy.rewardsLane}</span>
+          <strong>{summary.active_pass_count}</strong>
+        </div>
       </div>
 
       <div className="akrSplit">
-        <section className="akrMiniPanel" data-akr-panel-key="wallet" data-akr-focus-key="connect">
-          <h4>{t(props.lang, "vault_wallet_title")}</h4>
-          <div className="akrChipRow">
-            <span className="akrChip">{summary.wallet_active ? "active" : "inactive"}</span>
-            <span className="akrChip">{summary.wallet_chain || "-"}</span>
-            <span className="akrChip">{summary.wallet_kyc_status || "-"}</span>
-          </div>
-          <p className="akrMuted">{summary.wallet_address_masked || "-"}</p>
+        <section className="akrMiniPanel">
+          <h4>{copy.tradeLane}</h4>
+          <p className="akrMuted akrMiniPanelBody">{copy.tradeBody}</p>
           <div className="akrInputRow">
-            <input
-              value={props.walletChain}
-              onChange={(e) => props.onWalletChainChange(e.target.value)}
-              aria-label="wallet-chain"
-            />
-            <input
-              value={props.walletAddress}
-              onChange={(e) => props.onWalletAddressChange(e.target.value)}
-              aria-label="wallet-address"
-            />
-            <input
-              value={props.walletChallengeRef}
-              onChange={(e) => props.onWalletChallengeRefChange(e.target.value)}
-              aria-label="wallet-challenge-ref"
-            />
-            <input
-              value={props.walletSignature}
-              onChange={(e) => props.onWalletSignatureChange(e.target.value)}
-              aria-label="wallet-signature"
-            />
+            <input value={props.quoteUsd} onChange={(e) => props.onQuoteUsdChange(e.target.value)} placeholder={copy.quoteHint} aria-label="quote-usd" />
+            <input value={props.quoteChain} onChange={(e) => props.onQuoteChainChange(e.target.value)} placeholder={copy.chainHint} aria-label="quote-chain" />
+          </div>
+          <div className="akrChipRow">
+            <span className="akrChip">Quote ${latest.quote_usd.toFixed(2)}</span>
+            <span className="akrChip">Token {latest.quote_token_amount.toFixed(4)}</span>
+            <span className="akrChip">Rate {latest.quote_rate.toFixed(6)}</span>
+          </div>
+          <div className="akrActionRow">
+            <button className="akrBtn akrBtnGhost" onClick={props.onQuote}>
+              {t(props.lang, "vault_quote")}
+            </button>
+            <button className="akrBtn akrBtnAccent" onClick={props.onBuyIntent}>
+              {t(props.lang, "vault_buy_intent")}
+            </button>
+          </div>
+        </section>
+
+        <section className="akrMiniPanel">
+          <h4>{copy.walletLane}</h4>
+          <p className="akrMuted akrMiniPanelBody">{copy.walletBody}</p>
+          <div className="akrInputRow">
+            <input value={props.walletChain} onChange={(e) => props.onWalletChainChange(e.target.value)} placeholder={copy.chainHint} aria-label="wallet-chain" />
+            <input value={props.walletAddress} onChange={(e) => props.onWalletAddressChange(e.target.value)} placeholder={copy.addressHint} aria-label="wallet-address" />
+          </div>
+          <div className="akrChipRow">
+            <span className="akrChip">{summary.wallet_kyc_status || "-"}</span>
+            <span className="akrChip">{summary.wallet_address_masked || "-"}</span>
+            <span className="akrChip">{summary.route_status || "-"}</span>
           </div>
           <div className="akrActionRow">
             <button className="akrBtn akrBtnGhost" disabled={props.walletChallengeLoading} onClick={props.onWalletChallenge}>
@@ -132,138 +241,144 @@ export function VaultPanel(props: VaultPanelProps) {
               {t(props.lang, "vault_wallet_unlink")}
             </button>
           </div>
-          <h4>{t(props.lang, "vault_route_title")}</h4>
-          <div className="akrChipRow">
-            <span className="akrChip">{summary.route_status || "-"}</span>
-            <span className="akrChip">Total {Math.floor(summary.route_total)}</span>
-            <span className="akrChip">OK {Math.floor(summary.route_ok)}</span>
-            <span className="akrChip">Pending {Math.floor(summary.route_pending)}</span>
-            <span className="akrChip">Failed {Math.floor(summary.route_failed)}</span>
-          </div>
         </section>
+      </div>
 
-        <section className="akrMiniPanel" data-akr-panel-key="payout" data-akr-focus-key="request">
-          <h4>{t(props.lang, "vault_payout_title")}</h4>
-          <div className="akrChipRow">
-            <span className="akrChip">{summary.payout_can_request ? "can_request" : "locked"}</span>
-            <span className="akrChip">{summary.payout_unlock_tier || "-"}</span>
-            <span className="akrChip">Progress {Math.floor(summary.payout_unlock_progress * 100)}%</span>
-            <span className="akrChip">Req {summary.payout_requestable_btc.toFixed(8)} BTC</span>
-            <span className="akrChip">Entitled {summary.payout_entitled_btc.toFixed(8)} BTC</span>
-          </div>
+      <div className="akrSplit">
+        <section className="akrMiniPanel">
+          <h4>{copy.payoutLane}</h4>
+          <p className="akrMuted akrMiniPanelBody">{copy.payoutBody}</p>
           <div className="akrInputRow">
             <input
               value={props.payoutCurrency}
               onChange={(e) => props.onPayoutCurrencyChange(e.target.value)}
+              placeholder={copy.currencyHint}
               aria-label="payout-currency"
             />
+          </div>
+          <div className="akrChipRow">
+            <span className="akrChip">Req {summary.payout_requestable_btc.toFixed(8)} BTC</span>
+            <span className="akrChip">Entitled {summary.payout_entitled_btc.toFixed(8)} BTC</span>
+            <span className="akrChip">{summary.payout_unlock_tier || "-"}</span>
           </div>
           <div className="akrActionRow">
             <button className="akrBtn akrBtnAccent" disabled={props.payoutRequestLoading} onClick={props.onPayoutRequest}>
               {t(props.lang, "vault_payout_request")}
             </button>
-          </div>
-          <h4>{t(props.lang, "vault_monetization_title")}</h4>
-          <div className="akrChipRow">
-            <span className="akrChip">{summary.monetization_enabled ? "enabled" : "disabled"}</span>
-            <span className="akrChip">{summary.monetization_tables_available ? "tables_ready" : "tables_missing"}</span>
-            <span className="akrChip">{summary.premium_active ? "premium" : "standard"}</span>
-            <span className="akrChip">Pass {Math.floor(summary.active_pass_count)}</span>
-            <span className="akrChip">Pass History {Math.floor(summary.pass_history_count)}</span>
-            <span className="akrChip">Owned Cosmetics {Math.floor(summary.cosmetics_owned_count)}</span>
-            <span className="akrChip">Recent Cosmetics {Math.floor(summary.cosmetics_recent_count)}</span>
-            <span className="akrChip">SC {Math.floor(summary.spend_sc)}</span>
-            <span className="akrChip">RC {Math.floor(summary.spend_rc)}</span>
-            <span className="akrChip">HC {Math.floor(summary.spend_hc)}</span>
+            <button
+              className="akrBtn akrBtnGhost"
+              onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PAYOUT_REQUEST, "panel_vault")}
+            >
+              {t(props.lang, "shell_panel_go_payout")}
+            </button>
           </div>
         </section>
-      </div>
-      <div className="akrSplit">
-        <section className="akrMiniPanel" data-akr-panel-key="rewards" data-akr-focus-key="premium_pass">
-          <h4>{t(props.lang, "vault_pass_catalog_title")}</h4>
-          {catalog.passes.length ? (
-            <ul className="akrList">
-              {catalog.passes.map((row) => (
-                <li key={`pass_${row.pass_key}`}>
-                  <strong>
-                    {row.title} ({row.duration_days}d)
-                  </strong>
-                  <span>
-                    {row.price_amount} {row.price_currency}
-                    <button
-                      className="akrBtn akrBtnAccent"
-                      disabled={props.passPurchaseLoading}
-                      onClick={() => props.onPassPurchase(row.pass_key, row.price_currency)}
-                    >
-                      {t(props.lang, "vault_purchase_pass")}
-                    </button>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="akrMuted">{t(props.lang, "vault_catalog_empty")}</p>
-          )}
-        </section>
-        <section className="akrMiniPanel" data-akr-panel-key="rewards" data-akr-focus-key="cosmetics">
-          <h4>{t(props.lang, "vault_cosmetic_catalog_title")}</h4>
-          {catalog.cosmetics.length ? (
-            <ul className="akrList">
-              {catalog.cosmetics.map((row) => (
-                <li key={`cosmetic_${row.item_key}`}>
-                  <strong>
-                    {row.title} ({row.rarity})
-                  </strong>
-                  <span>
-                    {row.price_amount} {row.price_currency}
-                    <button
-                      className="akrBtn akrBtnAccent"
-                      disabled={props.cosmeticPurchaseLoading}
-                      onClick={() => props.onCosmeticPurchase(row.item_key, row.price_currency)}
-                    >
-                      {t(props.lang, "vault_purchase_cosmetic")}
-                    </button>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="akrMuted">{t(props.lang, "vault_catalog_empty")}</p>
-          )}
+
+        <section className="akrMiniPanel">
+          <h4>{copy.rewardsLane}</h4>
+          <p className="akrMuted akrMiniPanelBody">{copy.rewardsBody}</p>
+          <ul className="akrList">
+            {catalog.passes.slice(0, 2).map((row) => (
+              <li key={`pass_${row.pass_key}`}>
+                <strong>
+                  {row.title} ({row.duration_days}d)
+                </strong>
+                <span>
+                  {row.price_amount} {row.price_currency}
+                  <button
+                    className="akrBtn akrBtnGhost"
+                    disabled={props.passPurchaseLoading}
+                    onClick={() => props.onPassPurchase(row.pass_key, row.price_currency)}
+                  >
+                    {t(props.lang, "vault_purchase_pass")}
+                  </button>
+                </span>
+              </li>
+            ))}
+            {catalog.cosmetics.slice(0, 2).map((row) => (
+              <li key={`cosmetic_${row.item_key}`}>
+                <strong>
+                  {row.title} ({row.rarity})
+                </strong>
+                <span>
+                  {row.price_amount} {row.price_currency}
+                  <button
+                    className="akrBtn akrBtnGhost"
+                    disabled={props.cosmeticPurchaseLoading}
+                    onClick={() => props.onCosmeticPurchase(row.item_key, row.price_currency)}
+                  >
+                    {t(props.lang, "vault_purchase_cosmetic")}
+                  </button>
+                </span>
+              </li>
+            ))}
+          </ul>
+          {!catalog.passes.length && !catalog.cosmetics.length ? <p className="akrMuted">{t(props.lang, "vault_catalog_empty")}</p> : null}
         </section>
       </div>
 
       <section className="akrMiniPanel">
-        <h4>{t(props.lang, "vault_last_tx_title")}</h4>
+        <h4>{copy.latestLane}</h4>
+        <p className="akrMuted akrMiniPanelBody">{copy.latestBody}</p>
         <div className="akrChipRow">
-          <span className="akrChip">Quote USD {latest.quote_usd.toFixed(2)}</span>
-          <span className="akrChip">Quote Token {latest.quote_token_amount.toFixed(4)}</span>
-          <span className="akrChip">Rate {latest.quote_rate.toFixed(6)}</span>
           <span className="akrChip">Intent #{Math.floor(latest.intent_request_id)}</span>
           <span className="akrChip">{latest.intent_status || "-"}</span>
           <span className="akrChip">Submit #{Math.floor(latest.submit_request_id)}</span>
           <span className="akrChip">{latest.submit_status || "-"}</span>
-          <span className="akrChip">Pass {latest.pass_purchase_key || "-"}</span>
-          <span className="akrChip">
-            {latest.pass_purchase_amount.toFixed(2)} {latest.pass_purchase_currency || "-"}
-          </span>
-          <span className="akrChip">{latest.pass_purchase_status || "-"}</span>
-          <span className="akrChip">Cosmetic {latest.cosmetic_purchase_key || "-"}</span>
-          <span className="akrChip">
-            {latest.cosmetic_purchase_amount.toFixed(2)} {latest.cosmetic_purchase_currency || "-"}
-          </span>
-          <span className="akrChip">{latest.cosmetic_purchase_rarity || "-"}</span>
           <span className="akrChip">Payout #{Math.floor(latest.payout_request_id)}</span>
           <span className="akrChip">{latest.payout_request_status || "-"}</span>
         </div>
         <p className="akrMuted">
-          {latest.submit_tx_hash || "-"} | {latest.pass_purchase_ref || "-"} | {latest.cosmetic_purchase_ref || "-"} |{" "}
-          {latest.payout_request_ref || "-"}
+          {latest.submit_tx_hash || "-"} | {latest.payout_request_ref || "-"} | {latest.pass_purchase_ref || "-"} | {latest.cosmetic_purchase_ref || "-"}
         </p>
       </section>
 
-      {!view.has_data ? <p className="akrMuted">{t(props.lang, "vault_empty")}</p> : null}
+      <details className="akrCard akrCardWide akrDisclosureCard">
+        <summary>
+          <span>{copy.manualTools}</span>
+          <span className="akrMuted">{copy.manualBody}</span>
+        </summary>
+        <div className="akrDisclosureBody">
+          <div className="akrInputRow">
+            <input
+              value={props.submitRequestId}
+              onChange={(e) => props.onSubmitRequestIdChange(e.target.value)}
+              aria-label="submit-request-id"
+              placeholder="request id"
+            />
+            <input
+              value={props.submitTxHash}
+              onChange={(e) => props.onSubmitTxHashChange(e.target.value)}
+              aria-label="submit-tx-hash"
+              placeholder="tx hash"
+            />
+          </div>
+          <div className="akrInputRow">
+            <input
+              value={props.walletChallengeRef}
+              onChange={(e) => props.onWalletChallengeRefChange(e.target.value)}
+              aria-label="wallet-challenge-ref"
+              placeholder={copy.challengeHint}
+            />
+            <input
+              value={props.walletSignature}
+              onChange={(e) => props.onWalletSignatureChange(e.target.value)}
+              aria-label="wallet-signature"
+              placeholder={copy.signatureHint}
+            />
+          </div>
+          <div className="akrActionRow">
+            <button className="akrBtn akrBtnGhost" onClick={props.onSubmitTx}>
+              {t(props.lang, "vault_submit_tx")}
+            </button>
+            <button className="akrBtn akrBtnGhost" onClick={props.onRefresh}>
+              {t(props.lang, "vault_refresh")}
+            </button>
+          </div>
+        </div>
+      </details>
 
+      {!view.has_data ? <p className="akrMuted">{t(props.lang, "vault_empty")}</p> : null}
       {props.advanced ? <pre className="akrJsonBlock">{JSON.stringify(props.vaultData || {}, null, 2)}</pre> : null}
     </section>
   );

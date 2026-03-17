@@ -236,6 +236,14 @@ export const webappApi = createApi({
       }),
       providesTags: ["Admin"]
     }),
+    adminUsersRecentV2: builder.query<AdminApiResponse, { auth: WebAppAuth; limit?: number }>({
+      query: ({ auth, limit = 12 }) => ({
+        url: `/webapp/api/v2/admin/users/recent?${withAuthQuery(auth, {
+          limit: Math.max(1, Math.min(30, Number(limit || 12)))
+        })}`
+      }),
+      providesTags: ["Admin"]
+    }),
     adminUnifiedQueueV2: builder.query<AdminApiResponse, { auth: WebAppAuth; limit?: number }>({
       query: ({ auth, limit = 60 }) => ({
         url: `/webapp/api/v2/admin/queue/unified?${withAuthQuery(auth, {
@@ -809,6 +817,7 @@ export const {
   useAdminAuditDataIntegrityV2Query,
   useAdminAuditPhaseStatusV2Query,
   useAdminBootstrapV2Query,
+  useAdminUsersRecentV2Query,
   useAdminDeployStatusV2Query,
   useAdminLiveOpsCampaignV2Query,
   useAdminLiveOpsCampaignApprovalV2Mutation,

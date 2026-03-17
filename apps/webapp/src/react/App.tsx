@@ -67,6 +67,7 @@ import {
   useAdminRuntimeBotV2Query,
   useAdminRuntimeFlagsUpdateV2Mutation,
   useAdminRuntimeFlagsV2Query,
+  useAdminUsersRecentV2Query,
   useAdminQueueActionV2Mutation,
   useAdminUnifiedQueueV2Query,
   useBootstrapV2Query,
@@ -265,6 +266,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
   const payoutStatusQuery = usePayoutStatusV2Query({ auth: activeAuth }, { skip: !hasActiveAuth });
   const adminQueryEnabled = hasActiveAuth && effectiveWorkspace === "admin" && isAdmin;
   const adminBootstrapQuery = useAdminBootstrapV2Query({ auth: activeAuth }, { skip: !adminQueryEnabled });
+  const adminUsersRecentQuery = useAdminUsersRecentV2Query({ auth: activeAuth, limit: 12 }, { skip: !adminQueryEnabled });
   const adminQueueQuery = useAdminUnifiedQueueV2Query({ auth: activeAuth, limit: 80 }, { skip: !adminQueryEnabled });
   const adminMetricsQuery = useAdminMetricsV2Query({ auth: activeAuth }, { skip: !adminQueryEnabled });
   const adminLiveOpsCampaignQuery = useAdminLiveOpsCampaignV2Query({ auth: activeAuth }, { skip: !adminQueryEnabled });
@@ -476,6 +478,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
     walletSessionQueryData: walletSessionQuery.data,
     payoutStatusQueryData: payoutStatusQuery.data,
     adminBootstrapQueryData: adminBootstrapQuery.data,
+    adminUsersRecentQueryData: adminUsersRecentQuery.data,
     adminQueueQueryData: adminQueueQuery.data,
     adminMetricsQueryData: adminMetricsQuery.data,
     adminLiveOpsCampaignQueryData: adminLiveOpsCampaignQuery.data,
@@ -578,7 +581,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
     sceneRuntimeError: sceneRuntime.error,
     hasLaunchSummary: Boolean(launchSummary)
   });
-  const adminAdvanced = Boolean(shellSurfaceVisibility.adminAdvanced);
+  const adminAdvanced = false;
   const rootClassName = `akrReactRoot${reducedMotion ? " isReducedMotion" : ""}${largeText ? " isLargeText" : ""}${
     hudDensity === "compact" ? " isCompactHud" : ""
   }${effectiveQuality === "low" ? " isQualityLow" : effectiveQuality === "high" ? " isQualityHigh" : " isQualityMedium"}${
@@ -933,7 +936,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
         <TopBar
           lang={lang}
           advanced={adminAdvanced}
-          showAdvancedToggle={Boolean(isAdmin && effectiveWorkspace === "admin")}
+          showAdvancedToggle={false}
           showWorkspaceToggle={false}
           showAccessibilityControls={false}
           reducedMotion={reducedMotion}
@@ -1075,6 +1078,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
             trackUiEvent={trackUiEvent}
             adminRuntime={adminRuntime}
             adminPanels={adminPanels}
+            usersRecentData={(adminPanels?.users_recent as Record<string, unknown> | null) || null}
             queueAction={queueAction}
             panelVisibility={adminPanelVisibility}
             dynamicPolicyData={(adminPanels?.dynamic_policy as Record<string, unknown> | null) || null}

@@ -341,12 +341,6 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
           <button className="akrBtn akrBtnGhost" onClick={props.onApproveLiveOpsCampaign} disabled={props.liveOpsCampaignApprovaling}>
             {t(props.lang, "admin_live_ops_approve")}
           </button>
-          <button className="akrBtn akrBtnGhost" onClick={props.onRevokeLiveOpsCampaignApproval} disabled={props.liveOpsCampaignApprovaling}>
-            {t(props.lang, "admin_live_ops_revoke")}
-          </button>
-          <button className="akrBtn akrBtnGhost" onClick={props.onDryRunLiveOpsCampaign} disabled={props.liveOpsCampaignDispatching}>
-            {t(props.lang, "admin_live_ops_dry_run")}
-          </button>
           <button className="akrBtn akrBtnAccent" onClick={props.onDispatchLiveOpsCampaign} disabled={props.liveOpsCampaignDispatching}>
             {t(props.lang, "admin_live_ops_dispatch")}
           </button>

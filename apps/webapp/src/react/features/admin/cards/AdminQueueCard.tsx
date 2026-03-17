@@ -114,7 +114,7 @@ function countHighPriorityRows(rows: Array<Record<string, unknown>>) {
 
 export function AdminQueueCard(props: AdminQueueCardProps) {
   const queueRows = Array.isArray(props.adminRuntime.queue) ? props.adminRuntime.queue : [];
-  const visibleRows = queueRows.slice(0, props.advanced ? 40 : 12);
+  const visibleRows = queueRows.slice(0, props.advanced ? 40 : 4);
   const selectedKind = String(props.queueAction.kind || "").trim().toLowerCase();
   const selectedRequestId = String(props.queueAction.request_id || "").trim();
   const selectedActionKey = String(props.queueAction.action_key || "").trim().toLowerCase();
@@ -122,6 +122,9 @@ export function AdminQueueCard(props: AdminQueueCardProps) {
   const pendingCount = queueRows.length;
   const confirmationCount = countConfirmationRows(queueRows);
   const highPriorityCount = countHighPriorityRows(queueRows);
+  const payoutCount = queueRows.filter((row) => String(row.kind || "").trim().toLowerCase() === "payout_request").length;
+  const tokenCount = queueRows.filter((row) => String(row.kind || "").trim().toLowerCase().startsWith("token_")).length;
+  const kycCount = queueRows.filter((row) => String(row.kind || "").trim().toLowerCase() === "kyc_manual_review").length;
 
   const prefillAction = (row: Record<string, unknown>, actionKey?: string) => {
     const kind = String(row.kind || "").trim().toLowerCase();
@@ -163,13 +166,22 @@ export function AdminQueueCard(props: AdminQueueCardProps) {
 
       <div className="akrChipRow">
         <span className="akrChip akrChipWarning">
-          ⏳ {t(props.lang, "admin_queue_pending_count")}: <strong>{pendingCount}</strong>
+          {t(props.lang, "admin_queue_pending_count")}: <strong>{pendingCount}</strong>
         </span>
         <span className="akrChip akrChipInfo">
-          🔐 {t(props.lang, "admin_queue_confirmation_count")}: <strong>{confirmationCount}</strong>
+          Payout: <strong>{payoutCount}</strong>
+        </span>
+        <span className="akrChip">
+          Token: <strong>{tokenCount}</strong>
+        </span>
+        <span className="akrChip">
+          KYC: <strong>{kycCount}</strong>
+        </span>
+        <span className="akrChip">
+          {t(props.lang, "admin_queue_confirmation_count")}: <strong>{confirmationCount}</strong>
         </span>
         <span className={`akrChip ${highPriorityCount > 0 ? "akrChipDanger" : "akrChipMuted"}`}>
-          🔥 {t(props.lang, "admin_queue_high_priority_count")}: <strong>{highPriorityCount}</strong>
+          {t(props.lang, "admin_queue_high_priority_count")}: <strong>{highPriorityCount}</strong>
         </span>
       </div>
 
@@ -184,11 +196,8 @@ export function AdminQueueCard(props: AdminQueueCardProps) {
               <li key={`${idx}_${String(row?.request_id || row?.queue_key || "q")}`}>
                 <span>
                   <strong>{formatQueueKind(kind)}</strong> #{requestId} |{" "}
-                  <span className={resolveStatusBadgeClass(String(row.status || ""))}>
-                    {formatQueueStatus(String(row.status || ""))}
-                  </span>{" "}
-                  | P{asInt(row.priority)} |{" "}
-                  {formatAgeLabel(asInt(row.queue_age_sec))}
+                  <span className={resolveStatusBadgeClass(String(row.status || ""))}>{formatQueueStatus(String(row.status || ""))}</span> | P
+                  {asInt(row.priority)} | {formatAgeLabel(asInt(row.queue_age_sec))}
                 </span>
                 <strong>{reasonText}</strong>
                 {actions.length ? (

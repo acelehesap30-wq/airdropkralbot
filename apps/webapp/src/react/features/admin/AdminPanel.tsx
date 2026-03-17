@@ -1,6 +1,5 @@
 import { Suspense, lazy } from "react";
 import { t, type Lang } from "../../i18n";
-import { SHELL_ACTION_KEY } from "../../../core/navigation/shellActions.js";
 import { buildAdminSurfaceActionsView } from "../../../core/admin/adminSurfaceActions.js";
 import { lazyRetry } from "../../utils/lazyRetry";
 
@@ -53,6 +52,7 @@ type AdminPanelProps = {
     queue: Array<Record<string, unknown>>;
   };
   adminPanels: Record<string, unknown> | null;
+  usersRecentData: Record<string, unknown> | null;
   queueAction: QueueActionState;
   onQueueActionChange: (patch: Partial<QueueActionState>) => void;
   onRefresh: () => void;
@@ -128,6 +128,15 @@ function asText(value: unknown, fallback = "-") {
   return text || fallback;
 }
 
+function asInt(value: unknown) {
+  const num = Number(value || 0);
+  return Number.isFinite(num) ? Math.max(0, Math.round(num)) : 0;
+}
+
+function asRows(value: unknown): Array<Record<string, unknown>> {
+  return Array.isArray(value) ? value.filter((row): row is Record<string, unknown> => Boolean(row) && typeof row === "object") : [];
+}
+
 function DisabledPanel(props: { lang: Lang; title: string }) {
   return (
     <section className="akrCard akrCardWide">
@@ -147,8 +156,37 @@ function AdminCardFallback(props: { lang: Lang; title: string }) {
 }
 
 export function AdminPanel(props: AdminPanelProps) {
+  const copy =
+    props.lang === "tr"
+      ? {
+          snapshotTitle: "Operasyon Ozeti",
+          registered: "Kayitli oyuncu",
+          active: "Aktif 24s",
+          payouts: "Payout bekleyen",
+          reviews: "Inceleme bekleyen",
+          usersTitle: "Son aktif oyuncular",
+          usersBody: "Hizli kontrol icin son gorulen oyuncular.",
+          queueTitle: "Bekleyen onaylar",
+          queueBody: "Hemen karar bekleyen istekler.",
+          summaryBody: "Normal modda sadece onay ve gonderim icin gereken bilgiler gorunur."
+        }
+      : {
+          snapshotTitle: "Operations Snapshot",
+          registered: "Registered players",
+          active: "Active 24h",
+          payouts: "Pending payouts",
+          reviews: "Pending reviews",
+          usersTitle: "Recently active players",
+          usersBody: "Most recent players for quick checks.",
+          queueTitle: "Pending approvals",
+          queueBody: "Requests that need a decision right now.",
+          summaryBody: "Normal mode only keeps the data needed for approvals and live dispatch."
+        };
   const showCompactOpsOnly = props.isAdmin && !props.advanced;
   const queueCount = Array.isArray(props.adminRuntime.queue) ? props.adminRuntime.queue.length : 0;
+  const adminSummary = props.adminRuntime.summary && typeof props.adminRuntime.summary === "object" ? props.adminRuntime.summary : {};
+  const adminMetrics =
+    adminSummary.metrics && typeof adminSummary.metrics === "object" ? (adminSummary.metrics as Record<string, unknown>) : {};
   const liveOpsSnapshot =
     props.liveOpsCampaignData && typeof props.liveOpsCampaignData === "object" ? props.liveOpsCampaignData : {};
   const liveOpsApprovalSummary =
@@ -159,6 +197,15 @@ export function AdminPanel(props: AdminPanelProps) {
     liveOpsSnapshot.scheduler_summary && typeof liveOpsSnapshot.scheduler_summary === "object"
       ? (liveOpsSnapshot.scheduler_summary as Record<string, unknown>)
       : {};
+  const recentUsers = asRows(props.usersRecentData?.items).slice(0, 6);
+  const queueRows = Array.isArray(props.adminRuntime.queue) ? props.adminRuntime.queue : [];
+  const recentQueueRows = queueRows.slice(0, 5);
+  const registeredUsers = asInt(adminSummary.total_users || adminMetrics.users_total);
+  const activeUsers = asInt(adminMetrics.users_active_24h);
+  const pendingPayouts = asInt(adminSummary.pending_payout_count);
+  const pendingToken = asInt(adminSummary.pending_token_count);
+  const pendingKyc = queueRows.filter((row) => String(row.kind || "").trim().toLowerCase() === "kyc_manual_review").length;
+  const pendingReviews = pendingToken + pendingKyc;
   const surfaceActions = buildAdminSurfaceActionsView({
     adminSummary: props.adminRuntime.summary,
     adminPanels: props.adminPanels
@@ -182,43 +229,86 @@ export function AdminPanel(props: AdminPanelProps) {
     <main className="akrPanelGrid">
       <section className="akrCard akrCardWide" data-akr-panel-key="panel_admin" data-akr-focus-key="admin_summary">
         <h2>{showCompactOpsOnly ? t(props.lang, "admin_console_title") : t(props.lang, "admin_title")}</h2>
-        {props.isAdmin ? <p className="akrMuted">{t(props.lang, "admin_console_body")}</p> : null}
+        {props.isAdmin ? <p className="akrMuted">{showCompactOpsOnly ? copy.summaryBody : t(props.lang, "admin_console_body")}</p> : null}
         {!props.isAdmin && <p className="akrErrorLine">{t(props.lang, "admin_access_denied")}</p>}
         {props.isAdmin ? (
-          <div className="akrChipRow">
-            <span className="akrChip">
-              {t(props.lang, "admin_console_pending")}: {queueCount}
-            </span>
-            <span className="akrChip">
-              {t(props.lang, "admin_console_gate")}:{" "}
-              {liveOpsSchedulerSummary.ready_for_dispatch === true
-                ? t(props.lang, "admin_live_ops_gate_ready")
-                : t(props.lang, "admin_live_ops_gate_blocked")}
-            </span>
-            <span className="akrChip">
-              {t(props.lang, "admin_live_ops_approval_state_label")}:{" "}
-              {asText(liveOpsApprovalSummary.current_state || liveOpsSnapshot.approval_state)}
-            </span>
-          </div>
+          <>
+            <div className="akrStatRail">
+              <div className="akrMetricCard">
+                <span>{copy.registered}</span>
+                <strong>{registeredUsers}</strong>
+              </div>
+              <div className="akrMetricCard">
+                <span>{copy.active}</span>
+                <strong>{activeUsers}</strong>
+              </div>
+              <div className="akrMetricCard">
+                <span>{copy.payouts}</span>
+                <strong>{pendingPayouts}</strong>
+              </div>
+              <div className="akrMetricCard">
+                <span>{copy.reviews}</span>
+                <strong>{pendingReviews}</strong>
+              </div>
+            </div>
+            <div className="akrChipRow">
+              <span className="akrChip">
+                {t(props.lang, "admin_console_pending")}: {queueCount}
+              </span>
+              <span className="akrChip">
+                {t(props.lang, "admin_console_gate")}:{" "}
+                {liveOpsSchedulerSummary.ready_for_dispatch === true
+                  ? t(props.lang, "admin_live_ops_gate_ready")
+                  : t(props.lang, "admin_live_ops_gate_blocked")}
+              </span>
+              <span className="akrChip">
+                {t(props.lang, "admin_live_ops_approval_state_label")}:{" "}
+                {asText(liveOpsApprovalSummary.current_state || liveOpsSnapshot.approval_state)}
+              </span>
+            </div>
+          </>
         ) : null}
         {props.isAdmin ? (
-          <div className="akrActionRow">
-            {props.panelVisibility.queue ? (
-              <button
-                className="akrBtn akrBtnGhost"
-                onClick={() => runSurfaceAction("admin_header", "queue", SHELL_ACTION_KEY.ADMIN_QUEUE_PANEL, "panel_admin")}
-              >
-                {t(props.lang, "admin_nav_queue")}
-              </button>
-            ) : null}
-            {props.panelVisibility.liveOps ? (
-              <button
-                className="akrBtn akrBtnGhost"
-                onClick={() => runSurfaceAction("admin_header", "live_ops", SHELL_ACTION_KEY.ADMIN_LIVE_OPS_PANEL, "panel_admin")}
-              >
-                {t(props.lang, "admin_nav_live_ops")}
-              </button>
-            ) : null}
+          <div className="akrSplit">
+            <section className="akrMiniPanel">
+              <h4>{copy.usersTitle}</h4>
+              <p className="akrMuted akrMiniPanelBody">{copy.usersBody}</p>
+              {recentUsers.length ? (
+                <ul className="akrList">
+                  {recentUsers.map((row, index) => (
+                    <li key={`${String(row.user_id || index)}_${String(row.telegram_id || "")}`}>
+                      <strong>{asText(row.public_name, `Player #${asInt(row.user_id)}`)}</strong>
+                      <span>
+                        #{asInt(row.user_id)} | T{asInt(row.kingdom_tier)} | S{asInt(row.current_streak)} |{" "}
+                        {asText(row.last_seen_at || row.created_at)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="akrMuted">-</p>
+              )}
+            </section>
+            <section className="akrMiniPanel">
+              <h4>{copy.queueTitle}</h4>
+              <p className="akrMuted akrMiniPanelBody">{copy.queueBody}</p>
+              {recentQueueRows.length ? (
+                <ul className="akrList">
+                  {recentQueueRows.slice(0, 4).map((row, index) => (
+                    <li key={`${String(row.request_id || row.queue_key || index)}_${index}`}>
+                      <strong>
+                        {asText(row.kind, "request").replace(/_/g, " ")} #{asInt(row.request_id)}
+                      </strong>
+                      <span>
+                        {asText(row.status).replace(/_/g, " ")} | P{asInt(row.priority)} | {asText(row.policy_reason_text || row.policy_reason_code)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="akrMuted">{t(props.lang, "admin_queue_empty")}</p>
+              )}
+            </section>
           </div>
         ) : null}
       </section>

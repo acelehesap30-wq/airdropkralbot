@@ -6903,6 +6903,81 @@ fastify.get("/webapp/api/v2/admin/bootstrap", async (request, reply) => {
   });
 });
 
+fastify.get("/webapp/api/v2/admin/users/recent", async (request, reply) => {
+  const auth = verifyWebAppAuth(request.query.uid, request.query.ts, request.query.sig);
+  if (!auth.ok) {
+    reply.code(401).send({ success: false, error: auth.reason });
+    return;
+  }
+  const client = await pool.connect();
+  try {
+    const profile = await requireWebAppAdmin(client, reply, auth.uid);
+    if (!profile) {
+      return;
+    }
+    const limit = parseLimit(request.query.limit, 12, 30);
+    let rows = [];
+    try {
+      const result = await client.query(
+        `SELECT
+            u.id AS user_id,
+            u.telegram_id,
+            COALESCE(i.public_name, 'Player #' || u.id::text) AS public_name,
+            COALESCE(u.locale, 'tr') AS locale,
+            u.created_at,
+            u.last_seen_at,
+            COALESCE(i.kingdom_tier, 0) AS kingdom_tier,
+            COALESCE(s.current_streak, 0) AS current_streak
+         FROM users u
+         LEFT JOIN identities i ON i.user_id = u.id
+         LEFT JOIN streaks s ON s.user_id = u.id
+         ORDER BY COALESCE(u.last_seen_at, u.created_at) DESC
+         LIMIT $1;`,
+        [limit]
+      );
+      rows = result.rows || [];
+    } catch (err) {
+      if (err.code !== "42P01") {
+        throw err;
+      }
+      const fallback = await client.query(
+        `SELECT
+            u.id AS user_id,
+            u.telegram_id,
+            ('Player #' || u.id::text) AS public_name,
+            COALESCE(u.locale, 'tr') AS locale,
+            u.created_at,
+            u.last_seen_at,
+            0 AS kingdom_tier,
+            0 AS current_streak
+         FROM users u
+         ORDER BY COALESCE(u.last_seen_at, u.created_at) DESC
+         LIMIT $1;`,
+        [limit]
+      );
+      rows = fallback.rows || [];
+    }
+    reply.send({
+      success: true,
+      session: issueWebAppSession(auth.uid),
+      data: {
+        items: rows.map((row) => ({
+          user_id: Number(row.user_id || 0),
+          telegram_id: Number(row.telegram_id || 0),
+          public_name: String(row.public_name || `Player #${Number(row.user_id || 0)}`),
+          locale: String(row.locale || "tr"),
+          kingdom_tier: Number(row.kingdom_tier || 0),
+          current_streak: Number(row.current_streak || 0),
+          created_at: row.created_at || null,
+          last_seen_at: row.last_seen_at || null
+        }))
+      }
+    });
+  } finally {
+    client.release();
+  }
+});
+
 fastify.get("/webapp/api/v2/assets/manifest/resolved", async (request, reply) => {
   const auth = verifyWebAppAuth(request.query.uid, request.query.ts, request.query.sig);
   if (!auth.ok) {

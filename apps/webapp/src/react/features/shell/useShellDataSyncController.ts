@@ -20,6 +20,7 @@ type ShellDataSyncControllerOptions = {
   walletSessionQueryData: QueryPayload;
   payoutStatusQueryData: QueryPayload;
   adminBootstrapQueryData: QueryPayload;
+  adminUsersRecentQueryData: QueryPayload;
   adminQueueQueryData: QueryPayload;
   adminMetricsQueryData: QueryPayload;
   adminLiveOpsCampaignQueryData: QueryPayload;
@@ -144,7 +145,8 @@ export function useShellDataSyncController(options: ShellDataSyncControllerOptio
       !options.adminMetricsQueryData &&
       !options.adminLiveOpsCampaignQueryData &&
       !options.adminAssetsQueryData &&
-      !options.adminOpsKpiLatestQueryData
+      !options.adminOpsKpiLatestQueryData &&
+      !options.adminUsersRecentQueryData
     ) {
       return;
     }
@@ -153,7 +155,8 @@ export function useShellDataSyncController(options: ShellDataSyncControllerOptio
       ...(options.adminMetricsQueryData?.success ? { metrics: options.adminMetricsQueryData.data || null } : {}),
       ...(options.adminLiveOpsCampaignQueryData?.success ? { live_ops_campaign: options.adminLiveOpsCampaignQueryData.data || null } : {}),
       ...(options.adminOpsKpiLatestQueryData?.success ? { ops_kpi: options.adminOpsKpiLatestQueryData.data || null } : {}),
-      ...(options.adminAssetsQueryData?.success ? { assets: options.adminAssetsQueryData.data || null } : {})
+      ...(options.adminAssetsQueryData?.success ? { assets: options.adminAssetsQueryData.data || null } : {}),
+      ...(options.adminUsersRecentQueryData?.success ? { users_recent: options.adminUsersRecentQueryData.data || null } : {})
     }));
   }, [
     options.adminQueryEnabled,
@@ -161,6 +164,7 @@ export function useShellDataSyncController(options: ShellDataSyncControllerOptio
     options.adminLiveOpsCampaignQueryData,
     options.adminOpsKpiLatestQueryData,
     options.adminAssetsQueryData,
+    options.adminUsersRecentQueryData,
     options.setAdminPanels
   ]);
 
