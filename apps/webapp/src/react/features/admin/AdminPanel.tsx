@@ -244,39 +244,43 @@ export function AdminPanel(props: AdminPanelProps) {
         {!props.isAdmin && <p className="akrErrorLine">{t(props.lang, "admin_access_denied")}</p>}
         {props.isAdmin ? (
           <>
-            <div className="akrStatRail">
-              <div className="akrMetricCard">
-                <span>{copy.registered}</span>
-                <strong>{registeredUsers}</strong>
-              </div>
-              <div className="akrMetricCard">
-                <span>{copy.active}</span>
-                <strong>{activeUsers}</strong>
-              </div>
-              <div className="akrMetricCard">
-                <span>{copy.payouts}</span>
-                <strong>{pendingPayouts}</strong>
-              </div>
-              <div className="akrMetricCard">
-                <span>{copy.reviews}</span>
-                <strong>{pendingReviews}</strong>
-              </div>
-            </div>
-            <div className="akrChipRow">
-              <span className="akrChip">
-                {t(props.lang, "admin_console_pending")}: {queueCount}
-              </span>
-              <span className="akrChip">
-                {t(props.lang, "admin_console_gate")}:{" "}
-                {liveOpsSchedulerSummary.ready_for_dispatch === true
-                  ? t(props.lang, "admin_live_ops_gate_ready")
-                  : t(props.lang, "admin_live_ops_gate_blocked")}
-              </span>
-              <span className="akrChip">
-                {t(props.lang, "admin_live_ops_approval_state_label")}:{" "}
-                {asText(liveOpsApprovalSummary.current_state || liveOpsSnapshot.approval_state)}
-              </span>
-            </div>
+            {!showCompactOpsOnly ? (
+              <>
+                <div className="akrStatRail">
+                  <div className="akrMetricCard">
+                    <span>{copy.registered}</span>
+                    <strong>{registeredUsers}</strong>
+                  </div>
+                  <div className="akrMetricCard">
+                    <span>{copy.active}</span>
+                    <strong>{activeUsers}</strong>
+                  </div>
+                  <div className="akrMetricCard">
+                    <span>{copy.payouts}</span>
+                    <strong>{pendingPayouts}</strong>
+                  </div>
+                  <div className="akrMetricCard">
+                    <span>{copy.reviews}</span>
+                    <strong>{pendingReviews}</strong>
+                  </div>
+                </div>
+                <div className="akrChipRow">
+                  <span className="akrChip">
+                    {t(props.lang, "admin_console_pending")}: {queueCount}
+                  </span>
+                  <span className="akrChip">
+                    {t(props.lang, "admin_console_gate")}:{" "}
+                    {liveOpsSchedulerSummary.ready_for_dispatch === true
+                      ? t(props.lang, "admin_live_ops_gate_ready")
+                      : t(props.lang, "admin_live_ops_gate_blocked")}
+                  </span>
+                  <span className="akrChip">
+                    {t(props.lang, "admin_live_ops_approval_state_label")}:{" "}
+                    {asText(liveOpsApprovalSummary.current_state || liveOpsSnapshot.approval_state)}
+                  </span>
+                </div>
+              </>
+            ) : null}
             {showCompactOpsOnly ? (
               <section className="akrDecisionDeck">
                 <article className="akrDecisionCard">

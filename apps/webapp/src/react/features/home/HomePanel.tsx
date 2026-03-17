@@ -49,6 +49,16 @@ export function HomePanel(props: HomePanelProps) {
           nextMoveLabelVault: "Vault lane",
           nextMoveLabelArena: "Arena lane",
           nextMoveLabelDiscover: "Fast route",
+          seasonChainTitle: "Season run chain",
+          seasonChainBody: "Giris hub'i seni arena baskisina yollar, oradan mission claim ve sonunda vault cikisina baglar.",
+          seasonChainHome: "Hub wake",
+          seasonChainHomeBody: "Bugunun streak, wallet ve hizli route karari burada verilir.",
+          seasonChainArena: "Arena push",
+          seasonChainArenaBody: "Duel ve ladder sonucu sonraki claim baskisini belirler.",
+          seasonChainMission: "Mission close",
+          seasonChainMissionBody: "Hazir objective kapanir ve odul rotasi acilir.",
+          seasonChainVault: "Vault exit",
+          seasonChainVaultBody: "Proof, payout ve prize market sezon kosusunu tamamlar.",
           hintTitle: "Hizli rota kartlari",
           hintBody: "Bot'un onerdigi bir sonraki lane veya komut buradan acilir.",
           rhythmTitle: "Bugunun ritmi",
@@ -77,6 +87,16 @@ export function HomePanel(props: HomePanelProps) {
           nextMoveLabelVault: "Vault lane",
           nextMoveLabelArena: "Arena lane",
           nextMoveLabelDiscover: "Fast route",
+          seasonChainTitle: "Season run chain",
+          seasonChainBody: "The entry hub sends you into arena pressure, then into mission claims, and finally the vault exit.",
+          seasonChainHome: "Hub wake",
+          seasonChainHomeBody: "Today's streak, wallet, and fast-route decision starts here.",
+          seasonChainArena: "Arena push",
+          seasonChainArenaBody: "Duel and ladder results define the next claim pressure.",
+          seasonChainMission: "Mission close",
+          seasonChainMissionBody: "A ready objective closes and opens the reward route.",
+          seasonChainVault: "Vault exit",
+          seasonChainVaultBody: "Proof, payout, and prize market close the season run.",
           hintTitle: "Quick route cards",
           hintBody: "Launch the bot's next suggested lane or command from here.",
           rhythmTitle: "Today's rhythm",
@@ -277,6 +297,35 @@ export function HomePanel(props: HomePanelProps) {
               </div>
             )}
           </div>
+        </div>
+      </section>
+
+      <section className="akrRouteStrip" data-akr-panel-key="status" data-akr-focus-key="season_chain">
+        <div className="akrRouteStripHeader">
+          <p className="akrKicker">{copy.seasonChainTitle}</p>
+          <p className="akrMuted">{copy.seasonChainBody}</p>
+        </div>
+        <div className="akrRouteStripGrid">
+          <button className="akrRouteStep isActive" onClick={props.onRefresh}>
+            <span className="akrKicker">{copy.seasonChainHome}</span>
+            <strong>{t(props.lang, "home_hub_title")}</strong>
+            <p>{copy.seasonChainHomeBody}</p>
+          </button>
+          <button className="akrRouteStep" onClick={openArena}>
+            <span className="akrKicker">{copy.seasonChainArena}</span>
+            <strong>{t(props.lang, "shell_panel_go_pvp")}</strong>
+            <p>{copy.seasonChainArenaBody}</p>
+          </button>
+          <button className="akrRouteStep" onClick={openMissions}>
+            <span className="akrKicker">{copy.seasonChainMission}</span>
+            <strong>{t(props.lang, "shell_panel_go_tasks")}</strong>
+            <p>{copy.seasonChainMissionBody}</p>
+          </button>
+          <button className="akrRouteStep" onClick={openVault}>
+            <span className="akrKicker">{copy.seasonChainVault}</span>
+            <strong>{t(props.lang, "shell_panel_go_vault")}</strong>
+            <p>{copy.seasonChainVaultBody}</p>
+          </button>
         </div>
       </section>
 
