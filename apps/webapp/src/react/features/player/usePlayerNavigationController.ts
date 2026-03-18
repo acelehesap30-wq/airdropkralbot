@@ -50,11 +50,16 @@ export function usePlayerNavigationController(options: PlayerNavigationControlle
     enableFocus: true
   });
 
-  const { activePanelKey, activeFocusKey, openPanel, closePanel } = usePlayerShellPanelController({
+  const { activePanelKey, activeFocusKey, openPanel, closePanel: closeLocalPanel } = usePlayerShellPanelController({
     launchContext: activeRouteContext,
     tab: options.tab,
     trackUiEvent: options.trackUiEvent
   });
+
+  const closePanel = useCallback(() => {
+    closeLocalPanel();
+    dispatch(navigationActions.clearLaunchContext());
+  }, [closeLocalPanel, dispatch]);
 
   const routeToTarget = useCallback(
     (input: RouteTargetInput) => {
