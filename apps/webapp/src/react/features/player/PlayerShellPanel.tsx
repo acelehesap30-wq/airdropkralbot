@@ -55,6 +55,97 @@ export function PlayerShellPanel(props: PlayerShellPanelProps) {
   const prefsJson = prefs?.prefs_json && typeof prefs.prefs_json === "object" ? prefs.prefs_json : {};
   const nextLang = normalizeLang(props.lang) === "tr" ? "en" : "tr";
   const rootPanelKey = resolveRootPanelKey(props.panelKey);
+  const copy =
+    props.lang === "tr"
+      ? {
+          langLabel: "Dil",
+          qualityLabel: "Kalite",
+          fxLabel: "Fx",
+          hudLabel: "HUD",
+          workspaceLabel: "Alan",
+          motionReduced: "motion az",
+          motionNormal: "motion normal",
+          largeText: "buyuk metin",
+          baseText: "standart metin",
+          soundOff: "ses kapali",
+          soundOn: "ses acik",
+          perfLabel: "Perf",
+          deviceLabel: "Cihaz",
+          profileLabel: "Profil",
+          tierLabel: "Tier",
+          streakLabel: "Streak",
+          seasonLabel: "Sezon",
+          pointsLabel: "Puan",
+          chainLabel: "Chain",
+          tasksLabel: "Gorev",
+          readyLabel: "Hazir",
+          openLabel: "Acik",
+          routeLabel: "Rota",
+          requestableLabel: "Talep",
+          entitledLabel: "Hak",
+          passesLabel: "Pass",
+          cosmeticsLabel: "Cosmetic",
+          ownedLabel: "Sahip",
+          historyLabel: "Gecmis",
+          premiumOn: "premium acik",
+          premiumOff: "premium kapali",
+          walletReady: "wallet hazir",
+          walletIdle: "wallet bekliyor",
+          walletOn: "wallet acik",
+          walletOff: "wallet kapali",
+          kycLabel: "KYC",
+          assetLabel: "Asset",
+          unlockTierLabel: "Tier",
+          payoutOpen: "talep acik",
+          payoutLocked: "kilitli"
+        }
+      : {
+          langLabel: "Lang",
+          qualityLabel: "Quality",
+          fxLabel: "Fx",
+          hudLabel: "HUD",
+          workspaceLabel: "Workspace",
+          motionReduced: "motion reduced",
+          motionNormal: "motion normal",
+          largeText: "large text",
+          baseText: "base text",
+          soundOff: "sound off",
+          soundOn: "sound on",
+          perfLabel: "Perf",
+          deviceLabel: "Device",
+          profileLabel: "Profile",
+          tierLabel: "Tier",
+          streakLabel: "Streak",
+          seasonLabel: "Season",
+          pointsLabel: "Pts",
+          chainLabel: "Chain",
+          tasksLabel: "Tasks",
+          readyLabel: "Ready",
+          openLabel: "Open",
+          routeLabel: "Route",
+          requestableLabel: "Req",
+          entitledLabel: "Entitled",
+          passesLabel: "Passes",
+          cosmeticsLabel: "Cosmetics",
+          ownedLabel: "Owned",
+          historyLabel: "History",
+          premiumOn: "premium on",
+          premiumOff: "premium off",
+          walletReady: "wallet ready",
+          walletIdle: "wallet idle",
+          walletOn: "wallet on",
+          walletOff: "wallet off",
+          kycLabel: "KYC",
+          assetLabel: "Asset",
+          unlockTierLabel: "Tier",
+          payoutOpen: "request open",
+          payoutLocked: "locked"
+        };
+  const chipText = (label: string, value: unknown, fallback = "-") => {
+    const text = String(value ?? "").trim() || fallback;
+    return `${label} ${text}`;
+  };
+  const countChip = (label: string, value: unknown) => `${label} ${Math.floor(Number(value || 0))}`;
   const resolveSurfaceActionKey = (sectionKey: string, slotKey: string, fallbackActionKey: string) => {
     const rows = Array.isArray((homeView.surface_actions as Record<string, Array<Record<string, unknown>>> | undefined)?.[sectionKey])
       ? ((homeView.surface_actions as Record<string, Array<Record<string, unknown>>>)[sectionKey] || [])
@@ -110,21 +201,21 @@ export function PlayerShellPanel(props: PlayerShellPanelProps) {
         </div>
         <div className="akrActionRow">
           {props.panelKey !== "discover" ? (
-            <button className="akrBtn akrBtnGhost" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_DISCOVER_CENTER, rootPanelKey)}>
+            <button type="button" className="akrBtn akrBtnGhost" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_DISCOVER_CENTER, rootPanelKey)}>
               {t(props.lang, "shell_panel_open_discover")}
             </button>
           ) : null}
           {props.panelKey !== "settings" ? (
-            <button className="akrBtn akrBtnGhost" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_SETTINGS_LOCALE, rootPanelKey)}>
+            <button type="button" className="akrBtn akrBtnGhost" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_SETTINGS_LOCALE, rootPanelKey)}>
               {t(props.lang, "shell_panel_open_settings")}
             </button>
           ) : null}
           {props.panelKey !== "support" ? (
-            <button className="akrBtn akrBtnGhost" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_SUPPORT_FAQ, rootPanelKey)}>
+            <button type="button" className="akrBtn akrBtnGhost" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_SUPPORT_FAQ, rootPanelKey)}>
               {t(props.lang, "shell_panel_open_support")}
             </button>
           ) : null}
-          <button className="akrBtn akrBtnAccent" onClick={props.onClose}>
+          <button type="button" className="akrBtn akrBtnAccent" onClick={props.onClose}>
             {t(props.lang, "shell_panel_close")}
           </button>
         </div>
@@ -135,14 +226,14 @@ export function PlayerShellPanel(props: PlayerShellPanelProps) {
           <section className="akrMiniPanel" data-akr-focus-key="locale_override">
             <h4>{t(props.lang, "shell_panel_settings_language")}</h4>
             <div className="akrChipRow">
-              <span className="akrChip">{String(props.lang).toUpperCase()}</span>
-              <span className="akrChip">{String(props.sceneProfile.qualityMode || prefs?.quality_mode || "auto")}</span>
-              <span className="akrChip">{String(props.sceneProfile.effectiveQuality || "medium")}</span>
-              <span className="akrChip">{String(props.sceneProfile.hudDensity || "normal")}</span>
-              <span className="akrChip">{String(prefsJson.workspace || "player")}</span>
+              <span className="akrChip">{chipText(copy.langLabel, String(props.lang).toUpperCase())}</span>
+              <span className="akrChip">{chipText(copy.qualityLabel, props.sceneProfile.qualityMode || prefs?.quality_mode || "auto")}</span>
+              <span className="akrChip">{chipText(copy.fxLabel, props.sceneProfile.effectiveQuality || "medium")}</span>
+              <span className="akrChip">{chipText(copy.hudLabel, props.sceneProfile.hudDensity || "normal")}</span>
+              <span className="akrChip">{chipText(copy.workspaceLabel, prefsJson.workspace || "player")}</span>
             </div>
             <div className="akrActionRow">
-              <button className="akrBtn akrBtnAccent" onClick={() => props.onToggleLanguage(nextLang)}>
+              <button type="button" className="akrBtn akrBtnAccent" onClick={() => props.onToggleLanguage(nextLang)}>
                 {t(props.lang, "language")}: {String(nextLang).toUpperCase()}
               </button>
             </div>
@@ -150,18 +241,18 @@ export function PlayerShellPanel(props: PlayerShellPanelProps) {
           <section className="akrMiniPanel" data-akr-focus-key="accessibility">
             <h4>{t(props.lang, "shell_panel_settings_accessibility")}</h4>
             <div className="akrChipRow">
-              <span className="akrChip">{prefs?.reduced_motion ? "motion_reduced" : "motion_normal"}</span>
-              <span className="akrChip">{prefs?.large_text ? "large_text" : "base_text"}</span>
-              <span className="akrChip">{prefs?.sound_enabled === false ? "sound_off" : "sound_on"}</span>
-              <span className="akrChip">{String(props.sceneProfile.perfTier || "-")}</span>
-              <span className="akrChip">{String(props.sceneProfile.deviceClass || "-")}</span>
-              <span className="akrChip">{String(props.sceneProfile.sceneProfile || "-")}</span>
+              <span className="akrChip">{prefs?.reduced_motion ? copy.motionReduced : copy.motionNormal}</span>
+              <span className="akrChip">{prefs?.large_text ? copy.largeText : copy.baseText}</span>
+              <span className="akrChip">{prefs?.sound_enabled === false ? copy.soundOff : copy.soundOn}</span>
+              <span className="akrChip">{chipText(copy.perfLabel, props.sceneProfile.perfTier || "-")}</span>
+              <span className="akrChip">{chipText(copy.deviceLabel, props.sceneProfile.deviceClass || "-")}</span>
+              <span className="akrChip">{chipText(copy.profileLabel, props.sceneProfile.sceneProfile || "-")}</span>
             </div>
             <div className="akrActionRow">
-              <button className="akrBtn akrBtnGhost" onClick={() => props.onToggleReducedMotion(!Boolean(prefs?.reduced_motion))}>
+              <button type="button" className="akrBtn akrBtnGhost" onClick={() => props.onToggleReducedMotion(!Boolean(prefs?.reduced_motion))}>
                 {t(props.lang, "shell_panel_toggle_motion")}
               </button>
-              <button className="akrBtn akrBtnGhost" onClick={() => props.onToggleLargeText(!Boolean(prefs?.large_text))}>
+              <button type="button" className="akrBtn akrBtnGhost" onClick={() => props.onToggleLargeText(!Boolean(prefs?.large_text))}>
                 {t(props.lang, "shell_panel_toggle_text")}
               </button>
             </div>
@@ -175,16 +266,16 @@ export function PlayerShellPanel(props: PlayerShellPanelProps) {
             <h4>{t(props.lang, "shell_panel_profile_identity_title")}</h4>
             <div className="akrChipRow">
               <span className="akrChip">{homeView.summary.player_name || t(props.lang, "unknown_player")}</span>
-              <span className="akrChip">Tier {Math.floor(homeView.summary.kingdom_tier)}</span>
-              <span className="akrChip">Streak {Math.floor(homeView.summary.streak)}</span>
-              <span className="akrChip">Season #{Math.floor(homeView.summary.season_id)}</span>
-              <span className="akrChip">Pts {Math.floor(homeView.summary.season_points)}</span>
+              <span className="akrChip">{countChip(copy.tierLabel, homeView.summary.kingdom_tier)}</span>
+              <span className="akrChip">{countChip(copy.streakLabel, homeView.summary.streak)}</span>
+              <span className="akrChip">{`${copy.seasonLabel} #${Math.floor(homeView.summary.season_id)}`}</span>
+              <span className="akrChip">{countChip(copy.pointsLabel, homeView.summary.season_points)}</span>
             </div>
             <div className="akrActionRow">
-              <button className="akrBtn akrBtnAccent" onClick={() => props.onTabChange("pvp")}>
+              <button type="button" className="akrBtn akrBtnAccent" onClick={() => props.onTabChange("pvp")}>
                 {t(props.lang, "shell_panel_go_pvp")}
               </button>
-              <button className="akrBtn akrBtnGhost" onClick={() => props.onTabChange("tasks")}>
+              <button type="button" className="akrBtn akrBtnGhost" onClick={() => props.onTabChange("tasks")}>
                 {t(props.lang, "shell_panel_go_tasks")}
               </button>
             </div>
@@ -195,14 +286,19 @@ export function PlayerShellPanel(props: PlayerShellPanelProps) {
               <span className="akrChip">SC {Math.floor(homeView.summary.sc_earned)}</span>
               <span className="akrChip">RC {Math.floor(homeView.summary.rc_earned)}</span>
               <span className="akrChip">HC {Math.floor(homeView.summary.hc_earned)}</span>
-              <span className="akrChip">{homeView.summary.wallet_active ? "wallet_on" : "wallet_off"}</span>
-              <span className="akrChip">{homeView.summary.wallet_chain || "-"}</span>
+              <span className="akrChip">{homeView.summary.wallet_active ? copy.walletOn : copy.walletOff}</span>
+              <span className="akrChip">{chipText(copy.chainLabel, homeView.summary.wallet_chain || "-")}</span>
             </div>
             <div className="akrActionRow">
-              <button className="akrBtn akrBtnGhost" onClick={() => runSurfaceAction("shell_profile", "status", SHELL_ACTION_KEY.PLAYER_STATUS_PANEL)}>
+              <button
+                type="button"
+                className="akrBtn akrBtnGhost"
+                onClick={() => runSurfaceAction("shell_profile", "status", SHELL_ACTION_KEY.PLAYER_STATUS_PANEL)}
+              >
                 {t(props.lang, "shell_panel_open_status")}
               </button>
               <button
+                type="button"
                 className="akrBtn akrBtnGhost"
                 onClick={() => runSurfaceAction("shell_profile", "wallet", SHELL_ACTION_KEY.PLAYER_WALLET_CONNECT)}
               >
@@ -218,17 +314,21 @@ export function PlayerShellPanel(props: PlayerShellPanelProps) {
           <section className="akrMiniPanel" data-akr-focus-key="system_status">
             <h4>{t(props.lang, "shell_panel_status_runtime_title")}</h4>
             <div className="akrChipRow">
-              <span className="akrChip">Tasks {Math.floor(homeView.summary.tasks_done)}/{Math.floor(homeView.summary.daily_cap)}</span>
-              <span className="akrChip">Ready {Math.floor(homeView.summary.mission_ready)}</span>
-              <span className="akrChip">Open {Math.floor(homeView.summary.mission_open)}</span>
-              <span className="akrChip">{homeView.summary.wallet_active ? "wallet_on" : "wallet_off"}</span>
-              <span className="akrChip">{homeView.summary.wallet_kyc_status || t(props.lang, "status_unknown")}</span>
+              <span className="akrChip">{`${copy.tasksLabel} ${Math.floor(homeView.summary.tasks_done)}/${Math.floor(homeView.summary.daily_cap)}`}</span>
+              <span className="akrChip">{countChip(copy.readyLabel, homeView.summary.mission_ready)}</span>
+              <span className="akrChip">{countChip(copy.openLabel, homeView.summary.mission_open)}</span>
+              <span className="akrChip">{homeView.summary.wallet_active ? copy.walletOn : copy.walletOff}</span>
+              <span className="akrChip">{chipText(copy.kycLabel, homeView.summary.wallet_kyc_status || t(props.lang, "status_unknown"))}</span>
             </div>
             <div className="akrActionRow">
-              <button className="akrBtn akrBtnAccent" onClick={() => props.onTabChange("tasks")}>
+              <button type="button" className="akrBtn akrBtnAccent" onClick={() => props.onTabChange("tasks")}>
                 {t(props.lang, "shell_panel_go_tasks")}
               </button>
-              <button className="akrBtn akrBtnGhost" onClick={() => runSurfaceAction("shell_status_primary", "support", SHELL_ACTION_KEY.PLAYER_SUPPORT_STATUS)}>
+              <button
+                type="button"
+                className="akrBtn akrBtnGhost"
+                onClick={() => runSurfaceAction("shell_status_primary", "support", SHELL_ACTION_KEY.PLAYER_SUPPORT_STATUS)}
+              >
                 {t(props.lang, "shell_panel_open_support")}
               </button>
             </div>
@@ -236,17 +336,22 @@ export function PlayerShellPanel(props: PlayerShellPanelProps) {
           <section className="akrMiniPanel" data-akr-focus-key={props.focusKey || "economy_status"}>
             <h4>{t(props.lang, "shell_panel_status_economy_title")}</h4>
             <div className="akrChipRow">
-              <span className="akrChip">{vaultView.summary.token_symbol || "-"}</span>
-              <span className="akrChip">{vaultView.summary.route_status || "-"}</span>
-              <span className="akrChip">Req {vaultView.summary.payout_requestable_btc.toFixed(8)} BTC</span>
-              <span className="akrChip">Pass {Math.floor(vaultView.summary.active_pass_count)}</span>
-              <span className="akrChip">Premium {vaultView.summary.premium_active ? "on" : "off"}</span>
+              <span className="akrChip">{chipText(copy.assetLabel, vaultView.summary.token_symbol || "-")}</span>
+              <span className="akrChip">{chipText(copy.routeLabel, vaultView.summary.route_status || "-")}</span>
+              <span className="akrChip">{`${copy.requestableLabel} ${vaultView.summary.payout_requestable_btc.toFixed(8)} BTC`}</span>
+              <span className="akrChip">{countChip(copy.passesLabel, vaultView.summary.active_pass_count)}</span>
+              <span className="akrChip">{vaultView.summary.premium_active ? copy.premiumOn : copy.premiumOff}</span>
             </div>
             <div className="akrActionRow">
-              <button className="akrBtn akrBtnGhost" onClick={() => runSurfaceAction("shell_status_economy", "rewards", SHELL_ACTION_KEY.PLAYER_REWARDS_PANEL)}>
+              <button
+                type="button"
+                className="akrBtn akrBtnGhost"
+                onClick={() => runSurfaceAction("shell_status_economy", "rewards", SHELL_ACTION_KEY.PLAYER_REWARDS_PANEL)}
+              >
                 {t(props.lang, "shell_panel_open_rewards")}
               </button>
               <button
+                type="button"
                 className="akrBtn akrBtnGhost"
                 onClick={() => runSurfaceAction("shell_status_economy", "payout", SHELL_ACTION_KEY.PLAYER_PAYOUT_REQUEST)}
               >
@@ -271,18 +376,24 @@ export function PlayerShellPanel(props: PlayerShellPanelProps) {
             </div>
             <div className="akrActionRow">
               <button
+                type="button"
                 className="akrBtn akrBtnAccent"
                 onClick={() => runSurfaceAction("shell_support", "payout", SHELL_ACTION_KEY.PLAYER_PAYOUT_REQUEST)}
               >
                 {t(props.lang, "shell_panel_go_payout")}
               </button>
               <button
+                type="button"
                 className="akrBtn akrBtnGhost"
                 onClick={() => runSurfaceAction("shell_support", "wallet", SHELL_ACTION_KEY.PLAYER_WALLET_CONNECT)}
               >
                 {t(props.lang, "shell_panel_go_wallet")}
               </button>
-              <button className="akrBtn akrBtnGhost" onClick={() => runSurfaceAction("shell_support", "settings", SHELL_ACTION_KEY.PLAYER_SETTINGS_ACCESSIBILITY)}>
+              <button
+                type="button"
+                className="akrBtn akrBtnGhost"
+                onClick={() => runSurfaceAction("shell_support", "settings", SHELL_ACTION_KEY.PLAYER_SETTINGS_ACCESSIBILITY)}
+              >
                 {t(props.lang, "shell_panel_open_settings")}
               </button>
             </div>
@@ -312,22 +423,24 @@ export function PlayerShellPanel(props: PlayerShellPanelProps) {
           <section className="akrMiniPanel" data-akr-focus-key="next_steps">
             <h4>{t(props.lang, "shell_panel_discover_next_title")}</h4>
             <div className="akrChipRow">
-              <span className="akrChip">Ready {Math.floor(homeView.summary.mission_ready)}</span>
-              <span className="akrChip">Open {Math.floor(homeView.summary.mission_open)}</span>
-              <span className="akrChip">Wallet {homeView.summary.wallet_active ? "on" : "off"}</span>
-              <span className="akrChip">Premium {homeView.summary.premium_active ? "on" : "off"}</span>
+              <span className="akrChip">{countChip(copy.readyLabel, homeView.summary.mission_ready)}</span>
+              <span className="akrChip">{countChip(copy.openLabel, homeView.summary.mission_open)}</span>
+              <span className="akrChip">{homeView.summary.wallet_active ? copy.walletReady : copy.walletIdle}</span>
+              <span className="akrChip">{homeView.summary.premium_active ? copy.premiumOn : copy.premiumOff}</span>
             </div>
             <div className="akrActionRow">
-              <button className="akrBtn akrBtnAccent" onClick={() => props.onTabChange("tasks")}>
+              <button type="button" className="akrBtn akrBtnAccent" onClick={() => props.onTabChange("tasks")}>
                 {t(props.lang, "shell_panel_go_tasks")}
               </button>
               <button
+                type="button"
                 className="akrBtn akrBtnGhost"
                 onClick={() => runSurfaceAction("shell_discover", "pvp", SHELL_ACTION_KEY.PLAYER_PVP_DAILY_DUEL)}
               >
                 {t(props.lang, "shell_panel_go_pvp")}
               </button>
               <button
+                type="button"
                 className="akrBtn akrBtnGhost"
                 onClick={() => runSurfaceAction("shell_discover", "vault", SHELL_ACTION_KEY.PLAYER_PAYOUT_REQUEST)}
               >
@@ -346,6 +459,7 @@ export function PlayerShellPanel(props: PlayerShellPanelProps) {
                       {row.description || "-"}
                       {resolvePlayerCommandHintNavigation(row) ? (
                         <button
+                          type="button"
                           className="akrBtn akrBtnGhost"
                           onClick={() => runCommandHint(row as Record<string, unknown>)}
                         >
@@ -368,16 +482,21 @@ export function PlayerShellPanel(props: PlayerShellPanelProps) {
           <section className="akrMiniPanel" data-akr-focus-key="premium_pass">
             <h4>{t(props.lang, "shell_panel_rewards_catalog_title")}</h4>
             <div className="akrChipRow">
-              <span className="akrChip">Pass {vaultView.catalog.passes.length}</span>
-              <span className="akrChip">Cosmetics {vaultView.catalog.cosmetics.length}</span>
-              <span className="akrChip">Owned {Math.floor(vaultView.summary.cosmetics_owned_count)}</span>
-              <span className="akrChip">History {Math.floor(vaultView.summary.pass_history_count)}</span>
+              <span className="akrChip">{countChip(copy.passesLabel, vaultView.catalog.passes.length)}</span>
+              <span className="akrChip">{countChip(copy.cosmeticsLabel, vaultView.catalog.cosmetics.length)}</span>
+              <span className="akrChip">{countChip(copy.ownedLabel, vaultView.summary.cosmetics_owned_count)}</span>
+              <span className="akrChip">{countChip(copy.historyLabel, vaultView.summary.pass_history_count)}</span>
             </div>
             <div className="akrActionRow">
-              <button className="akrBtn akrBtnAccent" onClick={() => runSurfaceAction("shell_rewards", "support", SHELL_ACTION_KEY.PLAYER_SUPPORT_FAQ)}>
+              <button
+                type="button"
+                className="akrBtn akrBtnAccent"
+                onClick={() => runSurfaceAction("shell_rewards", "support", SHELL_ACTION_KEY.PLAYER_SUPPORT_FAQ)}
+              >
                 {t(props.lang, "shell_panel_open_support")}
               </button>
               <button
+                type="button"
                 className="akrBtn akrBtnGhost"
                 onClick={() => runSurfaceAction("shell_rewards", "payout", SHELL_ACTION_KEY.PLAYER_PAYOUT_REQUEST)}
               >
@@ -388,10 +507,10 @@ export function PlayerShellPanel(props: PlayerShellPanelProps) {
           <section className="akrMiniPanel" data-akr-focus-key={props.focusKey || "payout_lane"}>
             <h4>{t(props.lang, "shell_panel_rewards_payout_title")}</h4>
             <div className="akrChipRow">
-              <span className="akrChip">{vaultView.summary.payout_can_request ? "can_request" : "locked"}</span>
-              <span className="akrChip">{vaultView.summary.payout_unlock_tier || "-"}</span>
-              <span className="akrChip">Req {vaultView.summary.payout_requestable_btc.toFixed(8)} BTC</span>
-              <span className="akrChip">Entitled {vaultView.summary.payout_entitled_btc.toFixed(8)} BTC</span>
+              <span className="akrChip">{vaultView.summary.payout_can_request ? copy.payoutOpen : copy.payoutLocked}</span>
+              <span className="akrChip">{chipText(copy.unlockTierLabel, vaultView.summary.payout_unlock_tier || "-")}</span>
+              <span className="akrChip">{`${copy.requestableLabel} ${vaultView.summary.payout_requestable_btc.toFixed(8)} BTC`}</span>
+              <span className="akrChip">{`${copy.entitledLabel} ${vaultView.summary.payout_entitled_btc.toFixed(8)} BTC`}</span>
             </div>
             <p className="akrMuted">
               {vaultView.latest.payout_request_status || t(props.lang, "status_unknown")} | {vaultView.latest.submit_tx_hash || "-"}
