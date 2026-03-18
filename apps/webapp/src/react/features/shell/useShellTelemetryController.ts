@@ -84,9 +84,15 @@ export function useShellTelemetryController(options: ShellTelemetryControllerOpt
   );
 
   useEffect(() => {
-    if (!options.data) return;
+    if (!options.data) {
+      analyticsRef.current = null;
+      return;
+    }
     const cfg = resolveAnalyticsConfig(options.data.analytics);
-    if (!cfg) return;
+    if (!cfg) {
+      analyticsRef.current = null;
+      return;
+    }
     const client = createUiAnalyticsClient({
       auth: options.activeAuth,
       config: cfg,
@@ -123,7 +129,12 @@ export function useShellTelemetryController(options: ShellTelemetryControllerOpt
         event_value: 1
       })
     );
-    return () => client.dispose();
+    return () => {
+      client.dispose();
+      if (analyticsRef.current === client) {
+        analyticsRef.current = null;
+      }
+    };
   }, [
     options.activeAuth.uid,
     options.activeAuth.ts,

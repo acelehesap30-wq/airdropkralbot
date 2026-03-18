@@ -28,6 +28,7 @@ export function createUiAnalyticsClient(initial: AnalyticsContext): UiAnalyticsC
   let ctx = { ...initial };
   let queue: UiEventRecord[] = [];
   let timer: number | null = null;
+  let disposed = false;
 
   const hasTelemetryIdentity = () => {
     const sessionRef = String(ctx.config.session_ref || "").trim();
@@ -35,6 +36,9 @@ export function createUiAnalyticsClient(initial: AnalyticsContext): UiAnalyticsC
   };
 
   const schedule = () => {
+    if (disposed) {
+      return;
+    }
     if (timer != null) {
       window.clearTimeout(timer);
     }
@@ -85,6 +89,9 @@ export function createUiAnalyticsClient(initial: AnalyticsContext): UiAnalyticsC
   };
 
   const track = (event: UiEventRecord) => {
+    if (disposed) {
+      return;
+    }
     if (!hasTelemetryIdentity()) {
       return;
     }
@@ -109,6 +116,9 @@ export function createUiAnalyticsClient(initial: AnalyticsContext): UiAnalyticsC
   };
 
   const setContext = (patch: Partial<AnalyticsContext>) => {
+    if (disposed) {
+      return;
+    }
     ctx = {
       ...ctx,
       ...patch,
@@ -128,7 +138,9 @@ export function createUiAnalyticsClient(initial: AnalyticsContext): UiAnalyticsC
       window.clearTimeout(timer);
       timer = null;
     }
-    void flush();
+    const flushPromise = flush();
+    disposed = true;
+    void flushPromise;
   };
 
   return {
