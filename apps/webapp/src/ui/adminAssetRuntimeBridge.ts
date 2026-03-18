@@ -45,6 +45,17 @@ const METER_PALETTES: Record<MeterPalette, { start: string; end: string; glow: s
   critical: { start: "#ff416d", end: "#ffc266", glow: "rgba(255, 93, 125, 0.56)" }
 });
 
+const ADMIN_ASSET_RUNTIME_CHIP_IDS = [
+  "adminAssetReadyChip",
+  "adminAssetSyncChip",
+  "adminAssetDistrictChip",
+  "adminAssetFocusChip",
+  "adminAssetVariationChip",
+  "adminAssetRiskChip",
+  "adminAssetHostChip",
+  "adminAssetRevisionChip"
+] as const;
+
 function byId<T extends HTMLElement>(id: string): T | null {
   return document.getElementById(id) as T | null;
 }
@@ -90,6 +101,12 @@ function setLiveChip(payload: LiveChipPayload): void {
   el.style.setProperty("--chip-level", clamp(asNum(payload.level), 0, 1).toFixed(3));
 }
 
+function resetLiveChips(): void {
+  ADMIN_ASSET_RUNTIME_CHIP_IDS.forEach((id) => {
+    setLiveChip({ id, text: "--", tone: "neutral", level: 0 });
+  });
+}
+
 function applyMeters(meters: MeterPayload[]): void {
   (Array.isArray(meters) ? meters : []).forEach((meter) => {
     setMeter(byId<HTMLElement>(meter.id), meter.pct, meter.palette);
@@ -110,6 +127,7 @@ function render(payload: AdminAssetRuntimeBridgePayload): boolean {
   host.style.setProperty("--asset-ready", clamp(payload.readyRatio, 0, 1).toFixed(3));
   host.style.setProperty("--asset-sync", clamp(payload.syncRatio, 0, 1).toFixed(3));
   signalLine.textContent = String(payload.signalLineText || "Asset runtime telemetry bekleniyor.");
+  resetLiveChips();
   if (selectionLine) {
     selectionLine.textContent = String(payload.selectionLineText || "SELECT bundle telemetry bekleniyor.");
   }

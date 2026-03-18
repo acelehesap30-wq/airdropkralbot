@@ -75,6 +75,21 @@ const METER_PALETTES: Record<MeterPalette, { start: string; end: string; glow: s
   critical: { start: "#ff416d", end: "#ffc266", glow: "rgba(255, 93, 125, 0.56)" }
 });
 
+const ASSET_MANIFEST_CHIP_IDS = [
+  "assetManifestSourceChip",
+  "assetManifestRevisionChip",
+  "assetManifestReadyChip",
+  "assetManifestIntegrityChip",
+  "assetManifestHostChip"
+] as const;
+
+const PVP_LEADERBOARD_CHIP_IDS = [
+  "pvpLeaderSpreadChip",
+  "pvpLeaderVolumeChip",
+  "pvpLeaderFreshChip",
+  "pvpLeaderTransportChip"
+] as const;
+
 declare global {
   interface Window {
     __AKR_PUBLIC_TELEMETRY__?: PublicTelemetryBridge;
@@ -110,6 +125,12 @@ function setChip(node: HTMLElement | null, chip: StripChip | undefined): void {
   node.classList.remove("neutral", "balanced", "advantage", "pressure", "critical");
   node.classList.add(String(chip?.tone || "neutral"));
   node.style.setProperty("--chip-level", clamp(asNum(chip?.level), 0, 1).toFixed(3));
+}
+
+function resetChips(ids: readonly string[]): void {
+  ids.forEach((id) => {
+    setChip(byId<HTMLElement>(id), undefined);
+  });
 }
 
 function setMeterPalette(node: HTMLElement | null, paletteKey: string | undefined): void {
@@ -150,6 +171,7 @@ function renderAssetManifest(payload: AssetManifestStripPayload): boolean {
   setBadge(badge, payload.badgeText, payload.badgeTone);
   line.textContent = String(payload.lineText || "");
   hint.textContent = String(payload.hintText || "");
+  resetChips(ASSET_MANIFEST_CHIP_IDS);
   if (selection) {
     selection.textContent = String(payload.selectionLineText || "ACTIVE district asset bekleniyor");
     selection.dataset.assetStateKey = String(payload.assetStateKey || "").trim();
@@ -192,6 +214,7 @@ function renderPvpLeaderboard(payload: PvpLeaderboardStripPayload): boolean {
   host.style.setProperty("--leader-pressure", clamp(asNum(payload.leaderPressure), 0, 1).toFixed(3));
   setBadge(badge, payload.badgeText, payload.badgeTone);
   line.textContent = String(payload.lineText || "");
+  resetChips(PVP_LEADERBOARD_CHIP_IDS);
   setChip(byId("pvpLeaderSpreadChip"), payload.chips?.spread);
   setChip(byId("pvpLeaderVolumeChip"), payload.chips?.volume);
   setChip(byId("pvpLeaderFreshChip"), payload.chips?.fresh);

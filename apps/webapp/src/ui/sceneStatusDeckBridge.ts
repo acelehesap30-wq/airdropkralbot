@@ -92,6 +92,14 @@ declare global {
   }
 }
 
+const SCENE_DECK_CHIP_IDS = [
+  "sceneDeckModeChip",
+  "sceneDeckPerfChip",
+  "sceneDeckAssetChip",
+  "sceneDeckTransportChip",
+  "sceneDeckManifestChip"
+] as const;
+
 function byId<T extends HTMLElement>(id: string): T | null {
   return document.getElementById(id) as T | null;
 }
@@ -120,6 +128,12 @@ function renderChip(chip: SceneDeckChipPayload): void {
   node.style.setProperty("--chip-level", clamp(asNum(chip.level ?? 0.2), 0, 1).toFixed(3));
 }
 
+function resetSceneDeckChips(): void {
+  SCENE_DECK_CHIP_IDS.forEach((id) => {
+    renderChip({ id, text: "-", tone: "neutral", level: 0 });
+  });
+}
+
 function renderLiteBadge(payload: SceneLiteBadgePayload | undefined): void {
   const node = byId<HTMLElement>("liteSceneBadge");
   if (!node) {
@@ -127,6 +141,10 @@ function renderLiteBadge(payload: SceneLiteBadgePayload | undefined): void {
   }
   if (!payload || !payload.shouldShow) {
     node.classList.add("hidden");
+    node.classList.remove("warn", "info");
+    node.dataset.mode = "";
+    node.textContent = "";
+    node.title = "";
     return;
   }
   node.classList.remove("hidden", "warn", "info");
@@ -195,10 +213,11 @@ function render(payload: SceneStatusDeckBridgePayload): boolean {
   deck.dataset.riskHealthBandKey = riskHealthBandKey;
   deck.dataset.riskAttentionBandKey = riskAttentionBandKey;
   deck.dataset.riskTrendDirectionKey = riskTrendDirectionKey;
+  resetSceneDeckChips();
   payload.chips.forEach(renderChip);
   const profileLineNode = byId<HTMLElement>("sceneProfileLine");
-  if (profileLineNode && payload.profileLine) {
-    profileLineNode.textContent = String(payload.profileLine);
+  if (profileLineNode) {
+    profileLineNode.textContent = String(payload.profileLine || "Profile telemetry bekleniyor.");
   }
   const domainLineNode = byId<HTMLElement>("sceneDomainLine");
   if (domainLineNode) {
