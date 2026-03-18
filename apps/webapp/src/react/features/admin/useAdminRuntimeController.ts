@@ -5,6 +5,7 @@ import {
   parseDynamicPolicySegmentsDraft,
   parseRuntimeFlagsDraft
 } from "../../../core/admin/adminDraftParsers";
+import { preserveExistingDraft } from "../../../core/admin/adminDraftState.js";
 import { UI_EVENT_KEY, UI_FUNNEL_KEY, UI_SURFACE_KEY } from "../../../core/telemetry/uiEventTaxonomy";
 import type { WebAppApiResponse, WebAppAuth } from "../../types";
 
@@ -128,7 +129,9 @@ export function useAdminRuntimeController(options: AdminRuntimeControllerOptions
       const boolFlags = Object.fromEntries(
         Object.entries(flagsPayload).filter((entry): entry is [string, boolean] => typeof entry[1] === "boolean")
       );
-      options.setRuntimeFlagsDraft(JSON.stringify(boolFlags, null, 2));
+      options.setRuntimeFlagsDraft((prev) =>
+        preserveExistingDraft(JSON.stringify(boolFlags, null, 2), prev, ["", "{}"])
+      );
       options.setRuntimeFlagsError("");
     }
     if (runtimeBot?.success) {
@@ -148,7 +151,9 @@ export function useAdminRuntimeController(options: AdminRuntimeControllerOptions
       const segments = Array.isArray((dynamicPolicy.data as { segments?: Array<Record<string, unknown>> } | undefined)?.segments)
         ? ((dynamicPolicy.data as { segments?: Array<Record<string, unknown>> }).segments as Array<Record<string, unknown>>)
         : [];
-      options.setDynamicPolicyDraft(JSON.stringify(segments, null, 2));
+      options.setDynamicPolicyDraft((prev) =>
+        preserveExistingDraft(JSON.stringify(segments, null, 2), prev, ["", "[]"])
+      );
       options.setDynamicPolicyError("");
     }
     if (liveOpsCampaign?.success) {
@@ -156,7 +161,9 @@ export function useAdminRuntimeController(options: AdminRuntimeControllerOptions
         (liveOpsCampaign.data as { campaign?: Record<string, unknown> } | undefined)?.campaign ||
         (liveOpsCampaign.data as Record<string, unknown> | undefined) ||
         {};
-      options.setLiveOpsCampaignDraft(JSON.stringify(campaignPayload, null, 2));
+      options.setLiveOpsCampaignDraft((prev) =>
+        preserveExistingDraft(JSON.stringify(campaignPayload, null, 2), prev, ["", "{}"])
+      );
       options.setLiveOpsCampaignError("");
       options.setLiveOpsCampaignApprovalError("");
       options.setLiveOpsCampaignDispatchError("");
