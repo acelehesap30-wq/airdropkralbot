@@ -196,55 +196,56 @@ function buildWebappDomainLine(webappDomainSummary, fallbackText = "DOMAIN telem
 }
 
 function buildSceneStatusPayload(profileMetrics, webappDomainSummary) {
-  if (!profileMetrics) return null;
   const summary = asRecord(webappDomainSummary);
   const domainStateKey = toText(summary.state_key || "missing", "missing").toLowerCase();
   const domainHost = toText(summary.host || "");
+  const metrics = asRecord(profileMetrics);
+  const hasProfileMetrics = Object.keys(metrics).length > 0;
   return {
     chips: [
       {
         id: "sceneDeckModeChip",
-        text: `SCENE ${toText(profileMetrics.sceneMode, "PRO")}`,
-        tone: mapDeckTone(profileMetrics.transportTone || profileMetrics.perfTone || "balanced"),
-        level: clamp(profileMetrics.ladderActivity || 0.18)
+        text: `SCENE ${toText(metrics.sceneMode, hasProfileMetrics ? "PRO" : "WAIT")}`,
+        tone: mapDeckTone(metrics.transportTone || metrics.perfTone || (hasProfileMetrics ? "balanced" : "neutral")),
+        level: clamp(metrics.ladderActivity || 0)
       },
       {
         id: "sceneDeckPerfChip",
-        text: `PERF ${toText(profileMetrics.perfTier, "NORMAL")}`,
-        tone: mapDeckTone(profileMetrics.perfTone || "safe"),
-        level: clamp((toNum(profileMetrics.fps) || 0) > 0 ? toNum(profileMetrics.fps) / 60 : 0.55)
+        text: `PERF ${toText(metrics.perfTier, "NORMAL")}`,
+        tone: mapDeckTone(metrics.perfTone || (hasProfileMetrics ? "safe" : "neutral")),
+        level: clamp((toNum(metrics.fps) || 0) > 0 ? toNum(metrics.fps) / 60 : 0)
       },
       {
         id: "sceneDeckAssetChip",
-        text: `ASSET ${Math.round(clamp(profileMetrics.assetReadyRatio || profileMetrics.assetRatio || 0) * 100)}%`,
-        tone: mapDeckTone(profileMetrics.assetRuntimeTone || "balanced"),
-        level: clamp(profileMetrics.assetReadyRatio || profileMetrics.assetRatio || 0)
+        text: `ASSET ${Math.round(clamp(metrics.assetReadyRatio || metrics.assetRatio || 0) * 100)}%`,
+        tone: mapDeckTone(metrics.assetRuntimeTone || (hasProfileMetrics ? "balanced" : "neutral")),
+        level: clamp(metrics.assetReadyRatio || metrics.assetRatio || 0)
       },
       {
         id: "sceneDeckTransportChip",
-        text: `PVP ${toText(profileMetrics.transport, "POLL")}`,
-        tone: mapDeckTone(profileMetrics.transportTone || "balanced"),
-        level: clamp(profileMetrics.pressureRatio || 0.18)
+        text: `PVP ${toText(metrics.transport, hasProfileMetrics ? "POLL" : "HOLD")}`,
+        tone: mapDeckTone(metrics.transportTone || (hasProfileMetrics ? "balanced" : "neutral")),
+        level: clamp(metrics.pressureRatio || 0)
       },
       {
         id: "sceneDeckManifestChip",
-        text: `REV ${toText(profileMetrics.manifestShort, "local")}`,
-        tone: mapDeckTone((profileMetrics.manifestRiskRatio || 0) >= 0.45 ? "pressure" : "neutral"),
-        level: clamp(1 - toNum(profileMetrics.manifestRiskRatio || 0))
+        text: `REV ${toText(metrics.manifestShort, "local")}`,
+        tone: mapDeckTone((metrics.manifestRiskRatio || 0) >= 0.45 ? "pressure" : "neutral"),
+        level: clamp(hasProfileMetrics ? 1 - toNum(metrics.manifestRiskRatio || 0) : 0)
       }
     ],
-    profileLine: toText(profileMetrics.profileLine, "Profile telemetry bekleniyor."),
+    profileLine: toText(metrics.profileLine, "Profile telemetry bekleniyor."),
     domainLine: buildWebappDomainLine(summary),
     domainStateKey,
     domainHost,
     runtimeGuardMatchesHost: summary.runtime_guard_matches_host !== false,
-    liteBadge: profileMetrics.liteBadge
+    liteBadge: metrics.liteBadge
       ? {
-          shouldShow: Boolean(profileMetrics.liteBadge.shouldShow),
-          text: toText(profileMetrics.liteBadge.text, "Lite Scene"),
-          tone: profileMetrics.liteBadge.tone === "warn" ? "warn" : "info",
-          mode: toText(profileMetrics.liteBadge.mode, "ok"),
-          title: toText(profileMetrics.liteBadge.title, "")
+          shouldShow: Boolean(metrics.liteBadge.shouldShow),
+          text: toText(metrics.liteBadge.text, "Lite Scene"),
+          tone: metrics.liteBadge.tone === "warn" ? "warn" : "info",
+          mode: toText(metrics.liteBadge.mode, "ok"),
+          title: toText(metrics.liteBadge.title, "")
         }
       : { shouldShow: false, text: "Lite Scene", tone: "info", mode: "ok", title: "" }
   };
@@ -311,7 +312,7 @@ function resolveSelectedLoopFamilyKey(selectedLoop) {
 
 function buildSceneLoopDeckPayload(scene) {
   const selectedLoop = asRecord(scene?.selectedLoop);
-  if (!selectedLoop) {
+  if (!Object.keys(selectedLoop).length) {
     return {
       lineText: "Loop state bekleniyor.",
       districtKey: "",

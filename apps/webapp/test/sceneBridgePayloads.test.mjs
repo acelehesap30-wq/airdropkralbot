@@ -2186,3 +2186,40 @@ test("buildPlayerBridgePayloads carries variation asset contracts into player sc
     /BUNDLE variation/i
   );
 });
+
+test("buildPlayerBridgePayloads keeps scene status deck renderable when profile metrics are unavailable", async () => {
+  const mod = await loadModule();
+  const payloads = mod.buildPlayerBridgePayloads({
+    mutators: {},
+    data: {
+      local_manifest: {
+        webapp_domain_summary: {
+          host: "webapp.k99-exchange.xyz",
+          state_key: "ready",
+          dns_ready: true,
+          contract_ready: true,
+          runtime_guard_matches_host: true,
+          webapp_status_code: 200
+        }
+      }
+    },
+    scene: {},
+    sceneRuntime: {},
+    pvpRuntime: {},
+    leagueOverview: {},
+    pvpLive: {},
+    vaultData: {}
+  });
+
+  assert.equal(Array.isArray(payloads.sceneStatus.chips), true);
+  assert.equal(payloads.sceneStatus.chips.length, 5);
+  assert.equal(payloads.sceneStatus.chips[0].text, "SCENE WAIT");
+  assert.equal(payloads.sceneStatus.chips[1].text, "PERF NORMAL");
+  assert.equal(payloads.sceneStatus.chips[2].text, "ASSET 0%");
+  assert.equal(payloads.sceneStatus.chips[3].text, "PVP HOLD");
+  assert.equal(payloads.sceneStatus.chips[4].text, "REV local");
+  assert.equal(payloads.sceneStatus.profileLine, "Profile telemetry bekleniyor.");
+  assert.equal(payloads.sceneStatus.domainLine, "DOMAIN webapp.k99-exchange.xyz | READY | WEBAPP 200 | GUARD MATCH");
+  assert.equal(payloads.sceneStatus.loopLine, "Loop state bekleniyor.");
+  assert.equal(payloads.sceneStatus.assetLine, "ASSET district bundle bekleniyor.");
+});
