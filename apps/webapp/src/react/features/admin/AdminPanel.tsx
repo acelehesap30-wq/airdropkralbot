@@ -306,6 +306,7 @@ export function AdminPanel(props: AdminPanelProps) {
                   </p>
                   <div className="akrActionRow">
                     <button
+                      type="button"
                       className="akrBtn akrBtnAccent"
                       onClick={() => runSurfaceAction("admin_summary", "queue", SHELL_ACTION_KEY.ADMIN_QUEUE_PANEL)}
                     >
@@ -332,6 +333,7 @@ export function AdminPanel(props: AdminPanelProps) {
                   </p>
                   <div className="akrActionRow">
                     <button
+                      type="button"
                       className="akrBtn akrBtnAccent"
                       onClick={() => runSurfaceAction("admin_summary", "live_ops", SHELL_ACTION_KEY.ADMIN_LIVE_OPS_PANEL)}
                     >

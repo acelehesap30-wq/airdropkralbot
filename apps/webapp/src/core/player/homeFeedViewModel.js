@@ -123,7 +123,7 @@ export function buildHomeFeedViewModel(input = {}) {
 
   return {
     summary: {
-      player_name: toText(profile.public_name || "", "unknown"),
+      player_name: toText(profile.public_name || ""),
       kingdom_tier: Math.max(0, toNum(profile.kingdom_tier || 0)),
       streak: Math.max(0, toNum(profile.current_streak || 0)),
       season_id: Math.max(0, toNum(season.season_id || 0)),
@@ -141,7 +141,7 @@ export function buildHomeFeedViewModel(input = {}) {
       wallet_active: toBool(walletQuick.active),
       wallet_chain: toText(walletQuick.chain || ""),
       wallet_address_masked: toText(walletQuick.address_masked || walletQuick.address || ""),
-      wallet_kyc_status: toText(walletQuick.kyc_status || "unknown"),
+      wallet_kyc_status: toText(walletQuick.kyc_status || ""),
       monetization_enabled: toBool(monetizationQuick.enabled),
       premium_active: toBool(monetizationQuick.premium_active),
       active_pass_count: Math.max(0, toNum(monetizationQuick.active_pass_count || 0)),

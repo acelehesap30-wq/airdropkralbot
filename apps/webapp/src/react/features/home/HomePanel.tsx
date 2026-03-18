@@ -275,7 +275,7 @@ export function HomePanel(props: HomePanelProps) {
           <p>{copy.heroBody}</p>
         </div>
         <div className="akrGameHeroStats">
-          <span className="akrChip">{summary.player_name}</span>
+          <span className="akrChip">{summary.player_name || t(props.lang, "unknown_player")}</span>
           <span className="akrChip akrChipInfo">
             {t(props.lang, "home_stat_tier")} {Math.floor(summary.kingdom_tier)}
           </span>
@@ -322,10 +322,10 @@ export function HomePanel(props: HomePanelProps) {
             <span className="akrChip">{summary.wallet_active ? copy.walletLive : copy.walletIdle}</span>
           </div>
           <div className="akrActionRow">
-            <button className="akrBtn akrBtnAccent" onClick={nextMove.onPress}>
+            <button type="button" className="akrBtn akrBtnAccent" onClick={nextMove.onPress}>
               {nextMove.cta}
             </button>
-            <button className="akrBtn akrBtnGhost" onClick={openArena}>
+            <button type="button" className="akrBtn akrBtnGhost" onClick={openArena}>
               {t(props.lang, "shell_panel_go_pvp")}
             </button>
           </div>
@@ -337,6 +337,7 @@ export function HomePanel(props: HomePanelProps) {
             {quickHints.length ? (
               quickHints.map((row) => (
                 <button
+                  type="button"
                   key={String(row.key || row.description || "hint")}
                   className="akrQuickHintCard"
                   onClick={() => runCommandHint(row)}
@@ -401,7 +402,7 @@ export function HomePanel(props: HomePanelProps) {
       />
 
       <div className="akrGameActionGrid">
-        <button className="akrActionFeatureCard isPrimary" onClick={openArena}>
+        <button type="button" className="akrActionFeatureCard isPrimary" onClick={openArena}>
           <p className="akrKicker">{copy.arenaHint}</p>
           <h3>{t(props.lang, "home_action_arena_title")}</h3>
           <p>{t(props.lang, "home_action_arena_body")}</p>
@@ -409,7 +410,7 @@ export function HomePanel(props: HomePanelProps) {
             {Math.floor(summary.season_points)} {t(props.lang, "home_action_points")}
           </span>
         </button>
-        <button className="akrActionFeatureCard" onClick={openMissions}>
+        <button type="button" className="akrActionFeatureCard" onClick={openMissions}>
           <p className="akrKicker">{copy.missionHint}</p>
           <h3>{t(props.lang, "home_action_missions_title")}</h3>
           <p>{t(props.lang, "home_action_missions_body")}</p>
@@ -417,13 +418,13 @@ export function HomePanel(props: HomePanelProps) {
             {Math.floor(summary.mission_ready)}/{Math.floor(summary.mission_total)} {copy.readyWord}
           </span>
         </button>
-        <button className="akrActionFeatureCard" onClick={openVault}>
+        <button type="button" className="akrActionFeatureCard" onClick={openVault}>
           <p className="akrKicker">{copy.vaultHint}</p>
           <h3>{t(props.lang, "home_action_vault_title")}</h3>
           <p>{t(props.lang, "home_action_vault_body")}</p>
           <span className="akrChip">{summary.wallet_active ? copy.walletLive : copy.walletIdle}</span>
         </button>
-        <button className="akrActionFeatureCard" onClick={openDiscover}>
+        <button type="button" className="akrActionFeatureCard" onClick={openDiscover}>
           <p className="akrKicker">{copy.discoverHint}</p>
           <h3>{t(props.lang, "home_action_discover_title")}</h3>
           <p>{t(props.lang, "home_action_discover_body")}</p>
@@ -471,7 +472,7 @@ export function HomePanel(props: HomePanelProps) {
             <p className="akrMuted">{t(props.lang, "home_mission_empty")}</p>
           )}
           <div className="akrActionRow">
-            <button className="akrBtn akrBtnGhost" onClick={() => runSurfaceAction("home_mission", "tasks", SHELL_ACTION_KEY.PLAYER_TASKS_BOARD)}>
+            <button type="button" className="akrBtn akrBtnGhost" onClick={() => runSurfaceAction("home_mission", "tasks", SHELL_ACTION_KEY.PLAYER_TASKS_BOARD)}>
               {t(props.lang, "shell_panel_go_tasks")}
             </button>
           </div>
@@ -483,14 +484,14 @@ export function HomePanel(props: HomePanelProps) {
           <div className="akrChipRow">
             <span className="akrChip">{summary.wallet_active ? copy.walletLive : copy.walletIdle}</span>
             <span className="akrChip">{summary.wallet_chain || "-"}</span>
-            <span className="akrChip">{summary.wallet_kyc_status || "-"}</span>
+            <span className="akrChip">{summary.wallet_kyc_status || t(props.lang, "status_unknown")}</span>
           </div>
           <p className="akrMuted">{summary.wallet_address_masked || "-"}</p>
           <div className="akrActionRow">
-            <button className="akrBtn akrBtnGhost" onClick={() => runSurfaceAction("home_wallet", "wallet", SHELL_ACTION_KEY.PLAYER_WALLET_CONNECT)}>
+            <button type="button" className="akrBtn akrBtnGhost" onClick={() => runSurfaceAction("home_wallet", "wallet", SHELL_ACTION_KEY.PLAYER_WALLET_CONNECT)}>
               {t(props.lang, "shell_panel_go_wallet")}
             </button>
-            <button className="akrBtn akrBtnGhost" onClick={() => runSurfaceAction("home_wallet", "payout", SHELL_ACTION_KEY.PLAYER_PAYOUT_REQUEST)}>
+            <button type="button" className="akrBtn akrBtnGhost" onClick={() => runSurfaceAction("home_wallet", "payout", SHELL_ACTION_KEY.PLAYER_PAYOUT_REQUEST)}>
               {t(props.lang, "shell_panel_go_payout")}
             </button>
           </div>
@@ -509,7 +510,7 @@ export function HomePanel(props: HomePanelProps) {
             </span>
           </div>
           <div className="akrActionRow">
-            <button className="akrBtn akrBtnGhost" onClick={() => runSurfaceAction("home_rewards", "rewards", SHELL_ACTION_KEY.PLAYER_REWARDS_PANEL)}>
+            <button type="button" className="akrBtn akrBtnGhost" onClick={() => runSurfaceAction("home_rewards", "rewards", SHELL_ACTION_KEY.PLAYER_REWARDS_PANEL)}>
               {t(props.lang, "home_rewards_cta")}
             </button>
           </div>
@@ -517,13 +518,13 @@ export function HomePanel(props: HomePanelProps) {
       </div>
 
       <div className="akrActionRow akrHomeFooterActions">
-        <button className="akrBtn akrBtnGhost" onClick={props.onRefresh}>
+        <button type="button" className="akrBtn akrBtnGhost" onClick={props.onRefresh}>
           {t(props.lang, "home_feed_refresh")}
         </button>
-        <button className="akrBtn akrBtnGhost" onClick={() => runSurfaceAction("home_settings", "settings", SHELL_ACTION_KEY.PLAYER_SETTINGS_LOCALE)}>
+        <button type="button" className="akrBtn akrBtnGhost" onClick={() => runSurfaceAction("home_settings", "settings", SHELL_ACTION_KEY.PLAYER_SETTINGS_LOCALE)}>
           {t(props.lang, "shell_panel_open_settings")}
         </button>
-        <button className="akrBtn akrBtnGhost" onClick={() => runSurfaceAction("home_support", "support", SHELL_ACTION_KEY.PLAYER_SUPPORT_FAQ)}>
+        <button type="button" className="akrBtn akrBtnGhost" onClick={() => runSurfaceAction("home_support", "support", SHELL_ACTION_KEY.PLAYER_SUPPORT_FAQ)}>
           {t(props.lang, "shell_panel_open_support")}
         </button>
         <span className="akrChip">{String(props.lang).toUpperCase()}</span>

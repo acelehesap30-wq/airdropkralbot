@@ -69,7 +69,8 @@ test("buildHomeFeedViewModel handles empty payload safely", async () => {
   const mod = await loadModule();
   const vm = mod.buildHomeFeedViewModel({});
 
-  assert.equal(vm.summary.player_name, "unknown");
+  assert.equal(vm.summary.player_name, "");
+  assert.equal(vm.summary.wallet_kyc_status, "");
   assert.equal(vm.command_hints.length, 0);
   assert.equal(vm.has_data, false);
 });

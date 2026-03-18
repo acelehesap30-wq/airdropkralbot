@@ -177,6 +177,47 @@ export function PvpPanel(props: PvpPanelProps) {
   })();
   const missionRouteState = props.canResolve ? copy.stateReady : copy.stateQueued;
   const vaultRouteState = props.canResolve ? copy.stateQueued : copy.stateLocked;
+  const formatPvpStatus = (value: unknown, fallback: string) => {
+    const raw = String(value || "").trim().toLowerCase();
+    if (!raw) {
+      return fallback;
+    }
+    if (["active", "running", "live"].includes(raw)) {
+      return copy.stateLive;
+    }
+    if (["queued", "queue", "pending", "idle", "open"].includes(raw)) {
+      return copy.stateQueued;
+    }
+    if (["resolved", "complete", "completed", "closed", "ready"].includes(raw)) {
+      return copy.stateReady;
+    }
+    if (["blocked", "locked"].includes(raw)) {
+      return copy.stateLocked;
+    }
+    return raw.replace(/[_-]+/g, " ");
+  };
+  const formatNextAction = (value: unknown) => {
+    const raw = String(value || "").trim().toLowerCase();
+    if (!raw) {
+      return t(props.lang, "pvp_session_waiting");
+    }
+    if (["start", "open", "queue", "matchmake"].includes(raw)) {
+      return t(props.lang, "pvp_start");
+    }
+    if (["strike", "attack"].includes(raw)) {
+      return t(props.lang, "pvp_strike");
+    }
+    if (["resolve", "finish", "close"].includes(raw)) {
+      return t(props.lang, "pvp_resolve");
+    }
+    if (["wait", "waiting", "idle"].includes(raw)) {
+      return t(props.lang, "pvp_session_waiting");
+    }
+    return raw.replace(/[_-]+/g, " ");
+  };
+  const sessionStatusLabel = formatPvpStatus(summary.session_status, copy.queueWord);
+  const nextActionLabel = formatNextAction(summary.next_expected_action);
+  const dailyDuelStatusLabel = formatPvpStatus(league.daily_duel.status, copy.queueWord);
 
   return (
     <section className="akrCard akrCardWide akrArenaPanel" data-akr-panel-key="pvp" data-akr-focus-key="arena_command">
@@ -187,7 +228,7 @@ export function PvpPanel(props: PvpPanelProps) {
           <p>{copy.heroBody}</p>
         </div>
         <div className="akrGameHeroStats">
-          <span className="akrChip">{summary.session_status || copy.queueWord}</span>
+          <span className="akrChip">{sessionStatusLabel}</span>
           <span className="akrChip">R {Math.floor(league.session_snapshot.rating)}</span>
           <span className="akrChip">#{Math.floor(league.weekly_ladder.rank)}</span>
           <span className="akrChip">{Math.floor(league.daily_duel.win_rate_pct)}%</span>
@@ -202,15 +243,15 @@ export function PvpPanel(props: PvpPanelProps) {
           <h3>{nextRoute.title}</h3>
           <p>{nextRoute.body}</p>
           <div className="akrChipRow">
-            <span className="akrChip akrChipInfo">{summary.session_status || copy.queueWord}</span>
+            <span className="akrChip akrChipInfo">{sessionStatusLabel}</span>
             <span className="akrChip">R {Math.floor(league.session_snapshot.rating)}</span>
             <span className="akrChip">#{Math.floor(league.weekly_ladder.rank)}</span>
           </div>
           <div className="akrActionRow">
-            <button className="akrBtn akrBtnAccent" onClick={nextRoute.onPress}>
+            <button type="button" className="akrBtn akrBtnAccent" onClick={nextRoute.onPress}>
               {nextRoute.cta}
             </button>
-            <button className="akrBtn akrBtnGhost" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_TASKS_BOARD, "panel_pvp")}>
+            <button type="button" className="akrBtn akrBtnGhost" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_TASKS_BOARD, "panel_pvp")}>
               {t(props.lang, "shell_panel_go_tasks")}
             </button>
           </div>
@@ -219,15 +260,15 @@ export function PvpPanel(props: PvpPanelProps) {
           <h4>{copy.routeSideTitle}</h4>
           <p className="akrMuted akrMiniPanelBody">{copy.routeSideBody}</p>
           <div className="akrQuickHintGrid">
-            <button className="akrQuickHintCard" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_TASKS_BOARD, "panel_pvp")}>
+            <button type="button" className="akrQuickHintCard" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_TASKS_BOARD, "panel_pvp")}>
               <span className="akrKicker">{copy.missionsExit}</span>
               <strong>{t(props.lang, "shell_panel_go_tasks")}</strong>
             </button>
-            <button className="akrQuickHintCard" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_REWARDS_PANEL, "panel_pvp")}>
+            <button type="button" className="akrQuickHintCard" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_REWARDS_PANEL, "panel_pvp")}>
               <span className="akrKicker">{copy.vaultExit}</span>
               <strong>{t(props.lang, "shell_panel_go_vault")}</strong>
             </button>
-            <button className="akrQuickHintCard" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PVP_LEADERBOARD, "panel_pvp")}>
+            <button type="button" className="akrQuickHintCard" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PVP_LEADERBOARD, "panel_pvp")}>
               <span className="akrKicker">{copy.leaderboardExit}</span>
               <strong>{t(props.lang, "pvp_focus_leaderboard")}</strong>
             </button>
@@ -246,7 +287,7 @@ export function PvpPanel(props: PvpPanelProps) {
             title: nextRoute.title,
             body: copy.chainArenaBody,
             stateLabel: copy.stateLive,
-            signals: [summary.session_status || copy.queueWord, `R ${Math.floor(league.session_snapshot.rating)}`],
+            signals: [sessionStatusLabel, `R ${Math.floor(league.session_snapshot.rating)}`],
             tone: "active",
             onClick: nextRoute.onPress
           },
@@ -272,25 +313,25 @@ export function PvpPanel(props: PvpPanelProps) {
       />
 
       <div className="akrGameActionGrid">
-        <button className="akrActionFeatureCard isPrimary" disabled={!props.canStart} onClick={props.onStart}>
+        <button type="button" className="akrActionFeatureCard isPrimary" disabled={!props.canStart} onClick={props.onStart}>
           <p className="akrKicker">{copy.clashTitle}</p>
           <h3>{t(props.lang, "pvp_start")}</h3>
           <p>{copy.clashBody}</p>
           <span className="akrChip">{summary.session_ref || copy.queueWord}</span>
         </button>
-        <button className="akrActionFeatureCard" disabled={!props.canStrike} onClick={props.onStrike}>
+        <button type="button" className="akrActionFeatureCard" disabled={!props.canStrike} onClick={props.onStrike}>
           <p className="akrKicker">{copy.duelTitle}</p>
           <h3>{t(props.lang, "pvp_strike")}</h3>
           <p>{copy.duelBody}</p>
-          <span className="akrChip">{summary.next_expected_action || copy.liveWord}</span>
+          <span className="akrChip">{nextActionLabel}</span>
         </button>
-        <button className="akrActionFeatureCard" disabled={!props.canResolve} onClick={props.onResolve}>
+        <button type="button" className="akrActionFeatureCard" disabled={!props.canResolve} onClick={props.onResolve}>
           <p className="akrKicker">{copy.ladderTitle}</p>
           <h3>{t(props.lang, "pvp_resolve")}</h3>
           <p>{copy.ladderBody}</p>
           <span className="akrChip">{league.weekly_ladder.tier || "-"}</span>
         </button>
-        <button className="akrActionFeatureCard" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PVP_LEADERBOARD, "panel_pvp")}>
+        <button type="button" className="akrActionFeatureCard" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PVP_LEADERBOARD, "panel_pvp")}>
           <p className="akrKicker">{copy.leaderboardTitle}</p>
           <h3>{t(props.lang, "pvp_focus_leaderboard")}</h3>
           <p>{copy.leaderboardBody}</p>
@@ -301,7 +342,7 @@ export function PvpPanel(props: PvpPanelProps) {
       <div className="akrStatRail">
         <div className="akrMetricCard">
           <span>{copy.clashTitle}</span>
-          <strong>{summary.session_status || "-"}</strong>
+          <strong>{sessionStatusLabel}</strong>
         </div>
         <div className="akrMetricCard">
           <span>{copy.duelTitle}</span>
@@ -326,7 +367,7 @@ export function PvpPanel(props: PvpPanelProps) {
             {Math.floor(league.daily_duel.wins)}W / {Math.floor(league.daily_duel.losses)}L
           </p>
           <p className="micro">
-            {league.daily_duel.status || "-"} | {Math.floor(league.daily_duel.progress_pct)}%
+            {dailyDuelStatusLabel} | {Math.floor(league.daily_duel.progress_pct)}%
           </p>
         </article>
         <article className={`pvpObjectiveCard ${league.weekly_ladder.promotion_zone ? "advantage" : "neutral"}`} data-akr-focus-key="weekly_ladder">
@@ -372,7 +413,7 @@ export function PvpPanel(props: PvpPanelProps) {
         </section>
         <section className="combatHudCell">
           <p className="akrKicker">{t(props.lang, "pvp_next_call_title")}</p>
-          <strong>{summary.next_expected_action || t(props.lang, "pvp_session_waiting")}</strong>
+          <strong>{nextActionLabel}</strong>
           <span className="akrMuted">Tick #{Math.floor(summary.server_tick)}</span>
         </section>
       </div>
@@ -398,10 +439,10 @@ export function PvpPanel(props: PvpPanelProps) {
             <p className="akrMuted">{t(props.lang, "pvp_live_empty")}</p>
           )}
           <div className="akrActionRow">
-            <button className="akrBtn akrBtnGhost" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PVP_DAILY_DUEL, "panel_pvp")}>
+            <button type="button" className="akrBtn akrBtnGhost" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PVP_DAILY_DUEL, "panel_pvp")}>
               {t(props.lang, "pvp_focus_daily_duel")}
             </button>
-            <button className="akrBtn akrBtnGhost" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PVP_WEEKLY_LADDER, "panel_pvp")}>
+            <button type="button" className="akrBtn akrBtnGhost" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PVP_WEEKLY_LADDER, "panel_pvp")}>
               {t(props.lang, "pvp_focus_weekly_ladder")}
             </button>
           </div>
@@ -424,13 +465,13 @@ export function PvpPanel(props: PvpPanelProps) {
             <p className="akrMuted">{t(props.lang, "pvp_trend_empty")}</p>
           )}
           <div className="akrActionRow">
-            <button className="akrBtn akrBtnGhost" disabled={!props.canRefreshState} onClick={props.onRefreshState}>
+            <button type="button" className="akrBtn akrBtnGhost" disabled={!props.canRefreshState} onClick={props.onRefreshState}>
               {t(props.lang, "pvp_refresh")}
             </button>
-            <button className="akrBtn akrBtnGhost" onClick={props.onRefreshLeague}>
+            <button type="button" className="akrBtn akrBtnGhost" onClick={props.onRefreshLeague}>
               {t(props.lang, "pvp_refresh_league")}
             </button>
-            <button className="akrBtn akrBtnGhost" onClick={props.onRefreshLive}>
+            <button type="button" className="akrBtn akrBtnGhost" onClick={props.onRefreshLive}>
               {t(props.lang, "pvp_refresh_live")}
             </button>
           </div>
@@ -442,7 +483,7 @@ export function PvpPanel(props: PvpPanelProps) {
           <h3>{t(props.lang, "pvp_runtime_title")}</h3>
           <div className="akrChipRow">
             <span className="akrChip">Session: {summary.session_ref || "-"}</span>
-            <span className="akrChip">Status: {summary.session_status || "-"}</span>
+            <span className="akrChip">Status: {sessionStatusLabel}</span>
             <span className="akrChip">Transport: {summary.transport || "-"}</span>
             <span className="akrChip">Tick: {Math.floor(summary.server_tick)}</span>
             <span className="akrChip">Tick ms: {Math.floor(summary.tick_ms)}</span>
