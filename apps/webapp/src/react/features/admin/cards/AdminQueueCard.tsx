@@ -124,6 +124,9 @@ export function AdminQueueCard(props: AdminQueueCardProps) {
   const selectedRequestId = String(props.queueAction.request_id || "").trim();
   const selectedActionKey = String(props.queueAction.action_key || "").trim().toLowerCase();
   const selectedQuickActions = resolveQuickActions(selectedKind);
+  const selectedRow =
+    queueRows.find((row) => String(row.request_id || "").trim() === selectedRequestId) || null;
+  const selectedRequiresConfirmation = selectedRow ? rowRequiresConfirmation(selectedRow) : false;
   const pendingCount = queueRows.length;
   const confirmationCount = countConfirmationRows(queueRows);
   const highPriorityCount = countHighPriorityRows(queueRows);
@@ -137,26 +140,36 @@ export function AdminQueueCard(props: AdminQueueCardProps) {
           pendingLane: "Bekleyen kararlar",
           focusLane: "Secili onay",
           focusHint: "Bir kart sec; tx hash, neden veya onay tokeni sadece gereken yerde acilir.",
-          noSelection: "Onay penceresini acmak icin ustten bir karar karti sec."
+          noSelection: "Onay penceresini acmak icin ustten bir karar karti sec.",
+          payoutLabel: "Payout",
+          tokenLabel: "Token",
+          kycLabel: "KYC",
+          confirmLabel: "onay"
         }
       : {
           body: "Normal mode keeps only the next critical decisions and the selected approval window open.",
           pendingLane: "Pending decisions",
           focusLane: "Selected approval",
           focusHint: "Pick a card; tx hash, reason, or confirm token only opens when needed.",
-          noSelection: "Select a decision card above to open the approval window."
+          noSelection: "Select a decision card above to open the approval window.",
+          payoutLabel: "Payout",
+          tokenLabel: "Token",
+          kycLabel: "KYC",
+          confirmLabel: "confirm"
         };
 
   const prefillAction = (row: Record<string, unknown>, actionKey?: string) => {
     const kind = String(row.kind || "").trim().toLowerCase();
     const nextActionKey = String(actionKey || resolveQuickActions(kind)[0] || props.queueAction.action_key || "").trim().toLowerCase();
+    const nextRequestId = String(row.request_id || "");
+    const keepCurrentInputs = nextRequestId === selectedRequestId;
     props.onQueueActionChange({
       action_key: nextActionKey,
       kind,
-      request_id: String(row.request_id || ""),
-      tx_hash: requiresTxHash(nextActionKey) ? props.queueAction.tx_hash : "",
-      reason: requiresReason(nextActionKey) ? props.queueAction.reason : "",
-      confirm_token: ""
+      request_id: nextRequestId,
+      tx_hash: requiresTxHash(nextActionKey) && keepCurrentInputs ? props.queueAction.tx_hash : "",
+      reason: requiresReason(nextActionKey) && keepCurrentInputs ? props.queueAction.reason : "",
+      confirm_token: keepCurrentInputs ? props.queueAction.confirm_token : ""
     });
   };
 
@@ -164,18 +177,20 @@ export function AdminQueueCard(props: AdminQueueCardProps) {
     <section className="akrCard akrCardWide" data-akr-panel-key="panel_admin_queue" data-akr-focus-key="queue_action">
       <h3>{t(props.lang, "admin_queue_title")}</h3>
       <div className="akrActionRow">
-        <button className="akrBtn akrBtnGhost" onClick={props.onRefresh}>
+        <button type="button" className="akrBtn akrBtnGhost" onClick={props.onRefresh}>
           {t(props.lang, "admin_refresh")}
         </button>
         {props.advanced ? (
           <>
             <button
+              type="button"
               className="akrBtn akrBtnGhost"
               onClick={() => props.onSurfaceAction("admin_queue", "policy", SHELL_ACTION_KEY.ADMIN_POLICY_PANEL, "panel_admin_queue")}
             >
               {t(props.lang, "admin_nav_policy")}
             </button>
             <button
+              type="button"
               className="akrBtn akrBtnGhost"
               onClick={() => props.onSurfaceAction("admin_queue", "runtime", SHELL_ACTION_KEY.ADMIN_RUNTIME_META, "panel_admin_queue")}
             >
@@ -211,7 +226,9 @@ export function AdminQueueCard(props: AdminQueueCardProps) {
           <article className="akrDecisionCard">
             <span className="akrKicker">{compactCopy.pendingLane}</span>
             <strong>{pendingCount}</strong>
-            <p className="akrMutedLine">Payout {payoutCount} | Token {tokenCount} | KYC {kycCount}</p>
+            <p className="akrMutedLine">
+              {compactCopy.payoutLabel} {payoutCount} | {compactCopy.tokenLabel} {tokenCount} | {compactCopy.kycLabel} {kycCount}
+            </p>
             <p className="akrMutedLine">
               {t(props.lang, "admin_queue_confirmation_count")}: {confirmationCount} | {t(props.lang, "admin_queue_high_priority_count")}: {highPriorityCount}
             </p>
@@ -245,6 +262,7 @@ export function AdminQueueCard(props: AdminQueueCardProps) {
                     <div className="akrActionRow">
                       {actions.map((actionKey) => (
                         <button
+                          type="button"
                           key={`${requestId}_${actionKey}`}
                           className="akrBtn akrBtnGhost"
                           onClick={() => prefillAction(row, actionKey)}
@@ -281,12 +299,13 @@ export function AdminQueueCard(props: AdminQueueCardProps) {
                     <span className={`akrChip ${selected ? "akrChipAccent" : ""}`}>{statusText}</span>
                     <span className="akrChip">P{asInt(row.priority)}</span>
                     <span className="akrChip">{formatAgeLabel(asInt(row.queue_age_sec))}</span>
-                    {rowRequiresConfirmation(row) ? <span className="akrChip akrChipWarning">confirm</span> : null}
+                    {rowRequiresConfirmation(row) ? <span className="akrChip akrChipWarning">{compactCopy.confirmLabel}</span> : null}
                   </div>
                   {actions.length ? (
                     <div className="akrActionRow">
                       {actions.map((actionKey) => (
                         <button
+                          type="button"
                           key={`${requestId}_${actionKey}`}
                           className={`akrBtn ${selected && selectedActionKey === actionKey ? "akrBtnAccent" : "akrBtnGhost"}`}
                           onClick={() => prefillAction(row, actionKey)}
@@ -317,6 +336,7 @@ export function AdminQueueCard(props: AdminQueueCardProps) {
               <div className="akrActionRow">
                 {selectedQuickActions.map((actionKey) => (
                   <button
+                    type="button"
                     key={`selected_${actionKey}`}
                     className={`akrBtn ${selectedActionKey === actionKey ? "akrBtnAccent" : "akrBtnGhost"}`}
                     onClick={() =>
@@ -350,7 +370,7 @@ export function AdminQueueCard(props: AdminQueueCardProps) {
                   placeholder={t(props.lang, "admin_queue_reason")}
                 />
               ) : null}
-              {(props.advanced || String(props.queueAction.confirm_token || "").trim()) && (
+              {(props.advanced || selectedRequiresConfirmation || String(props.queueAction.confirm_token || "").trim()) && (
                 <input
                   value={props.queueAction.confirm_token}
                   onChange={(e) => props.onQueueActionChange({ confirm_token: e.target.value })}
@@ -359,7 +379,7 @@ export function AdminQueueCard(props: AdminQueueCardProps) {
                 />
               )}
             </div>
-            <button className="akrBtn akrBtnAccent" onClick={props.onRunQueueAction}>
+            <button type="button" className="akrBtn akrBtnAccent" onClick={props.onRunQueueAction}>
               {t(props.lang, "admin_queue_run_action")}
             </button>
           </>

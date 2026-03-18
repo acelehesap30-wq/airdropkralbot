@@ -369,10 +369,10 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
               {compactCopy.approvedByLabel}: {asText(approvalSummary.approved_by || snapshot.approved_by)}
             </p>
             <div className="akrActionRow">
-              <button className="akrBtn akrBtnGhost" onClick={props.onRequestLiveOpsCampaignApproval} disabled={props.liveOpsCampaignApprovaling}>
+              <button type="button" className="akrBtn akrBtnGhost" onClick={props.onRequestLiveOpsCampaignApproval} disabled={props.liveOpsCampaignApprovaling}>
                 {t(props.lang, "admin_live_ops_request_approval")}
               </button>
-              <button className="akrBtn akrBtnGhost" onClick={props.onApproveLiveOpsCampaign} disabled={props.liveOpsCampaignApprovaling}>
+              <button type="button" className="akrBtn akrBtnGhost" onClick={props.onApproveLiveOpsCampaign} disabled={props.liveOpsCampaignApprovaling}>
                 {t(props.lang, "admin_live_ops_approve")}
               </button>
             </div>
@@ -387,10 +387,10 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
               {t(props.lang, "admin_live_ops_last_dispatch_label")}: {latestDispatch}
             </p>
             <div className="akrActionRow">
-              <button className="akrBtn akrBtnGhost" onClick={props.onRefreshLiveOpsCampaign}>
+              <button type="button" className="akrBtn akrBtnGhost" onClick={props.onRefreshLiveOpsCampaign}>
                 {t(props.lang, "admin_live_ops_refresh")}
               </button>
-              <button className="akrBtn akrBtnAccent" onClick={props.onDispatchLiveOpsCampaign} disabled={props.liveOpsCampaignDispatching}>
+              <button type="button" className="akrBtn akrBtnAccent" onClick={props.onDispatchLiveOpsCampaign} disabled={props.liveOpsCampaignDispatching}>
                 {t(props.lang, "admin_live_ops_dispatch")}
               </button>
             </div>
