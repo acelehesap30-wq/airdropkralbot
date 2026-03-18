@@ -1,5 +1,6 @@
 import { normalizeLang, type Lang } from "../i18n";
 import type { WebAppAuth, WebAppApiResponse } from "../types";
+import { withSignedAuthFields } from "../../core/shared/authEnvelope.js";
 
 export function buildQuery(params: Record<string, unknown>): string {
   const search = new URLSearchParams();
@@ -56,12 +57,7 @@ export async function postJson<T>(path: string, body: Record<string, unknown>): 
 }
 
 export function withAuthQuery(auth: WebAppAuth, extra: Record<string, unknown> = {}): string {
-  return buildQuery({
-    uid: auth.uid,
-    ts: auth.ts,
-    sig: auth.sig,
-    ...extra
-  });
+  return buildQuery(withSignedAuthFields(auth, extra));
 }
 
 export function normalizeApiLang(value: unknown): Lang {

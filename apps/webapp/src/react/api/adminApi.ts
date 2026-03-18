@@ -1,5 +1,6 @@
 import type { AdminApiResponse, AdminQueueActionRequest, WebAppAuth } from "../types";
 import { getJson, postJson, withAuthQuery } from "./common";
+import { withSignedAuthFields } from "../../core/shared/authEnvelope.js";
 
 export async function fetchAdminBootstrapV2(auth: WebAppAuth): Promise<AdminApiResponse> {
   const query = withAuthQuery(auth);
@@ -17,12 +18,7 @@ export async function postAdminQueueActionV2(
   auth: WebAppAuth,
   payload: AdminQueueActionRequest
 ): Promise<AdminApiResponse> {
-  return postJson<AdminApiResponse>("/webapp/api/v2/admin/queue/action", {
-    uid: auth.uid,
-    ts: auth.ts,
-    sig: auth.sig,
-    ...payload
-  });
+  return postJson<AdminApiResponse>("/webapp/api/v2/admin/queue/action", withSignedAuthFields(auth, payload));
 }
 
 export async function fetchAdminMetricsV2(auth: WebAppAuth): Promise<AdminApiResponse> {
@@ -39,36 +35,21 @@ export async function postAdminLiveOpsCampaignV2(
   auth: WebAppAuth,
   payload: Record<string, unknown>
 ): Promise<AdminApiResponse> {
-  return postJson<AdminApiResponse>("/webapp/api/v2/admin/live-ops/campaign", {
-    uid: auth.uid,
-    ts: auth.ts,
-    sig: auth.sig,
-    ...payload
-  });
+  return postJson<AdminApiResponse>("/webapp/api/v2/admin/live-ops/campaign", withSignedAuthFields(auth, payload));
 }
 
 export async function postAdminLiveOpsCampaignApprovalV2(
   auth: WebAppAuth,
   payload: Record<string, unknown>
 ): Promise<AdminApiResponse> {
-  return postJson<AdminApiResponse>("/webapp/api/v2/admin/live-ops/campaign/approval", {
-    uid: auth.uid,
-    ts: auth.ts,
-    sig: auth.sig,
-    ...payload
-  });
+  return postJson<AdminApiResponse>("/webapp/api/v2/admin/live-ops/campaign/approval", withSignedAuthFields(auth, payload));
 }
 
 export async function postAdminLiveOpsCampaignDispatchV2(
   auth: WebAppAuth,
   payload: Record<string, unknown>
 ): Promise<AdminApiResponse> {
-  return postJson<AdminApiResponse>("/webapp/api/v2/admin/live-ops/campaign/dispatch", {
-    uid: auth.uid,
-    ts: auth.ts,
-    sig: auth.sig,
-    ...payload
-  });
+  return postJson<AdminApiResponse>("/webapp/api/v2/admin/live-ops/campaign/dispatch", withSignedAuthFields(auth, payload));
 }
 
 export async function fetchAdminRuntimeFlagsV2(auth: WebAppAuth): Promise<AdminApiResponse> {
@@ -80,12 +61,7 @@ export async function postAdminRuntimeFlagsV2(
   auth: WebAppAuth,
   payload: Record<string, unknown>
 ): Promise<AdminApiResponse> {
-  return postJson<AdminApiResponse>("/webapp/api/v2/admin/runtime/flags", {
-    uid: auth.uid,
-    ts: auth.ts,
-    sig: auth.sig,
-    ...payload
-  });
+  return postJson<AdminApiResponse>("/webapp/api/v2/admin/runtime/flags", withSignedAuthFields(auth, payload));
 }
 
 export async function fetchAdminRuntimeBotV2(auth: WebAppAuth, stateKey = "", limit = 30): Promise<AdminApiResponse> {
@@ -100,12 +76,7 @@ export async function postAdminRuntimeBotReconcileV2(
   auth: WebAppAuth,
   payload: Record<string, unknown>
 ): Promise<AdminApiResponse> {
-  return postJson<AdminApiResponse>("/webapp/api/v2/admin/runtime/bot/reconcile", {
-    uid: auth.uid,
-    ts: auth.ts,
-    sig: auth.sig,
-    ...payload
-  });
+  return postJson<AdminApiResponse>("/webapp/api/v2/admin/runtime/bot/reconcile", withSignedAuthFields(auth, payload));
 }
 
 export async function fetchAdminDeployStatusV2(auth: WebAppAuth): Promise<AdminApiResponse> {
