@@ -84,7 +84,10 @@ const {
   buildDistrictFamilyAssetRuntimeCatalog
 } = require("./services/webapp/assetManifestIntakeService");
 const { summarizeWebappDomainRuntime } = require("./services/webapp/webappDomainRuntimeService");
-const { buildCanonicalVersionedWebappPath } = require("./services/webapp/webappRequestVersionService");
+const {
+  buildCanonicalVersionedWebappPath,
+  pickCanonicalWebappVersion
+} = require("./services/webapp/webappRequestVersionService");
 const { createChatTrustNotificationService } = require("./services/chatTrustNotificationService");
 
 const envPath = path.join(process.cwd(), ".env");
@@ -1376,20 +1379,14 @@ function buildVersionedWebAppUrl(baseUrl, version) {
 }
 
 async function resolveWebAppVersion(db) {
-  const overrideVersion = sanitizeWebAppVersion(WEBAPP_VERSION_OVERRIDE);
-  if (overrideVersion) {
-    return { version: overrideVersion, source: "env_override" };
-  }
+  let releaseMarkerVersion = "";
 
   if (db) {
     try {
       const hasTable = await hasReleaseMarkersTable(db);
       if (hasTable) {
         const marker = await readLatestReleaseMarker(db);
-        const markerVersion = sanitizeWebAppVersion(marker?.git_revision || "");
-        if (markerVersion) {
-          return { version: markerVersion, source: "release_marker" };
-        }
+        releaseMarkerVersion = sanitizeWebAppVersion(marker?.git_revision || "");
       }
     } catch (err) {
       if (err.code !== "42P01") {
@@ -1398,18 +1395,13 @@ async function resolveWebAppVersion(db) {
     }
   }
 
-  const releaseVersion = sanitizeWebAppVersion(RELEASE_GIT_REVISION_ENV);
-  if (releaseVersion) {
-    return { version: releaseVersion, source: "release_env" };
-  }
-
-  const renderCommitVersion = sanitizeWebAppVersion(RENDER_GIT_COMMIT);
-  if (renderCommitVersion) {
-    return { version: renderCommitVersion, source: "render_git_commit" };
-  }
-
-  const startupVersion = sanitizeWebAppVersion(WEBAPP_STARTUP_TIMESTAMP) || "startup";
-  return { version: startupVersion, source: "startup_timestamp" };
+  return pickCanonicalWebappVersion({
+    overrideVersion: WEBAPP_VERSION_OVERRIDE,
+    releaseEnvVersion: RELEASE_GIT_REVISION_ENV,
+    renderCommitVersion: RENDER_GIT_COMMIT,
+    releaseMarkerVersion,
+    startupVersion: WEBAPP_STARTUP_TIMESTAMP
+  });
 }
 
 const chatTrustNotificationService = createChatTrustNotificationService({

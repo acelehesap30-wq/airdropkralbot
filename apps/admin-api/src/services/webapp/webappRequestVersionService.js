@@ -7,6 +7,37 @@ function sanitizeWebappVersion(value = "") {
     .slice(0, 40);
 }
 
+function pickCanonicalWebappVersion({
+  overrideVersion = "",
+  releaseEnvVersion = "",
+  renderCommitVersion = "",
+  releaseMarkerVersion = "",
+  startupVersion = ""
+} = {}) {
+  const safeOverride = sanitizeWebappVersion(overrideVersion);
+  if (safeOverride) {
+    return { version: safeOverride, source: "env_override" };
+  }
+
+  const safeReleaseEnv = sanitizeWebappVersion(releaseEnvVersion);
+  if (safeReleaseEnv) {
+    return { version: safeReleaseEnv, source: "release_env" };
+  }
+
+  const safeRenderCommit = sanitizeWebappVersion(renderCommitVersion);
+  if (safeRenderCommit) {
+    return { version: safeRenderCommit, source: "render_git_commit" };
+  }
+
+  const safeReleaseMarker = sanitizeWebappVersion(releaseMarkerVersion);
+  if (safeReleaseMarker) {
+    return { version: safeReleaseMarker, source: "release_marker" };
+  }
+
+  const safeStartup = sanitizeWebappVersion(startupVersion) || "startup";
+  return { version: safeStartup, source: "startup_timestamp" };
+}
+
 function buildCanonicalVersionedWebappPath(rawUrl = "", version = "", session = null) {
   const safeVersion = sanitizeWebappVersion(version);
   const fallbackPath = String(rawUrl || "").trim() || "/webapp";
@@ -28,5 +59,6 @@ function buildCanonicalVersionedWebappPath(rawUrl = "", version = "", session = 
 }
 
 module.exports = {
-  buildCanonicalVersionedWebappPath
+  buildCanonicalVersionedWebappPath,
+  pickCanonicalWebappVersion
 };

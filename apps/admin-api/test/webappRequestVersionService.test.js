@@ -1,7 +1,10 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const { buildCanonicalVersionedWebappPath } = require("../src/services/webapp/webappRequestVersionService");
+const {
+  buildCanonicalVersionedWebappPath,
+  pickCanonicalWebappVersion
+} = require("../src/services/webapp/webappRequestVersionService");
 
 test("buildCanonicalVersionedWebappPath adds current version when missing", () => {
   const next = buildCanonicalVersionedWebappPath("/webapp?uid=1&route_key=hub", "abc123");
@@ -23,4 +26,20 @@ test("buildCanonicalVersionedWebappPath refreshes signed auth while keeping laun
     { uid: "77", ts: "88", sig: "99" }
   );
   assert.equal(next, "/webapp?uid=77&ts=88&sig=99&route_key=hub&startapp=hub&v=newrev");
+});
+
+test("pickCanonicalWebappVersion prefers running deploy revision over stale release marker", () => {
+  const next = pickCanonicalWebappVersion({
+    releaseEnvVersion: "633cd19",
+    renderCommitVersion: "633cd19",
+    releaseMarkerVersion: "b3df477"
+  });
+  assert.deepEqual(next, { version: "633cd19", source: "release_env" });
+});
+
+test("pickCanonicalWebappVersion falls back to release marker when running revision is unavailable", () => {
+  const next = pickCanonicalWebappVersion({
+    releaseMarkerVersion: "b3df477"
+  });
+  assert.deepEqual(next, { version: "b3df477", source: "release_marker" });
 });
