@@ -12,11 +12,10 @@ export function PlayerTabs(props: PlayerTabsProps) {
   return (
     <nav className="akrTabs">
       {props.tabs.map((entry) => (
-        <button key={entry} className={`akrTab ${props.tab === entry ? "isActive" : ""}`} onClick={() => props.onChange(entry)}>
+        <button type="button" key={entry} className={`akrTab ${props.tab === entry ? "isActive" : ""}`} onClick={() => props.onChange(entry)}>
           {tabLabel(props.lang, entry)}
         </button>
       ))}
     </nav>
   );
 }
-

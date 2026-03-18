@@ -158,9 +158,9 @@ function WorkspaceLoadingFallback() {
   return (
     <main className="akrPanelGrid">
       <section className="akrCard akrCardWide">
-        <p className="akrKicker">workspace</p>
-        <h2>Loading interface</h2>
-        <p className="akrMuted">Segmented shell is preparing the active surface.</p>
+        <p className="akrKicker">arena shell</p>
+        <h2>Preparing arena surface</h2>
+        <p className="akrMuted">Loading the active player or admin lane.</p>
       </section>
     </main>
   );

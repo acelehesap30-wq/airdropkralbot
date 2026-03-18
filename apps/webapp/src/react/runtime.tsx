@@ -158,8 +158,28 @@ function ensureRootNode(): HTMLElement {
   return rootNode;
 }
 
+function escapeHtml(value: string): string {
+  return String(value || "").replace(/[&<>"']/g, (char) => {
+    switch (char) {
+      case "&":
+        return "&amp;";
+      case "<":
+        return "&lt;";
+      case ">":
+        return "&gt;";
+      case '"':
+        return "&quot;";
+      case "'":
+        return "&#39;";
+      default:
+        return char;
+    }
+  });
+}
+
 function mountFatal(message: string): void {
   const rootNode = ensureRootNode();
+  const safeMessage = escapeHtml(message);
   rootNode.innerHTML = `
     <style>
       @keyframes akrPulse { 0%,100%{opacity:.6;transform:scale(1)} 50%{opacity:1;transform:scale(1.08)} }
@@ -168,11 +188,11 @@ function mountFatal(message: string): void {
     </style>
     <section style="min-height:100vh;display:grid;place-items:center;background:linear-gradient(160deg,#030918 0%,#0a1628 40%,#0f1d35 100%);color:#e7edf7;font-family:'Space Grotesk',sans-serif;padding:24px;">
       <div style="max-width:480px;border:1px solid rgba(132,180,255,.2);background:rgba(8,16,30,.82);backdrop-filter:blur(16px);padding:32px;border-radius:20px;text-align:center;animation:akrFadeIn .5s ease-out,akrGlow 3s ease-in-out infinite;">
-        <div style="font-size:48px;margin-bottom:16px;animation:akrPulse 2s ease-in-out infinite;">🏰</div>
+        <div style="font-size:32px;margin-bottom:16px;animation:akrPulse 2s ease-in-out infinite;font-weight:800;letter-spacing:.12em;">AKR</div>
         <h1 style="margin:0 0 8px;font-size:22px;background:linear-gradient(135deg,#38d0ff,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">AirdropKral Arena</h1>
-        <p style="margin:0 0 20px;opacity:.7;font-size:13px;line-height:1.5;">${message}</p>
+        <p style="margin:0 0 20px;opacity:.7;font-size:13px;line-height:1.5;">${safeMessage}</p>
         <button id="akr-retry-btn" style="border:0;border-radius:12px;padding:12px 28px;background:linear-gradient(135deg,#38d0ff,#6366f1);color:#fff;font-weight:700;font-size:14px;cursor:pointer;transition:transform .15s,box-shadow .15s;box-shadow:0 4px 20px rgba(56,208,255,.3);">
-          🔄 Yeniden Dene
+          Retry
         </button>
       </div>
     </section>
@@ -180,13 +200,18 @@ function mountFatal(message: string): void {
   const retry = document.getElementById("akr-retry-btn");
   if (retry) {
     retry.addEventListener("click", () => window.location.reload());
-    retry.addEventListener("mouseenter", () => { retry.style.transform = "scale(1.05)"; });
-    retry.addEventListener("mouseleave", () => { retry.style.transform = "scale(1)"; });
+    retry.addEventListener("mouseenter", () => {
+      retry.style.transform = "scale(1.05)";
+    });
+    retry.addEventListener("mouseleave", () => {
+      retry.style.transform = "scale(1)";
+    });
   }
 }
 
 function mountPending(message: string): void {
   const rootNode = ensureRootNode();
+  const safeMessage = escapeHtml(message);
   rootNode.innerHTML = `
     <style>
       @keyframes akrSpin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
@@ -195,9 +220,9 @@ function mountPending(message: string): void {
     </style>
     <section style="min-height:100vh;display:grid;place-items:center;background:linear-gradient(160deg,#030918 0%,#0a1628 40%,#0f1d35 100%);color:#e7edf7;font-family:'Space Grotesk',sans-serif;padding:24px;">
       <div style="max-width:480px;border:1px solid rgba(132,180,255,.15);background:rgba(8,16,30,.65);backdrop-filter:blur(16px);padding:32px;border-radius:20px;text-align:center;animation:akrFadeIn .5s ease-out;">
-        <div style="font-size:48px;margin-bottom:16px;animation:akrPulse 2s ease-in-out infinite;">🏰</div>
+        <div style="font-size:32px;margin-bottom:16px;animation:akrPulse 2s ease-in-out infinite;font-weight:800;letter-spacing:.12em;">AKR</div>
         <h1 style="margin:0 0 8px;font-size:22px;background:linear-gradient(135deg,#38d0ff,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">AirdropKral Arena</h1>
-        <p style="margin:0 0 16px;opacity:.7;font-size:13px;line-height:1.5;">${message}</p>
+        <p style="margin:0 0 16px;opacity:.7;font-size:13px;line-height:1.5;">${safeMessage}</p>
         <div style="width:32px;height:32px;margin:0 auto;border:3px solid rgba(56,208,255,.2);border-top-color:#38d0ff;border-radius:50%;animation:akrSpin .8s linear infinite;"></div>
       </div>
     </section>
