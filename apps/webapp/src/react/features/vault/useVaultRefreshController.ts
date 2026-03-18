@@ -42,6 +42,7 @@ export function useVaultRefreshController(options: VaultRefreshControllerOptions
     const wallet = (walletRefetch?.data || null) as WebAppApiResponse | null;
     const payout = (payoutRefetch?.data || null) as WebAppApiResponse | null;
     options.applySession(summary);
+    options.applySession(route);
     options.setVaultData((prev: any) => ({
       ...prev,
       overview: overview?.data || null,

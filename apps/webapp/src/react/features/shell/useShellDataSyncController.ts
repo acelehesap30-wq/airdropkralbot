@@ -302,8 +302,6 @@ export function useShellDataSyncController(options: ShellDataSyncControllerOptio
     options.tab,
     options.workspace,
     options.hasActiveAuth,
-    options.activeAuth.uid,
-    options.activeAuth.ts,
-    options.activeAuth.sig
+    options.activeAuth.uid
   ]);
 }
