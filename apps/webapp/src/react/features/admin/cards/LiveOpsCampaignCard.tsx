@@ -528,43 +528,46 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
     <section className="akrCard akrCardWide" data-akr-panel-key="panel_admin_live_ops" data-akr-focus-key="campaign_editor">
       <h3>{t(props.lang, "admin_live_ops_title")}</h3>
       <div className="akrActionRow">
-        <button className="akrBtn akrBtnGhost" onClick={props.onRefreshLiveOpsCampaign}>
+        <button type="button" className="akrBtn akrBtnGhost" onClick={props.onRefreshLiveOpsCampaign}>
           {t(props.lang, "admin_live_ops_refresh")}
         </button>
         <button
+          type="button"
           className="akrBtn akrBtnGhost"
           onClick={() => props.onSurfaceAction("admin_live_ops", "queue", SHELL_ACTION_KEY.ADMIN_QUEUE_PANEL, "panel_admin_live_ops")}
         >
           {t(props.lang, "admin_nav_queue")}
         </button>
         <button
+          type="button"
           className="akrBtn akrBtnGhost"
           onClick={() => props.onSurfaceAction("admin_live_ops", "policy", SHELL_ACTION_KEY.ADMIN_POLICY_PANEL, "panel_admin_live_ops")}
         >
           {t(props.lang, "admin_nav_policy")}
         </button>
         <button
+          type="button"
           className="akrBtn akrBtnGhost"
           onClick={() => props.onSurfaceAction("admin_live_ops", "runtime", SHELL_ACTION_KEY.ADMIN_RUNTIME_META, "panel_admin_live_ops")}
         >
           {t(props.lang, "admin_nav_runtime")}
         </button>
-        <button className="akrBtn akrBtnAccent" onClick={props.onSaveLiveOpsCampaign} disabled={props.liveOpsCampaignSaving}>
+        <button type="button" className="akrBtn akrBtnAccent" onClick={props.onSaveLiveOpsCampaign} disabled={props.liveOpsCampaignSaving}>
           {props.liveOpsCampaignSaving ? t(props.lang, "admin_live_ops_saving") : t(props.lang, "admin_live_ops_save")}
         </button>
-        <button className="akrBtn akrBtnGhost" onClick={props.onRequestLiveOpsCampaignApproval} disabled={props.liveOpsCampaignApprovaling}>
+        <button type="button" className="akrBtn akrBtnGhost" onClick={props.onRequestLiveOpsCampaignApproval} disabled={props.liveOpsCampaignApprovaling}>
           {props.liveOpsCampaignApprovaling ? t(props.lang, "admin_live_ops_approval_running") : t(props.lang, "admin_live_ops_request_approval")}
         </button>
-        <button className="akrBtn akrBtnGhost" onClick={props.onApproveLiveOpsCampaign} disabled={props.liveOpsCampaignApprovaling}>
+        <button type="button" className="akrBtn akrBtnGhost" onClick={props.onApproveLiveOpsCampaign} disabled={props.liveOpsCampaignApprovaling}>
           {props.liveOpsCampaignApprovaling ? t(props.lang, "admin_live_ops_approval_running") : t(props.lang, "admin_live_ops_approve")}
         </button>
-        <button className="akrBtn akrBtnGhost" onClick={props.onRevokeLiveOpsCampaignApproval} disabled={props.liveOpsCampaignApprovaling}>
+        <button type="button" className="akrBtn akrBtnGhost" onClick={props.onRevokeLiveOpsCampaignApproval} disabled={props.liveOpsCampaignApprovaling}>
           {props.liveOpsCampaignApprovaling ? t(props.lang, "admin_live_ops_approval_running") : t(props.lang, "admin_live_ops_revoke")}
         </button>
-        <button className="akrBtn akrBtnGhost" onClick={props.onDryRunLiveOpsCampaign} disabled={props.liveOpsCampaignDispatching}>
+        <button type="button" className="akrBtn akrBtnGhost" onClick={props.onDryRunLiveOpsCampaign} disabled={props.liveOpsCampaignDispatching}>
           {props.liveOpsCampaignDispatching ? t(props.lang, "admin_live_ops_dispatching") : t(props.lang, "admin_live_ops_dry_run")}
         </button>
-        <button className="akrBtn akrBtnAccent" onClick={props.onDispatchLiveOpsCampaign} disabled={props.liveOpsCampaignDispatching}>
+        <button type="button" className="akrBtn akrBtnAccent" onClick={props.onDispatchLiveOpsCampaign} disabled={props.liveOpsCampaignDispatching}>
           {props.liveOpsCampaignDispatching ? t(props.lang, "admin_live_ops_dispatching") : t(props.lang, "admin_live_ops_dispatch")}
         </button>
       </div>

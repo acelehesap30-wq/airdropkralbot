@@ -216,6 +216,24 @@ export function VaultPanel(props: VaultPanelProps) {
       onPress: props.onBuyIntent
     };
   })();
+  const formatVaultStatus = (value: unknown) => {
+    const raw = String(value || "").trim().toLowerCase();
+    if (!raw) {
+      return t(props.lang, "status_unknown");
+    }
+    if (["ready", "ok", "verified", "approved"].includes(raw)) {
+      return copy.stateReady;
+    }
+    if (["active", "live", "running", "open", "requested", "submitted", "intent_created"].includes(raw)) {
+      return copy.stateLive;
+    }
+    if (["blocked", "locked", "inactive", "disabled", "failed", "rejected"].includes(raw)) {
+      return copy.stateLocked;
+    }
+    return raw.replace(/[_-]+/g, " ");
+  };
+  const routeStatusLabel = formatVaultStatus(summary.route_status);
+  const walletKycLabel = summary.wallet_kyc_status || t(props.lang, "status_unknown");
 
   return (
     <section className="akrCard akrCardWide akrGameHub" data-akr-panel-key="vault" data-akr-focus-key="vault_route">
@@ -235,7 +253,7 @@ export function VaultPanel(props: VaultPanelProps) {
         <div className="akrCurrencyHud">
           <span className="akrCurrencyChip akrCurrencySC">{summary.token_symbol || "TOK"} ${summary.token_price_usd.toFixed(4)}</span>
           <span className="akrCurrencyChip akrCurrencyHC">{summary.payout_requestable_btc.toFixed(8)} BTC</span>
-          <span className="akrCurrencyChip akrCurrencyRC">{summary.route_status || "-"}</span>
+          <span className="akrCurrencyChip akrCurrencyRC">{routeStatusLabel}</span>
         </div>
       </div>
 
@@ -258,10 +276,10 @@ export function VaultPanel(props: VaultPanelProps) {
             </span>
           </div>
           <div className="akrActionRow">
-            <button className="akrBtn akrBtnAccent" onClick={nextVaultRoute.onPress}>
+            <button type="button" className="akrBtn akrBtnAccent" onClick={nextVaultRoute.onPress}>
               {nextVaultRoute.cta}
             </button>
-            <button className="akrBtn akrBtnGhost" onClick={props.onRefresh}>
+            <button type="button" className="akrBtn akrBtnGhost" onClick={props.onRefresh}>
               {t(props.lang, "vault_refresh")}
             </button>
           </div>
@@ -270,15 +288,16 @@ export function VaultPanel(props: VaultPanelProps) {
           <h4>{copy.routeSideTitle}</h4>
           <p className="akrMuted akrMiniPanelBody">{copy.routeSideBody}</p>
           <div className="akrQuickHintGrid">
-            <button className="akrQuickHintCard" onClick={props.onWalletVerify}>
+            <button type="button" className="akrQuickHintCard" onClick={props.onWalletVerify}>
               <span className="akrKicker">{copy.walletExit}</span>
               <strong>{t(props.lang, "vault_wallet_verify")}</strong>
             </button>
-            <button className="akrQuickHintCard" onClick={props.onPayoutRequest}>
+            <button type="button" className="akrQuickHintCard" onClick={props.onPayoutRequest}>
               <span className="akrKicker">{copy.payoutExit}</span>
               <strong>{t(props.lang, "vault_payout_request")}</strong>
             </button>
             <button
+              type="button"
               className="akrQuickHintCard"
               onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_REWARDS_PANEL, "panel_vault")}
             >
@@ -300,7 +319,7 @@ export function VaultPanel(props: VaultPanelProps) {
             title: t(props.lang, "tasks_focus_claims"),
             body: copy.chainMissionBody,
             stateLabel: copy.stateComplete,
-            signals: [summary.route_status || "-", `${summary.active_pass_count} ${copy.signalRewards}`],
+            signals: [routeStatusLabel, `${summary.active_pass_count} ${copy.signalRewards}`],
             tone: "done",
             onClick: () => props.onShellAction(SHELL_ACTION_KEY.PLAYER_TASKS_CLAIMS, "panel_vault")
           },
@@ -326,7 +345,7 @@ export function VaultPanel(props: VaultPanelProps) {
       />
 
       <div className="akrGameActionGrid">
-        <button className="akrActionFeatureCard isPrimary" onClick={props.onBuyIntent}>
+        <button type="button" className="akrActionFeatureCard isPrimary" onClick={props.onBuyIntent}>
           <p className="akrKicker">{copy.tradeLane}</p>
           <h3>{t(props.lang, "vault_buy_intent")}</h3>
           <p>{copy.tradeBody}</p>
@@ -334,19 +353,20 @@ export function VaultPanel(props: VaultPanelProps) {
             {props.quoteUsd || "0"} {props.quoteChain || "-"}
           </span>
         </button>
-        <button className="akrActionFeatureCard" onClick={props.onWalletVerify}>
+        <button type="button" className="akrActionFeatureCard" onClick={props.onWalletVerify}>
           <p className="akrKicker">{copy.walletLane}</p>
           <h3>{t(props.lang, "vault_wallet_verify")}</h3>
           <p>{summary.wallet_address_masked || copy.walletBody}</p>
           <span className="akrChip">{summary.wallet_active ? copy.walletOn : copy.walletOff}</span>
         </button>
-        <button className="akrActionFeatureCard" onClick={props.onPayoutRequest}>
+        <button type="button" className="akrActionFeatureCard" onClick={props.onPayoutRequest}>
           <p className="akrKicker">{copy.payoutLane}</p>
           <h3>{t(props.lang, "vault_payout_request")}</h3>
           <p>{copy.payoutBody}</p>
           <span className="akrChip">{summary.payout_can_request ? copy.payoutReady : copy.payoutLocked}</span>
         </button>
         <button
+          type="button"
           className="akrActionFeatureCard"
           onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_REWARDS_PANEL, "panel_vault")}
         >
@@ -392,10 +412,10 @@ export function VaultPanel(props: VaultPanelProps) {
             <span className="akrChip">Rate {latest.quote_rate.toFixed(6)}</span>
           </div>
           <div className="akrActionRow">
-            <button className="akrBtn akrBtnGhost" onClick={props.onQuote}>
+            <button type="button" className="akrBtn akrBtnGhost" onClick={props.onQuote}>
               {t(props.lang, "vault_quote")}
             </button>
-            <button className="akrBtn akrBtnAccent" onClick={props.onBuyIntent}>
+            <button type="button" className="akrBtn akrBtnAccent" onClick={props.onBuyIntent}>
               {t(props.lang, "vault_buy_intent")}
             </button>
           </div>
@@ -409,18 +429,18 @@ export function VaultPanel(props: VaultPanelProps) {
             <input value={props.walletAddress} onChange={(e) => props.onWalletAddressChange(e.target.value)} placeholder={copy.addressHint} aria-label="wallet-address" />
           </div>
           <div className="akrChipRow">
-            <span className="akrChip">{summary.wallet_kyc_status || "-"}</span>
+            <span className="akrChip">{walletKycLabel}</span>
             <span className="akrChip">{summary.wallet_address_masked || "-"}</span>
-            <span className="akrChip">{summary.route_status || "-"}</span>
+            <span className="akrChip">{routeStatusLabel}</span>
           </div>
           <div className="akrActionRow">
-            <button className="akrBtn akrBtnGhost" disabled={props.walletChallengeLoading} onClick={props.onWalletChallenge}>
+            <button type="button" className="akrBtn akrBtnGhost" disabled={props.walletChallengeLoading} onClick={props.onWalletChallenge}>
               {t(props.lang, "vault_wallet_challenge")}
             </button>
-            <button className="akrBtn akrBtnAccent" disabled={props.walletVerifyLoading} onClick={props.onWalletVerify}>
+            <button type="button" className="akrBtn akrBtnAccent" disabled={props.walletVerifyLoading} onClick={props.onWalletVerify}>
               {t(props.lang, "vault_wallet_verify")}
             </button>
-            <button className="akrBtn akrBtnGhost" disabled={props.walletUnlinkLoading} onClick={props.onWalletUnlink}>
+            <button type="button" className="akrBtn akrBtnGhost" disabled={props.walletUnlinkLoading} onClick={props.onWalletUnlink}>
               {t(props.lang, "vault_wallet_unlink")}
             </button>
           </div>
@@ -445,10 +465,11 @@ export function VaultPanel(props: VaultPanelProps) {
             <span className="akrChip">{summary.payout_unlock_tier || "-"}</span>
           </div>
           <div className="akrActionRow">
-            <button className="akrBtn akrBtnAccent" disabled={props.payoutRequestLoading} onClick={props.onPayoutRequest}>
+            <button type="button" className="akrBtn akrBtnAccent" disabled={props.payoutRequestLoading} onClick={props.onPayoutRequest}>
               {t(props.lang, "vault_payout_request")}
             </button>
             <button
+              type="button"
               className="akrBtn akrBtnGhost"
               onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PAYOUT_REQUEST, "panel_vault")}
             >
@@ -469,6 +490,7 @@ export function VaultPanel(props: VaultPanelProps) {
                 <span>
                   {row.price_amount} {row.price_currency}
                   <button
+                    type="button"
                     className="akrBtn akrBtnGhost"
                     disabled={props.passPurchaseLoading}
                     onClick={() => props.onPassPurchase(row.pass_key, row.price_currency)}
@@ -486,6 +508,7 @@ export function VaultPanel(props: VaultPanelProps) {
                 <span>
                   {row.price_amount} {row.price_currency}
                   <button
+                    type="button"
                     className="akrBtn akrBtnGhost"
                     disabled={props.cosmeticPurchaseLoading}
                     onClick={() => props.onCosmeticPurchase(row.item_key, row.price_currency)}
@@ -551,10 +574,10 @@ export function VaultPanel(props: VaultPanelProps) {
             />
           </div>
           <div className="akrActionRow">
-            <button className="akrBtn akrBtnGhost" onClick={props.onSubmitTx}>
+            <button type="button" className="akrBtn akrBtnGhost" onClick={props.onSubmitTx}>
               {t(props.lang, "vault_submit_tx")}
             </button>
-            <button className="akrBtn akrBtnGhost" onClick={props.onRefresh}>
+            <button type="button" className="akrBtn akrBtnGhost" onClick={props.onRefresh}>
               {t(props.lang, "vault_refresh")}
             </button>
           </div>

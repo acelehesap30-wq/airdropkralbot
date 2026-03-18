@@ -90,11 +90,14 @@ export function TasksPanel(props: TasksPanelProps) {
           activeAttempt: "Aktif deneme",
           revealAttempt: "Reveal denemesi",
           lastAction: "Son request",
-          stateClaimed: "claimed",
-          stateClaimReady: "claim-ready",
-          stateOpen: "open",
-          resultCached: "response cached",
-          resultWaiting: "waiting for next action"
+          stateClaimed: "claim edildi",
+          stateClaimReady: "claim hazir",
+          stateOpen: "acik",
+          resultCached: "yanit kaydi hazir",
+          resultWaiting: "sonraki hamle bekleniyor",
+          signalPace: "tempo",
+          snapshotWord: "kayit",
+          liveWord: "canli"
         }
       : {
           kicker: "Mission Command",
@@ -153,7 +156,10 @@ export function TasksPanel(props: TasksPanelProps) {
           stateClaimReady: "claim-ready",
           stateOpen: "open",
           resultCached: "response cached",
-          resultWaiting: "waiting for next action"
+          resultWaiting: "waiting for next action",
+          signalPace: "pace",
+          snapshotWord: "snapshot",
+          liveWord: "live"
         };
   const firstOffer = view.offers[0] || null;
   const nextRoute = (() => {
@@ -249,10 +255,11 @@ export function TasksPanel(props: TasksPanelProps) {
             </span>
           </div>
           <div className="akrActionRow">
-            <button className="akrBtn akrBtnAccent" onClick={nextRoute.onPress}>
+            <button type="button" className="akrBtn akrBtnAccent" onClick={nextRoute.onPress}>
               {nextRoute.cta}
             </button>
             <button
+              type="button"
               className="akrBtn akrBtnGhost"
               onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_TASKS_BOARD, "panel_tasks")}
             >
@@ -265,6 +272,7 @@ export function TasksPanel(props: TasksPanelProps) {
           <p className="akrMuted akrMiniPanelBody">{copy.sideRouteBody}</p>
           <div className="akrQuickHintGrid">
             <button
+              type="button"
               className="akrQuickHintCard"
               onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_REWARDS_PANEL, "panel_tasks")}
             >
@@ -272,6 +280,7 @@ export function TasksPanel(props: TasksPanelProps) {
               <strong>{t(props.lang, "tasks_focus_rewards")}</strong>
             </button>
             <button
+              type="button"
               className="akrQuickHintCard"
               onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PAYOUT_REQUEST, "panel_tasks")}
             >
@@ -279,6 +288,7 @@ export function TasksPanel(props: TasksPanelProps) {
               <strong>{t(props.lang, "shell_panel_go_payout")}</strong>
             </button>
             <button
+              type="button"
               className="akrQuickHintCard"
               onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_TASKS_CLAIMS, "panel_tasks")}
             >
@@ -300,7 +310,7 @@ export function TasksPanel(props: TasksPanelProps) {
             title: t(props.lang, "shell_panel_go_pvp"),
             body: copy.chainArenaBody,
             stateLabel: copy.stateComplete,
-            signals: [`${summary.daily_progress_pct}% pace`, `${summary.daily_tasks_done}/${summary.daily_cap}`],
+            signals: [`${summary.daily_progress_pct}% ${copy.signalPace}`, `${summary.daily_tasks_done}/${summary.daily_cap}`],
             tone: "done",
             onClick: () => props.onShellAction(SHELL_ACTION_KEY.PLAYER_PVP_DAILY_DUEL, "panel_tasks")
           },
@@ -326,19 +336,20 @@ export function TasksPanel(props: TasksPanelProps) {
       />
 
       <div className="akrGameActionGrid">
-        <button className="akrActionFeatureCard isPrimary" onClick={props.onReveal}>
+        <button type="button" className="akrActionFeatureCard isPrimary" onClick={props.onReveal}>
           <p className="akrKicker">{copy.revealAttempt}</p>
           <h3>{t(props.lang, "tasks_reveal")}</h3>
           <p>{summary.revealable_attempt_id ? copy.revealReady : copy.revealClosed}</p>
           <span className="akrChip">#{summary.revealable_attempt_id || 0}</span>
         </button>
-        <button className="akrActionFeatureCard" onClick={props.onComplete}>
+        <button type="button" className="akrActionFeatureCard" onClick={props.onComplete}>
           <p className="akrKicker">{copy.activeAttempt}</p>
           <h3>{t(props.lang, "tasks_complete")}</h3>
           <p>{summary.active_attempt_task_type || copy.noAttempt}</p>
           <span className="akrChip">#{summary.active_attempt_id || 0}</span>
         </button>
         <button
+          type="button"
           className="akrActionFeatureCard"
           onClick={() =>
             readyMission ? props.onClaim(readyMission.mission_key) : props.onShellAction(SHELL_ACTION_KEY.PLAYER_REWARDS_PANEL, "panel_tasks")
@@ -349,7 +360,7 @@ export function TasksPanel(props: TasksPanelProps) {
           <p>{readyMission ? readyMission.title : t(props.lang, "tasks_missions_empty")}</p>
           <span className="akrChip">{summary.missions_ready}</span>
         </button>
-        <button className="akrActionFeatureCard" onClick={props.onReroll}>
+        <button type="button" className="akrActionFeatureCard" onClick={props.onReroll}>
           <p className="akrKicker">{copy.laneOffers}</p>
           <h3>{t(props.lang, "tasks_reroll")}</h3>
           <p>{copy.openBoard}</p>
@@ -389,7 +400,7 @@ export function TasksPanel(props: TasksPanelProps) {
                   </strong>
                   <span>
                     {asText(row.expires_at)}
-                    <button className="akrBtn akrBtnGhost" onClick={() => props.onAccept(row.id)}>
+                    <button type="button" className="akrBtn akrBtnGhost" onClick={() => props.onAccept(row.id)}>
                       {copy.acceptNow}
                     </button>
                   </span>
@@ -400,7 +411,7 @@ export function TasksPanel(props: TasksPanelProps) {
             <p className="akrMuted">{t(props.lang, "tasks_offers_empty")}</p>
           )}
           <div className="akrActionRow">
-            <button className="akrBtn akrBtnGhost" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_TASKS_BOARD, "panel_tasks")}>
+            <button type="button" className="akrBtn akrBtnGhost" onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_TASKS_BOARD, "panel_tasks")}>
               {t(props.lang, "tasks_focus_board")}
             </button>
           </div>
@@ -417,7 +428,7 @@ export function TasksPanel(props: TasksPanelProps) {
                   <span>
                     {row.claimed ? copy.stateClaimed : row.can_claim ? copy.stateClaimReady : copy.stateOpen}
                     {row.can_claim ? (
-                      <button className="akrBtn akrBtnAccent" onClick={() => props.onClaim(row.mission_key)}>
+                      <button type="button" className="akrBtn akrBtnAccent" onClick={() => props.onClaim(row.mission_key)}>
                         {copy.claimNow}
                       </button>
                     ) : null}
@@ -456,10 +467,10 @@ export function TasksPanel(props: TasksPanelProps) {
             {activeMission?.title || readyMission?.title || copy.noAttempt}
           </p>
           <div className="akrActionRow">
-            <button className="akrBtn akrBtnGhost" onClick={props.onReveal}>
+            <button type="button" className="akrBtn akrBtnGhost" onClick={props.onReveal}>
               {t(props.lang, "tasks_reveal")}
             </button>
-            <button className="akrBtn akrBtnGhost" onClick={props.onComplete}>
+            <button type="button" className="akrBtn akrBtnGhost" onClick={props.onComplete}>
               {t(props.lang, "tasks_complete")}
             </button>
           </div>
@@ -472,11 +483,12 @@ export function TasksPanel(props: TasksPanelProps) {
             <span className="akrChip">
               {copy.lastAction} {summary.last_action_request_id || "-"}
             </span>
-            <span className="akrChip">{summary.last_snapshot_present ? "snapshot" : "live"}</span>
+            <span className="akrChip">{summary.last_snapshot_present ? copy.snapshotWord : copy.liveWord}</span>
           </div>
           <p className="akrMuted">{summary.last_snapshot_present ? copy.resultCached : copy.resultWaiting}</p>
           <div className="akrActionRow">
             <button
+              type="button"
               className="akrBtn akrBtnGhost"
               onClick={() => props.onShellAction(SHELL_ACTION_KEY.PLAYER_REWARDS_PANEL, "panel_tasks")}
             >
