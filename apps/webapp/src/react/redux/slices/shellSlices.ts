@@ -376,7 +376,7 @@ const navigationSlice = createSlice({
       const activeToken = buildLaunchContextToken(state.launchContext);
       const bootstrapToken = buildLaunchContextToken(state.bootstrapContext);
       state.bootstrapContext = next;
-      if (bootstrapToken === nextToken) {
+      if (bootstrapToken === nextToken && activeToken === nextToken) {
         return;
       }
       if (state.source === "internal" && activeToken && activeToken !== nextToken) {

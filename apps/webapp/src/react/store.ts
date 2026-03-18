@@ -154,7 +154,12 @@ export function useReactShellStore(): ReactShellState {
     (patch: Partial<BootstrapV2Data>) => {
       dispatch(playerActions.patchData(patch));
       if (Object.prototype.hasOwnProperty.call(patch || {}, "launch_context")) {
-        dispatch(navigationActions.hydrateLaunchContext((patch || {}).launch_context || null));
+        const nextLaunchContext = (patch || {}).launch_context || null;
+        if (nextLaunchContext) {
+          dispatch(navigationActions.hydrateLaunchContext(nextLaunchContext));
+        } else {
+          dispatch(navigationActions.clearLaunchContext());
+        }
       }
       if (Object.prototype.hasOwnProperty.call(patch || {}, "ui_prefs")) {
         const nextPrefs = patch?.ui_prefs && typeof patch.ui_prefs === "object" ? patch.ui_prefs : {};
