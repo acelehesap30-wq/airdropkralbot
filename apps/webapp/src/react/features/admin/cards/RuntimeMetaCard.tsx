@@ -1358,34 +1358,38 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
     <section className="akrCard akrCardWide" data-akr-panel-key="panel_admin_runtime" data-akr-focus-key="runtime_meta">
       <h3>{t(props.lang, "admin_runtime_meta_title")}</h3>
       <div className="akrActionRow">
-        <button className="akrBtn akrBtnGhost" onClick={props.onRefreshRuntimeMeta}>
+        <button type="button" className="akrBtn akrBtnGhost" onClick={props.onRefreshRuntimeMeta}>
           {t(props.lang, "admin_runtime_meta_refresh")}
         </button>
         <button
+          type="button"
           className="akrBtn akrBtnGhost"
           onClick={() => props.onSurfaceAction("admin_runtime_meta", "queue", SHELL_ACTION_KEY.ADMIN_QUEUE_PANEL, "panel_admin_runtime")}
         >
           {t(props.lang, "admin_nav_queue")}
         </button>
         <button
+          type="button"
           className="akrBtn akrBtnGhost"
           onClick={() => props.onSurfaceAction("admin_runtime_meta", "policy", SHELL_ACTION_KEY.ADMIN_POLICY_PANEL, "panel_admin_runtime")}
         >
           {t(props.lang, "admin_nav_policy")}
         </button>
         <button
+          type="button"
           className="akrBtn akrBtnGhost"
           onClick={() => props.onSurfaceAction("admin_runtime_meta", "bot", SHELL_ACTION_KEY.ADMIN_RUNTIME_BOT, "panel_admin_runtime")}
         >
           {t(props.lang, "admin_nav_bot")}
         </button>
         <button
+          type="button"
           className="akrBtn akrBtnGhost"
           onClick={() => props.onSurfaceAction("admin_runtime_meta", "live_ops", SHELL_ACTION_KEY.ADMIN_LIVE_OPS_PANEL, "panel_admin_runtime")}
         >
           {t(props.lang, "admin_nav_live_ops")}
         </button>
-        <button className="akrBtn akrBtnAccent" onClick={props.onReloadAssets} disabled={props.assetsReloading}>
+        <button type="button" className="akrBtn akrBtnAccent" onClick={props.onReloadAssets} disabled={props.assetsReloading}>
           {props.assetsReloading ? t(props.lang, "admin_runtime_assets_reloading") : t(props.lang, "admin_runtime_assets_reload")}
         </button>
       </div>
@@ -1804,10 +1808,10 @@ export function RuntimeMetaCard(props: RuntimeMetaCardProps) {
       ) : null}
       <h3>{t(props.lang, "admin_runtime_kpi_title")}</h3>
       <div className="akrActionRow">
-        <button className="akrBtn akrBtnGhost" onClick={props.onRefreshOpsKpi}>
+        <button type="button" className="akrBtn akrBtnGhost" onClick={props.onRefreshOpsKpi}>
           {t(props.lang, "admin_runtime_kpi_refresh")}
         </button>
-        <button className="akrBtn akrBtnAccent" onClick={props.onRunOpsKpi} disabled={props.opsKpiRunning}>
+        <button type="button" className="akrBtn akrBtnAccent" onClick={props.onRunOpsKpi} disabled={props.opsKpiRunning}>
           {props.opsKpiRunning ? t(props.lang, "admin_runtime_kpi_running") : t(props.lang, "admin_runtime_kpi_run")}
         </button>
       </div>

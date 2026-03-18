@@ -18,28 +18,31 @@ export function RuntimeBotCard(props: RuntimeBotCardProps) {
     <section className="akrCard akrCardWide" data-akr-panel-key="panel_admin_runtime" data-akr-focus-key="runtime_bot">
       <h3>{t(props.lang, "admin_runtime_bot_title")}</h3>
       <div className="akrActionRow">
-        <button className="akrBtn akrBtnGhost" onClick={props.onRefreshBotRuntime}>
+        <button type="button" className="akrBtn akrBtnGhost" onClick={props.onRefreshBotRuntime}>
           {t(props.lang, "admin_runtime_bot_refresh")}
         </button>
         <button
+          type="button"
           className="akrBtn akrBtnGhost"
           onClick={() => props.onSurfaceAction("admin_runtime_bot", "queue", SHELL_ACTION_KEY.ADMIN_QUEUE_PANEL, "panel_admin_runtime")}
         >
           {t(props.lang, "admin_nav_queue")}
         </button>
         <button
+          type="button"
           className="akrBtn akrBtnGhost"
           onClick={() => props.onSurfaceAction("admin_runtime_bot", "flags", SHELL_ACTION_KEY.ADMIN_RUNTIME_FLAGS, "panel_admin_runtime")}
         >
           {t(props.lang, "admin_nav_flags")}
         </button>
         <button
+          type="button"
           className="akrBtn akrBtnGhost"
           onClick={() => props.onSurfaceAction("admin_runtime_bot", "runtime", SHELL_ACTION_KEY.ADMIN_RUNTIME_META, "panel_admin_runtime")}
         >
           {t(props.lang, "admin_nav_runtime")}
         </button>
-        <button className="akrBtn akrBtnAccent" onClick={props.onRunBotReconcile} disabled={props.botReconcileSaving}>
+        <button type="button" className="akrBtn akrBtnAccent" onClick={props.onRunBotReconcile} disabled={props.botReconcileSaving}>
           {props.botReconcileSaving ? t(props.lang, "admin_runtime_bot_reconciling") : t(props.lang, "admin_runtime_bot_reconcile")}
         </button>
       </div>

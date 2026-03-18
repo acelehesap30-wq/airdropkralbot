@@ -27,28 +27,31 @@ export function DynamicPolicyCard(props: DynamicPolicyCardProps) {
         />
       </div>
       <div className="akrActionRow">
-        <button className="akrBtn akrBtnGhost" onClick={props.onRefreshDynamicPolicy}>
+        <button type="button" className="akrBtn akrBtnGhost" onClick={props.onRefreshDynamicPolicy}>
           {t(props.lang, "admin_dynamic_policy_refresh")}
         </button>
         <button
+          type="button"
           className="akrBtn akrBtnGhost"
           onClick={() => props.onSurfaceAction("admin_policy", "queue", SHELL_ACTION_KEY.ADMIN_QUEUE_PANEL, "panel_admin_policy")}
         >
           {t(props.lang, "admin_nav_queue")}
         </button>
         <button
+          type="button"
           className="akrBtn akrBtnGhost"
           onClick={() => props.onSurfaceAction("admin_policy", "flags", SHELL_ACTION_KEY.ADMIN_RUNTIME_FLAGS, "panel_admin_policy")}
         >
           {t(props.lang, "admin_nav_flags")}
         </button>
         <button
+          type="button"
           className="akrBtn akrBtnGhost"
           onClick={() => props.onSurfaceAction("admin_policy", "runtime", SHELL_ACTION_KEY.ADMIN_RUNTIME_META, "panel_admin_policy")}
         >
           {t(props.lang, "admin_nav_runtime")}
         </button>
-        <button className="akrBtn akrBtnAccent" onClick={props.onSaveDynamicPolicy} disabled={props.dynamicPolicySaving}>
+        <button type="button" className="akrBtn akrBtnAccent" onClick={props.onSaveDynamicPolicy} disabled={props.dynamicPolicySaving}>
           {props.dynamicPolicySaving ? t(props.lang, "admin_dynamic_policy_saving") : t(props.lang, "admin_dynamic_policy_save")}
         </button>
       </div>
