@@ -166,7 +166,16 @@ const HELP_RELATIONS = Object.freeze({
   pay: Object.freeze(["admin_payouts", "reject_payout", "admin_queue"]),
   reject_payout: Object.freeze(["admin_payouts", "pay", "admin_queue"]),
   approve_token: Object.freeze(["admin_tokens", "reject_token", "admin_queue"]),
-  reject_token: Object.freeze(["admin_tokens", "approve_token", "admin_queue"])
+  reject_token: Object.freeze(["admin_tokens", "approve_token", "admin_queue"]),
+  claim: Object.freeze(["rewards", "missions", "wallet"]),
+  history: Object.freeze(["wallet", "vault", "profile"]),
+  rank: Object.freeze(["leaderboard", "season", "arena_rank"]),
+  inventory: Object.freeze(["shop", "rewards", "tasks"]),
+  invite: Object.freeze(["friends", "leaderboard", "profile"]),
+  friends: Object.freeze(["invite", "leaderboard", "war"]),
+  share: Object.freeze(["profile", "invite", "leaderboard"]),
+  news: Object.freeze(["events", "season", "discover"]),
+  quests: Object.freeze(["missions", "tasks", "rewards"])
 });
 
 const HELP_COPY_OVERRIDES = Object.freeze({

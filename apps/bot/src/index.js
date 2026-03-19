@@ -5564,6 +5564,405 @@ function registerAdminActionHandlers(bot, appConfig, definitions) {
   }
 }
 
+// ── Missing command handlers (claim, history, rank, inventory, invite, friends, share, news, quests) ──
+
+async function sendClaim(ctx, pool, appConfig) {
+  const payload = await withTransaction(pool, async (db) => {
+    const profile = await ensureProfileTx(db, ctx);
+    const board = await missionStore.getMissionBoard(db, profile.user_id);
+    const balances = await economyStore.getBalances(db, profile.user_id);
+    return { profile, board, balances };
+  });
+  const lang = resolvePreferredLanguage(payload.profile, ctx, "tr");
+  const claimable = (payload.board || []).filter((m) => m.completed && !m.claimed);
+  const totalSc = claimable.reduce((sum, m) => sum + Number(m.reward_sc || 0), 0);
+  const totalHc = claimable.reduce((sum, m) => sum + Number(m.reward_hc || 0), 0);
+  const streak = Number(payload.profile.current_streak || 0);
+  const streakBonus = streak >= 7 ? Math.floor(streak * 2) : 0;
+
+  let text;
+  if (claimable.length > 0) {
+    const lines = claimable.map((m, i) =>
+      `  ${i + 1}. ${escapeMarkdownText(m.title || m.mission_key || "mission")} — *+${Number(m.reward_sc || 0)} SC / +${Number(m.reward_hc || 0)} HC*`
+    ).join("\n");
+    text = lang === "en"
+      ? `*Pending Rewards*\n\n` +
+        `${lines}\n\n` +
+        `Total: *+${totalSc} SC / +${totalHc} HC*\n` +
+        (streakBonus > 0 ? `Streak Bonus (${streak}d): *+${streakBonus} SC*\n` : "") +
+        `\nUse /missions to claim individually or tap below.`
+      : `*Bekleyen Oduller*\n\n` +
+        `${lines}\n\n` +
+        `Toplam: *+${totalSc} SC / +${totalHc} HC*\n` +
+        (streakBonus > 0 ? `Streak Bonusu (${streak}g): *+${streakBonus} SC*\n` : "") +
+        `\nTek tek almak icin /missions veya asagiya tikla.`;
+  } else {
+    text = lang === "en"
+      ? `*All Rewards Claimed*\n\nNo pending rewards right now. Complete missions or streak goals to earn more!`
+      : `*Tum Oduller Alindi*\n\nSu anda bekleyen odul yok. Daha fazla kazanmak icin misyonlari veya streak hedeflerini tamamla!`;
+  }
+
+  const missionsUrl = await resolveMiniAppCommandUrl(pool, appConfig, ctx.from?.id, "missions");
+  await ctx.replyWithMarkdown(
+    text,
+    buildMissionKeyboard(payload.board, lang, missionsUrl || "")
+  );
+}
+
+async function sendHistory(ctx, pool, appConfig) {
+  const payload = await withTransaction(pool, async (db) => {
+    const profile = await ensureProfileTx(db, ctx);
+    const balances = await economyStore.getBalances(db, profile.user_id);
+    const recentTasks = await db.query(
+      `SELECT task_type, mode, sc_earned, hc_earned, completed_at
+       FROM task_attempts
+       WHERE user_id = $1 AND completed_at IS NOT NULL
+       ORDER BY completed_at DESC LIMIT 10`,
+      [profile.user_id]
+    ).catch(() => ({ rows: [] }));
+    return { profile, balances, recentTasks: recentTasks.rows };
+  });
+  const lang = resolvePreferredLanguage(payload.profile, ctx, "tr");
+
+  const totalSc = Number(payload.balances?.SC || 0);
+  const totalHc = Number(payload.balances?.HC || 0);
+  const lines = (payload.recentTasks || []).map((row) => {
+    const sc = Number(row.sc_earned || 0);
+    const hc = Number(row.hc_earned || 0);
+    const mode = escapeMarkdownText(row.mode || "balanced");
+    const type = escapeMarkdownText(row.task_type || "task");
+    const ts = row.completed_at ? new Date(row.completed_at).toLocaleDateString("tr-TR") : "-";
+    return `  📝 *${type}* [${mode}] +${sc} SC / +${hc} HC — ${ts}`;
+  });
+
+  const text = lang === "en"
+    ? `*Transaction History*\n\n` +
+      (lines.length > 0 ? `${lines.join("\n")}\n\n` : `No recent transactions.\n\n`) +
+      `Current Balance: *${totalSc} SC / ${totalHc} HC*`
+    : `*Islem Gecmisi*\n\n` +
+      (lines.length > 0 ? `${lines.join("\n")}\n\n` : `Yakin zamanda islem yok.\n\n`) +
+      `Guncel Bakiye: *${totalSc} SC / ${totalHc} HC*`;
+
+  const { rewards_vault = "", leaderboard_panel = "" } = await resolveMiniAppLaunchSurfaceBundle(pool, appConfig, ctx.from?.id, [
+    "rewards_vault",
+    "leaderboard_panel"
+  ]);
+  await ctx.replyWithMarkdown(text, buildRewardsKeyboard(rewards_vault, leaderboard_panel, lang));
+}
+
+async function sendRank(ctx, pool, appConfig) {
+  const payload = await withTransaction(pool, async (db) => {
+    const profile = await ensureProfileTx(db, ctx);
+    const runtimeConfig = await configService.getEconomyConfig(db);
+    const season = seasonStore.getSeasonInfo(runtimeConfig);
+    const seasonStat = await seasonStore.getSeasonStat(db, { userId: profile.user_id, seasonId: season.seasonId });
+    const seasonRank = await seasonStore.getUserRank(db, { userId: profile.user_id, seasonId: season.seasonId });
+    const arenaReady = await arenaStore.hasArenaTables(db);
+    let arenaRank = null;
+    let arenaState = null;
+    if (arenaReady) {
+      const arenaConfig = arenaEngine.getArenaConfig(runtimeConfig);
+      arenaState = await arenaStore.getArenaState(db, profile.user_id, arenaConfig.baseRating);
+      arenaRank = await arenaStore.getRank(db, profile.user_id);
+    }
+    return { profile, season, seasonStat, seasonRank, arenaRank, arenaState };
+  });
+  const lang = resolvePreferredLanguage(payload.profile, ctx, "tr");
+
+  const seasonPos = Number(payload.seasonRank?.rank || 0);
+  const seasonPts = Math.floor(Number(payload.seasonStat?.points || 0));
+  const arenaPos = Number(payload.arenaRank?.rank || 0);
+  const arenaRating = Math.floor(Number(payload.arenaState?.rating || 0));
+  const tier = Number(payload.profile.kingdom_tier || 1);
+  const nextTierRep = (tier * 250);
+  const currentRep = Number(payload.profile.reputation || 0);
+  const distanceToNext = Math.max(0, nextTierRep - currentRep);
+
+  const text = lang === "en"
+    ? `*Your Ranking*\n\n` +
+      `🏅 Season Rank: *#${seasonPos || "-"}* (${seasonPts} pts)\n` +
+      `⚔️ Arena Rank: *#${arenaPos || "-"}* (${arenaRating} ELO)\n` +
+      `👑 Kingdom Tier: *${tier}*\n` +
+      `📊 Reputation: *${currentRep}* / ${nextTierRep}\n` +
+      `📏 Distance to next tier: *${distanceToNext} rep*`
+    : `*Siralaman*\n\n` +
+      `🏅 Sezon Sirasi: *#${seasonPos || "-"}* (${seasonPts} puan)\n` +
+      `⚔️ Arena Sirasi: *#${arenaPos || "-"}* (${arenaRating} ELO)\n` +
+      `👑 Kingdom Tier: *${tier}*\n` +
+      `📊 Itibar: *${currentRep}* / ${nextTierRep}\n` +
+      `📏 Sonraki tier mesafesi: *${distanceToNext} rep*`;
+
+  const { leaderboard_panel = "", season_hall = "" } = await resolveMiniAppLaunchSurfaceBundle(pool, appConfig, ctx.from?.id, [
+    "leaderboard_panel",
+    "season_hall"
+  ]);
+  await ctx.replyWithMarkdown(text, buildSeasonKeyboard(season_hall, leaderboard_panel, lang));
+}
+
+async function sendInventory(ctx, pool, appConfig) {
+  const payload = await withTransaction(pool, async (db) => {
+    const profile = await ensureProfileTx(db, ctx);
+    const balances = await economyStore.getBalances(db, profile.user_id);
+    const effects = await shopStore.getActiveEffects(db, profile.user_id);
+    return { profile, balances, effects };
+  });
+  const lang = resolvePreferredLanguage(payload.profile, ctx, "tr");
+
+  const boosts = (payload.effects || []).filter((e) => e.effect_type === "boost" || e.effect_type === "xp_boost" || e.effect_type === "sc_boost");
+  const shields = (payload.effects || []).filter((e) => e.effect_type === "shield" || e.effect_type === "streak_shield");
+  const others = (payload.effects || []).filter((e) => !boosts.includes(e) && !shields.includes(e));
+
+  const boostLines = boosts.length > 0
+    ? boosts.map((e) => `  ⚡ ${escapeMarkdownText(e.offer_key || e.effect_type)} — *aktif*`).join("\n")
+    : lang === "en" ? "  _none_" : "  _yok_";
+  const shieldLines = shields.length > 0
+    ? shields.map((e) => `  🛡 ${escapeMarkdownText(e.offer_key || e.effect_type)} — *aktif*`).join("\n")
+    : lang === "en" ? "  _none_" : "  _yok_";
+  const otherLines = others.length > 0
+    ? others.map((e) => `  📦 ${escapeMarkdownText(e.offer_key || e.effect_type)} — *aktif*`).join("\n")
+    : lang === "en" ? "  _none_" : "  _yok_";
+
+  const text = lang === "en"
+    ? `*Inventory*\n\n` +
+      `⚡ *Boosts*\n${boostLines}\n\n` +
+      `🛡 *Shields*\n${shieldLines}\n\n` +
+      `📦 *Other Items*\n${otherLines}\n\n` +
+      `Total active effects: *${(payload.effects || []).length}*\n` +
+      `💡 Visit /shop to acquire new items or try fusion in Arena 3D.`
+    : `*Envanter*\n\n` +
+      `⚡ *Boost'lar*\n${boostLines}\n\n` +
+      `🛡 *Kalkanlar*\n${shieldLines}\n\n` +
+      `📦 *Diger Esyalar*\n${otherLines}\n\n` +
+      `Toplam aktif efekt: *${(payload.effects || []).length}*\n` +
+      `💡 Yeni esya icin /shop veya Arena 3D'de fusion dene.`;
+
+  const rewardsUrl = await resolveMiniAppCommandUrl(pool, appConfig, ctx.from?.id, "rewards");
+  await ctx.replyWithMarkdown(text, buildShopKeyboard([], lang, rewardsUrl || ""));
+}
+
+async function sendInvite(ctx, pool, appConfig) {
+  const profile = await ensureProfile(pool, ctx);
+  const lang = resolvePreferredLanguage(profile, ctx, "tr");
+  const telegramId = ctx.from?.id || 0;
+  const refLink = `t.me/AirdropKral_Bot?start=ref_${telegramId}`;
+
+  const referralCount = await withTransaction(pool, async (db) => {
+    const result = await db.query(
+      `SELECT COUNT(*)::int AS cnt FROM users WHERE referred_by = $1`,
+      [profile.user_id]
+    ).catch(() => ({ rows: [{ cnt: 0 }] }));
+    return Number(result.rows[0]?.cnt || 0);
+  });
+
+  const text = lang === "en"
+    ? `*Invite Friends*\n\n` +
+      `🔗 Your referral link:\n\`${refLink}\`\n\n` +
+      `🎁 *Bonus Structure*\n` +
+      `  Per invite: *+50 SC + 5 HC*\n` +
+      `  Active friend bonus: *+10 SC/day*\n` +
+      `  5 referrals milestone: *+200 SC*\n\n` +
+      `👥 Total invited: *${referralCount}*\n` +
+      `Share the link and earn together!`
+    : `*Arkadas Davet Et*\n\n` +
+      `🔗 Davet linkin:\n\`${refLink}\`\n\n` +
+      `🎁 *Bonus Yapisi*\n` +
+      `  Her davet: *+50 SC + 5 HC*\n` +
+      `  Aktif arkadas bonusu: *+10 SC/gun*\n` +
+      `  5 davet milestone: *+200 SC*\n\n` +
+      `👥 Toplam davet: *${referralCount}*\n` +
+      `Linki paylas, birlikte kazan!`;
+
+  const { leaderboard_panel = "" } = await resolveMiniAppLaunchSurfaceBundle(pool, appConfig, ctx.from?.id, [
+    "leaderboard_panel"
+  ]);
+  await ctx.replyWithMarkdown(text, buildSeasonKeyboard("", leaderboard_panel, lang));
+}
+
+async function sendFriends(ctx, pool, appConfig) {
+  const payload = await withTransaction(pool, async (db) => {
+    const profile = await ensureProfileTx(db, ctx);
+    const totalRefs = await db.query(
+      `SELECT COUNT(*)::int AS cnt FROM users WHERE referred_by = $1`,
+      [profile.user_id]
+    ).catch(() => ({ rows: [{ cnt: 0 }] }));
+    const activeRefs = await db.query(
+      `SELECT COUNT(*)::int AS cnt FROM users WHERE referred_by = $1 AND last_seen_at >= now() - interval '7 days'`,
+      [profile.user_id]
+    ).catch(() => ({ rows: [{ cnt: 0 }] }));
+    const recentFriends = await db.query(
+      `SELECT u.created_at, i.public_name
+       FROM users u
+       LEFT JOIN user_identities i ON i.user_id = u.id
+       WHERE u.referred_by = $1
+       ORDER BY u.created_at DESC LIMIT 5`,
+      [profile.user_id]
+    ).catch(() => ({ rows: [] }));
+    return {
+      profile,
+      totalRefs: Number(totalRefs.rows[0]?.cnt || 0),
+      activeRefs: Number(activeRefs.rows[0]?.cnt || 0),
+      recentFriends: recentFriends.rows
+    };
+  });
+  const lang = resolvePreferredLanguage(payload.profile, ctx, "tr");
+
+  const bonusEarned = payload.totalRefs * 50;
+  const friendLines = (payload.recentFriends || []).map((f) => {
+    const name = escapeMarkdownText(f.public_name || "player");
+    const date = f.created_at ? new Date(f.created_at).toLocaleDateString("tr-TR") : "-";
+    return `  👤 ${name} — ${date}`;
+  }).join("\n");
+
+  const text = lang === "en"
+    ? `*Friends*\n\n` +
+      `👥 Total referrals: *${payload.totalRefs}*\n` +
+      `🟢 Active (7d): *${payload.activeRefs}*\n` +
+      `💰 Total bonus earned: *~${bonusEarned} SC*\n\n` +
+      `📋 *Recent Friends*\n` +
+      (friendLines || "  _no friends yet_") +
+      `\n\nInvite more with /invite`
+    : `*Arkadaslar*\n\n` +
+      `👥 Toplam davet: *${payload.totalRefs}*\n` +
+      `🟢 Aktif (7g): *${payload.activeRefs}*\n` +
+      `💰 Toplam kazanilan bonus: *~${bonusEarned} SC*\n\n` +
+      `📋 *Son Katilan Arkadaslar*\n` +
+      (friendLines || "  _henuz arkadas yok_") +
+      `\n\nDaha fazla davet icin /invite`;
+
+  const { leaderboard_panel = "" } = await resolveMiniAppLaunchSurfaceBundle(pool, appConfig, ctx.from?.id, [
+    "leaderboard_panel"
+  ]);
+  await ctx.replyWithMarkdown(text, buildSeasonKeyboard("", leaderboard_panel, lang));
+}
+
+async function sendShare(ctx, pool, appConfig) {
+  const payload = await withTransaction(pool, async (db) => {
+    const profile = await ensureProfileTx(db, ctx);
+    const balances = await economyStore.getBalances(db, profile.user_id);
+    const runtimeConfig = await configService.getEconomyConfig(db);
+    const season = seasonStore.getSeasonInfo(runtimeConfig);
+    const seasonStat = await seasonStore.getSeasonStat(db, { userId: profile.user_id, seasonId: season.seasonId });
+    return { profile, balances, season, seasonStat };
+  });
+  const lang = resolvePreferredLanguage(payload.profile, ctx, "tr");
+
+  const publicName = escapeMarkdownText(payload.profile.public_name || "Player");
+  const tier = Number(payload.profile.kingdom_tier || 1);
+  const streak = Number(payload.profile.current_streak || 0);
+  const seasonPts = Math.floor(Number(payload.seasonStat?.points || 0));
+  const sc = Number(payload.balances?.SC || 0);
+  const telegramId = ctx.from?.id || 0;
+  const deepLink = `t.me/AirdropKral_Bot?start=ref_${telegramId}`;
+
+  const text = lang === "en"
+    ? `*${publicName}'s Profile Card*\n\n` +
+      `👑 Tier: *${tier}* | 🔥 Streak: *${streak}d*\n` +
+      `🏅 Season Points: *${seasonPts}*\n` +
+      `💰 SC: *${sc.toLocaleString()}*\n\n` +
+      `Join the Nexus Arena!\n🔗 ${deepLink}`
+    : `*${publicName} Profil Karti*\n\n` +
+      `👑 Tier: *${tier}* | 🔥 Streak: *${streak}g*\n` +
+      `🏅 Sezon Puani: *${seasonPts}*\n` +
+      `💰 SC: *${sc.toLocaleString()}*\n\n` +
+      `Nexus Arena'ya katil!\n🔗 ${deepLink}`;
+
+  const { profile_hub = "" } = await resolveMiniAppLaunchSurfaceBundle(pool, appConfig, ctx.from?.id, [
+    "profile_hub"
+  ]);
+  await ctx.replyWithMarkdown(text, buildProfileKeyboard(profile_hub, "", lang));
+}
+
+async function sendNews(ctx, pool, appConfig) {
+  const payload = await withTransaction(pool, async (db) => {
+    const profile = await ensureProfileTx(db, ctx);
+    const runtimeConfig = await configService.getEconomyConfig(db);
+    const season = seasonStore.getSeasonInfo(runtimeConfig);
+    const anomaly = nexusEventEngine.publicAnomalyView(
+      nexusEventEngine.resolveDailyAnomaly(runtimeConfig, {
+        seasonId: season.seasonId
+      })
+    );
+    return { profile, season, anomaly };
+  });
+  const lang = resolvePreferredLanguage(payload.profile, ctx, "tr");
+
+  const seasonId = payload.season.seasonId;
+  const daysLeft = payload.season.daysLeft;
+  const anomalyTitle = escapeMarkdownText(payload.anomaly.title || "-");
+  const todayStr = new Date().toLocaleDateString("tr-TR");
+
+  const text = lang === "en"
+    ? `*News & Announcements*\n\n` +
+      `📢 *Season S${seasonId} Update* — ${todayStr}\n` +
+      `  Season S${seasonId} is active with *${daysLeft} days* remaining. Complete tasks and climb the ladder!\n\n` +
+      `🌀 *Nexus Anomaly Active*\n` +
+      `  Current anomaly: *${anomalyTitle}* — adapt your strategy.\n\n` +
+      `⚔️ *Arena PvP Open*\n` +
+      `  ELO-based matchmaking is live. Enter /pvp to raid.\n\n` +
+      `🛒 *Boost Shop Refreshed*\n` +
+      `  New XP and SC boosts available. Check /shop.\n\n` +
+      `💡 Stay tuned for event drops and flash rewards!`
+    : `*Haberler ve Duyurular*\n\n` +
+      `📢 *Sezon S${seasonId} Guncelleme* — ${todayStr}\n` +
+      `  Sezon S${seasonId} aktif, *${daysLeft} gun* kaldi. Gorevleri tamamla ve siralama yukselt!\n\n` +
+      `🌀 *Nexus Anomali Aktif*\n` +
+      `  Guncel anomali: *${anomalyTitle}* — stratejini uyarla.\n\n` +
+      `⚔️ *Arena PvP Acik*\n` +
+      `  ELO bazli eslestirme aktif. Raid icin /pvp yaz.\n\n` +
+      `🛒 *Boost Dukkani Yenilendi*\n` +
+      `  Yeni XP ve SC boost'lari mevcut. /shop ile bak.\n\n` +
+      `💡 Event drop ve flash oduller icin takipte kal!`;
+
+  const { events_hall = "" } = await resolveMiniAppLaunchSurfaceBundle(pool, appConfig, ctx.from?.id, [
+    "events_hall"
+  ]);
+  await ctx.replyWithMarkdown(text, buildEventKeyboard(events_hall, "", "", lang));
+}
+
+async function sendQuests(ctx, pool, appConfig) {
+  const payload = await withTransaction(pool, async (db) => {
+    const profile = await ensureProfileTx(db, ctx);
+    const board = await missionStore.getMissionBoard(db, profile.user_id);
+    const runtimeConfig = await configService.getEconomyConfig(db);
+    const season = seasonStore.getSeasonInfo(runtimeConfig);
+    return { profile, board, season };
+  });
+  const lang = resolvePreferredLanguage(payload.profile, ctx, "tr");
+
+  const activeMissions = (payload.board || []).filter((m) => !m.claimed);
+  const completedCount = (payload.board || []).filter((m) => m.completed).length;
+  const totalCount = (payload.board || []).length;
+
+  const questLines = activeMissions.slice(0, 5).map((m, i) => {
+    const title = escapeMarkdownText(m.title || m.mission_key || "quest");
+    const progress = Number(m.progress || 0);
+    const target = Number(m.target || 1);
+    const done = m.completed ? "✅" : "🔄";
+    const bar = `${'▰'.repeat(Math.min(8, Math.round((progress / Math.max(1, target)) * 8)))}${'▱'.repeat(Math.max(0, 8 - Math.round((progress / Math.max(1, target)) * 8)))}`;
+    const rewardSc = Number(m.reward_sc || 0);
+    return `  ${done} ${i + 1}. *${title}*\n     ${bar} ${progress}/${target} | +${rewardSc} SC`;
+  }).join("\n");
+
+  const chainBonus = totalCount >= 5 ? (lang === "en" ? "\n🏆 Chain completion bonus: *+100 SC + 10 HC*" : "\n🏆 Zincir tamamlama bonusu: *+100 SC + 10 HC*") : "";
+
+  const text = lang === "en"
+    ? `*Quest Chains*\n\n` +
+      `Progress: *${completedCount}/${totalCount}* quests completed\n\n` +
+      `📋 *Active Quests*\n` +
+      (questLines || "  _no active quests_") +
+      `${chainBonus}\n\n` +
+      `💡 Complete all steps to unlock chain rewards!`
+    : `*Gorev Zincirleri*\n\n` +
+      `Ilerleme: *${completedCount}/${totalCount}* gorev tamamlandi\n\n` +
+      `📋 *Aktif Gorevler*\n` +
+      (questLines || "  _aktif gorev yok_") +
+      `${chainBonus}\n\n` +
+      `💡 Tum adimlari tamamla, zincir odullerini ac!`;
+
+  const missionsUrl = await resolveMiniAppCommandUrl(pool, appConfig, ctx.from?.id, "missions");
+  await ctx.replyWithMarkdown(text, buildMissionKeyboard(payload.board, lang, missionsUrl || ""));
+}
+
 function buildCommandHandlerMap({ pool, appConfig }) {
   const map = new Map();
 
@@ -5646,6 +6045,17 @@ function buildCommandHandlerMap({ pool, appConfig }) {
   map.set("lang", async (ctx) => {
     await setLanguagePreference(ctx, pool, extractCommandArgs(ctx));
   });
+
+  // ── Blueprint CHAT_COMMAND_MATRIX — 9 missing handlers ──
+  map.set("claim", async (ctx) => sendClaim(ctx, pool, appConfig));
+  map.set("history", async (ctx) => sendHistory(ctx, pool, appConfig));
+  map.set("rank", async (ctx) => sendRank(ctx, pool, appConfig));
+  map.set("inventory", async (ctx) => sendInventory(ctx, pool, appConfig));
+  map.set("invite", async (ctx) => sendInvite(ctx, pool, appConfig));
+  map.set("friends", async (ctx) => sendFriends(ctx, pool, appConfig));
+  map.set("share", async (ctx) => sendShare(ctx, pool, appConfig));
+  map.set("news", async (ctx) => sendNews(ctx, pool, appConfig));
+  map.set("quests", async (ctx) => sendQuests(ctx, pool, appConfig));
 
   map.set("admin", async (ctx) => sendAdminPanel(ctx, pool, appConfig));
   map.set("admin_live", async (ctx) => sendAdminLive(ctx, pool, appConfig));
