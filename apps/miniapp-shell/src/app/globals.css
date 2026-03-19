@@ -180,7 +180,8 @@ html, body {
 }
 
 .neon-btn:active {
-  transform: translateY(0);
+  transform: scale(0.95);
+  filter: brightness(1.3);
 }
 
 .neon-btn.premium {
@@ -714,3 +715,166 @@ html, body {
 .stagger-children > *:nth-child(6) { animation-delay: 300ms; }
 .stagger-children > *:nth-child(7) { animation-delay: 360ms; }
 .stagger-children > *:nth-child(8) { animation-delay: 420ms; }
+.stagger-children > *:nth-child(9) { animation-delay: 480ms; }
+.stagger-children > *:nth-child(10) { animation-delay: 540ms; }
+
+/* ── Glass card active press ────────────────────────────── */
+.glass-card:active {
+  transform: scale(0.98);
+  box-shadow: 0 0 20px rgba(0, 210, 255, 0.3);
+}
+
+/* ── Reward reveal animation ────────────────────────────── */
+@keyframes rewardReveal {
+  0%  { transform: scale(0.3) rotate(-10deg); opacity: 0; filter: blur(8px); }
+  40% { transform: scale(1.15) rotate(2deg); opacity: 1; filter: blur(0); }
+  60% { transform: scale(0.95); }
+  80% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+.reward-reveal {
+  animation: rewardReveal 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ── Loot box opening stages ────────────────────────────── */
+@keyframes lootWobble {
+  0%, 100% { transform: rotate(0deg); }
+  15% { transform: rotate(-6deg); }
+  30% { transform: rotate(5deg); }
+  45% { transform: rotate(-4deg); }
+  60% { transform: rotate(3deg); }
+  75% { transform: rotate(-2deg); }
+  90% { transform: rotate(1deg); }
+}
+.loot-wobble { animation: lootWobble 0.6s ease-in-out; }
+
+@keyframes lootCrack {
+  0%  { clip-path: inset(0); opacity: 1; }
+  50% { clip-path: polygon(0 0, 48% 0, 45% 100%, 0 100%); opacity: 1; }
+  100% { clip-path: polygon(0 0, 48% 0, 45% 100%, 0 100%); opacity: 0; }
+}
+.loot-crack { animation: lootCrack 0.5s ease-out forwards; }
+
+@keyframes lootBurst {
+  0%   { transform: scale(1); opacity: 1; }
+  50%  { transform: scale(1.6); opacity: 0.6; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+.loot-burst { animation: lootBurst 0.6s ease-out forwards; }
+
+@keyframes lootFloat {
+  0%   { transform: translateY(20px); opacity: 0; }
+  60%  { transform: translateY(-8px); opacity: 1; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.loot-float { animation: lootFloat 0.7s ease-out forwards; }
+
+/* ── Currency counter rolling ───────────────────────────── */
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.count-up { animation: countUp 0.4s ease-out; }
+
+/* ── Shimmer skeleton loading (enhanced) ────────────────── */
+.skeleton-pulse {
+  background: linear-gradient(90deg, var(--color-surface) 25%, var(--color-border) 50%, var(--color-surface) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+
+/* ── Arena screen shake ─────────────────────────────────── */
+@keyframes screenShake {
+  0%   { transform: translate(0, 0); }
+  15%  { transform: translate(-4px, 2px); }
+  30%  { transform: translate(3px, -3px); }
+  45%  { transform: translate(-2px, 1px); }
+  60%  { transform: translate(2px, -1px); }
+  75%  { transform: translate(-1px, 2px); }
+  100% { transform: translate(0, 0); }
+}
+.screen-shake { animation: screenShake 0.3s ease-in-out; }
+
+/* ── HP bar color transition ────────────────────────────── */
+.hp-bar-fill {
+  transition: width 0.5s ease, background-color 0.5s ease;
+}
+.hp-bar-fill.critical {
+  background: linear-gradient(90deg, #ff0000, #ff4444);
+}
+.hp-bar-fill.warning {
+  background: linear-gradient(90deg, #ff8800, #ffaa00);
+}
+.hp-bar-fill.healthy {
+  background: linear-gradient(90deg, #00ff88, #00cc66);
+}
+
+/* ── Victory confetti ───────────────────────────────────── */
+@keyframes confettiFall {
+  0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+.confetti-piece {
+  position: fixed;
+  top: -10px;
+  width: 8px;
+  height: 8px;
+  animation: confettiFall 2.5s ease-in forwards;
+  pointer-events: none;
+  z-index: 9998;
+}
+
+/* ── Pulse glow for active items ────────────────────────── */
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 5px rgba(0, 210, 255, 0.2); }
+  50%      { box-shadow: 0 0 20px rgba(0, 210, 255, 0.5); }
+}
+.pulse-glow { animation: pulseGlow 2s ease-in-out infinite; }
+
+/* ── Notification badge ─────────────────────────────────── */
+.nav-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  background: var(--color-danger);
+  color: white;
+  font-size: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0 4px;
+  box-shadow: 0 0 6px var(--color-danger);
+}
+
+/* ── Floating animation ─────────────────────────────────── */
+.float { animation: float 3s ease-in-out infinite; }
+
+/* ── Neon text glow ─────────────────────────────────────── */
+.neon-text {
+  text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
+}
+
+/* ── Breathing dot animation ────────────────────────────── */
+@keyframes breathe {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.5; transform: scale(0.85); }
+}
+.breathe { animation: breathe 2s ease-in-out infinite; }
+
+/* ── Tab switch scale animation ─────────────────────────── */
+@keyframes tabActivate {
+  0%   { transform: scale(0.9); }
+  50%  { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+.tab-activate { animation: tabActivate 0.25s ease-out; }
+
+/* ── Performance hints (used sparingly) ─────────────────── */
+.will-change-transform { will-change: transform; }
+.will-change-opacity   { will-change: opacity; }

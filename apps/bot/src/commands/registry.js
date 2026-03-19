@@ -228,7 +228,89 @@ const RAW_COMMAND_REGISTRY = Object.freeze([
   { key: "pay", aliases: [], description_tr: "Payout talebini paid olarak isaretle — TX hash ve onay", description_en: "Mark payout request as paid — TX hash and confirmation", intents: [], adminOnly: true },
   { key: "reject_payout", aliases: [], description_tr: "Payout talebini reddet — operasyonel sebep kodu ile", description_en: "Reject payout request — with operational reason code", intents: [], adminOnly: true },
   { key: "approve_token", aliases: [], description_tr: "Token talebini onayla — TX dogrulama sonrasi bakiye aktar", description_en: "Approve token request — transfer balance after TX verification", intents: [], adminOnly: true },
-  { key: "reject_token", aliases: [], description_tr: "Token talebini reddet — sebep kodu ile audit trail", description_en: "Reject token request — with reason code and audit trail", intents: [], adminOnly: true }
+  { key: "reject_token", aliases: [], description_tr: "Token talebini reddet — sebep kodu ile audit trail", description_en: "Reject token request — with reason code and audit trail", intents: [], adminOnly: true },
+  // ── Blueprint CHAT_COMMAND_MATRIX — missing handlers ──
+  {
+    key: "claim",
+    aliases: ["topla", "al"],
+    description_tr: "Bekleyen odulleri topla — mission, streak, season ve event odulleri",
+    description_en: "Claim pending rewards — mission, streak, season and event rewards",
+    intents: ["claim", "topla", "al", "odul al", "collect", "collect rewards", "odul topla"],
+    scenarios: ["/claim", "odulleri topla", "collect all", "claim rewards"],
+    outcomes: ["claimable odulleri listele", "tek tikla toplu claim", "bakiye guncellemesini goster"]
+  },
+  {
+    key: "history",
+    aliases: ["gecmis", "log"],
+    description_tr: "Islem gecmisi — gorev, PvP, payout, token ve reveal kayitlari",
+    description_en: "Transaction history — task, PvP, payout, token and reveal records",
+    intents: ["history", "gecmis", "log", "islemler", "transactions", "geçmiş", "kayitlar"],
+    scenarios: ["/history", "islem gecmisi", "transaction log", "son islemler"],
+    outcomes: ["son 20 islemi kronolojik listele", "filtre: tip/tarih/miktar", "toplam kazanc/harcama ozeti"]
+  },
+  {
+    key: "rank",
+    aliases: ["sira", "derece"],
+    description_tr: "Kisisel siralama — sezon, arena, topluluk ve global rank detayi",
+    description_en: "Personal ranking — season, arena, community and global rank detail",
+    intents: ["rank", "sira", "derece", "siralamam", "my rank", "ranking", "neredeyim"],
+    scenarios: ["/rank", "siralamam nerede", "my ranking", "rank detay"],
+    outcomes: ["sezon/arena/global siralamani goster", "yuzdelik dilim ve trend", "sonraki hedef mesafesi"]
+  },
+  {
+    key: "inventory",
+    aliases: ["envanter", "esya"],
+    description_tr: "Envanter — loot, boost, malzeme ve koleksiyon esyalari",
+    description_en: "Inventory — loot, boosts, materials and collectible items",
+    intents: ["inventory", "envanter", "esya", "items", "esyalarim", "my items", "bag", "canta"],
+    scenarios: ["/inventory", "envanterim", "esyalarim", "my inventory"],
+    outcomes: ["envanter icerigini tip/nadir bazli listele", "kullanilabilir boost'lari belirt", "fusion uygun esleri goster"]
+  },
+  {
+    key: "invite",
+    aliases: ["davet"],
+    description_tr: "Davet linki olustur — referral kodu, bonus yapisi ve paylasim",
+    description_en: "Generate invite link — referral code, bonus structure and sharing",
+    intents: ["invite", "davet", "referral", "davet linki", "invite link", "ref", "arkadas davet"],
+    scenarios: ["/invite", "davet linki", "invite link", "referral kodum"],
+    outcomes: ["kisisel referral linkini goster", "referral bonus yapisini acikla", "mevcut davet istatistiklerini belirt"]
+  },
+  {
+    key: "friends",
+    aliases: ["arkadaslar", "dostlar"],
+    description_tr: "Arkadas listesi — referral agaci, aktif arkadaslar ve bonus durumu",
+    description_en: "Friends list — referral tree, active friends and bonus status",
+    intents: ["friends", "arkadaslar", "dostlar", "friend list", "arkadaslarim", "my friends"],
+    scenarios: ["/friends", "arkadaslarim", "friend list", "referral agaci"],
+    outcomes: ["referral agaci ozetini goster", "aktif arkadas sayisi ve bonuslari", "son katilan arkadaslari listele"]
+  },
+  {
+    key: "share",
+    aliases: ["paylas"],
+    description_tr: "Profil veya basari paylasimi — sosyal paylasim karti olustur",
+    description_en: "Share profile or achievement — generate social sharing card",
+    intents: ["share", "paylas", "paylasim", "share profile", "paylas profil"],
+    scenarios: ["/share", "profilimi paylas", "share my profile", "basarimi paylas"],
+    outcomes: ["paylasim karti olustur", "deeplink ile profil linki sun", "sosyal medya formatinda cikti"]
+  },
+  {
+    key: "news",
+    aliases: ["haberler", "duyuru"],
+    description_tr: "Haberler ve duyurular — guncelleme, patch, etkinlik ve topluluk haberleri",
+    description_en: "News and announcements — updates, patches, events and community news",
+    intents: ["news", "haberler", "duyuru", "announcements", "ne yeni", "what's new", "guncel"],
+    scenarios: ["/news", "haberler", "ne yeni var", "son duyurular"],
+    outcomes: ["son 5 haberi/duyuruyu goster", "patch notlarini ozetle", "yaklasan etkinlikleri belirt"]
+  },
+  {
+    key: "quests",
+    aliases: ["gorev_zinciri", "hikaye"],
+    description_tr: "Gorev zincirleri — cok adimli hikaye misyonlari ve ilerleme takibi",
+    description_en: "Quest chains — multi-step story missions and progress tracking",
+    intents: ["quests", "gorev zinciri", "hikaye gorevi", "story quest", "quest chain", "ana gorev"],
+    scenarios: ["/quests", "gorev zincirleri", "quest chains", "hikaye gorevleri"],
+    outcomes: ["aktif gorev zincirlerini goster", "ilerleme durumu ve sonraki adim", "zincir odul havuzunu belirt"]
+  }
 ]);
 
 const COMMAND_REGISTRY = Object.freeze(normalizeCommandRegistry(RAW_COMMAND_REGISTRY));

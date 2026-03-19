@@ -4865,6 +4865,18 @@ async function sendLauncherMenu(ctx, pool) {
   }
   const snapshot = await getSnapshot(pool, ctx);
   const lang = resolvePreferredLanguage(snapshot.profile, ctx, "tr");
+  const tr = lang === "tr";
+  const isNewUser = Number(snapshot.profile?.total_tasks_completed || 0) === 0 && Number(snapshot.profile?.current_streak || 0) === 0;
+
+  // Determine game state for contextual buttons
+  const gameState = {
+    hasReveal: Boolean(snapshot.attempts?.revealable),
+    hasActive: Boolean(snapshot.attempts?.active),
+    remainingTasks: Math.max(0, Number(snapshot.daily?.dailyCap || 5) - Number(snapshot.daily?.tasksDone || 0)),
+    streakAtRisk: Number(snapshot.profile?.streak_hours_left || 24) < 6 && Number(snapshot.profile?.current_streak || 0) > 0,
+    payoutEligible: Boolean(snapshot.payout?.canRequest)
+  };
+
   try {
     const bannerPath = path.resolve(__dirname, "../assets/welcome_banner.png");
     const { Input } = require("telegraf");
@@ -4872,9 +4884,31 @@ async function sendLauncherMenu(ctx, pool) {
   } catch (_bannerErr) {
     /* banner send is best-effort; text message below is guaranteed */
   }
+
+  if (isNewUser) {
+    // First-time user: immersive 3-message onboarding hook
+    const welcomeMsg = tr
+      ? `🌌 *Nexus'a Hos Geldin, Kasif!*\n\nAirdropKral Arena seni bekliyor. Gorevleri tamamla, ganimet topla, PvP'de savas ve gercek BTC kazan.\n\nHer adimda guclenir, her zafer seni yaklastirir.`
+      : `🌌 *Welcome to the Nexus, Explorer!*\n\nAirdropKral Arena awaits. Complete tasks, collect loot, battle in PvP and earn real BTC.\n\nEvery step makes you stronger, every victory brings you closer.`;
+    await ctx.replyWithMarkdown(welcomeMsg);
+
+    const trustMsg = tr
+      ? `🛡️ *Guvenli ve Seffaf Sistem*\n\n✅ Kazanclar zincir-ustu dogrulanir\n✅ Cekim talepleri admin onaylidir\n✅ Hicbir gizli kosul yoktur\n\nHazirsan, ilk gorevini al!`
+      : `🛡️ *Secure and Transparent System*\n\n✅ Earnings are on-chain verified\n✅ Payouts are admin-approved\n✅ No hidden conditions\n\nReady? Take your first mission!`;
+    await ctx.replyWithMarkdown(trustMsg, buildStartKeyboard(lang, gameState));
+    return true;
+  }
+
+  // Returning user: welcome back with delta
+  const startOptions = {
+    lang,
+    daily: snapshot.daily,
+    hasReveal: gameState.hasReveal,
+    hasActive: gameState.hasActive
+  };
   await ctx.replyWithMarkdown(
-    messages.formatStart(snapshot.profile, snapshot.balances, snapshot.season, snapshot.anomaly, snapshot.contract, { lang }),
-    buildStartKeyboard(lang)
+    messages.formatStart(snapshot.profile, snapshot.balances, snapshot.season, snapshot.anomaly, snapshot.contract, startOptions),
+    buildStartKeyboard(lang, gameState)
   );
   return true;
 }
@@ -4882,22 +4916,30 @@ async function sendLauncherMenu(ctx, pool) {
 async function sendUnknownIntentHint(ctx, pool) {
   const profile = await ensureProfile(pool, ctx).catch(() => null);
   const lang = resolvePreferredLanguage(profile, ctx, "tr");
-  const text =
-    lang === "en"
-      ? `*I couldn't resolve that command.*\nTry one of these quick routes:\n` +
-        `- \`/menu\` -> launcher and shortcuts\n` +
-        `- \`tasks\` or \`/tasks\`\n` +
-        `- \`finish balanced\`\n` +
-        `- \`reveal\`\n` +
-        `- \`pvp aggressive\`\n\n` +
-        `Open \`/help\` for detailed cards, or \`/lang tr\` / \`/lang en\` to switch language.`
-      : `*Bu komutu anlayamadim.*\nSu hizli rotalardan biriyle devam et:\n` +
-        `- \`/menu\` -> launcher ve kisayollar\n` +
-        `- \`gorev\` veya \`/tasks\`\n` +
-        `- \`bitir dengeli\`\n` +
-        `- \`reveal\`\n` +
-        `- \`pvp aggressive\`\n\n` +
-        `Detayli kartlar icin \`/help\`, dil degisimi icin \`/lang tr\` veya \`/lang en\` kullan.`;
+  const tr = lang === "tr";
+  const inputText = String(ctx.message?.text || "").trim().toLowerCase();
+
+  // Fuzzy route suggestions based on input
+  const routeHints = [
+    { keys: ["task", "gorev", "mission", "quest"], cmd: "/tasks", desc_tr: "Gorev havuzunu ac", desc_en: "Open task pool" },
+    { keys: ["wallet", "cuzdan", "bakiye", "balance", "money"], cmd: "/wallet", desc_tr: "Ekonomi panelini gor", desc_en: "View economy panel" },
+    { keys: ["arena", "pvp", "fight", "savas", "duel", "raid"], cmd: "/pvp", desc_tr: "PvP raid baslat", desc_en: "Start PvP raid" },
+    { keys: ["payout", "cekim", "btc", "withdraw"], cmd: "/vault", desc_tr: "Cekim panelini ac", desc_en: "Open payout panel" },
+    { keys: ["token", "nxt", "mint", "buy"], cmd: "/token", desc_tr: "Token treasury", desc_en: "Token treasury" },
+    { keys: ["help", "yardim", "komut", "command"], cmd: "/help", desc_tr: "Komut merkezi", desc_en: "Command center" },
+    { keys: ["shop", "boost", "dukkan", "magaza"], cmd: "/shop", desc_tr: "Boost dukkani", desc_en: "Boost shop" },
+    { keys: ["season", "sezon", "rank", "siralama"], cmd: "/season", desc_tr: "Sezon durumu", desc_en: "Season status" },
+  ];
+  const matches = routeHints.filter(r => r.keys.some(k => inputText.includes(k))).slice(0, 3);
+  const suggestLines = matches.length > 0
+    ? matches.map(m => `  ➤ \`${m.cmd}\` — ${tr ? m.desc_tr : m.desc_en}`).join("\n")
+    : tr
+      ? `  ➤ \`/menu\` — Ana launcher\n  ➤ \`/tasks\` — Gorev havuzu\n  ➤ \`/help\` — Komut merkezi`
+      : `  ➤ \`/menu\` — Main launcher\n  ➤ \`/tasks\` — Task pool\n  ➤ \`/help\` — Command center`;
+
+  const text = tr
+    ? `🤔 *Komutu anlayamadim*\n\n${matches.length > 0 ? "Bunu mu demek istedin?" : "Su rotalardan birini dene:"}\n${suggestLines}\n\n💡 Kisayollar: \`gorev\`, \`bitir dengeli\`, \`reveal\`, \`pvp\``
+    : `🤔 *Couldn't resolve that command*\n\n${matches.length > 0 ? "Did you mean one of these?" : "Try one of these routes:"}\n${suggestLines}\n\n💡 Shortcuts: \`tasks\`, \`finish balanced\`, \`reveal\`, \`pvp\``;
   await ctx.replyWithMarkdown(text, buildHelpKeyboard(lang));
 }
 

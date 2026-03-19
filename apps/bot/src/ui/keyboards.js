@@ -324,15 +324,65 @@ function buildTaskKeyboard(offers, lang = "tr", miniAppUrl = "") {
   return Markup.inlineKeyboard(rows);
 }
 
-function buildStartKeyboard(lang = "tr") {
-  return Markup.inlineKeyboard(
-    [
-      [Markup.button.callback(uiText(lang, "open_play"), "OPEN_PLAY")],
-      [Markup.button.callback(uiText(lang, "open_tasks"), "OPEN_TASKS"), Markup.button.callback(uiText(lang, "pvp_raid"), "ARENA_RAID:balanced")],
-      [Markup.button.callback(uiText(lang, "wallet"), "OPEN_WALLET"), Markup.button.callback(uiText(lang, "story"), "OPEN_GUIDE")]
-    ],
-    { columns: 2 }
+function buildStartKeyboard(lang = "tr", gameState = {}) {
+  const hasReveal = Boolean(gameState.hasReveal);
+  const hasActive = Boolean(gameState.hasActive);
+  const rows = [];
+
+  // Primary CTA based on game state
+  if (hasReveal) {
+    rows.push([Markup.button.callback("🎁 " + (lang === "tr" ? "LOOT AC — Ganimet Hazir!" : "OPEN LOOT — Reward Ready!"), "GUIDE_REVEAL")]);
+  } else if (hasActive) {
+    rows.push([Markup.button.callback("⚡ " + (lang === "tr" ? "GOREVI TAMAMLA" : "COMPLETE TASK"), "GUIDE_FINISH_BALANCED")]);
+  } else {
+    rows.push([Markup.button.callback(uiText(lang, "open_play"), "OPEN_PLAY")]);
+  }
+
+  rows.push(
+    [Markup.button.callback(uiText(lang, "open_tasks"), "OPEN_TASKS"), Markup.button.callback(uiText(lang, "pvp_raid"), "ARENA_RAID:balanced")],
+    [Markup.button.callback(uiText(lang, "wallet"), "OPEN_WALLET"), Markup.button.callback(uiText(lang, "missions"), "OPEN_MISSIONS")],
+    [Markup.button.callback(uiText(lang, "more"), "OPEN_HOME_MENU")]
   );
+  return Markup.inlineKeyboard(rows, { columns: 2 });
+}
+
+function buildContextualNextMoveKeyboard(gameState = {}, lang = "tr") {
+  const hasReveal = Boolean(gameState.hasReveal);
+  const hasActive = Boolean(gameState.hasActive);
+  const remaining = Number(gameState.remainingTasks || 0);
+  const streakAtRisk = Boolean(gameState.streakAtRisk);
+  const payoutEligible = Boolean(gameState.payoutEligible);
+  const rows = [];
+
+  // Priority 1: Streak at risk
+  if (streakAtRisk) {
+    rows.push([Markup.button.callback("🔥 " + (lang === "tr" ? "STREAK KORU — Risk Altinda!" : "PROTECT STREAK — At Risk!"), "OPEN_TASKS")]);
+  }
+  // Priority 2: Reveal available
+  if (hasReveal) {
+    rows.push([Markup.button.callback("🎁 " + (lang === "tr" ? "Kasayi Ac" : "Open Chest"), "GUIDE_REVEAL")]);
+  }
+  // Priority 3: Active task
+  if (hasActive) {
+    rows.push([Markup.button.callback("⚡ " + (lang === "tr" ? "Gorevi Bitir" : "Finish Task"), "GUIDE_FINISH_BALANCED")]);
+  }
+  // Priority 4: Tasks remaining
+  if (remaining > 0 && !hasActive && !hasReveal) {
+    rows.push([Markup.button.callback(`📋 ${remaining} ${lang === "tr" ? "Gorev Kaldi" : "Tasks Left"}`, "OPEN_TASKS")]);
+  }
+  // Priority 5: PvP
+  if (!hasActive && !hasReveal && remaining <= 0) {
+    rows.push([Markup.button.callback("⚔️ " + (lang === "tr" ? "Arena PvP Baslat" : "Start Arena PvP"), "ARENA_RAID:balanced")]);
+  }
+  // Payout eligible
+  if (payoutEligible) {
+    rows.push([Markup.button.callback("💎 " + (lang === "tr" ? "Cekim Talep Et" : "Request Payout"), "OPEN_PAYOUT")]);
+  }
+
+  if (rows.length === 0) {
+    rows.push([Markup.button.callback(uiText(lang, "open_play"), "OPEN_PLAY")]);
+  }
+  return Markup.inlineKeyboard(rows, { columns: 1 });
 }
 
 function buildMoreMenuKeyboard(lang = "tr") {
@@ -794,6 +844,7 @@ function buildStreakKeyboard(lang = "tr") {
 module.exports = {
   buildTaskKeyboard,
   buildStartKeyboard,
+  buildContextualNextMoveKeyboard,
   buildMoreMenuKeyboard,
   buildGuideKeyboard,
   buildHelpKeyboard,

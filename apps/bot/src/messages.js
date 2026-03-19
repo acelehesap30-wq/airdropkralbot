@@ -33,53 +33,124 @@ function localizeText(value, lang = "tr") {
     : String(value.tr || value.en || "");
 }
 
+// ── Immersive visual helpers ──────────────────────────────────
+const TIER_BADGES = ['🥉', '🥈', '🥇', '💎', '👑', '🌟', '⚡', '🔥'];
+function tierBadge(tier) { return TIER_BADGES[Math.min(Math.max(0, Number(tier || 0) - 1), TIER_BADGES.length - 1)] || '⬛'; }
+
+function currencyBar(label, value, max, emoji, size = 8) {
+  const v = Number(value || 0);
+  const m = Math.max(1, Number(max || 1));
+  const bar = progressBar(v, m, size);
+  const p = Math.round((v / m) * 100);
+  return `${emoji} ${label}: \`${bar}\` *${v.toLocaleString()}* (${p}%)`;
+}
+
+function compactNum(value) {
+  const n = Number(value || 0);
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return String(n);
+}
+
+function countdownStr(ms) {
+  const total = Math.max(0, Number(ms || 0));
+  const d = Math.floor(total / 86400000);
+  const h = Math.floor((total % 86400000) / 3600000);
+  const m = Math.floor((total % 3600000) / 60000);
+  if (d > 0) return `${d}g ${h}s`;
+  if (h > 0) return `${h}s ${m}dk`;
+  return `${m}dk`;
+}
+
+function sparkline(values, size = 7) {
+  const chars = '▁▂▃▄▅▆▇█';
+  const arr = Array.isArray(values) ? values.map(Number).filter(v => !isNaN(v)) : [];
+  if (arr.length === 0) return '▁'.repeat(size);
+  const min = Math.min(...arr);
+  const max = Math.max(...arr);
+  const range = max - min || 1;
+  return arr.slice(-size).map(v => chars[Math.min(chars.length - 1, Math.floor(((v - min) / range) * (chars.length - 1)))]).join('');
+}
+
+function trendArrow(current, previous) {
+  const c = Number(current || 0);
+  const p = Number(previous || 0);
+  if (c > p) return '📈';
+  if (c < p) return '📉';
+  return '➡️';
+}
+
+function resolveLang(options) {
+  return String(options?.lang || "tr").trim().toLowerCase().startsWith("en") ? "en" : "tr";
+}
+
 function formatStart(profile, balances, season, anomaly, contract, options = {}) {
-  const lang = String(options.lang || "tr")
-    .trim()
-    .toLowerCase()
-    .startsWith("en")
-    ? "en"
-    : "tr";
+  const lang = resolveLang(options);
   const publicName = escapeMarkdown(profile.public_name);
-  const sc = balances?.SC || 0;
-  const hc = balances?.HC || 0;
-  const rc = balances?.RC || 0;
+  const tier = Number(profile.kingdom_tier || 0);
+  const streak = Number(profile.current_streak || 0);
+  const streakMult = (1 + Math.min(streak, 30) * 0.05).toFixed(2);
+  const sc = Number(balances?.SC || 0);
+  const hc = Number(balances?.HC || 0);
+  const rc = Number(balances?.RC || 0);
+  const nxt = Number(balances?.NXT || 0);
+  const payout = Number(balances?.payout_available || 0);
+  const badge = tierBadge(tier);
+  const tierNames_tr = ['Cirak', 'Asker', 'Sovalye', 'Kaptan', 'Komutan', 'General', 'Lord', 'Kral'];
+  const tierNames_en = ['Apprentice', 'Soldier', 'Knight', 'Captain', 'Commander', 'General', 'Lord', 'King'];
+  const tierName = lang === "en" ? (tierNames_en[tier] || `T${tier}`) : (tierNames_tr[tier] || `T${tier}`);
+
+  // Next best move engine
+  const daily = options.daily || {};
+  const tasksDone = Number(daily.tasksDone || 0);
+  const dailyCap = Number(daily.dailyCap || 5);
+  const remaining = Math.max(0, dailyCap - tasksDone);
+  const hasReveal = Boolean(options.hasReveal);
+  const hasActive = Boolean(options.hasActive);
+  let nextMove, nextCmd;
+  if (hasReveal) {
+    nextMove = lang === "en" ? "Open your chest — loot is ready!" : "Kasani ac — ganimet hazir!";
+    nextCmd = "/reveal";
+  } else if (hasActive) {
+    nextMove = lang === "en" ? "Complete your active run" : "Aktif gorevini tamamla";
+    nextCmd = "/finish balanced";
+  } else if (remaining > 0) {
+    nextMove = lang === "en" ? `${remaining} tasks left today (+${remaining * 80}-${remaining * 160} SC)` : `Bugun ${remaining} gorev kaldi (+${remaining * 80}-${remaining * 160} SC)`;
+    nextCmd = "/tasks";
+  } else {
+    nextMove = lang === "en" ? "Arena PvP — earn HC & climb ranks" : "Arena PvP — HC kazan & sirala";
+    nextCmd = "/pvp";
+  }
+
   const seasonLine = season
-    ? lang === "en"
-      ? `\n📅 Season: *S${season.seasonId}* — ${season.daysLeft} days`
-      : `\n📅 Sezon: *S${season.seasonId}* — ${season.daysLeft} gün`
+    ? `\n📅 ${lang === "en" ? "Season" : "Sezon"}: *S${season.seasonId}* — *${season.daysLeft}* ${lang === "en" ? "days" : "gun"}`
     : "";
   const anomalyLine = anomaly
-    ? lang === "en"
-      ? `\n🌀 Nexus: *${escapeMarkdown(anomaly.title)}* (${anomaly.pressure_pct}% pressure)`
-      : `\n🌀 Nexus: *${escapeMarkdown(anomaly.title)}* (${anomaly.pressure_pct}% basınç)`
+    ? `\n🌀 ${lang === "en" ? "ANOMALY" : "ANOMALI"}: *${escapeMarkdown(anomaly.title)}* │ ${progressBar(Number(anomaly.pressure_pct || 0), 100, 6)} ${anomaly.pressure_pct}%`
     : "";
   const contractLine = contract
-    ? lang === "en"
-      ? `\n📜 Contract: *${escapeMarkdown(contract.title)}* [${escapeMarkdown(contract.required_mode)}]`
-      : `\n📜 Kontrat: *${escapeMarkdown(contract.title)}* [${escapeMarkdown(contract.required_mode)}]`
+    ? `\n📜 ${lang === "en" ? "Contract" : "Kontrat"}: *${escapeMarkdown(contract.title)}* [${escapeMarkdown(contract.required_mode)}]`
     : "";
-  if (lang === "en") {
-    return (
-      `🏰 *AirdropKral Arena*\n\n` +
-      `👤 *${publicName}* │ ⚔️ Tier *${profile.kingdom_tier}*\n` +
-      `🔥 Streak: *${profile.current_streak} days*\n\n` +
-      `💰 *${sc}* SC │ 💎 *${hc}* HC │ 🔮 *${rc}* RC${seasonLine}${anomalyLine}${contractLine}\n\n` +
-      `${progressBar(profile.current_streak, 14, 14)} Streak ${profile.current_streak}/14\n\n` +
-      `🎮 /play — Open Arena 3D\n` +
-      `📋 /tasks — Task Pool\n` +
-      `💰 /wallet — Economy HUD`
-    );
-  }
+
+  const tr = lang === "tr";
   return (
-    `🏰 *AirdropKral Arena*\n\n` +
-    `👤 *${publicName}* │ ⚔️ Tier *${profile.kingdom_tier}*\n` +
-    `🔥 Streak: *${profile.current_streak} gün*\n\n` +
-    `💰 *${sc}* SC │ 💎 *${hc}* HC │ 🔮 *${rc}* RC${seasonLine}${anomalyLine}${contractLine}\n\n` +
-    `${progressBar(profile.current_streak, 14, 14)} Streak ${profile.current_streak}/14\n\n` +
-    `🎮 /play — Arena 3D Aç\n` +
-    `📋 /tasks — Görev Havuzu\n` +
-    `💰 /wallet — Ekonomi HUD`
+    `╔══════════════════════════╗\n` +
+    `║   🏰 *AIRDROPKRAL NEXUS*   ║\n` +
+    `╚══════════════════════════╝\n\n` +
+    `${badge} *${publicName}* — ${tierName}\n` +
+    `⚔️ Tier *${tier}* │ 🔥 Streak *${streak}* ${tr ? "gun" : "days"} (x${streakMult})\n` +
+    `${progressBar(streak, 14, 14)} ${streak}/14\n\n` +
+    `┌─── ${tr ? "HAZINE" : "TREASURY"} ───────────────┐\n` +
+    `│ 💰 SC  \`${String(compactNum(sc)).padStart(8)}\`  │\n` +
+    `│ 💎 HC  \`${String(compactNum(hc)).padStart(8)}\`  │\n` +
+    `│ 🌀 RC  \`${String(compactNum(rc)).padStart(8)}\`  │\n` +
+    `│ 🪙 NXT \`${String(nxt.toFixed(2)).padStart(8)}\`  │\n` +
+    (payout > 0 ? `│ ₿ BTC \`${String(payout.toFixed(6)).padStart(8)}\`  │\n` : '') +
+    `└──────────────────────────┘${seasonLine}${anomalyLine}${contractLine}\n\n` +
+    `🧭 *${tr ? "Sonraki En Iyi Hamle" : "Next Best Move"}:*\n` +
+    `  ➤ ${nextMove}\n` +
+    `  ➤ \`${nextCmd}\`\n\n` +
+    `📊 ${tr ? "Bugun" : "Today"}: *${tasksDone}/${dailyCap}* ${tr ? "gorev" : "tasks"} │ ${tr ? "Verim" : "Yield"}: *${pct(tasksDone / Math.max(1, dailyCap))}*`
   );
 }
 
@@ -242,50 +313,114 @@ function formatOnboard(payload = {}, options = {}) {
   );
 }
 
-function formatProfile(profile, balances) {
+function formatProfile(profile, balances, options = {}) {
+  const lang = resolveLang(options);
+  const tr = lang === "tr";
   const publicName = escapeMarkdown(profile.public_name);
-  const progress = progressBar(profile.reputation_score || 0, 1500);
-  const sc = balances?.SC || 0;
-  const hc = balances?.HC || 0;
-  const rc = balances?.RC || 0;
+  const tier = Number(profile.kingdom_tier || 0);
+  const badge = tierBadge(tier);
+  const tierNames_tr = ['Cirak', 'Asker', 'Sovalye', 'Kaptan', 'Komutan', 'General', 'Lord', 'Kral'];
+  const tierNames_en = ['Apprentice', 'Soldier', 'Knight', 'Captain', 'Commander', 'General', 'Lord', 'King'];
+  const tierName = tr ? (tierNames_tr[tier] || `T${tier}`) : (tierNames_en[tier] || `T${tier}`);
+  const rep = Number(profile.reputation_score || 0);
+  const prestige = Number(profile.prestige_level || 0);
+  const streak = Number(profile.current_streak || 0);
+  const bestStreak = Number(profile.best_streak || streak);
+  const seasonRank = Number(profile.season_rank || 0);
+  const wins = Number(profile.wins || 0);
+  const losses = Number(profile.losses || 0);
+  const total = wins + losses;
+  const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
+  const sc = Number(balances?.SC || 0);
+  const hc = Number(balances?.HC || 0);
+  const rc = Number(balances?.RC || 0);
+  const nxt = Number(balances?.NXT || 0);
+  const streakMult = (1 + Math.min(streak, 30) * 0.05).toFixed(2);
+
+  const tierProgress = options.tierProgress || {};
+  const progressVal = Number(tierProgress.progressValue || rep);
+  const progressMax = Math.max(1, Number(tierProgress.progressMax || 1500));
+  const progressPct = Math.round((progressVal / progressMax) * 100);
+
   return (
-    `👤 *Profil Kartın*\n\n` +
-    `🏰 Kral: *${publicName}*\n` +
-    `⚔️ Kingdom: *Tier ${profile.kingdom_tier}*\n` +
-    `⭐ İtibar: *${profile.reputation_score}*\n` +
-    `🏅 Prestij: *${profile.prestige_level}*\n` +
-    `🏆 Sezon Sırası: *#${profile.season_rank}*\n\n` +
-    `💰 *${sc}* SC │ 💎 *${hc}* HC │ 🔮 *${rc}* RC\n\n` +
-    `📊 İlerleme: ${progress}`
+    `╔══════════════════════════╗\n` +
+    `║     👤 *${tr ? "PROFIL KARTI" : "PROFILE CARD"}*      ║\n` +
+    `╚══════════════════════════╝\n\n` +
+    `${badge} *${publicName}*\n` +
+    `⚔️ *${tierName}* (Tier ${tier}) │ 🏅 Prestige *${prestige}*\n\n` +
+    `┌─── ${tr ? "ISTATISTIKLER" : "STATISTICS"} ────────────┐\n` +
+    `│ ⭐ ${tr ? "Itibar" : "Reputation"}: *${rep.toLocaleString()}*\n` +
+    `│ 🔥 Streak: *${streak}* ${tr ? "gun" : "days"} (${tr ? "en iyi" : "best"}: *${bestStreak}*)\n` +
+    `│ ⚡ ${tr ? "Carpan" : "Multiplier"}: *x${streakMult}*\n` +
+    `│ 🏆 ${tr ? "Sezon Sirasi" : "Season Rank"}: *${seasonRank > 0 ? `#${seasonRank}` : (tr ? "Yerlesmedi" : "Unranked")}*\n` +
+    `│ ⚔️ PvP: *${wins}W/${losses}L* (${winRate}% ${tr ? "galibiyet" : "win rate"})\n` +
+    `└──────────────────────────┘\n\n` +
+    `┌─── ${tr ? "HAZINE" : "TREASURY"} ───────────────┐\n` +
+    `│ 💰 SC  *${compactNum(sc)}*\n` +
+    `│ 💎 HC  *${compactNum(hc)}*\n` +
+    `│ 🌀 RC  *${compactNum(rc)}*\n` +
+    `│ 🪙 NXT *${nxt.toFixed(2)}*\n` +
+    `└──────────────────────────┘\n\n` +
+    `📊 ${tr ? "Tier Ilerlemesi" : "Tier Progress"}: ${progressBar(progressVal, progressMax, 14)} ${progressPct}%\n` +
+    `   ${progressVal.toLocaleString()} / ${progressMax.toLocaleString()}`
   );
 }
 
 function formatTasks(offers, taskMap, options = {}) {
+  const lang = resolveLang(options);
+  const tr = lang === "tr";
   const anomaly = options.anomaly || null;
   const contract = options.contract || null;
+  const combo = Number(options.combo || 0);
+  const pity = Number(options.pity || 0);
+  const pityCap = Number(options.pityCap || 10);
   const numEmojis = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣'];
-  const familyEmoji = { CORE: '⚔️', DEFENSE: '🛡', RECON: '🔍', STEALTH: '🥷', RAID: '💥' };
+  const familyEmoji = { CORE: '⚔️', DEFENSE: '🛡', RECON: '🔍', STEALTH: '🥷', RAID: '💥', ELITE: '👑' };
+  const rarityEmoji = { common: '⬜', uncommon: '🟩', rare: '🟦', epic: '🟪', legendary: '🟨' };
+
   const lines = offers.map((offer, index) => {
     const task = taskMap.get(offer.task_type);
     const title = task ? task.title : offer.task_type;
     const family = task?.family ? task.family.toUpperCase() : "CORE";
     const fEmoji = familyEmoji[family] || '⚔️';
+    const rarity = String(task?.rarity || "common").toLowerCase();
+    const rEmoji = rarityEmoji[rarity] || '⬜';
     const duration = task ? `${task.durationMinutes} dk` : "-";
     const reward = task ? task.rewardPreview : "-";
     const expires = Math.max(0, Math.ceil((new Date(offer.expires_at).getTime() - Date.now()) / 60000));
-    const urgency = progressBar(Math.max(0, 60 - expires), 60, 8);
-    return `${numEmojis[index] || `${index + 1})`} ${fEmoji} *${title}* \`${family}\`\n   ⏱ ${duration} │ 💰 ${reward}\n   ⏳ ${expires} dk ${urgency}`;
+    const urgency = progressBar(Math.max(0, 60 - expires), 60, 6);
+    const urgencyIcon = expires < 10 ? '🔴' : expires < 30 ? '🟡' : '🟢';
+    return (
+      `${numEmojis[index] || `${index + 1})`} ${fEmoji} *${title}*\n` +
+      `   ${rEmoji} \`${family}\` │ ⏱ ${duration} │ 💰 ${reward}\n` +
+      `   ${urgencyIcon} ${expires} dk ${urgency}`
+    );
   });
+
   const anomalyLine = anomaly
-    ? `🌀 Nexus: ${escapeMarkdown(anomaly.title)} │ Risk ${Number(anomaly.risk_shift_pct || 0)}% │ Öneri ${anomaly.preferred_mode}\n`
+    ? `\n🌀 *${tr ? "ANOMALI" : "ANOMALY"}:* ${escapeMarkdown(anomaly.title)}\n   SC x${Number(anomaly.sc_multiplier || 1).toFixed(1)} │ Risk ${Number(anomaly.risk_shift_pct || 0)}% │ ${tr ? "Oneri" : "Tip"}: ${anomaly.preferred_mode}\n`
     : "";
   const contractLine = contract
-    ? `📜 Kontrat: ${escapeMarkdown(contract.title)} │ Mod ${escapeMarkdown(contract.required_mode)}\n`
+    ? `📜 *${tr ? "Kontrat" : "Contract"}:* ${escapeMarkdown(contract.title)} │ [${escapeMarkdown(contract.required_mode)}]\n`
     : "";
+  const comboLine = combo > 1
+    ? `\n🔗 *Combo:* x${(1 + Math.min(0.25, combo * 0.05)).toFixed(2)} (${combo} ${tr ? "zincir" : "chain"})`
+    : "";
+  const pityLine = `\n🎰 *Pity:* ${progressBar(pity, pityCap, 8)} ${pity}/${pityCap}` +
+    (pity >= pityCap - 2 ? ` ${tr ? "— Epic+ garanti yakin!" : "— Epic+ guarantee near!"}` : "");
+
   return (
-    `📋 *Görev Paneli*\n\n${anomalyLine}${contractLine}${lines.join("\n\n")}\n\n` +
-    `🎯 Mod seçimi kritik: 🟢 Temkinli │ 🟡 Dengeli │ 🔴 Saldırgan\n` +
-    `🔄 Panel Yenileme: 1 RC`
+    `╔══════════════════════════╗\n` +
+    `║   📋 *${tr ? "GOREV PANELI" : "TASK PANEL"}*         ║\n` +
+    `╚══════════════════════════╝\n` +
+    `${anomalyLine}${contractLine}\n` +
+    `${lines.join("\n\n")}\n` +
+    `${comboLine}${pityLine}\n\n` +
+    `🎯 *${tr ? "Mod Secimi Kritik" : "Mode Selection Critical"}:*\n` +
+    `  🟢 ${tr ? "Temkinli" : "Safe"} — ${tr ? "dusuk risk, stabil" : "low risk, stable"}\n` +
+    `  🟡 ${tr ? "Dengeli" : "Balanced"} — ${tr ? "standart" : "standard"}\n` +
+    `  🔴 ${tr ? "Saldirgan" : "Aggressive"} — ${tr ? "yuksek risk, yuksek tavan" : "high risk, high ceiling"}\n\n` +
+    `🔄 ${tr ? "Panel Yenileme" : "Panel Refresh"}: 1 RC`
   );
 }
 
@@ -330,28 +465,47 @@ function formatTaskComplete(result, probabilities, details) {
   );
 }
 
-function formatLootReveal(lootTier, rewardLine, pityAfter, pityCap, balances, seasonPoints = 0, meta) {
-  const sc = balances?.SC || 0;
-  const hc = balances?.HC || 0;
+function formatLootReveal(lootTier, rewardLine, pityAfter, pityCap, balances, seasonPoints = 0, meta, options = {}) {
+  const lang = resolveLang(options);
+  const tr = lang === "tr";
+  const sc = Number(balances?.SC || 0);
+  const hc = Number(balances?.HC || 0);
+  const rc = Number(balances?.RC || 0);
+  const tierLower = String(lootTier).toLowerCase();
   const tierEmoji = { common: '📦', uncommon: '🎁', rare: '💜', epic: '🌟', legendary: '👑' };
-  const tEmoji = tierEmoji[String(lootTier).toLowerCase()] || '🎁';
-  const seasonLine = seasonPoints > 0 ? `\n📅 Sezon +${seasonPoints} puan` : "";
-  const pityLine = `🎰 Pity: ${pityAfter}/${pityCap} (${pct(pityAfter / Math.max(1, pityCap))})`;
+  const tierColor = { common: '⬜', uncommon: '🟩', rare: '🟦', epic: '🟪', legendary: '🟨' };
+  const tierLabel_tr = { common: 'Siradan', uncommon: 'Nadir degil', rare: 'Nadir', epic: 'Epik', legendary: 'Efsanevi' };
+  const tierLabel_en = { common: 'Common', uncommon: 'Uncommon', rare: 'Rare', epic: 'Epic', legendary: 'Legendary' };
+  const tEmoji = tierEmoji[tierLower] || '🎁';
+  const tColor = tierColor[tierLower] || '⬜';
+  const tLabel = tr ? (tierLabel_tr[tierLower] || lootTier) : (tierLabel_en[tierLower] || lootTier);
+
+  const isRare = ['rare', 'epic', 'legendary'].includes(tierLower);
+  const header = isRare
+    ? `✨✨✨✨✨✨✨✨✨✨✨✨✨\n${tEmoji} *${tr ? "NADIR LOOT ACILDI!" : "RARE LOOT REVEALED!"}* ${tEmoji}\n✨✨✨✨✨✨✨✨✨✨✨✨✨`
+    : `${tEmoji} *${tr ? "LOOT ACILDI!" : "LOOT REVEALED!"}*`;
+
+  const seasonLine = seasonPoints > 0 ? `\n📅 ${tr ? "Sezon" : "Season"} +${seasonPoints} ${tr ? "puan" : "pts"}` : "";
+  const pityLine = `🎰 Pity: ${progressBar(pityAfter, pityCap, 8)} ${pityAfter}/${pityCap}` +
+    (pityAfter >= pityCap - 2 ? ` 🔥` : "");
   const boostLine = meta?.boost ? `\n⚡ Boost: +${Math.round(meta.boost * 100)}% SC` : "";
-  const hiddenLine = meta?.hidden ? `\n🎊 Gizli Bonus Açıldı!` : "";
+  const hiddenLine = meta?.hidden ? `\n🎊 *${tr ? "GIZLI BONUS ACILDI!" : "HIDDEN BONUS UNLOCKED!"}*` : "";
   const modeLine = meta?.modeLabel ? `\n🎯 Mod: ${meta.modeLabel}` : "";
-  const comboLine = Number(meta?.combo || 0) > 1 ? `\n🔗 Combo: ${meta.combo}` : "";
-  const warLine = Number(meta?.warDelta || 0) > 0 ? `\n⚔️ War +${Math.floor(meta.warDelta)} │ Havuz ${Math.floor(Number(meta?.warPool || 0))}` : "";
+  const comboLine = Number(meta?.combo || 0) > 1 ? `\n🔗 Combo: x${(1 + Math.min(0.25, Number(meta.combo) * 0.05)).toFixed(2)} (${meta.combo} ${tr ? "zincir" : "chain"})` : "";
+  const warLine = Number(meta?.warDelta || 0) > 0 ? `\n⚔️ War +${Math.floor(meta.warDelta)} │ ${tr ? "Havuz" : "Pool"} ${Math.floor(Number(meta?.warPool || 0))}` : "";
   const anomalyLine = meta?.anomalyTitle ? `\n🌀 Nexus: ${anomalyEscape(meta.anomalyTitle)}` : "";
   const contractLine = meta?.contractTitle
-    ? `\n📜 Kontrat: ${escapeMarkdown(meta.contractTitle)} (${meta.contractMatch ? "✅" : "❌"})`
+    ? `\n📜 ${tr ? "Kontrat" : "Contract"}: ${escapeMarkdown(meta.contractTitle)} (${meta.contractMatch ? "✅ HIT" : "❌ MISS"})`
     : "";
+
   return (
-    `${tEmoji} *Loot Reveal!*\n\n` +
-    `Seviye: *${lootTier}*\n` +
-    `Kazanç: *${rewardLine}*\n\n` +
-    `${pityLine}\n` +
-    `💰 Toplam: *${sc}* SC │ 💎 *${hc}* HC${seasonLine}${modeLine}${comboLine}${boostLine}${hiddenLine}${warLine}${anomalyLine}${contractLine}`
+    `${header}\n\n` +
+    `${tColor} ${tr ? "Seviye" : "Tier"}: *${tLabel}*\n` +
+    `💎 ${tr ? "Kazanc" : "Reward"}: *${rewardLine}*\n\n` +
+    `${pityLine}${modeLine}${comboLine}${boostLine}${hiddenLine}${seasonLine}${warLine}${anomalyLine}${contractLine}\n\n` +
+    `┌─── ${tr ? "GUNCEL BAKIYE" : "CURRENT BALANCE"} ───────┐\n` +
+    `│ 💰 *${compactNum(sc)}* SC │ 💎 *${compactNum(hc)}* HC │ 🌀 *${rc}* RC\n` +
+    `└──────────────────────────┘`
   );
 }
 
@@ -370,31 +524,49 @@ function formatStreak(profile) {
   );
 }
 
-function formatWallet(profile, balances, daily, anomaly, contract) {
-  const sc = balances?.SC || 0;
-  const hc = balances?.HC || 0;
-  const rc = balances?.RC || 0;
-  const extraCurrencies = Object.keys(balances || {})
-    .filter((key) => !["SC", "HC", "RC"].includes(String(key).toUpperCase()))
-    .map((key) => `${key}: *${Number(balances[key] || 0)}*`)
-    .join("\n");
-  const dailyCap = Number(daily?.dailyCap || 0);
+function formatWallet(profile, balances, daily, anomaly, contract, options = {}) {
+  const lang = resolveLang(options);
+  const tr = lang === "tr";
+  const sc = Number(balances?.SC || 0);
+  const hc = Number(balances?.HC || 0);
+  const rc = Number(balances?.RC || 0);
+  const nxt = Number(balances?.NXT || 0);
+  const payout = Number(balances?.payout_available || 0);
+  const dailyCap = Number(daily?.dailyCap || 5);
   const tasksDone = Number(daily?.tasksDone || 0);
   const earnedSc = Number(daily?.scEarned || 0);
-  const capBar = progressBar(tasksDone, dailyCap || 1, 12);
+  const streak = Number(profile.current_streak || 0);
+  const streakMult = (1 + Math.min(streak, 30) * 0.05).toFixed(2);
   const productivity = dailyCap > 0 ? Math.min(1, tasksDone / dailyCap) : 0;
-  const anomalyLine = anomaly ? `\n🌀 Nexus: *${escapeMarkdown(anomaly.title)}*` : "";
-  const contractLine = contract ? `\n📜 Kontrat: *${escapeMarkdown(contract.title)}*` : "";
+  const scCap = Number(daily?.scDailyCap || 5000);
+  const hcCap = Number(daily?.hcDailyCap || 20);
+
+  const anomalyLine = anomaly
+    ? `\n🌀 *${tr ? "ANOMALI AKTIF" : "ANOMALY ACTIVE"}:* ${escapeMarkdown(anomaly.title)}\n   SC x${Number(anomaly.sc_multiplier || 1).toFixed(1)} │ HC x${Number(anomaly.hc_multiplier || 1).toFixed(1)}`
+    : "";
+  const contractLine = contract
+    ? `\n📜 *${tr ? "Kontrat" : "Contract"}:* ${escapeMarkdown(contract.title)} [${escapeMarkdown(contract.required_mode)}]`
+    : "";
+
   return (
-    `💰 *Cüzdan // Ekonomi HUD*\n\n` +
-    `🪙 SC: *${sc}*\n` +
-    `💎 HC: *${hc}*\n` +
-    `🔮 RC: *${rc}*\n` +
-    (extraCurrencies ? `\n${extraCurrencies}\n` : "") +
-    `\n📊 Bugün: *${tasksDone}/${dailyCap}* görev │ 💰 *${earnedSc}* SC\n` +
-    `📈 Verim: *${pct(productivity)}*\n` +
-    `${capBar}\n\n` +
-    `🔥 Streak: *${profile.current_streak} gün* │ ⚔️ Kingdom: *Tier ${profile.kingdom_tier}*${anomalyLine}${contractLine}`
+    `╔══════════════════════════╗\n` +
+    `║  💰 *${tr ? "EKONOMI HUD" : "ECONOMY HUD"}*           ║\n` +
+    `╚══════════════════════════╝\n\n` +
+    `┌─── ${tr ? "BAKIYELER" : "BALANCES"} ──────────────┐\n` +
+    `│ ${currencyBar("SC", sc, scCap, "💰", 8)}\n` +
+    `│ ${currencyBar("HC", hc, hcCap, "💎", 8)}\n` +
+    `│ 🌀 RC: *${rc.toLocaleString()}*\n` +
+    `│ 🪙 NXT: *${nxt.toFixed(4)}*\n` +
+    (payout > 0 ? `│ ₿ BTC: *${payout.toFixed(8)}*\n` : '') +
+    `└──────────────────────────┘\n\n` +
+    `┌─── ${tr ? "GUNLUK RAPOR" : "DAILY REPORT"} ─────────┐\n` +
+    `│ 📋 ${tr ? "Gorev" : "Tasks"}: *${tasksDone}/${dailyCap}* ${progressBar(tasksDone, dailyCap, 8)}\n` +
+    `│ 💰 ${tr ? "Kazanilan" : "Earned"}: *${earnedSc.toLocaleString()} SC*\n` +
+    `│ 📈 ${tr ? "Verimlilik" : "Productivity"}: *${pct(productivity)}*\n` +
+    `│ 🔥 Streak: *${streak}* ${tr ? "gun" : "days"} (x${streakMult})\n` +
+    `│ ⚔️ Kingdom: *Tier ${profile.kingdom_tier}* ${tierBadge(profile.kingdom_tier)}\n` +
+    `└──────────────────────────┘${anomalyLine}${contractLine}\n\n` +
+    `💡 ${tr ? "Gunluk SC kazanc potansiyeli" : "Daily SC earning potential"}: ~*${Math.round((dailyCap - tasksDone) * 80 * Number(streakMult))} SC*`
   );
 }
 
@@ -991,31 +1163,55 @@ function formatOps(state) {
   );
 }
 
-function formatArenaStatus(state) {
+function formatArenaStatus(state, options = {}) {
+  const lang = resolveLang(options);
+  const tr = lang === "tr";
+  const rating = Math.floor(Number(state.rating || 0));
+  const rank = state.rank || "-";
+  const wins = Number(state.wins || 0);
+  const losses = Number(state.losses || 0);
+  const total = wins + losses;
+  const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
+  const winStreak = Number(state.winStreak || 0);
+  const eloHistory = Array.isArray(state.eloHistory) ? state.eloHistory : [];
+
   const lastRuns = (state.recentRuns || []).length
     ? state.recentRuns
+        .slice(0, 5)
         .map((run) => {
           const at = new Date(run.created_at).toISOString().slice(11, 16);
-          return `${at} ${run.mode} ${run.outcome} (${run.rating_delta >= 0 ? "+" : ""}${run.rating_delta})`;
+          const icon = run.outcome === 'win' ? '🏆' : run.outcome === 'near' ? '⚡' : '💀';
+          const delta = run.rating_delta >= 0 ? `+${run.rating_delta}` : String(run.rating_delta);
+          return `  ${icon} ${at} *${run.mode}* │ ${delta} ELO`;
         })
         .join("\n")
-    : "Kayit yok";
+    : tr ? "  Kayit yok" : "  No records";
 
   const leaders = (state.leaderboard || []).length
     ? state.leaderboard
         .slice(0, 5)
-        .map((row, index) => `${index + 1}. ${escapeMarkdown(row.public_name)} | ${Math.floor(Number(row.rating || 0))}`)
+        .map((row, index) => {
+          const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+          return `  ${medal} *${escapeMarkdown(row.public_name)}* — ${Math.floor(Number(row.rating || 0))} ELO`;
+        })
         .join("\n")
-    : "Veri yok";
+    : tr ? "  Veri yok" : "  No data";
 
   return (
-    `⚔️ *Arena Protocol*\n\n` +
-    `🏅 Rating: *${Math.floor(Number(state.rating || 0))}* (#${state.rank || "-"})\n` +
-    `🎮 Oyun: *${state.gamesPlayed || 0}* │ ✅ Win: *${state.wins || 0}* │ ❌ Loss: *${state.losses || 0}*\n` +
-    `📊 Son: *${state.lastResult || "yok"}* │ 🎫 Ticket: *${state.ticketCost || 1} RC*\n` +
-    `⏱ Cooldown: *${state.cooldownSec || 0}s*\n\n` +
-    `🏆 *Top 5:*\n${leaders}\n\n` +
-    `📜 *Son Raidler:*\n${lastRuns}`
+    `╔══════════════════════════╗\n` +
+    `║  ⚔️ *ARENA PROTOCOL*        ║\n` +
+    `╚══════════════════════════╝\n\n` +
+    `🏅 *ELO Rating:* ${rating} │ *#${rank}*\n` +
+    `${eloHistory.length > 0 ? `📊 ${tr ? "Trend" : "Trend"}: ${sparkline(eloHistory)}\n` : ""}` +
+    `\n┌─── ${tr ? "SAVAS ISTATISTIKLERI" : "COMBAT STATS"} ─────┐\n` +
+    `│ 🎮 ${tr ? "Oyun" : "Games"}: *${total}* │ ✅ *${wins}*W ❌ *${losses}*L\n` +
+    `│ 📈 ${tr ? "Galibiyet" : "Win Rate"}: *${winRate}%* ${progressBar(wins, Math.max(1, total), 8)}\n` +
+    (winStreak > 0 ? `│ 🔥 ${tr ? "Zafer Serisi" : "Win Streak"}: *${winStreak}* (x${(1 + winStreak * 0.05).toFixed(2)} bonus)\n` : '') +
+    `│ 🎫 Ticket: *${state.ticketCost || 1} RC*\n` +
+    `│ ⏱ Cooldown: *${state.cooldownSec || 0}s*\n` +
+    `└──────────────────────────┘\n\n` +
+    `🏆 *${tr ? "Liderlik Tablosu" : "Leaderboard"}:*\n${leaders}\n\n` +
+    `📜 *${tr ? "Son Maclar" : "Recent Matches"}:*\n${lastRuns}`
   );
 }
 
@@ -1396,16 +1592,31 @@ function formatPerf(payload = {}) {
 
 function formatAdminPanel(snapshot, isAdmin) {
   if (!isAdmin) {
-    return `*Admin Panel*\nBu panel sadece admin hesaba aciktir.`;
+    return `🔒 *Admin Panel*\nBu panel sadece admin hesaba aciktir.\nKontrol: /whoami`;
   }
+
+  const freeze = snapshot.freeze || {};
+  const token = snapshot.token || {};
+  const gate = token.payoutGate || {};
+  const totalUsers = Number(snapshot.totalUsers || 0);
+  const activeAttempts = Number(snapshot.activeAttempts || 0);
+  const payoutQ = Number(snapshot.pendingPayoutCount || 0);
+  const tokenQ = Number(snapshot.pendingTokenCount || 0);
+  const totalQ = payoutQ + tokenQ;
+  const supply = Number(token.supply || 0);
+  const marketCap = Number(token.marketCapUsd || 0);
+  const spotUsd = Number(token.spotUsd || 0);
+
+  const statusIcon = freeze.freeze ? '🔴' : totalQ > 5 ? '🟡' : '🟢';
+  const statusLabel = freeze.freeze ? 'FREEZE AKTIF' : totalQ > 5 ? 'KUYRUK YOĞUN' : 'STABIL';
 
   const payoutLines =
     (snapshot.pendingPayouts || []).length > 0
       ? snapshot.pendingPayouts
           .slice(0, 5)
-          .map((row) => `#${row.id} u${row.user_id} ${Number(row.amount || 0).toFixed(8)} BTC`)
+          .map((row) => `  💎 #${row.id} │ u${row.user_id} │ *${Number(row.amount || 0).toFixed(8)} BTC*`)
           .join("\n")
-      : "Bekleyen payout yok";
+      : "  Bekleyen payout yok";
 
   const tokenLines =
     (snapshot.pendingTokenRequests || []).length > 0
@@ -1413,27 +1624,35 @@ function formatAdminPanel(snapshot, isAdmin) {
           .slice(0, 5)
           .map(
             (row) =>
-              `#${row.id} u${row.user_id} ${Number(row.usd_amount || 0).toFixed(2)} USD -> ${Number(row.token_amount || 0).toFixed(4)} ${escapeMarkdown(
+              `  🪙 #${row.id} │ u${row.user_id} │ *${Number(row.usd_amount || 0).toFixed(2)} USD* → ${Number(row.token_amount || 0).toFixed(4)} ${escapeMarkdown(
                 row.token_symbol || "NXT"
               )} [${escapeMarkdown(String(row.status || "").toUpperCase())}]`
           )
           .join("\n")
-      : "Bekleyen token talebi yok";
+      : "  Bekleyen token talebi yok";
 
   return (
-    `*Admin Kontrol Merkezi*\n` +
-    `Admin ID: *${snapshot.adminTelegramId}*\n` +
-    `Freeze: *${snapshot.freeze?.freeze ? "ACIK" : "KAPALI"}*` +
-    (snapshot.freeze?.reason ? `\nFreeze Sebep: ${escapeMarkdown(snapshot.freeze.reason)}` : "") +
-    `\n\nToplam Kullanici: *${snapshot.totalUsers}*` +
-    `\nAktif Deneme: *${snapshot.activeAttempts}*` +
-    `\nPayout Queue: *${snapshot.pendingPayoutCount}*` +
-    `\nToken Queue: *${snapshot.pendingTokenCount}*` +
-    `\nToken Supply: *${Number(snapshot.token?.supply || 0).toFixed(4)} ${escapeMarkdown(snapshot.token?.symbol || "NXT")}*` +
-    `\nToken Market Cap: *$${Number(snapshot.token?.marketCapUsd || 0).toFixed(2)}*` +
-    `\n\n*Bekleyen Payoutlar*\n${payoutLines}` +
-    `\n\n*Bekleyen Token Talepleri*\n${tokenLines}` +
-    `\n\nKomutlar: /pay <id> <txhash>, /reject_payout <id> <sebep>, /approve_token <id>, /reject_token <id> <sebep>`
+    `╔══════════════════════════╗\n` +
+    `║  🛡️ *ADMIN KONTROL MERKEZI* ║\n` +
+    `╚══════════════════════════╝\n\n` +
+    `${statusIcon} Durum: *${statusLabel}*\n` +
+    `🆔 Admin: *${snapshot.adminTelegramId}*\n` +
+    `❄️ Freeze: *${freeze.freeze ? "ON" : "OFF"}*` +
+    (freeze.reason ? ` — ${escapeMarkdown(freeze.reason)}` : "") +
+    `\n\n┌─── SISTEM METRIKLERI ──────┐\n` +
+    `│ 👥 Kullanici: *${totalUsers.toLocaleString()}*\n` +
+    `│ 🎮 Aktif Deneme: *${activeAttempts}*\n` +
+    `│ 📋 Kuyruk: *${totalQ}* (💎 ${payoutQ} + 🪙 ${tokenQ})\n` +
+    `│ 🪙 Supply: *${supply.toFixed(2)} ${escapeMarkdown(token.symbol || "NXT")}*\n` +
+    `│ 💹 Spot: *$${spotUsd.toFixed(6)}* │ Cap: *$${marketCap.toFixed(2)}*\n` +
+    `│ 🚪 Gate: *${gate.allowed ? "ACIK" : "KAPALI"}*` +
+    (gate.current ? ` (${Number(gate.current).toFixed(2)}/${Number(gate.min || 0).toFixed(2)})` : "") +
+    `\n└──────────────────────────┘\n\n` +
+    `📋 *Bekleyen Payoutlar:*\n${payoutLines}\n\n` +
+    `🪙 *Bekleyen Token Talepleri:*\n${tokenLines}\n\n` +
+    `⚡ *Hizli Komutlar:*\n` +
+    `/admin\\_queue │ /admin\\_payouts │ /admin\\_tokens\n` +
+    `/admin\\_metrics │ /admin\\_config │ /admin\\_freeze`
   );
 }
 
@@ -1465,20 +1684,16 @@ function formatAdminLive(payload = {}) {
   const gate = token.payoutGate || {};
   const payoutQueue = Number(snapshot.pendingPayoutCount || 0);
   const tokenQueue = Number(snapshot.pendingTokenCount || 0);
-  const critical =
-    freeze.freeze || payoutQueue > 0 || tokenQueue > 0
-      ? "Aksiyon gerekli"
-      : "Stabil";
-  const queueHint =
-    payoutQueue + tokenQueue > 0
-      ? `Payout ${payoutQueue} | Token ${tokenQueue}`
-      : "Queue temiz";
+  const totalQ = payoutQueue + tokenQueue;
+
+  const statusIcon = freeze.freeze ? '🔴' : totalQ > 5 ? '🟡' : '🟢';
+  const critical = freeze.freeze ? "FREEZE AKTIF" : totalQ > 0 ? "AKSIYON GEREKLI" : "STABIL";
+
   const hb = runtime.last_heartbeat_at
     ? new Date(runtime.last_heartbeat_at).toISOString().slice(11, 19)
     : "-";
-  const runtimeMode = String(runtime.mode || "unknown");
-  const runtimeAlive = runtime.alive ? "ON" : "OFF";
-  const runtimeLock = runtime.lock_acquired ? "LOCK" : "NOLOCK";
+  const runtimeAlive = runtime.alive ? "🟢 ON" : "🔴 OFF";
+  const runtimeLock = runtime.lock_acquired ? "🔒 LOCK" : "🔓 NOLOCK";
   const release = payload.release || {};
   const flags = payload.flags || {};
   const releaseShort = String(release.gitRevision || "").slice(0, 7) || "-";
@@ -1486,36 +1701,47 @@ function formatAdminLive(payload = {}) {
   const flagLine = Array.isArray(flags.critical)
     ? flags.critical.map((x) => `${x.key}:${x.enabled ? "1" : "0"}`).join(" ")
     : "";
+
+  const dau = Number(metrics.users_active_24h || 0);
+  const reveals = Number(metrics.reveals_24h || 0);
+  const tokenVol = Number(metrics.token_usd_volume_24h || 0);
+
   const nextAction = freeze.freeze
-    ? "Next: /admin_freeze off"
+    ? "➤ /admin\\_freeze off"
     : payoutQueue > 0
-      ? "Next: /admin_payouts"
+      ? "➤ /admin\\_payouts"
       : tokenQueue > 0
-        ? "Next: /admin_tokens"
+        ? "➤ /admin\\_tokens"
         : gate.allowed
-          ? "Next: /admin_metrics veya /play"
-          : "Next: /admin_token_gate (gate kapali)";
+          ? "➤ /admin\\_metrics"
+          : "➤ /admin\\_gate (gate kapali)";
 
   return (
-    `*Admin Live*\n` +
-    `Durum: *${critical}*\n` +
-    `Freeze: *${freeze.freeze ? "ON" : "OFF"}*` +
-    (freeze.reason ? ` (${escapeMarkdown(freeze.reason)})` : "") +
-    `\nUsers: *${Number(snapshot.totalUsers || 0)}* | Active Attempt: *${Number(snapshot.activeAttempts || 0)}*\n` +
-    `Queue: *${queueHint}*\n` +
-    `Token: *${escapeMarkdown(token.symbol || "NXT")}* | Spot *$${Number(token.spotUsd || 0).toFixed(8)}* | Cap *$${Number(
-      token.marketCapUsd || 0
-    ).toFixed(2)}*\n` +
-    `Gate: *${gate.allowed ? "OPEN" : "LOCKED"}* (${Number(gate.current || 0).toFixed(2)} / ${Number(gate.min || 0).toFixed(2)})\n\n` +
-    `Bot Runtime: *${runtimeAlive}* | *${runtimeLock}* | *${escapeMarkdown(runtimeMode)}* | HB *${escapeMarkdown(hb)}*\n` +
-    `Release: *${escapeMarkdown(releaseShort)}* | Flags: *${escapeMarkdown(flagSource)}*\n` +
-    (flagLine ? `Critical: \`${escapeMarkdown(flagLine)}\`\n` : "") +
-    `24s: users *${Number(metrics.users_active_24h || 0)}* | reveal *${Number(metrics.reveals_24h || 0)}* | token *$${Number(
-      metrics.token_usd_volume_24h || 0
-    ).toFixed(2)}*\n\n` +
-    `${escapeMarkdown(nextAction)}\n` +
-    (webappUrl ? `WebApp: ${escapeMarkdown(webappUrl)}\n` : "") +
-    `Komutlar: /admin, /admin_payouts, /admin_tokens, /admin_metrics`
+    `╔══════════════════════════╗\n` +
+    `║  📡 *ADMIN LIVE MONITOR*    ║\n` +
+    `╚══════════════════════════╝\n\n` +
+    `${statusIcon} *${critical}*\n` +
+    `❄️ Freeze: *${freeze.freeze ? "ON" : "OFF"}*` +
+    (freeze.reason ? ` — ${escapeMarkdown(freeze.reason)}` : "") +
+    `\n\n┌─── KPI (24s) ─────────────────┐\n` +
+    `│ 👥 DAU: *${dau.toLocaleString()}* │ Users: *${Number(snapshot.totalUsers || 0).toLocaleString()}*\n` +
+    `│ 🎮 Active: *${Number(snapshot.activeAttempts || 0)}* │ 🎁 Reveals: *${reveals}*\n` +
+    `│ 💹 Token Vol: *$${tokenVol.toFixed(2)}*\n` +
+    `│ 📋 Queue: 💎 *${payoutQueue}* + 🪙 *${tokenQueue}* = *${totalQ}*\n` +
+    `└──────────────────────────┘\n\n` +
+    `┌─── TOKEN ──────────────────┐\n` +
+    `│ 🪙 *${escapeMarkdown(token.symbol || "NXT")}* │ Spot *$${Number(token.spotUsd || 0).toFixed(6)}*\n` +
+    `│ 💹 Cap *$${Number(token.marketCapUsd || 0).toFixed(2)}*\n` +
+    `│ 🚪 Gate: *${gate.allowed ? "OPEN" : "LOCKED"}* (${Number(gate.current || 0).toFixed(2)}/${Number(gate.min || 0).toFixed(2)})\n` +
+    `└──────────────────────────┘\n\n` +
+    `┌─── RUNTIME ────────────────┐\n` +
+    `│ ${runtimeAlive} │ ${runtimeLock}\n` +
+    `│ Mode: *${escapeMarkdown(String(runtime.mode || "unknown"))}* │ HB: *${escapeMarkdown(hb)}*\n` +
+    `│ Release: *${escapeMarkdown(releaseShort)}* │ Flags: *${escapeMarkdown(flagSource)}*\n` +
+    (flagLine ? `│ \`${escapeMarkdown(flagLine)}\`\n` : "") +
+    `└──────────────────────────┘\n\n` +
+    `🧭 *Sonraki Hamle:* ${nextAction}\n` +
+    (webappUrl ? `🌐 WebApp: ${escapeMarkdown(webappUrl)}\n` : "")
   );
 }
 
