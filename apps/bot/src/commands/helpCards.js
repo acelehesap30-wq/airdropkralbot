@@ -75,6 +75,7 @@ const HELP_CATEGORY_BY_COMMAND = Object.freeze({
   daily: "economy",
   shop: "economy",
   rewards: "economy",
+  chests: "economy",
   profile: "progression",
   kingdom: "progression",
   season: "progression",
@@ -175,7 +176,8 @@ const HELP_RELATIONS = Object.freeze({
   friends: Object.freeze(["invite", "leaderboard", "war"]),
   share: Object.freeze(["profile", "invite", "leaderboard"]),
   news: Object.freeze(["events", "season", "discover"]),
-  quests: Object.freeze(["missions", "tasks", "rewards"])
+  quests: Object.freeze(["missions", "tasks", "rewards"]),
+  chests: Object.freeze(["reveal", "rewards", "tasks"])
 });
 
 const HELP_COPY_OVERRIDES = Object.freeze({
@@ -340,7 +342,8 @@ const HELP_SYNTAX_OVERRIDES = Object.freeze({
     "/reject_payout 412 duplicate_wallet"
   ]),
   approve_token: Object.freeze(["/approve_token <requestId> [note]", "/approve_token 77 ok", "/approve_token 77"]),
-  reject_token: Object.freeze(["/reject_token <requestId> <reason>", "/reject_token 77 bad_tx", "/reject_token 77 risk_signal"])
+  reject_token: Object.freeze(["/reject_token <requestId> <reason>", "/reject_token 77 bad_tx", "/reject_token 77 risk_signal"]),
+  chests: Object.freeze(["/chests", "kasalar", "loot history"])
 });
 
 const HELP_FAILURE_HINT_OVERRIDES = Object.freeze({
