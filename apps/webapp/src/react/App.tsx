@@ -239,8 +239,8 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
   });
 
   const isAdmin = Boolean(data?.admin?.is_admin);
-  const effectiveWorkspace: "player" | "admin" = isAdmin ? "admin" : "player";
-  const adminAdvanced = false;
+  const effectiveWorkspace: "player" | "admin" = isAdmin && workspace === "admin" ? "admin" : "player";
+  const adminAdvanced = isAdmin && advanced;
   const effectiveOnboardingVisible = effectiveWorkspace === "player" && onboardingVisible;
   const enableDistrictScene =
     effectiveWorkspace === "player" && !effectiveOnboardingVisible && (tab === "home" || tab === "pvp");
@@ -939,9 +939,9 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
         <TopBar
           lang={lang}
           advanced={adminAdvanced}
-          showAdvancedToggle={false}
-          showWorkspaceToggle={false}
-          showAccessibilityControls={false}
+          showAdvancedToggle={isAdmin && effectiveWorkspace === "admin"}
+          showWorkspaceToggle={isAdmin}
+          showAccessibilityControls={true}
           reducedMotion={reducedMotion}
           largeText={largeText}
           workspace={effectiveWorkspace}

@@ -2,6 +2,7 @@ import { buildVaultViewModel } from "../../../core/player/vaultViewModel.js";
 import { SHELL_ACTION_KEY } from "../../../core/navigation/shellActions.js";
 import { t, type Lang } from "../../i18n";
 import { RouteStrip } from "../shared/RouteStrip";
+import { TonWalletConnect } from "./TonWalletConnect";
 
 type VaultPanelProps = {
   lang: Lang;
@@ -256,6 +257,21 @@ export function VaultPanel(props: VaultPanelProps) {
           <span className="akrCurrencyChip akrCurrencyRC">{routeStatusLabel}</span>
         </div>
       </div>
+
+      <TonWalletConnect
+        lang={props.lang}
+        onWalletConnected={(chain, address) => {
+          props.onWalletChainChange(chain);
+          props.onWalletAddressChange(address);
+        }}
+        onWalletDisconnected={() => {
+          props.onWalletAddressChange("");
+        }}
+        walletChallengeLoading={props.walletChallengeLoading}
+        walletVerifyLoading={props.walletVerifyLoading}
+        onWalletChallenge={props.onWalletChallenge}
+        onWalletVerify={props.onWalletVerify}
+      />
 
       <section className="akrGameSpotlight" data-akr-panel-key="vault" data-akr-focus-key="vault_exit_route">
         <div className="akrGameSpotlightMain">

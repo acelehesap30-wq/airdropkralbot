@@ -1,11 +1,14 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { Provider } from "react-redux";
+import { TonConnectUIProvider } from "@tonconnect/ui-react";
 import { fetchBootstrapV2, readWebAppAuth } from "./api";
 import { normalizeLang } from "./i18n";
 import { ReactWebAppV1 } from "./App";
 import { appStore } from "./redux/store";
 import * as navigationContract from "../core/shared/navigationContract.js";
+
+const TON_CONNECT_MANIFEST_URL = "https://webapp.k99-exchange.xyz/webapp/tonconnect-manifest.json";
 
 const { decodeStartAppPayload, resolveLaunchTarget } = navigationContract;
 const BOOTSTRAP_FETCH_TIMEOUT_MS = 25000;
@@ -310,9 +313,11 @@ export async function mountReactWebAppV1(): Promise<void> {
   const root = createRoot(ensureRootNode());
   root.render(
     <FatalBoundary>
-      <Provider store={appStore}>
-        <ReactWebAppV1 auth={auth} bootstrap={payload} />
-      </Provider>
+      <TonConnectUIProvider manifestUrl={TON_CONNECT_MANIFEST_URL}>
+        <Provider store={appStore}>
+          <ReactWebAppV1 auth={auth} bootstrap={payload} />
+        </Provider>
+      </TonConnectUIProvider>
     </FatalBoundary>
   );
 }
