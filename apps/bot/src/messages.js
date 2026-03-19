@@ -1745,6 +1745,153 @@ function formatAdminLive(payload = {}) {
   );
 }
 
+// ── Alert Family Formatters ─────────────────────────────────
+
+function formatAlertChestReady(options = {}) {
+  const lang = resolveLang(options);
+  const tr = lang === "tr";
+  const tier = Number(options.lootTier || 1);
+  const badge = tierBadge(tier);
+  const tierLabel = tr
+    ? ["Bronz", "Gumus", "Altin", "Elmas", "Kral", "Yildiz", "Simsar", "Efson"][Math.min(tier - 1, 7)] || `T${tier}`
+    : ["Bronze", "Silver", "Gold", "Diamond", "Royal", "Star", "Lightning", "Legendary"][Math.min(tier - 1, 7)] || `T${tier}`;
+  return (
+    `🎁 *${tr ? "KASANIZ HAZIR" : "CHEST READY"}*\n\n` +
+    `${badge} ${tr ? "Tier" : "Tier"}: *${tierLabel}*\n` +
+    `${progressBar(tier, 8, 8)} ${tr ? "Kalite" : "Quality"}\n\n` +
+    `${tr ? "Acmak icin" : "Tap to open"} → /reveal\n` +
+    `🧭 route: \`guide_reveal\``
+  );
+}
+
+function formatAlertMissionRefresh(options = {}) {
+  const lang = resolveLang(options);
+  const tr = lang === "tr";
+  const count = Number(options.count || 3);
+  const rarity = escapeMarkdown(String(options.rarity || (tr ? "Normal" : "Normal")));
+  return (
+    `🔄 *${tr ? "YENI GOREVLER GELDI" : "NEW MISSIONS AVAILABLE"}*\n\n` +
+    `📋 ${tr ? "Adet" : "Count"}: *${count}*\n` +
+    `✨ ${tr ? "Nadirlik" : "Rarity"}: *${rarity}*\n\n` +
+    `${tr ? "Gorevlere git" : "Go to tasks"} → /tasks\n` +
+    `🧭 route: \`open_tasks\``
+  );
+}
+
+function formatAlertEventCountdown(options = {}) {
+  const lang = resolveLang(options);
+  const tr = lang === "tr";
+  const eventName = escapeMarkdown(String(options.eventName || (tr ? "Ozel Etkinlik" : "Special Event")));
+  const remaining = countdownStr(Number(options.remainingMs || 0));
+  return (
+    `⏰ *${tr ? "ETKINLIK BASLIYOR" : "EVENT STARTING"}*\n\n` +
+    `🎪 *${eventName}*\n` +
+    `⏳ ${tr ? "Kalan" : "Remaining"}: *${remaining}*\n\n` +
+    `${tr ? "Etkinlige git" : "Go to event"} → /events\n` +
+    `🧭 route: \`open_events\``
+  );
+}
+
+function formatAlertKingdomWar(options = {}) {
+  const lang = resolveLang(options);
+  const tr = lang === "tr";
+  const warStatus = escapeMarkdown(String(options.warStatus || (tr ? "Aktif" : "Active")));
+  const enemyKingdom = escapeMarkdown(String(options.enemyKingdom || (tr ? "Rakip" : "Enemy")));
+  const allyScore = Number(options.allyScore || 0);
+  const enemyScore = Number(options.enemyScore || 0);
+  return (
+    `⚔️ *${tr ? "SAVAS BASLADI" : "WAR STARTED"}*\n\n` +
+    `🏰 vs *${enemyKingdom}*\n` +
+    `📊 ${tr ? "Skor" : "Score"}: *${allyScore}* — *${enemyScore}*\n` +
+    `🚦 ${tr ? "Durum" : "Status"}: *${warStatus}*\n\n` +
+    `${tr ? "Savasa katil" : "Join war"} → /war\n` +
+    `🧭 route: \`open_war\``
+  );
+}
+
+function formatAlertStreakRisk(options = {}) {
+  const lang = resolveLang(options);
+  const tr = lang === "tr";
+  const streak = Number(options.streak || 0);
+  const graceMs = Number(options.graceMs || 0);
+  const grace = countdownStr(graceMs);
+  return (
+    `🔥⚠️ *${tr ? "SERI RISKLI" : "STREAK AT RISK"}*\n\n` +
+    `🔥 ${tr ? "Seri" : "Streak"}: *${streak} ${tr ? "gun" : "days"}*\n` +
+    `⏳ ${tr ? "Ek sure" : "Grace"}: *${grace}*\n` +
+    `${progressBar(graceMs, 21600000, 8)} ${tr ? "kalan" : "left"}\n\n` +
+    `${tr ? "Gorevi tamamla" : "Complete a task"} → /tasks\n` +
+    `🧭 route: \`open_tasks\``
+  );
+}
+
+function formatAlertPayoutUpdate(options = {}) {
+  const lang = resolveLang(options);
+  const tr = lang === "tr";
+  const status = escapeMarkdown(String(options.status || (tr ? "Guncellendi" : "Updated")));
+  const amount = Number(options.amount || 0);
+  const currency = escapeMarkdown(String(options.currency || "BTC"));
+  return (
+    `💰 *${tr ? "ODEME GUNCELLENDI" : "PAYOUT UPDATED"}*\n\n` +
+    `💎 ${tr ? "Miktar" : "Amount"}: *${amount.toFixed(6)} ${currency}*\n` +
+    `🚦 ${tr ? "Durum" : "Status"}: *${status}*\n\n` +
+    `${tr ? "Vault'a git" : "Go to vault"} → /payout\n` +
+    `🧭 route: \`open_wallet\``
+  );
+}
+
+function formatAlertRareDrop(options = {}) {
+  const lang = resolveLang(options);
+  const tr = lang === "tr";
+  const tier = Number(options.tier || 4);
+  const badge = tierBadge(tier);
+  const itemName = escapeMarkdown(String(options.itemName || (tr ? "Nadir Esya" : "Rare Item")));
+  const celebration = tier >= 5 ? "🎆🎆🎆" : tier >= 3 ? "🎆🎆" : "🎆";
+  return (
+    `✨ *${tr ? "NADIR ESYA DUSTU" : "RARE DROP"}* ${celebration}\n\n` +
+    `${badge} *${itemName}*\n` +
+    `${progressBar(tier, 8, 8)} T${tier}\n\n` +
+    `${tr ? "Esyayi gor" : "View item"} → /reveal\n` +
+    `🧭 route: \`guide_reveal\``
+  );
+}
+
+function formatAlertComebackOffer(options = {}) {
+  const lang = resolveLang(options);
+  const tr = lang === "tr";
+  const bonusSc = Number(options.bonusSc || 500);
+  const bonusHc = Number(options.bonusHc || 10);
+  const daysAway = Number(options.daysAway || 3);
+  return (
+    `👋 *${tr ? "SENI OZLEDIK" : "WE MISSED YOU"}*\n\n` +
+    `📅 ${tr ? "Uzakta" : "Away"}: *${daysAway} ${tr ? "gun" : "days"}*\n` +
+    `🎁 ${tr ? "Hos geldin bonusu" : "Comeback bonus"}:\n` +
+    `  → 💰 *${bonusSc.toLocaleString()} SC*\n` +
+    `  → 💎 *${bonusHc} HC*\n\n` +
+    `${tr ? "Hemen oyna" : "Play now"} → /play\n` +
+    `🧭 route: \`open_play\``
+  );
+}
+
+function formatAlertSeasonDeadline(options = {}) {
+  const lang = resolveLang(options);
+  const tr = lang === "tr";
+  const seasonId = Number(options.seasonId || 1);
+  const daysLeft = Number(options.daysLeft || 0);
+  const hoursLeft = Number(options.hoursLeft || 0);
+  const timeStr = daysLeft > 0
+    ? `*${daysLeft}* ${tr ? "gun" : "days"}`
+    : `*${hoursLeft}* ${tr ? "saat" : "hours"}`;
+  return (
+    `🏆 *${tr ? "SEZON BITIYOR" : "SEASON ENDING"}*\n\n` +
+    `📅 ${tr ? "Sezon" : "Season"}: *S${seasonId}*\n` +
+    `⏳ ${tr ? "Kalan" : "Remaining"}: ${timeStr}\n` +
+    `${progressBar(Math.max(0, 30 - daysLeft), 30, 8)} ${tr ? "ilerleme" : "progress"}\n\n` +
+    `${tr ? "Sezonu gor" : "View season"} → /season\n` +
+    `🧭 route: \`open_season\``
+  );
+}
+
 module.exports = {
   formatStart,
   formatGuide,
@@ -1796,6 +1943,15 @@ module.exports = {
   formatAdminPanel,
   formatAdminLive,
   formatAdminWhoami,
-  formatAdminActionResult
+  formatAdminActionResult,
+  formatAlertChestReady,
+  formatAlertMissionRefresh,
+  formatAlertEventCountdown,
+  formatAlertKingdomWar,
+  formatAlertStreakRisk,
+  formatAlertPayoutUpdate,
+  formatAlertRareDrop,
+  formatAlertComebackOffer,
+  formatAlertSeasonDeadline
 };
 

@@ -11,6 +11,9 @@ export type DistrictKey =
   | 'loot_forge'
   | 'exchange_district'
   | 'season_hall'
+  | 'elite_district'
+  | 'live_event_overlay'
+  | 'social_monuments'
   | 'arena';
 
 export type QualityTier = 'low' | 'medium' | 'high';
@@ -32,8 +35,12 @@ export async function loadDistrictScene(key: DistrictKey) {
       return (await import('./SeasonHallScene')).createScene;
     case 'arena':
       return (await import('./ArenaScene')).createScene;
+    // Districts without dedicated scenes yet — fall back to central hub
+    case 'elite_district':
+    case 'live_event_overlay':
+    case 'social_monuments':
+      return (await import('./CentralHubScene')).createScene;
     default: {
-      // Fallback to central hub for unknown keys
       const _exhaustive: never = key;
       return (await import('./CentralHubScene')).createScene;
     }

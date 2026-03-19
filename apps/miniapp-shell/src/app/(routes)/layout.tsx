@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { BottomNav } from '@/components/shell/BottomNav';
 import { TopBar } from '@/components/shell/TopBar';
 import { useBackButton } from '@/hooks/useBackButton';
+import { useMainButton } from '@/hooks/useMainButton';
 
 /**
  * Blueprint Section 7: Mini App shell layout
@@ -12,6 +13,7 @@ import { useBackButton } from '@/hooks/useBackButton';
 export default function RoutesLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   useBackButton(pathname);
+  useMainButton(pathname);
 
   return (
     <div

@@ -48,6 +48,7 @@ interface TelegramWebApp {
     disable: () => void;
     onClick: (cb: () => void) => void;
     offClick: (cb: () => void) => void;
+    setParams: (params: { color?: string; text_color?: string; is_active?: boolean; is_visible?: boolean }) => void;
   };
   HapticFeedback: {
     impactOccurred: (style: 'light' | 'medium' | 'heavy') => void;

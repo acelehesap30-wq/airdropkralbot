@@ -120,13 +120,11 @@ export const ActionRequestSchema = z.object({
   action_request_id: z.string().min(1),
 });
 
-// Blueprint: Analytics event naming — family.object.verb
-export const AnalyticsEventSchema = z.object({
-  event_name: z.string().regex(/^[a-z]+\.[a-z_]+\.[a-z_]+$/),
-  occurred_at: z.string(),
-  surface: z.enum(['chat', 'miniapp', 'admin']),
-  route_key: z.string().optional(),
-  panel_key: z.string().optional(),
-});
-
-export type AnalyticsEvent = z.infer<typeof AnalyticsEventSchema>;
+// Blueprint: Analytics event naming — family.object.verb (canonical module)
+export {
+  AnalyticsEventSchema,
+  EVENT_FAMILIES,
+  createEvent,
+  type AnalyticsEvent,
+  type EventFamily,
+} from './analytics';

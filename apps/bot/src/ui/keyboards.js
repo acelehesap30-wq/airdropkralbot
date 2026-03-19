@@ -841,6 +841,32 @@ function buildStreakKeyboard(lang = "tr") {
   ]);
 }
 
+// ── Alert Family Keyboard Builder ───────────────────────────
+
+const ALERT_KEYBOARD_MAP = {
+  chest_ready:     { tr: "🎁 Kasa Aç",        en: "🎁 Open Chest",      callback: "GUIDE_REVEAL" },
+  mission_refresh: { tr: "📋 Görevlere Git",   en: "📋 Go to Tasks",     callback: "OPEN_TASKS" },
+  event_countdown: { tr: "🎪 Etkinliğe Git",   en: "🎪 Go to Event",     callback: "OPEN_EVENTS" },
+  kingdom_war:     { tr: "⚔️ Savaşa Katıl",    en: "⚔️ Join War",        callback: "OPEN_WAR" },
+  streak_risk:     { tr: "✅ Görevi Tamamla",   en: "✅ Complete Task",    callback: "OPEN_TASKS" },
+  payout_update:   { tr: "💰 Vault'a Git",     en: "💰 Go to Vault",     callback: "OPEN_WALLET" },
+  rare_drop:       { tr: "🎁 Eşyayı Gör",     en: "🎁 View Item",       callback: "GUIDE_REVEAL" },
+  comeback_offer:  { tr: "🎮 Oyna",            en: "🎮 Play",            callback: "OPEN_PLAY" },
+  season_deadline: { tr: "🏆 Sezonu Gör",      en: "🏆 View Season",     callback: "OPEN_SEASON" }
+};
+
+function buildAlertKeyboard(alertType, lang = "tr") {
+  const locale = normalizeLanguage(lang, "tr");
+  const entry = ALERT_KEYBOARD_MAP[alertType];
+  if (!entry) {
+    return undefined;
+  }
+  const label = locale === "en" ? entry.en : entry.tr;
+  return Markup.inlineKeyboard([
+    [Markup.button.callback(label, entry.callback)]
+  ]);
+}
+
 module.exports = {
   buildTaskKeyboard,
   buildStartKeyboard,
@@ -878,5 +904,6 @@ module.exports = {
   buildBossKeyboard,
   buildPassKeyboard,
   buildStreakKeyboard,
-  mergeInlineKeyboards
+  mergeInlineKeyboards,
+  buildAlertKeyboard
 };
