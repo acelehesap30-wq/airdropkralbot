@@ -5963,6 +5963,70 @@ async function sendQuests(ctx, pool, appConfig) {
   await ctx.replyWithMarkdown(text, buildMissionKeyboard(payload.board, lang, missionsUrl || ""));
 }
 
+async function sendChests(ctx, pool, appConfig) {
+  const payload = await withTransaction(pool, async (db) => {
+    const profile = await ensureProfileTx(db, ctx);
+    const balances = await economyStore.getBalances(db, profile.user_id);
+    const recentLoot = await db.query(
+      `SELECT lr.tier, lr.sc_earned, lr.hc_earned, lr.outcome, lr.created_at,
+              ta.task_type
+       FROM loot_reveals lr
+       JOIN task_attempts ta ON ta.id = lr.task_attempt_id
+       WHERE ta.user_id = $1
+       ORDER BY lr.created_at DESC LIMIT 10`,
+      [profile.user_id]
+    ).catch(() => ({ rows: [] }));
+    const totalReveals = await db.query(
+      `SELECT COUNT(*)::int AS total,
+              COUNT(*) FILTER (WHERE lr.tier IN ('rare','epic','legendary'))::int AS rare_count
+       FROM loot_reveals lr
+       JOIN task_attempts ta ON ta.id = lr.task_attempt_id
+       WHERE ta.user_id = $1`,
+      [profile.user_id]
+    ).catch(() => ({ rows: [{ total: 0, rare_count: 0 }] }));
+    return { profile, balances, recentLoot: recentLoot.rows, stats: totalReveals.rows[0] };
+  });
+  const lang = resolvePreferredLanguage(payload.profile, ctx, "tr");
+
+  const tierEmoji = { common: "⬜", uncommon: "🟩", rare: "🟦", epic: "🟪", legendary: "🟨" };
+  const totalOpens = Number(payload.stats?.total || 0);
+  const rareCount = Number(payload.stats?.rare_count || 0);
+  const rareRate = totalOpens > 0 ? ((rareCount / totalOpens) * 100).toFixed(1) : "0.0";
+  const pityCounter = totalOpens > 0 ? Math.max(0, totalOpens - (payload.recentLoot || []).findIndex((l) => ["rare", "epic", "legendary"].includes(l.tier))) : 0;
+
+  const lootLines = (payload.recentLoot || []).map((row) => {
+    const emoji = tierEmoji[row.tier] || "📦";
+    const sc = Number(row.sc_earned || 0);
+    const hc = Number(row.hc_earned || 0);
+    const type = escapeMarkdownText(row.task_type || "task");
+    const ts = row.created_at ? new Date(row.created_at).toLocaleDateString("tr-TR") : "-";
+    return `  ${emoji} *${escapeMarkdownText(row.tier || "common")}* [${type}] +${sc} SC / +${hc} HC — ${ts}`;
+  }).join("\n");
+
+  const text = lang === "en"
+    ? `*Chest Reveals*\n\n` +
+      `📊 *Stats*\n` +
+      `  Total opens: *${totalOpens}*\n` +
+      `  Rare+ rate: *${rareRate}%* (${rareCount} rare+)\n` +
+      `  Pity counter: *${pityCounter}* since last rare\n\n` +
+      `🎁 *Recent Loot*\n` +
+      (lootLines || "  _no reveals yet — complete tasks and /reveal_") +
+      `\n\n⬜ Common 🟩 Uncommon 🟦 Rare 🟪 Epic 🟨 Legendary\n` +
+      `💡 Tip: /tasks → /finish → /reveal to open more chests!`
+    : `*Kasa Acilimlari*\n\n` +
+      `📊 *Istatistikler*\n` +
+      `  Toplam acilis: *${totalOpens}*\n` +
+      `  Nadir+ orani: *${rareRate}%* (${rareCount} nadir+)\n` +
+      `  Pity sayaci: *${pityCounter}* son nadirden beri\n\n` +
+      `🎁 *Son Loot*\n` +
+      (lootLines || "  _henuz acilis yok — gorev tamamla ve /reveal yap_") +
+      `\n\n⬜ Siradan 🟩 Yesil 🟦 Nadir 🟪 Epik 🟨 Efsanevi\n` +
+      `💡 Ipucu: /tasks → /finish → /reveal ile daha fazla kasa ac!`;
+
+  const rewardsUrl = await resolveMiniAppCommandUrl(pool, appConfig, ctx.from?.id, "rewards");
+  await ctx.replyWithMarkdown(text, buildRewardsKeyboard(rewardsUrl || "", "", lang));
+}
+
 function buildCommandHandlerMap({ pool, appConfig }) {
   const map = new Map();
 
@@ -6056,6 +6120,8 @@ function buildCommandHandlerMap({ pool, appConfig }) {
   map.set("share", async (ctx) => sendShare(ctx, pool, appConfig));
   map.set("news", async (ctx) => sendNews(ctx, pool, appConfig));
   map.set("quests", async (ctx) => sendQuests(ctx, pool, appConfig));
+  map.set("chests", async (ctx) => sendChests(ctx, pool, appConfig));
+  map.set("hub", async (ctx) => sendLauncherMenu(ctx, pool));
 
   map.set("admin", async (ctx) => sendAdminPanel(ctx, pool, appConfig));
   map.set("admin_live", async (ctx) => sendAdminLive(ctx, pool, appConfig));

@@ -4,7 +4,7 @@ const { normalizeCommandRegistry, validateCommandRegistry } = require("../../../
 const RAW_COMMAND_REGISTRY = Object.freeze([
   {
     key: "menu",
-    aliases: ["start"],
+    aliases: ["start", "hub"],
     description_tr: "Ana launcher, hizli rota ve kisayol merkezi — oyun akisinin baslangic noktasi",
     description_en: "Main launcher hub — entry point for entire game flow with quick routes",
     intents: ["menu", "launcher", "start", "home", "ana menu", "ana men", "baslat", "giris", "main", "begin"],
@@ -310,6 +310,15 @@ const RAW_COMMAND_REGISTRY = Object.freeze([
     intents: ["quests", "gorev zinciri", "hikaye gorevi", "story quest", "quest chain", "ana gorev"],
     scenarios: ["/quests", "gorev zincirleri", "quest chains", "hikaye gorevleri"],
     outcomes: ["aktif gorev zincirlerini goster", "ilerleme durumu ve sonraki adim", "zincir odul havuzunu belirt"]
+  },
+  {
+    key: "chests",
+    aliases: ["kasalar", "loot_box", "sandik"],
+    description_tr: "Kasa acma merkezi — son loot reveallari, nadir esya gecmisi ve pity durumu",
+    description_en: "Chest opening center — recent loot reveals, rare item history and pity status",
+    intents: ["chests", "kasalar", "sandik", "kasa ac", "loot box", "chest", "open chest", "loot reveal"],
+    scenarios: ["/chests", "kasalari goster", "loot history", "son kasalar", "chest reveals"],
+    outcomes: ["son 10 kasa acilisini goster", "nadir esya istatistiklerini belirt", "pity counter ve sonraki garantiyi goster"]
   }
 ]);
 

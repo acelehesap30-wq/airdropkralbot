@@ -71,3 +71,31 @@ services:
         value: "1"
       - key: MINIAPP_V3_ADMIN_TG_ID
         value: "1995400205"
+      - key: WALLET_AUTH_V1_ENABLED
+        value: "1"
+      - key: KYC_THRESHOLD_V1_ENABLED
+        value: "1"
+      - key: MONETIZATION_CORE_V1_ENABLED
+        value: "1"
+      - key: WALLET_VERIFY_MODE
+        value: format_only
+      - key: WALLET_CHALLENGE_TTL_SEC
+        value: "300"
+      - key: WALLET_SESSION_TTL_SEC
+        value: "86400"
+      - key: KYC_RISK_THRESHOLD
+        value: "0.75"
+      - key: KYC_PAYOUT_BTC_THRESHOLD
+        value: "0.001"
+      - key: KYC_REQUIRE_IF_WALLET_UNLINKED
+        value: "0"
+      - key: WEBAPP_AUTH_TTL_SEC
+        value: "900"
+      - key: PAYOUT_BTC_THRESHOLD
+        value: "0.0001"
+      - key: HC_TO_BTC_RATE
+        value: "0.00001"
+      - key: PAYOUT_COOLDOWN_HOURS
+        value: "72"
+      - key: RUNTIME_GUARD_BASE_URL
+        value: https://webapp.k99-exchange.xyz

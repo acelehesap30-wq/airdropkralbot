@@ -4295,7 +4295,89 @@ body {
   box-shadow: 0 0 8px rgba(56, 208, 255, .5);
 }
 .akrOnboardingActions {
-  display: flex; gap: 10px; justify-content: center;
+  display: flex; gap: 10px; justify-content: space-between; align-items: center;
+}
+
+/* ─── Onboarding Enhanced ─── */
+.akrOnboardingProgress {
+  display: flex; gap: 4px; margin-bottom: 20px;
+}
+.akrOnboardingProgressSegment {
+  flex: 1; height: 3px; border-radius: 2px;
+  background: rgba(132, 180, 255, .15);
+  transition: background .4s ease;
+}
+.akrOnboardingProgressSegment.isFilled {
+  background: linear-gradient(90deg, #38d0ff, #a78bfa);
+}
+.akrOnboardingContent {
+  min-height: 200px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  margin-bottom: 20px;
+}
+.akrOnboardingWelcome { text-align: center; }
+.akrOnboardingHeadline {
+  margin: 0 0 4px; font-size: 26px; font-weight: 800;
+  background: linear-gradient(135deg, #38d0ff, #f5a623, #a78bfa);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.akrOnboardingSub { margin: 0 0 16px; opacity: .7; font-size: 14px; }
+.akrOnboardingLangPicker { display: flex; gap: 10px; justify-content: center; margin-bottom: 16px; }
+.akrOnboardingTrust { text-align: left; margin-top: 8px; }
+.akrOnboardingTrustTitle {
+  margin: 0 0 8px; font-size: 14px; font-weight: 700;
+  color: #34d399;
+}
+.akrOnboardingTrustList {
+  margin: 0; padding: 0; list-style: none;
+  display: flex; flex-direction: column; gap: 6px;
+  font-size: 13px; opacity: .85;
+}
+.akrOnboardingGuide, .akrOnboardingLaunch { text-align: center; }
+.akrOnboardingStepHero { margin-bottom: 12px; }
+.akrOnboardingStepHeroIcon {
+  font-size: 48px; display: inline-block;
+  animation: akrOnboardPulse 2s ease-in-out infinite;
+}
+.akrOnboardingStepDesc {
+  font-size: 15px; line-height: 1.6; opacity: .9; max-width: 320px; margin: 0 auto;
+}
+.akrOnboardingHint {
+  margin-top: 12px; font-size: 12px; opacity: .6; font-style: italic;
+}
+.akrOnboardingQuickActions { margin-top: 16px; }
+.akrOnboardingSteps {
+  display: flex; flex-direction: row; gap: 6px; justify-content: center;
+  margin-bottom: 16px;
+}
+.akrOnboardingStep {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(132, 180, 255, .06);
+  border: 1px solid rgba(132, 180, 255, .1);
+  opacity: .4; transition: all .3s ease;
+  padding: 0;
+}
+.akrOnboardingStep.isActive {
+  opacity: 1;
+  background: rgba(56, 208, 255, .15);
+  border-color: rgba(56, 208, 255, .4);
+  box-shadow: 0 0 12px rgba(56, 208, 255, .2);
+  transform: scale(1.15);
+}
+.akrOnboardingStep.isDone {
+  opacity: .65;
+  background: rgba(52, 211, 153, .1);
+  border-color: rgba(52, 211, 153, .3);
+}
+.akrOnboardingStepIcon { font-size: 16px; }
+
+@keyframes akrOnboardSlideIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes akrOnboardPulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.08); }
 }
 
 /* ─── Admin Badge & Chip Colors ─── */

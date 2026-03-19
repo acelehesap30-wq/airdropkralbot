@@ -1151,6 +1151,8 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
         <Suspense fallback={null}>
           <OnboardingOverlay
             lang={lang}
+            onLangChange={(newLang) => setLang(newLang)}
+            onNavigateTab={(tab) => setTab(tab as any)}
             onContinue={() => {
               trackUiEvent({
                 event_key: UI_EVENT_KEY.ONBOARDING_COMPLETE,
