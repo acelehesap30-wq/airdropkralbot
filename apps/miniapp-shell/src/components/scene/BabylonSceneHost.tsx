@@ -321,3 +321,5 @@ function Canvas2DFallback() {
 
   return <Comp />;
 }
+
+export default BabylonSceneHost;
