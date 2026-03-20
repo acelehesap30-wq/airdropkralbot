@@ -37,7 +37,12 @@ const DICT = {
     tab_home: "Nexus",
     tab_pvp: "Arena",
     tab_tasks: "Missions",
+    tab_forge: "Forge",
+    tab_exchange: "Borsa",
+    tab_season: "Sezon",
+    tab_events: "Etkinlikler",
     tab_vault: "Vault",
+    tab_settings: "Ayarlar",
     home_overview: "Oyuncu Ozeti",
     home_season: "Sezon",
     home_daily: "Gunluk Loop",
@@ -1335,7 +1340,12 @@ const DICT = {
     tab_home: "Nexus",
     tab_pvp: "Arena",
     tab_tasks: "Missions",
+    tab_forge: "Forge",
+    tab_exchange: "Exchange",
+    tab_season: "Season",
+    tab_events: "Events",
     tab_vault: "Vault",
+    tab_settings: "Settings",
     home_overview: "Player Overview",
     home_season: "Season",
     home_daily: "Daily Loop",
@@ -2616,7 +2626,12 @@ export function tabLabel(lang: Lang, tab: TabKey): string {
     home: "tab_home",
     pvp: "tab_pvp",
     tasks: "tab_tasks",
-    vault: "tab_vault"
+    forge: "tab_forge",
+    exchange: "tab_exchange",
+    season: "tab_season",
+    events: "tab_events",
+    vault: "tab_vault",
+    settings: "tab_settings"
   };
   return t(lang, map[tab]);
 }

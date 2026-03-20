@@ -1005,9 +1005,9 @@ function buildWebappTelemetrySessionRef(uid = 0) {
 
 function buildWebappUiShell({ isAdmin = false } = {}) {
   return {
-    ui_version: "react_v1_neon_arena",
+    ui_version: "react_v2_neon_arena",
     default_tab: "home",
-    tabs: ["home", "pvp", "tasks", "vault"],
+    tabs: ["home", "pvp", "tasks", "forge", "exchange", "season", "events", "vault", "settings"],
     admin_workspace_enabled: Boolean(isAdmin),
     onboarding_version: "v1"
   };
@@ -1557,7 +1557,76 @@ async function hasWalletAuthTables(db) {
        to_regclass('public.v5_wallet_sessions') IS NOT NULL AS sessions;`
   );
   const row = result.rows?.[0] || {};
-  return Boolean(row.challenges && row.links && row.sessions);
+  if (row.challenges && row.links && row.sessions) return true;
+  // Auto-create missing wallet tables
+  try {
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS v5_wallet_challenges (
+        challenge_ref VARCHAR(80) NOT NULL,
+        user_id INTEGER NOT NULL,
+        chain VARCHAR(16) NOT NULL DEFAULT 'TON',
+        address_norm VARCHAR(180) NOT NULL,
+        nonce VARCHAR(128) NOT NULL DEFAULT '',
+        nonce_hash VARCHAR(64) NOT NULL DEFAULT '',
+        challenge_text TEXT NOT NULL DEFAULT '',
+        status VARCHAR(20) NOT NULL DEFAULT 'pending',
+        issued_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        expires_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '5 minutes'),
+        resolved_at TIMESTAMPTZ,
+        payload_json JSONB DEFAULT '{}',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (challenge_ref, user_id),
+        CONSTRAINT ck_v5_wallet_challenges_expiry_order CHECK (expires_at > issued_at)
+      );
+      CREATE INDEX IF NOT EXISTS idx_v5_wallet_challenges_user_status_time
+        ON v5_wallet_challenges(user_id, status, created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_v5_wallet_challenges_expiry
+        ON v5_wallet_challenges(expires_at);
+      CREATE INDEX IF NOT EXISTS idx_v5_wallet_challenges_ref_user
+        ON v5_wallet_challenges(challenge_ref, user_id);
+      CREATE TABLE IF NOT EXISTS v5_wallet_links (
+        wallet_link_id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        chain VARCHAR(16) NOT NULL DEFAULT 'TON',
+        address_norm VARCHAR(180) NOT NULL,
+        address_display VARCHAR(180) NOT NULL DEFAULT '',
+        is_primary BOOLEAN NOT NULL DEFAULT TRUE,
+        verification_state VARCHAR(32) NOT NULL DEFAULT 'format_only',
+        verification_method VARCHAR(32) NOT NULL DEFAULT 'format_only',
+        kyc_status VARCHAR(32) NOT NULL DEFAULT 'unknown',
+        risk_score NUMERIC(6,4) NOT NULL DEFAULT 0,
+        status VARCHAR(20) NOT NULL DEFAULT 'active',
+        linked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        unlinked_at TIMESTAMPTZ,
+        metadata_json JSONB DEFAULT '{}',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS uq_v5_wallet_links_user_chain_addr_active
+        ON v5_wallet_links(user_id, chain, address_norm) WHERE status = 'active';
+      CREATE TABLE IF NOT EXISTS v5_wallet_sessions (
+        wallet_session_id SERIAL PRIMARY KEY,
+        session_ref VARCHAR(80) NOT NULL,
+        user_id INTEGER NOT NULL,
+        chain VARCHAR(16) NOT NULL DEFAULT 'TON',
+        address_norm VARCHAR(180) NOT NULL,
+        proof_hash VARCHAR(128) NOT NULL DEFAULT '',
+        source_challenge_ref VARCHAR(80) NOT NULL DEFAULT '',
+        status VARCHAR(20) NOT NULL DEFAULT 'active',
+        issued_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        expires_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '24 hours'),
+        revoked_at TIMESTAMPTZ,
+        meta_json JSONB DEFAULT '{}',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_v5_wallet_sessions_user_active
+        ON v5_wallet_sessions(user_id, status, expires_at DESC);
+    `);
+    return true;
+  } catch (createErr) {
+    console.error("[wallet] auto-create tables failed:", createErr.message);
+    return false;
+  }
 }
 
 async function hasKycTables(db) {
@@ -1567,7 +1636,39 @@ async function hasKycTables(db) {
        to_regclass('public.v5_kyc_screening_events') IS NOT NULL AS screening;`
   );
   const row = result.rows?.[0] || {};
-  return Boolean(row.profiles && row.screening);
+  if (row.profiles && row.screening) return true;
+  // Auto-create missing KYC tables
+  try {
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS v5_kyc_profiles (
+        kyc_profile_id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL UNIQUE,
+        status VARCHAR(32) NOT NULL DEFAULT 'unknown',
+        tier VARCHAR(32) NOT NULL DEFAULT 'none',
+        provider_ref VARCHAR(120) NOT NULL DEFAULT '',
+        payload_json JSONB DEFAULT '{}',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+      CREATE TABLE IF NOT EXISTS v5_kyc_screening_events (
+        screening_event_id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        chain VARCHAR(16) NOT NULL DEFAULT '',
+        address_norm VARCHAR(180) NOT NULL DEFAULT '',
+        screening_result VARCHAR(32) NOT NULL DEFAULT 'unknown',
+        risk_score NUMERIC(6,4) NOT NULL DEFAULT 0,
+        reason_code VARCHAR(64) NOT NULL DEFAULT '',
+        payload_json JSONB DEFAULT '{}',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_v5_kyc_screening_user
+        ON v5_kyc_screening_events(user_id, created_at DESC);
+    `);
+    return true;
+  } catch (createErr) {
+    console.error("[kyc] auto-create tables failed:", createErr.message);
+    return false;
+  }
 }
 
 async function insertWalletChallenge(db, payload = {}) {

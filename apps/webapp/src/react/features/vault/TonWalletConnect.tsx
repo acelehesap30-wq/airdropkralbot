@@ -19,7 +19,9 @@ export function TonWalletConnect(props: TonWalletConnectProps) {
   const address = useTonAddress(false);
   const [tonConnectUI] = useTonConnectUI();
   const prevAddressRef = useRef<string>("");
+  const prevLoadingRef = useRef<boolean>(false);
   const [verifyStep, setVerifyStep] = useState<"idle" | "verifying" | "done" | "error">("idle");
+  const [verifyError, setVerifyError] = useState<string>("");
 
   const { onWalletConnected, onWalletDisconnected } = props;
 
@@ -31,13 +33,29 @@ export function TonWalletConnect(props: TonWalletConnectProps) {
     if (!address && prevAddressRef.current) {
       prevAddressRef.current = "";
       setVerifyStep("idle");
+      setVerifyError("");
       onWalletDisconnected();
     }
   }, [address, onWalletConnected, onWalletDisconnected]);
 
   useEffect(() => {
-    if (props.walletVerified) setVerifyStep("done");
+    if (props.walletVerified) {
+      setVerifyStep("done");
+      setVerifyError("");
+    }
   }, [props.walletVerified]);
+
+  // Detect verify failure: loading went from true→false without walletVerified becoming true
+  useEffect(() => {
+    const wasLoading = prevLoadingRef.current;
+    prevLoadingRef.current = props.walletAutoVerifyLoading;
+    if (wasLoading && !props.walletAutoVerifyLoading && !props.walletVerified && verifyStep === "verifying") {
+      setVerifyStep("error");
+      setVerifyError(props.lang === "tr"
+        ? "Dogrulama basarisiz. Lutfen tekrar deneyin."
+        : "Verification failed. Please try again.");
+    }
+  }, [props.walletAutoVerifyLoading, props.walletVerified, verifyStep, props.lang]);
 
   const handleDisconnect = useCallback(async () => {
     try {
@@ -49,6 +67,7 @@ export function TonWalletConnect(props: TonWalletConnectProps) {
 
   const handleVerifyClick = useCallback(() => {
     setVerifyStep("verifying");
+    setVerifyError("");
     props.onWalletAutoVerify();
   }, [props.onWalletAutoVerify]);
 
@@ -120,8 +139,17 @@ export function TonWalletConnect(props: TonWalletConnectProps) {
             ) : null}
           </div>
           <p className="akrMuted">
-            {isVerified ? copy.verifiedHint : isVerifying ? copy.verifyingHint : copy.verifyHint}
+            {isVerified
+              ? copy.verifiedHint
+              : isVerifying
+              ? copy.verifyingHint
+              : verifyStep === "error"
+              ? verifyError
+              : copy.verifyHint}
           </p>
+          {verifyStep === "error" && verifyError && (
+            <p style={{ color: "#ff4444", fontSize: 11, margin: "4px 0" }}>{verifyError}</p>
+          )}
           <div className="akrActionRow">
             {!isVerified ? (
               <button
@@ -130,7 +158,7 @@ export function TonWalletConnect(props: TonWalletConnectProps) {
                 disabled={isVerifying}
                 onClick={handleVerifyClick}
               >
-                {isVerifying ? copy.verifying : copy.verify}
+                {isVerifying ? copy.verifying : verifyStep === "error" ? (props.lang === "tr" ? "Tekrar Dene" : "Retry") : copy.verify}
               </button>
             ) : (
               <button

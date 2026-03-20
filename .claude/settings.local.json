@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la \"/c/Users/Lenovo/Desktop/Yeni klasör/apps/miniapp-shell/src/app/\\(routes\\)/\")",
+      "Bash(ls -la \"/c/Users/Lenovo/Desktop/Yeni klasör/apps/miniapp-shell/src/app/\\(routes\\)/arena/\")",
+      "Bash(ls -la \"/c/Users/Lenovo/Desktop/Yeni klasör/apps/miniapp-shell/src/app/\\(routes\\)/forge/\")",
+      "Bash(ls -la \"/c/Users/Lenovo/Desktop/Yeni klasör/apps/miniapp-shell/src/app/\\(routes\\)/missions/\")",
+      "Bash(ls -la \"/c/Users/Lenovo/Desktop/Yeni klasör/apps/miniapp-shell/src/app/\\(routes\\)/admin/\")",
+      "Bash(npm run:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:api.github.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(node -e \"require\\(''./apps/bot/src/commands/registry.js''\\)\")",
+      "Bash(node -e \"require\\(''./apps/bot/src/messages.js''\\)\")",
+      "Bash(node -e \"require\\(''./apps/bot/src/ui/keyboards.js''\\)\")",
+      "Bash(npx tsc:*)",
+      "Bash(ls packages/ui/tsconfig*)",
+      "Bash(npx eslint:*)",
+      "Bash(npx next:*)",
+      "Bash(gh api:*)",
+      "Bash(wc -l \"/c/Users/Lenovo/Desktop/Yeni klasör/apps/miniapp-shell/src/app/\\(routes\\)/missions/page.tsx\" \"/c/Users/Lenovo/Desktop/Yeni klasör/apps/miniapp-shell/src/app/\\(routes\\)/forge/page.tsx\" \"/c/Users/Lenovo/Desktop/Yeni klasör/apps/miniapp-shell/src/app/\\(routes\\)/exchange/page.tsx\" \"/c/Users/Lenovo/Desktop/Yeni klasör/apps/miniapp-shell/src/app/\\(routes\\)/season/page.tsx\" \"/c/Users/Lenovo/Desktop/Yeni klasör/apps/miniapp-shell/src/app/\\(routes\\)/events/page.tsx\" \"/c/Users/Lenovo/Desktop/Yeni klasör/apps/miniapp-shell/src/app/\\(routes\\)/vault/page.tsx\" \"/c/Users/Lenovo/Desktop/Yeni klasör/apps/miniapp-shell/src/app/\\(routes\\)/settings/page.tsx\")",
+      "Bash(xargs wc:*)",
+      "Bash(wc -l \"/c/Users/Lenovo/Desktop/Yeni klasör/packages/scene/src\"/*)",
+      "Bash(wc -l \"/c/Users/Lenovo/Desktop/Yeni klasör/packages/contracts/src\"/*)",
+      "Bash(wc -l \"/c/Users/Lenovo/Desktop/Yeni klasör/packages/i18n/src\"/*.*)",
+      "Bash(wc -l \"/c/Users/Lenovo/Desktop/Yeni klasör/packages/ui/src\"/*)",
+      "Bash(wc -l \"/c/Users/Lenovo/Desktop/Yeni klasör/apps/miniapp-shell/src/components/shell\"/*)",
+      "Bash(wc -l \"/c/Users/Lenovo/Desktop/Yeni klasör/apps/miniapp-shell/src/store\"/*)",
+      "Bash(find \"/c/Users/Lenovo/Desktop/Yeni klasör/db/migrations\" -name \"*.sql\" -exec grep -h \"CREATE TABLE\" {})",
+      "Bash(node -e \"require\\(''''./apps/bot/src/index.js''''\\); console.log\\(''''bot OK''''\\)\")",
+      "Bash(node -e \"const v5 = require\\(''./packages/shared/src/v5''\\); console.log\\(''engines:'', Object.keys\\(v5\\).filter\\(k => typeof v5[k] === ''function''\\).length, ''functions''\\)\")",
+      "Bash(timeout 15 node -e \"require\\(''./apps/bot/src/index.js''\\); console.log\\(''bot OK''\\); process.exit\\(0\\)\")",
+      "Bash(echo \"exit: $?\")"
+    ]
+  }
+}

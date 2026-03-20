@@ -1,4 +1,4 @@
-export type TabKey = "home" | "pvp" | "tasks" | "vault";
+export type TabKey = "home" | "pvp" | "tasks" | "forge" | "exchange" | "season" | "events" | "vault" | "settings";
 export type WorkspaceKey = "player" | "admin";
 export type ExperimentVariant = "control" | "treatment";
 export type LangPrefInput = "tr" | "en" | string | null | undefined;

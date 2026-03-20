@@ -7,6 +7,11 @@ import { PlayerTabs } from "../shell/PlayerTabs";
 import { PvpPanel } from "../pvp/PvpPanel";
 import { TasksPanel } from "../tasks/TasksPanel";
 import { VaultPanel } from "../vault/VaultPanel";
+import { ForgePanel } from "../forge/ForgePanel";
+import { ExchangePanel } from "../exchange/ExchangePanel";
+import { SeasonPanel } from "../season/SeasonPanel";
+import { EventsPanel } from "../events/EventsPanel";
+import { SettingsPanel } from "../settings/SettingsPanel";
 import { PlayerShellPanel } from "./PlayerShellPanel";
 
 type PlayerWorkspaceProps = {
@@ -122,7 +127,7 @@ export function PlayerWorkspace(props: PlayerWorkspaceProps) {
     <>
       <PlayerTabs lang={props.lang} tab={props.tab} tabs={props.tabs} onChange={props.onTabChange} />
       <main className="akrPanelGrid">
-        {(props.tab === "home" || props.tab === "vault") && activePanelKey ? (
+        {(props.tab === "home" || props.tab === "vault" || props.tab === "settings") && activePanelKey ? (
           <PlayerShellPanel
             lang={props.lang}
             panelKey={activePanelKey}
@@ -233,6 +238,50 @@ export function PlayerWorkspace(props: PlayerWorkspaceProps) {
             onWalletChallengeRefChange={props.onWalletChallengeRefChange}
             onWalletSignatureChange={props.onWalletSignatureChange}
             onPayoutCurrencyChange={props.onPayoutCurrencyChange}
+          />
+        )}
+        {props.tab === "forge" && (
+          <ForgePanel
+            lang={props.lang}
+            advanced={props.advanced}
+            data={props.data || null}
+            onShellAction={runShellAction}
+          />
+        )}
+        {props.tab === "exchange" && (
+          <ExchangePanel
+            lang={props.lang}
+            advanced={props.advanced}
+            data={props.data || null}
+            onShellAction={runShellAction}
+          />
+        )}
+        {props.tab === "season" && (
+          <SeasonPanel
+            lang={props.lang}
+            advanced={props.advanced}
+            data={props.data || null}
+            onShellAction={runShellAction}
+          />
+        )}
+        {props.tab === "events" && (
+          <EventsPanel
+            lang={props.lang}
+            advanced={props.advanced}
+            data={props.data || null}
+            onShellAction={runShellAction}
+          />
+        )}
+        {props.tab === "settings" && (
+          <SettingsPanel
+            lang={props.lang}
+            advanced={props.advanced}
+            data={props.data || null}
+            onToggleReducedMotion={props.onToggleReducedMotion}
+            onToggleLargeText={props.onToggleLargeText}
+            onToggleLanguage={props.onToggleLanguage}
+            onToggleNotification={props.onToggleNotification}
+            onShellAction={runShellAction}
           />
         )}
       </main>

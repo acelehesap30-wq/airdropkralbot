@@ -244,7 +244,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
   const enableDistrictScene =
     effectiveWorkspace === "player" && !effectiveOnboardingVisible && (tab === "home" || tab === "pvp");
   const tabs = useMemo<TabKey[]>(
-    () => (Array.isArray(data?.ui_shell?.tabs) && data?.ui_shell?.tabs.length ? data.ui_shell.tabs : ["home", "pvp", "tasks", "vault"]),
+    () => (Array.isArray(data?.ui_shell?.tabs) && data?.ui_shell?.tabs.length ? data.ui_shell.tabs : ["home", "pvp", "tasks", "forge", "exchange", "season", "events", "vault", "settings"]),
     [data?.ui_shell?.tabs]
   );
   const activeAuth = useMemo<WebAppAuth>(() => {
