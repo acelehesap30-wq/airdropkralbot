@@ -4,7 +4,7 @@ import type { BootstrapV2Data, ExperimentAssignment, LaunchContext, TabKey, WebA
 import { buildLaunchContextToken, normalizeLaunchContext } from "../../../core/navigation/launchContextState.js";
 import { deriveBootstrapUiState } from "./bootstrapUi.js";
 
-const TAB_KEYS: TabKey[] = ["home", "pvp", "tasks", "vault"];
+const TAB_KEYS: TabKey[] = ["home", "pvp", "tasks", "forge", "exchange", "season", "events", "vault", "settings"];
 
 function isTabKey(value: unknown): value is TabKey {
   return TAB_KEYS.includes(value as TabKey);

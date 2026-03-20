@@ -3772,7 +3772,8 @@ async function buildTokenView(db, profile, appConfig) {
     return {
       chain: chainKey,
       pay_currency: chainConfig?.payCurrency || chainKey,
-      address: maskAddress(address),
+      address: String(address || ""),
+      address_short: maskAddress(address),
       enabled: Boolean(address)
     };
   });
@@ -6106,6 +6107,7 @@ function buildCommandHandlerMap({ pool, appConfig }) {
   map.set("events", async (ctx) => sendEvents(ctx, pool, appConfig));
   map.set("discover", async (ctx) => sendDiscover(ctx, pool, appConfig));
   map.set("shop", async (ctx) => sendShop(ctx, pool, appConfig));
+  map.set("forge", async (ctx) => sendForge(ctx, pool, appConfig));
   map.set("missions", async (ctx) => sendMissions(ctx, pool, appConfig));
   map.set("war", async (ctx) => sendWar(ctx, pool));
   map.set("streak", async (ctx) => {

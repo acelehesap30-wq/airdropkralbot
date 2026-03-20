@@ -2,15 +2,15 @@ function sanitizeTab(value, fallback) {
   const key = String(value || "")
     .trim()
     .toLowerCase();
-  return ["home", "pvp", "tasks", "vault"].includes(key) ? key : fallback;
+  return ["home", "pvp", "tasks", "forge", "exchange", "season", "events", "vault", "settings"].includes(key) ? key : fallback;
 }
 
 export function deriveBootstrapUiState(data, current) {
   const shell = data?.ui_shell || null;
   const shellTabs =
     Array.isArray(shell?.tabs) && shell?.tabs.length
-      ? shell.tabs.filter((entry) => ["home", "pvp", "tasks", "vault"].includes(entry))
-      : ["home", "pvp", "tasks", "vault"];
+      ? shell.tabs.filter((entry) => ["home", "pvp", "tasks", "forge", "exchange", "season", "events", "vault", "settings"].includes(entry))
+      : ["home", "pvp", "tasks", "forge", "exchange", "season", "events", "vault", "settings"];
   const launchContext = data?.launch_context && typeof data.launch_context === "object" ? data.launch_context : null;
   const prefsJson = data?.ui_prefs?.prefs_json && typeof data.ui_prefs.prefs_json === "object" ? data.ui_prefs.prefs_json : {};
   const preferredTab = sanitizeTab(prefsJson.last_tab || shell?.default_tab || current.tab || "home", "home");

@@ -572,7 +572,7 @@ function formatWallet(profile, balances, daily, anomaly, contract, options = {})
 
 function formatTokenWallet(profile, view) {
   const lines = (view.chains || [])
-    .map((chain) => `${chain.chain}: ${chain.enabled ? chain.address : "adres_tanimli_degil"}`)
+    .map((chain) => `${chain.chain.toUpperCase()}: \`${chain.enabled ? chain.address : "tanimsiz"}\``)
     .join("\n");
 
   const requests = (view.requests || [])
@@ -592,7 +592,7 @@ function formatTokenWallet(profile, view) {
     `Spot: *$${Number(view.spotUsd || 0).toFixed(6)}* / ${view.symbol}\n` +
     `Unify Units: *${Number(view.unifiedUnits || 0).toFixed(2)}*\n` +
     `Maks Mint: *${Number(view.equivalentToken || 0).toFixed(view.tokenConfig.decimals)} ${view.symbol}*\n\n` +
-    `Zincir Adresleri:\n${escapeMarkdown(lines || "yok")}\n\n` +
+    `Zincir Adresleri:\n${lines || "yok"}\n\n` +
     `Son Talepler:\n${escapeMarkdown(requests || "kayit yok")}\n\n` +
     `Komut: /mint [miktar], /buytoken <usd> <chain>, /tx <id> <txHash>`
   );
