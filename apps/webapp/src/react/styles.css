@@ -4931,6 +4931,32 @@ hr, .akrDivider {
   opacity: 0.6;
 }
 
+/* Alert preferences panel */
+.akrAlertPrefsPanel {
+  margin-top: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.akrAlertPrefsList {
+  display: grid;
+  gap: 6px;
+}
+.akrAlertPrefRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  transition: background 0.15s ease;
+  border-radius: 4px;
+}
+.akrAlertPrefRow:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+.akrAlertPrefLabel {
+  font-size: 0.875rem;
+}
+
 /* Admin panel header */
 .akrAdminHeader {
   border-top: 2px solid #00ffaa;

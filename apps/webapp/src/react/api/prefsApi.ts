@@ -17,3 +17,30 @@ export async function postUiPreferencesV2(auth: WebAppAuth, patch: UiPreferences
   });
   return parseUiPreferencesResponse(response) as UiPreferencesResponse;
 }
+
+export interface NotificationPreferencesResponse {
+  success: boolean;
+  session?: string;
+  data?: {
+    api_version: string;
+    alert_families: string[];
+    notification_preferences: Record<string, { enabled: boolean; muted_until: string | null }>;
+  };
+}
+
+export async function fetchNotificationPreferencesV2(auth: WebAppAuth): Promise<NotificationPreferencesResponse> {
+  const query = withAuthQuery(auth);
+  return getJson<NotificationPreferencesResponse>(`/webapp/api/v2/notification/preferences?${query}`);
+}
+
+export async function postNotificationPreferencesV2(
+  auth: WebAppAuth,
+  updates: Record<string, boolean | { enabled: boolean }>
+): Promise<NotificationPreferencesResponse> {
+  return postJson<NotificationPreferencesResponse>("/webapp/api/v2/notification/preferences", {
+    uid: auth.uid,
+    ts: auth.ts,
+    sig: auth.sig,
+    updates
+  });
+}

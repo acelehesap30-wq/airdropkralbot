@@ -34,6 +34,7 @@ type PlayerShellPanelProps = {
   onToggleReducedMotion: (next: boolean) => void;
   onToggleLargeText: (next: boolean) => void;
   onToggleLanguage: (next: Lang) => void;
+  onToggleNotification: (family: string, enabled: boolean) => void;
 };
 
 function resolveRootPanelKey(panelKey: PlayerShellPanelKey): string {
@@ -222,6 +223,7 @@ export function PlayerShellPanel(props: PlayerShellPanelProps) {
       </div>
 
       {props.panelKey === "settings" ? (
+        <>
         <div className="akrSplit">
           <section className="akrMiniPanel" data-akr-focus-key="locale_override">
             <h4>{t(props.lang, "shell_panel_settings_language")}</h4>
@@ -258,6 +260,52 @@ export function PlayerShellPanel(props: PlayerShellPanelProps) {
             </div>
           </section>
         </div>
+        <section className="akrMiniPanel akrAlertPrefsPanel" data-akr-focus-key="alert_preferences">
+          <h4>{props.lang === "tr" ? "Bildirim Tercihleri" : "Notification Preferences"}</h4>
+          <p className="akrMuted akrMiniPanelBody">
+            {props.lang === "tr"
+              ? "Hangi bildirimleri almak istediginizi secin. Kapatilan bildirimler sessize alinir."
+              : "Choose which notifications you want to receive. Disabled notifications are muted."}
+          </p>
+          <div className="akrAlertPrefsList">
+            {[
+              { key: "payout_status", tr: "Odeme Durumu", en: "Payout Status" },
+              { key: "quest_complete", tr: "Gorev Tamamlama", en: "Quest Complete" },
+              { key: "pvp_result", tr: "PvP Sonuclari", en: "PvP Results" },
+              { key: "season_milestone", tr: "Sezon Hedefleri", en: "Season Milestones" },
+              { key: "chest_rare_drop", tr: "Nadir Kasa Droplari", en: "Rare Chest Drops" },
+              { key: "daily_reminder", tr: "Gunluk Hatirlatma", en: "Daily Reminder" },
+              { key: "referral_bonus", tr: "Davet Bonusu", en: "Referral Bonus" },
+              { key: "token_price_alert", tr: "Token Fiyat Uyarisi", en: "Token Price Alert" }
+            ].map((alert) => {
+              const notifPrefs = (prefsJson as Record<string, unknown>)?.notification_preferences as Record<string, { enabled?: boolean }> | undefined;
+              const isEnabled = notifPrefs?.[alert.key]?.enabled !== false;
+              return (
+                <label
+                  key={alert.key}
+                  className="akrAlertPrefRow"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => props.onToggleNotification(alert.key, !isEnabled)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") props.onToggleNotification(alert.key, !isEnabled); }}
+                >
+                  <span className="akrAlertPrefLabel">{props.lang === "tr" ? alert.tr : alert.en}</span>
+                  <span className={`akrChip ${isEnabled ? "akrChipSuccess" : ""}`}>
+                    {isEnabled
+                      ? (props.lang === "tr" ? "Acik" : "On")
+                      : (props.lang === "tr" ? "Kapali" : "Off")}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+          <p className="akrMuted akrSmallText">
+            {props.lang === "tr"
+              ? "Sistem ve admin bildirimleri her zaman acik kalir."
+              : "System and admin notifications are always enabled."}
+          </p>
+        </section>
+        </>
       ) : null}
 
       {props.panelKey === "profile" ? (

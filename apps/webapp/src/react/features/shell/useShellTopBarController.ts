@@ -99,12 +99,46 @@ export function useShellTopBarController(options: ShellTopBarControllerOptions) 
     [options]
   );
 
+  const onToggleNotification = useCallback(
+    (family: string, enabled: boolean) => {
+      const currentPrefsJson =
+        options.uiPrefs && typeof (options.uiPrefs as any).prefs_json === "object"
+          ? (options.uiPrefs as any).prefs_json
+          : {};
+      const currentNotif =
+        currentPrefsJson.notification_preferences && typeof currentPrefsJson.notification_preferences === "object"
+          ? currentPrefsJson.notification_preferences
+          : {};
+      const nextNotif = {
+        ...currentNotif,
+        [family]: { enabled, muted_until: null }
+      };
+      options.patchData({
+        ui_prefs: {
+          ...(options.uiPrefs || {}),
+          prefs_json: {
+            ...currentPrefsJson,
+            notification_preferences: nextNotif
+          }
+        } as any
+      });
+      void options.syncPrefs({
+        prefs_json: {
+          ...currentPrefsJson,
+          notification_preferences: nextNotif
+        }
+      });
+    },
+    [options]
+  );
+
   return {
     onRefresh,
     onToggleAdvanced,
     onToggleReducedMotion,
     onToggleLargeText,
     onToggleLanguage,
-    onToggleWorkspace
+    onToggleWorkspace,
+    onToggleNotification
   };
 }

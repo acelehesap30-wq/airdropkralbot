@@ -61,6 +61,7 @@ type PlayerWorkspaceProps = {
   onToggleReducedMotion: (next: boolean) => void;
   onToggleLargeText: (next: boolean) => void;
   onToggleLanguage: (next: Lang) => void;
+  onToggleNotification: (family: string, enabled: boolean) => void;
   onRefreshHome: () => void;
   onPvpStart: () => void;
   onPvpRefreshState: () => void;
@@ -137,6 +138,7 @@ export function PlayerWorkspace(props: PlayerWorkspaceProps) {
             onToggleReducedMotion={props.onToggleReducedMotion}
             onToggleLargeText={props.onToggleLargeText}
             onToggleLanguage={props.onToggleLanguage}
+            onToggleNotification={props.onToggleNotification}
           />
         ) : null}
         {props.tab === "home" && (

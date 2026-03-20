@@ -547,7 +547,8 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
     onToggleReducedMotion,
     onToggleLargeText,
     onToggleLanguage,
-    onToggleWorkspace
+    onToggleWorkspace,
+    onToggleNotification
   } = useShellTopBarController({
     workspace: effectiveWorkspace,
     uiPrefs: (data?.ui_prefs as Record<string, unknown> | undefined) || null,
@@ -1039,6 +1040,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
             onToggleReducedMotion={onToggleReducedMotion}
             onToggleLargeText={onToggleLargeText}
             onToggleLanguage={onToggleLanguage}
+            onToggleNotification={onToggleNotification}
             onRefreshHome={() => void refreshHome()}
             onPvpStart={() => void handlePvpStart()}
             onPvpRefreshState={() => void handlePvpRefreshState()}

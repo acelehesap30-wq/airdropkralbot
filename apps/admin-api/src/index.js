@@ -51,6 +51,7 @@ const { registerWebappV2TokenRoutes } = require("./routes/webapp/v2/tokenRoutes"
 const { registerWebappV2AdminRuntimeRoutes } = require("./routes/webapp/v2/adminRuntimeRoutes");
 const { registerWebappV2AdminLiveOpsRoutes } = require("./routes/webapp/v2/adminLiveOpsRoutes");
 const { registerWebappV2UiPrefsRoutes } = require("./routes/webapp/v2/uiPrefsRoutes");
+const { registerWebappV2NotificationPrefsRoutes } = require("./routes/webapp/v2/notificationPrefsRoutes");
 const { registerWebappV2GrowthRoutes } = require("./routes/webapp/v2/growthRoutes");
 const { registerWebappV2MonetizationRoutes } = require("./routes/webapp/v2/monetizationRoutes");
 const { registerWebappV2AdminTokenDynamicPolicyRoutes } = require("./routes/webapp/v2/adminTokenDynamicPolicyRoutes");
@@ -11631,6 +11632,14 @@ registerWebappV2TokenRoutes(fastify, {
 });
 
 registerWebappV2UiPrefsRoutes(fastify, {
+  pool,
+  verifyWebAppAuth,
+  issueWebAppSession,
+  getProfileByTelegram,
+  webappStore
+});
+
+registerWebappV2NotificationPrefsRoutes(fastify, {
   pool,
   verifyWebAppAuth,
   issueWebAppSession,

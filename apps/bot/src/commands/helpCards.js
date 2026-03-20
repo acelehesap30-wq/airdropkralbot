@@ -110,7 +110,16 @@ const HELP_CATEGORY_BY_COMMAND = Object.freeze({
   pay: "admin",
   reject_payout: "admin",
   approve_token: "admin",
-  reject_token: "admin"
+  reject_token: "admin",
+  claim: "economy",
+  history: "economy",
+  rank: "progression",
+  inventory: "economy",
+  invite: "progression",
+  friends: "progression",
+  share: "progression",
+  news: "progression",
+  quests: "progression"
 });
 
 const HELP_RELATIONS = Object.freeze({
@@ -343,7 +352,16 @@ const HELP_SYNTAX_OVERRIDES = Object.freeze({
   ]),
   approve_token: Object.freeze(["/approve_token <requestId> [note]", "/approve_token 77 ok", "/approve_token 77"]),
   reject_token: Object.freeze(["/reject_token <requestId> <reason>", "/reject_token 77 bad_tx", "/reject_token 77 risk_signal"]),
-  chests: Object.freeze(["/chests", "kasalar", "loot history"])
+  chests: Object.freeze(["/chests", "kasalar", "loot history"]),
+  claim: Object.freeze(["/claim", "odul al", "claim rewards"]),
+  history: Object.freeze(["/history", "gecmis", "islem gecmisi"]),
+  rank: Object.freeze(["/rank", "siralama", "my ranking"]),
+  inventory: Object.freeze(["/inventory", "envanter", "items"]),
+  invite: Object.freeze(["/invite", "davet", "referral link"]),
+  friends: Object.freeze(["/friends", "arkadaslar", "referral tree"]),
+  share: Object.freeze(["/share", "paylas", "share profile"]),
+  news: Object.freeze(["/news", "haberler", "announcements"]),
+  quests: Object.freeze(["/quests", "gorevler", "quest chains"])
 });
 
 const HELP_FAILURE_HINT_OVERRIDES = Object.freeze({

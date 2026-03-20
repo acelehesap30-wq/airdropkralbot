@@ -65,7 +65,7 @@ export {
   postAdminRuntimeFlagsV2
 } from "./api/adminApi";
 export { fetchAdminDynamicAutoPolicyV2, postAdminDynamicAutoPolicyV2 } from "./api/adminPolicyApi";
-export { fetchUiPreferencesV2, postUiPreferencesV2 } from "./api/prefsApi";
+export { fetchUiPreferencesV2, postUiPreferencesV2, fetchNotificationPreferencesV2, postNotificationPreferencesV2 } from "./api/prefsApi";
 export { postUiEventsBatch } from "./api/telemetryApi";
 
 import type { WebAppAuth } from "./types";
