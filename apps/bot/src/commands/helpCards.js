@@ -119,7 +119,8 @@ const HELP_CATEGORY_BY_COMMAND = Object.freeze({
   friends: "progression",
   share: "progression",
   news: "progression",
-  quests: "progression"
+  quests: "progression",
+  forge: "economy"
 });
 
 const HELP_RELATIONS = Object.freeze({
@@ -147,6 +148,7 @@ const HELP_RELATIONS = Object.freeze({
   leaderboard: Object.freeze(["season", "arena_rank", "profile"]),
   events: Object.freeze(["season", "war", "discover"]),
   discover: Object.freeze(["events", "missions", "play"]),
+  forge: Object.freeze(["shop", "wallet", "tasks", "missions"]),
   shop: Object.freeze(["wallet", "missions", "tasks"]),
   missions: Object.freeze(["daily", "tasks", "reveal"]),
   war: Object.freeze(["raid_contract", "nexus", "season"]),
