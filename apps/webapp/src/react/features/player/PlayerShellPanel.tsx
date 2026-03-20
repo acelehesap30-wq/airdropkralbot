@@ -276,7 +276,13 @@ export function PlayerShellPanel(props: PlayerShellPanelProps) {
               { key: "chest_rare_drop", tr: "Nadir Kasa Droplari", en: "Rare Chest Drops" },
               { key: "daily_reminder", tr: "Gunluk Hatirlatma", en: "Daily Reminder" },
               { key: "referral_bonus", tr: "Davet Bonusu", en: "Referral Bonus" },
-              { key: "token_price_alert", tr: "Token Fiyat Uyarisi", en: "Token Price Alert" }
+              { key: "token_price_alert", tr: "Token Fiyat Uyarisi", en: "Token Price Alert" },
+              { key: "chest_ready", tr: "Kasa Hazir", en: "Chest Ready" },
+              { key: "mission_refresh", tr: "Gorev Yenileme", en: "Mission Refresh" },
+              { key: "event_countdown", tr: "Etkinlik Geri Sayimi", en: "Event Countdown" },
+              { key: "kingdom_war", tr: "Krallık Savasi", en: "Kingdom War" },
+              { key: "streak_risk", tr: "Seri Riski", en: "Streak Risk" },
+              { key: "comeback_offer", tr: "Geri Donus Teklifi", en: "Comeback Offer" }
             ].map((alert) => {
               const notifPrefs = (prefsJson as Record<string, unknown>)?.notification_preferences as Record<string, { enabled?: boolean }> | undefined;
               const isEnabled = notifPrefs?.[alert.key]?.enabled !== false;

@@ -1,6 +1,7 @@
 "use strict";
 
 const ALERT_FAMILIES = Object.freeze([
+  // operational families
   "payout_status",
   "quest_complete",
   "pvp_result",
@@ -10,7 +11,14 @@ const ALERT_FAMILIES = Object.freeze([
   "system_maintenance",
   "daily_reminder",
   "referral_bonus",
-  "token_price_alert"
+  "token_price_alert",
+  // blueprint canonical families
+  "chest_ready",
+  "mission_refresh",
+  "event_countdown",
+  "kingdom_war",
+  "streak_risk",
+  "comeback_offer"
 ]);
 
 const DEFAULT_FREQUENCY_CAP = Object.freeze({
@@ -23,7 +31,14 @@ const DEFAULT_FREQUENCY_CAP = Object.freeze({
   system_maintenance: { max_per_hour: 5, cooldown_sec: 600 },
   daily_reminder: { max_per_hour: 2, cooldown_sec: 1800 },
   referral_bonus: { max_per_hour: 10, cooldown_sec: 120 },
-  token_price_alert: { max_per_hour: 6, cooldown_sec: 300 }
+  token_price_alert: { max_per_hour: 6, cooldown_sec: 300 },
+  // blueprint canonical families
+  chest_ready: { max_per_hour: 10, cooldown_sec: 120 },
+  mission_refresh: { max_per_hour: 8, cooldown_sec: 300 },
+  event_countdown: { max_per_hour: 4, cooldown_sec: 600 },
+  kingdom_war: { max_per_hour: 12, cooldown_sec: 60 },
+  streak_risk: { max_per_hour: 3, cooldown_sec: 1800 },
+  comeback_offer: { max_per_hour: 2, cooldown_sec: 3600 }
 });
 
 function normalizeAlertFamily(value) {
