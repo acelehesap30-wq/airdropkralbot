@@ -2661,21 +2661,29 @@ body {
 
 .akrTabs {
   margin-top: 14px;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 4px;
+  flex-wrap: wrap;
 }
 
 .akrTab {
   border: 1px solid rgba(126, 194, 238, 0.36);
   border-radius: 14px;
-  padding: 12px;
+  padding: 10px 14px;
   background: rgba(7, 22, 46, 0.65);
   color: #d8edff;
   font-family: "IBM Plex Mono", monospace;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   letter-spacing: 0.04em;
   cursor: pointer;
+  white-space: nowrap;
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: center;
 }
 
 .akrTab.isActive {
@@ -2686,9 +2694,10 @@ body {
 
 .akrPanelGrid {
   margin-top: 12px;
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 12px;
+  width: 100%;
 }
 
 .akrCard {
@@ -4129,7 +4138,12 @@ body {
   }
 
   .akrTabs {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .akrTab {
+    padding: 8px 10px;
+    font-size: 0.68rem;
   }
 
   .akrGameHero,
@@ -4540,13 +4554,17 @@ body {
   border-radius: 10px;
   border: 1px solid transparent;
   background: rgba(8, 22, 43, 0.4);
-  padding: 10px 16px;
+  padding: 8px 12px;
   color: var(--akr-muted);
   font-weight: 600;
-  font-size: 0.82rem;
+  font-size: 0.72rem;
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
+  white-space: nowrap;
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: center;
 }
 
 .akrTab::after {
@@ -4973,8 +4991,11 @@ hr, .akrDivider {
 .akrPanelSection {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   padding: 8px 0;
+  grid-column: 1 / -1;
+  width: 100%;
+  max-width: 100%;
 }
 
 .akrCardGlow {
