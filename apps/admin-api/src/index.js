@@ -3970,6 +3970,43 @@ function buildDailyView(runtimeConfig, profile, dailyRaw) {
   };
 }
 
+function buildNextBestMoves(ctx) {
+  const moves = [];
+  const isTr = ctx.language === "tr";
+  const remaining = Math.max(0, ctx.dailyTasksTotal - ctx.dailyTasksCompleted);
+  if (remaining > 0) {
+    moves.push({
+      type: "daily_tasks",
+      label_tr: `${remaining} kalan gunluk gorev`,
+      label_en: `${remaining} remaining daily tasks`,
+      detail_tr: `+${remaining * 40}-${remaining * 80} SC kazanabilirsin`,
+      detail_en: `+${remaining * 40}-${remaining * 80} SC potential`,
+      route: "missions"
+    });
+  }
+  if (ctx.missionReady > 0) {
+    moves.push({
+      type: "claim_missions",
+      label_tr: `${ctx.missionReady} gorev odulu hazir`,
+      label_en: `${ctx.missionReady} mission rewards ready`,
+      detail_tr: "Odullerini topla",
+      detail_en: "Collect your rewards",
+      route: "missions"
+    });
+  }
+  if (ctx.arenaReady && ctx.streak > 0) {
+    moves.push({
+      type: "pvp_streak",
+      label_tr: `PvP seri aktif — ${ctx.streak} zafer`,
+      label_en: `PvP streak active — ${ctx.streak} wins`,
+      detail_tr: `x${(1 + ctx.streak * 0.05).toFixed(2)} bonus carpani`,
+      detail_en: `x${(1 + ctx.streak * 0.05).toFixed(2)} bonus multiplier`,
+      route: "arena"
+    });
+  }
+  return moves.slice(0, 3);
+}
+
 async function readOffersAttemptsEvents(db, userId) {
   const offersRes = await db.query(
     `SELECT id, task_type, difficulty, expires_at
@@ -6692,6 +6729,35 @@ fastify.get("/webapp/api/bootstrap", async (request, reply) => {
             ready: arenaReady,
             recent_runs: arenaRuns,
             leaderboard: arenaLeaders
+          },
+          progression: {
+            streak_days: Number(profile.streak || 0),
+            streak_multiplier: 1 + Number(profile.streak || 0) * 0.05,
+            daily_tasks_completed: Number(dailyRow.tasks_done || 0),
+            daily_tasks_total: Number(runtimeConfig?.daily?.task_cap || 5),
+            season_id: season.seasonId,
+            season_day: Math.max(1, 30 - Number(season.daysLeft || 0)),
+            season_days_left: Number(season.daysLeft || 0),
+            season_points: Number(seasonStat?.season_points || 0),
+            season_rank: seasonStat?.season_rank ? Number(seasonStat.season_rank) : null,
+            tier_progress_pct: Math.min(100, Math.max(0, Number(profile.tier_progress || 0))),
+            next_tier: Number(profile.kingdom_tier || 0) + 1,
+            active_anomaly: anomaly ? {
+              title_tr: String(anomaly.title_tr || anomaly.label || "Aktif Anomali"),
+              title_en: String(anomaly.title_en || anomaly.label || "Active Anomaly"),
+              description_tr: String(anomaly.description_tr || anomaly.effect || ""),
+              description_en: String(anomaly.description_en || anomaly.effect || ""),
+              expires_at: anomaly.expires_at || null
+            } : null,
+            next_best_moves: buildNextBestMoves({
+              dailyTasksCompleted: Number(dailyRow.tasks_done || 0),
+              dailyTasksTotal: Number(runtimeConfig?.daily?.task_cap || 5),
+              missionReady,
+              missionOpen,
+              arenaReady,
+              streak: Number(profile.streak || 0),
+              language
+            })
           }
         }
       };
@@ -6868,6 +6934,23 @@ fastify.get("/webapp/api/v2/bootstrap", async (request, reply) => {
         ...(payload.data.ux || {}),
         version: String(payload.data?.ux?.version || "v5")
       };
+      payload.data.progression = payload.data.progression && typeof payload.data.progression === "object"
+        ? payload.data.progression
+        : {
+            streak_days: 0,
+            streak_multiplier: 1.0,
+            daily_tasks_completed: 0,
+            daily_tasks_total: 5,
+            season_id: payload.data?.season?.season_id || 1,
+            season_day: 1,
+            season_days_left: payload.data?.season?.days_left || 30,
+            season_points: payload.data?.season?.points || 0,
+            season_rank: null,
+            tier_progress_pct: 0,
+            next_tier: 1,
+            active_anomaly: null,
+            next_best_moves: []
+          };
       return payload;
     }
   });
