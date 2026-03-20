@@ -9,22 +9,54 @@ import { z } from 'zod';
 // ---------------------------------------------------------------------------
 
 export const EVENT_FAMILIES = [
+  // Chat surface
   'chat.command.executed',
   'chat.intent.resolved',
+  // Miniapp surface
   'miniapp.route.viewed',
   'miniapp.action.tapped',
   'miniapp.scene.loaded',
+  // Economy
   'economy.currency.earned',
   'economy.currency.spent',
   'economy.payout.requested',
+  'economy.payout.completed',
+  // Progression
   'progression.mission.accepted',
   'progression.mission.completed',
   'progression.streak.maintained',
   'progression.streak.broken',
+  'progression.quest.step_completed',
+  'progression.quest.chain_completed',
+  // PvP
   'pvp.match.started',
   'pvp.match.completed',
+  'pvp.elo.updated',
+  // Social
   'social.invite.sent',
   'social.friend.added',
+  // Chest / Loot
+  'chest.reveal.opened',
+  'chest.reveal.rare_drop',
+  'chest.pity.triggered',
+  // NFT
+  'nft.mint.requested',
+  'nft.mint.completed',
+  // Performance telemetry
+  'perf.api.response_time',
+  'perf.scene.frame_rate',
+  'perf.scene.load_time',
+  'perf.ws.latency',
+  'perf.db.query_time',
+  'perf.boot.cold_start',
+  'perf.boot.warm_start',
+  // Admin
+  'admin.action.executed',
+  'admin.action.confirmed',
+  // Wallet
+  'wallet.challenge.issued',
+  'wallet.proof.verified',
+  'wallet.session.linked',
 ] as const;
 
 export type EventFamily = (typeof EVENT_FAMILIES)[number];

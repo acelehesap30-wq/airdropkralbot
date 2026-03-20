@@ -128,3 +128,25 @@ export {
   type AnalyticsEvent,
   type EventFamily,
 } from './analytics';
+
+// Blueprint: NFT smart contract schemas — 6 collection types
+export {
+  NFT_COLLECTION_TYPES,
+  NftAttributeSchema,
+  NftMetadataBaseSchema,
+  NftMetadataSchema,
+  ArenaBadgeSchema,
+  SeasonTrophySchema,
+  QuestRelicSchema,
+  PvpChampionSchema,
+  ChestLegendarySchema,
+  GenesisPassSchema,
+  MintRequestSchema,
+  MintResultSchema,
+  type NftCollectionType,
+  type NftAttribute,
+  type NftMetadataBase,
+  type NftMetadata,
+  type MintRequest,
+  type MintResult,
+} from './nft';
