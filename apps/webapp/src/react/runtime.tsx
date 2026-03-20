@@ -310,14 +310,36 @@ export async function mountReactWebAppV1(): Promise<void> {
       }
     }
   };
+  // Suppress TON Connect SDK errors when outside Telegram or bridge unavailable
+  window.addEventListener("unhandledrejection", (e) => {
+    const msg = String(e?.reason?.message || e?.reason || "");
+    if (msg.includes("TON_CONNECT") || msg.includes("Aborted after attempts")) {
+      e.preventDefault();
+      console.warn("[ton-connect] SDK bridge unavailable, suppressed:", msg);
+    }
+  });
+
+  const isTelegramWebApp = Boolean(
+    window.Telegram?.WebApp?.initData ||
+    window.Telegram?.WebApp?.platform
+  );
+
   const root = createRoot(ensureRootNode());
+  const appContent = (
+    <Provider store={appStore}>
+      <ReactWebAppV1 auth={auth} bootstrap={payload} />
+    </Provider>
+  );
+
   root.render(
     <FatalBoundary>
-      <TonConnectUIProvider manifestUrl={TON_CONNECT_MANIFEST_URL}>
-        <Provider store={appStore}>
-          <ReactWebAppV1 auth={auth} bootstrap={payload} />
-        </Provider>
-      </TonConnectUIProvider>
+      {isTelegramWebApp ? (
+        <TonConnectUIProvider manifestUrl={TON_CONNECT_MANIFEST_URL}>
+          {appContent}
+        </TonConnectUIProvider>
+      ) : (
+        appContent
+      )}
     </FatalBoundary>
   );
 }
