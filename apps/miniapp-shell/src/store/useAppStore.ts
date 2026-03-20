@@ -1,15 +1,31 @@
 /**
  * Blueprint: Global app state via Zustand
- * Holds bootstrap data, balances, wallet state, locale
+ * Holds bootstrap data, balances, wallet state, locale, progression
  */
 import { create } from 'zustand';
-import type { BootstrapResponse, CurrencyBalance, BootstrapSession } from '@airdropkralbot/contracts';
+import type { BootstrapResponse, CurrencyBalance, BootstrapSession, ProgressionSnapshot } from '@airdropkralbot/contracts';
 
 interface WalletState {
   linked: boolean;
   chain: string | null;
   address: string | null;
 }
+
+const initialProgression: ProgressionSnapshot = {
+  streak_days: 0,
+  streak_multiplier: 1.0,
+  daily_tasks_completed: 0,
+  daily_tasks_total: 5,
+  season_id: 1,
+  season_day: 1,
+  season_days_left: 30,
+  season_points: 0,
+  season_rank: null,
+  tier_progress_pct: 0,
+  next_tier: 1,
+  active_anomaly: null,
+  next_best_moves: [],
+};
 
 interface AppState {
   // Bootstrap
@@ -33,6 +49,9 @@ interface AppState {
   // Wallet — Blueprint: TON primary
   wallet: WalletState;
 
+  // Progression — Blueprint: streak, season, tasks, tier
+  progression: ProgressionSnapshot;
+
   // Monetization
   passActive: boolean;
 
@@ -46,6 +65,7 @@ interface AppState {
   setLocale: (locale: 'tr' | 'en') => void;
   setBalances: (balances: Partial<CurrencyBalance>) => void;
   setWallet: (wallet: Partial<WalletState>) => void;
+  setProgression: (progression: Partial<ProgressionSnapshot>) => void;
   reset: () => void;
 }
 
@@ -75,6 +95,7 @@ export const useAppStore = create<AppState>((set) => ({
   bootstrapData: null,
   balances: { ...initialBalances },
   wallet: { ...initialWallet },
+  progression: { ...initialProgression },
   passActive: false,
   runtimeFlags: {},
 
@@ -98,6 +119,7 @@ export const useAppStore = create<AppState>((set) => ({
             address: data.wallet_session.address,
           }
         : { ...initialWallet },
+      progression: data.progression ?? { ...initialProgression },
       passActive: data.monetization?.pass_active ?? false,
       runtimeFlags: data.runtime_flags_effective ?? {},
     }),
@@ -114,6 +136,11 @@ export const useAppStore = create<AppState>((set) => ({
       wallet: { ...state.wallet, ...partial },
     })),
 
+  setProgression: (partial) =>
+    set((state) => ({
+      progression: { ...state.progression, ...partial },
+    })),
+
   reset: () =>
     set({
       bootstrapped: false,
@@ -127,6 +154,7 @@ export const useAppStore = create<AppState>((set) => ({
       bootstrapData: null,
       balances: { ...initialBalances },
       wallet: { ...initialWallet },
+      progression: { ...initialProgression },
       passActive: false,
       runtimeFlags: {},
     }),

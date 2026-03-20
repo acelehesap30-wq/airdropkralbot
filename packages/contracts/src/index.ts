@@ -32,6 +32,38 @@ export const BootstrapAdminSchema = z.object({
 export type BootstrapSession = z.infer<typeof BootstrapSessionSchema>;
 export type BootstrapAdmin = z.infer<typeof BootstrapAdminSchema>;
 
+// Blueprint: Player progression snapshot (included in bootstrap)
+export const ProgressionSnapshotSchema = z.object({
+  streak_days: z.number(),
+  streak_multiplier: z.number(),
+  daily_tasks_completed: z.number(),
+  daily_tasks_total: z.number(),
+  season_id: z.number(),
+  season_day: z.number(),
+  season_days_left: z.number(),
+  season_points: z.number(),
+  season_rank: z.number().nullable(),
+  tier_progress_pct: z.number(),
+  next_tier: z.number(),
+  active_anomaly: z.object({
+    title_tr: z.string(),
+    title_en: z.string(),
+    description_tr: z.string(),
+    description_en: z.string(),
+    expires_at: z.string().nullable(),
+  }).nullable().optional(),
+  next_best_moves: z.array(z.object({
+    type: z.string(),
+    label_tr: z.string(),
+    label_en: z.string(),
+    detail_tr: z.string(),
+    detail_en: z.string(),
+    route: z.string(),
+  })).optional(),
+});
+
+export type ProgressionSnapshot = z.infer<typeof ProgressionSnapshotSchema>;
+
 // Blueprint: v2 bootstrap response
 export const BootstrapResponseSchema = z.object({
   api_version: z.string(),
@@ -70,6 +102,7 @@ export const BootstrapResponseSchema = z.object({
     pass_active: z.boolean(),
     pass_expires_at: z.string().nullable(),
   }).optional(),
+  progression: ProgressionSnapshotSchema.optional(),
   session: BootstrapSessionSchema.optional(),
   admin: BootstrapAdminSchema.optional(),
 });
