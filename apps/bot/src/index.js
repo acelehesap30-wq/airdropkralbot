@@ -81,7 +81,8 @@ const {
   buildAdminWorkspaceKeyboard,
   buildAdminPayoutActionKeyboard,
   buildAdminTokenActionKeyboard,
-  mergeInlineKeyboards
+  mergeInlineKeyboards,
+  uiText
 } = require("./ui/keyboards");
 const {
   buildLaunchSurfaceEntries,
@@ -2795,6 +2796,39 @@ async function sendSeason(ctx, pool, appConfig) {
   );
 }
 
+async function sendForge(ctx, pool, appConfig) {
+  const payload = await withTransaction(pool, async (db) => {
+    const profile = await ensureProfileTx(db, ctx);
+    const runtimeConfig = await configService.getEconomyConfig(db);
+    const season = seasonStore.getSeasonInfo(runtimeConfig);
+    const anomaly = nexusEventEngine.publicAnomalyView(
+      nexusEventEngine.resolveDailyAnomaly(runtimeConfig, { seasonId: season.seasonId })
+    );
+    const contract = resolveLiveContract(runtimeConfig, season, anomaly);
+    const balances = await tokenStore.getBalances(db, profile.user_id);
+    return { profile, season, anomaly, contract, balances };
+  });
+  const lang = resolvePreferredLanguage(payload.profile, ctx, "tr");
+  const b = payload.balances || {};
+  const forgeText = lang === "en"
+    ? `*Forge Workshop*\n\n` +
+      `Your resources:\n` +
+      `💰 SC: *${Math.floor(Number(b.sc || 0))}* | 💎 HC: *${Math.floor(Number(b.hc || 0))}*\n` +
+      `🔮 RC: *${Math.floor(Number(b.rc || 0))}* | 🪙 NXT: *${Number(b.nxt || 0).toFixed(2)}*\n\n` +
+      `Active Contract: *${escapeMarkdownText(payload.contract.title || "-")}*\n` +
+      `Anomaly: *${escapeMarkdownText(payload.anomaly.title || "-")}*\n\n` +
+      `_Use the Forge to combine resources, craft items and activate boosts._`
+    : `*Forge Atölyesi*\n\n` +
+      `Kaynakların:\n` +
+      `💰 SC: *${Math.floor(Number(b.sc || 0))}* | 💎 HC: *${Math.floor(Number(b.hc || 0))}*\n` +
+      `🔮 RC: *${Math.floor(Number(b.rc || 0))}* | 🪙 NXT: *${Number(b.nxt || 0).toFixed(2)}*\n\n` +
+      `Aktif Kontrat: *${escapeMarkdownText(payload.contract.title || "-")}*\n` +
+      `Anomali: *${escapeMarkdownText(payload.anomaly.title || "-")}*\n\n` +
+      `_Kaynakları birleştir, öğe üret ve boost aktive et._`;
+
+  await ctx.replyWithMarkdown(forgeText, buildGuideKeyboard(lang));
+}
+
 async function sendEvents(ctx, pool, appConfig) {
   const payload = await withTransaction(pool, async (db) => {
     const profile = await ensureProfileTx(db, ctx);
@@ -5147,7 +5181,10 @@ function buildSimpleBotActionHandlers({ pool, appConfig }) {
     admin_panel_refresh: async (ctx) => sendAdminPanel(ctx, pool, appConfig),
     admin_open_payouts: async (ctx) => sendAdminPayoutQueue(ctx, pool, appConfig),
     admin_open_queue: async (ctx) => sendAdminQueue(ctx, pool, appConfig),
-    admin_open_tokens: async (ctx) => sendAdminTokenQueue(ctx, pool, appConfig)
+    admin_open_tokens: async (ctx) => sendAdminTokenQueue(ctx, pool, appConfig),
+    forge: async (ctx) => sendForge(ctx, pool, appConfig),
+    events: async (ctx) => sendEvents(ctx, pool, appConfig),
+    settings: async (ctx) => sendSettings(ctx, pool, appConfig)
   };
 }
 

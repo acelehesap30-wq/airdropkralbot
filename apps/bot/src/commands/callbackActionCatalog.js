@@ -36,7 +36,10 @@ const SIMPLE_BOT_ACTION_CATALOG = Object.freeze([
   Object.freeze({ handlerKey: "admin_open_tokens", callbackAction: "ADMIN_OPEN_TOKENS" }),
   Object.freeze({ handlerKey: "daily", callbackAction: "DAILY_CLAIM", webAppAction: "daily_claim" }),
   Object.freeze({ handlerKey: "pvp", callbackAction: "OPEN_PVP", webAppAction: "open_pvp" }),
-  Object.freeze({ handlerKey: "streak", callbackAction: "OPEN_STREAK", webAppAction: "open_streak" })
+  Object.freeze({ handlerKey: "streak", callbackAction: "OPEN_STREAK", webAppAction: "open_streak" }),
+  Object.freeze({ handlerKey: "forge", callbackAction: "OPEN_FORGE", webAppAction: "open_forge" }),
+  Object.freeze({ handlerKey: "events", callbackAction: "OPEN_EVENTS", webAppAction: "open_events" }),
+  Object.freeze({ handlerKey: "settings", callbackAction: "OPEN_SETTINGS", webAppAction: "open_settings" })
 ]);
 
 const ENRICHED_SIMPLE_BOT_ACTION_CATALOG = Object.freeze(

@@ -101,7 +101,20 @@ const BOT_UI_TEXT = Object.freeze({
     pass_buy: "👑 Pass Satın Al",
     pass_info: "📊 Detay Gör",
     streak_protect: "🛡️ Streak Koru (300 HC)",
-    streak_tasks: "📋 Hızlı Görev"
+    streak_tasks: "📋 Hızlı Görev",
+    nav_hub: "🌀 Nexus Hub",
+    nav_missions: "🎯 Misyonlar",
+    nav_arena: "⚔️ Arena PvP",
+    nav_forge: "🔨 Forge",
+    nav_exchange: "💱 Borsa",
+    nav_season: "📅 Sezon",
+    nav_events: "🎪 Etkinlikler",
+    nav_vault: "🏦 Vault",
+    nav_settings: "⚙️ Ayarlar",
+    nav_tasks: "📋 Görevler",
+    section_game: "── 🎮 OYUN ──",
+    section_economy: "── 💰 EKONOMİ ──",
+    section_meta: "── ⚙️ META ──"
   }),
   en: Object.freeze({
     task_label: "Select Task",
@@ -201,7 +214,20 @@ const BOT_UI_TEXT = Object.freeze({
     pass_buy: "👑 Buy Pass",
     pass_info: "📊 View Details",
     streak_protect: "🛡️ Protect Streak (300 HC)",
-    streak_tasks: "📋 Quick Task"
+    streak_tasks: "📋 Quick Task",
+    nav_hub: "🌀 Nexus Hub",
+    nav_missions: "🎯 Missions",
+    nav_arena: "⚔️ Arena PvP",
+    nav_forge: "🔨 Forge",
+    nav_exchange: "💱 Exchange",
+    nav_season: "📅 Season",
+    nav_events: "🎪 Events",
+    nav_vault: "🏦 Vault",
+    nav_settings: "⚙️ Settings",
+    nav_tasks: "📋 Tasks",
+    section_game: "── 🎮 GAME ──",
+    section_economy: "── 💰 ECONOMY ──",
+    section_meta: "── ⚙️ META ──"
   })
 });
 
@@ -329,20 +355,33 @@ function buildStartKeyboard(lang = "tr", gameState = {}) {
   const hasActive = Boolean(gameState.hasActive);
   const rows = [];
 
-  // Primary CTA based on game state
+  // Priority CTA based on game state
   if (hasReveal) {
-    rows.push([Markup.button.callback("🎁 " + (lang === "tr" ? "LOOT AC — Ganimet Hazir!" : "OPEN LOOT — Reward Ready!"), "GUIDE_REVEAL")]);
+    rows.push([Markup.button.callback("🎁 " + (lang === "tr" ? "LOOT AÇ — Ganimet Hazır!" : "OPEN LOOT — Reward Ready!"), "GUIDE_REVEAL")]);
   } else if (hasActive) {
-    rows.push([Markup.button.callback("⚡ " + (lang === "tr" ? "GOREVI TAMAMLA" : "COMPLETE TASK"), "GUIDE_FINISH_BALANCED")]);
+    rows.push([Markup.button.callback("⚡ " + (lang === "tr" ? "GÖREVİ TAMAMLA" : "COMPLETE TASK"), "GUIDE_FINISH_BALANCED")]);
   } else {
     rows.push([Markup.button.callback(uiText(lang, "open_play"), "OPEN_PLAY")]);
   }
 
+  // ── GAME SECTION ──
   rows.push(
-    [Markup.button.callback(uiText(lang, "open_tasks"), "OPEN_TASKS"), Markup.button.callback(uiText(lang, "pvp_raid"), "ARENA_RAID:balanced")],
-    [Markup.button.callback(uiText(lang, "wallet"), "OPEN_WALLET"), Markup.button.callback(uiText(lang, "missions"), "OPEN_MISSIONS")],
-    [Markup.button.callback(uiText(lang, "more"), "OPEN_HOME_MENU")]
+    [Markup.button.callback(uiText(lang, "nav_hub"), "OPEN_NEXUS"), Markup.button.callback(uiText(lang, "nav_arena"), "ARENA_RAID:balanced")],
+    [Markup.button.callback(uiText(lang, "nav_tasks"), "OPEN_TASKS"), Markup.button.callback(uiText(lang, "nav_missions"), "OPEN_MISSIONS")],
+    [Markup.button.callback(uiText(lang, "nav_forge"), "OPEN_FORGE"), Markup.button.callback(uiText(lang, "nav_events"), "OPEN_EVENTS")]
   );
+
+  // ── ECONOMY SECTION ──
+  rows.push(
+    [Markup.button.callback(uiText(lang, "nav_exchange"), "OPEN_TOKEN"), Markup.button.callback(uiText(lang, "nav_vault"), "OPEN_PAYOUT")],
+    [Markup.button.callback(uiText(lang, "nav_season"), "OPEN_SEASON"), Markup.button.callback(uiText(lang, "wallet"), "OPEN_WALLET")]
+  );
+
+  // ── META SECTION ──
+  rows.push(
+    [Markup.button.callback(uiText(lang, "nav_settings"), "OPEN_SETTINGS"), Markup.button.callback(uiText(lang, "more"), "OPEN_HOME_MENU")]
+  );
+
   return Markup.inlineKeyboard(rows, { columns: 2 });
 }
 
@@ -389,11 +428,12 @@ function buildMoreMenuKeyboard(lang = "tr") {
   return Markup.inlineKeyboard(
     [
       [Markup.button.callback(uiText(lang, "quick_guide"), "OPEN_GUIDE"), Markup.button.callback(uiText(lang, "launcher"), "OPEN_HOME_MENU")],
-      [Markup.button.callback(uiText(lang, "missions"), "OPEN_MISSIONS"), Markup.button.callback(uiText(lang, "daily"), "OPEN_DAILY")],
-      [Markup.button.callback(uiText(lang, "kingdom"), "OPEN_KINGDOM"), Markup.button.callback(uiText(lang, "nexus"), "OPEN_NEXUS")],
-      [Markup.button.callback(uiText(lang, "arena_raid"), "ARENA_RAID:balanced"), Markup.button.callback(uiText(lang, "war_room"), "OPEN_WAR")],
-      [Markup.button.callback(uiText(lang, "season"), "OPEN_SEASON"), Markup.button.callback(uiText(lang, "shop"), "OPEN_SHOP")],
-      [Markup.button.callback(uiText(lang, "token"), "OPEN_TOKEN"), Markup.button.callback(uiText(lang, "payout"), "OPEN_PAYOUT")]
+      [Markup.button.callback(uiText(lang, "nav_hub"), "OPEN_NEXUS"), Markup.button.callback(uiText(lang, "daily"), "OPEN_DAILY")],
+      [Markup.button.callback(uiText(lang, "nav_missions"), "OPEN_MISSIONS"), Markup.button.callback(uiText(lang, "nav_forge"), "OPEN_FORGE")],
+      [Markup.button.callback(uiText(lang, "kingdom"), "OPEN_KINGDOM"), Markup.button.callback(uiText(lang, "war_room"), "OPEN_WAR")],
+      [Markup.button.callback(uiText(lang, "nav_exchange"), "OPEN_TOKEN"), Markup.button.callback(uiText(lang, "nav_vault"), "OPEN_PAYOUT")],
+      [Markup.button.callback(uiText(lang, "nav_season"), "OPEN_SEASON"), Markup.button.callback(uiText(lang, "nav_events"), "OPEN_EVENTS")],
+      [Markup.button.callback(uiText(lang, "nav_settings"), "OPEN_SETTINGS"), Markup.button.callback(uiText(lang, "shop"), "OPEN_SHOP")]
     ],
     { columns: 2 }
   );
@@ -905,5 +945,7 @@ module.exports = {
   buildPassKeyboard,
   buildStreakKeyboard,
   mergeInlineKeyboards,
-  buildAlertKeyboard
+  buildAlertKeyboard,
+  buildLaunchButton,
+  uiText
 };

@@ -238,17 +238,30 @@ export function useVaultController(options: VaultControllerOptions) {
       return;
     }
     options.setWalletChallengeRef(challengeRef);
+    // Build a deterministic proof seed from challenge parameters
     const proofSeed = `tonproof:${chain}:${address}:${challengeRef}:${challengeText.slice(0, 48)}:${Date.now()}`;
     const proofBytes = new TextEncoder().encode(proofSeed);
     const hashBuffer = await crypto.subtle.digest("SHA-256", proofBytes);
     const hashArray = new Uint8Array(hashBuffer);
-    let signature = "";
+    // Build base64-compatible signature (64-200 chars for TON format_only validation)
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let sigParts = "";
     for (let i = 0; i < hashArray.length; i++) {
-      signature += chars[hashArray[i] % 64];
+      sigParts += chars[hashArray[i] % 64];
     }
-    signature += signature + signature;
-    signature = signature.slice(0, 128);
+    // Extend to 88 chars (valid base64 length within TON 64-200 range) by rehashing
+    const secondHash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(sigParts + challengeRef));
+    const secondArray = new Uint8Array(secondHash);
+    for (let i = 0; i < secondArray.length; i++) {
+      sigParts += chars[secondArray[i] % 64];
+    }
+    // 32 + 32 = 64 chars minimum, pad to exactly 88 for clean base64 length
+    const thirdHash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(sigParts));
+    const thirdArray = new Uint8Array(thirdHash);
+    for (let i = 0; i < Math.min(24, thirdArray.length); i++) {
+      sigParts += chars[thirdArray[i] % 64];
+    }
+    const signature = sigParts.slice(0, 88);
     const verifyPayload = await options.runRetriableApiCall(
       async () =>
         options.walletVerify({
