@@ -35,11 +35,12 @@ export async function loadDistrictScene(key: DistrictKey) {
       return (await import('./SeasonHallScene')).createScene;
     case 'arena':
       return (await import('./ArenaScene')).createScene;
-    // Districts without dedicated scenes yet — fall back to central hub
     case 'elite_district':
+      return (await import('./EliteDistrictScene')).createScene;
     case 'live_event_overlay':
+      return (await import('./LiveEventOverlayScene')).createScene;
     case 'social_monuments':
-      return (await import('./CentralHubScene')).createScene;
+      return (await import('./SocialMonumentsScene')).createScene;
     default: {
       const _exhaustive: never = key;
       return (await import('./CentralHubScene')).createScene;
