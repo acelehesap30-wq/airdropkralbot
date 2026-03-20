@@ -90,10 +90,10 @@ export function SeasonPanel(props: SeasonPanelProps) {
             {isTr ? "Sezon Odulleri" : "Season Rewards"}
           </h3>
         </div>
-        {TIERS.map((t) => {
-          const reached = points >= t.pts;
+        {TIERS.map((tier) => {
+          const reached = points >= tier.pts;
           return (
-            <div key={t.tier} style={{
+            <div key={tier.tier} style={{
               display: "flex", justifyContent: "space-between", alignItems: "center",
               padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,0.05)",
               opacity: reached ? 1 : 0.5
@@ -101,17 +101,17 @@ export function SeasonPanel(props: SeasonPanelProps) {
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{
                   width: 32, height: 32, borderRadius: "50%",
-                  background: reached ? `${t.color}15` : "rgba(255,255,255,0.03)",
-                  border: `2px solid ${reached ? t.color : "rgba(255,255,255,0.1)"}`,
+                  background: reached ? `${tier.color}15` : "rgba(255,255,255,0.03)",
+                  border: `2px solid ${reached ? tier.color : "rgba(255,255,255,0.1)"}`,
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 13, fontWeight: 700, color: reached ? t.color : "rgba(255,255,255,0.3)"
+                  fontSize: 13, fontWeight: 700, color: reached ? tier.color : "rgba(255,255,255,0.3)"
                 }}>
-                  {reached ? "\u2713" : t.tier}
+                  {reached ? "\u2713" : tier.tier}
                 </div>
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 600 }}>{t.reward}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600 }}>{tier.reward}</div>
                   <div style={{ fontSize: 10, opacity: 0.5, fontFamily: "var(--font-mono, monospace)" }}>
-                    {t.pts.toLocaleString()} pts
+                    {tier.pts.toLocaleString()} pts
                   </div>
                 </div>
               </div>

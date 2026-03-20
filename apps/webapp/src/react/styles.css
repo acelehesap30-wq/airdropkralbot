@@ -4969,3 +4969,70 @@ hr, .akrDivider {
   margin: 8px 0;
 }
 
+/* ─── New Panel Component Styles ─── */
+.akrPanelSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.akrCardGlow {
+  box-shadow: 0 0 24px rgba(0, 214, 255, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(0, 214, 255, 0.15);
+}
+
+.akrCardHeader {
+  margin-bottom: 6px;
+}
+
+.akrCardTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--akr-ink);
+  margin: 0;
+}
+
+.akrCardBody {
+  color: var(--akr-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.akrBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.akrBtnSm {
+  padding: 4px 12px;
+  font-size: 11px;
+  border-radius: 6px;
+  background: rgba(0, 214, 255, 0.12);
+  color: var(--akr-accent);
+  border: 1px solid rgba(0, 214, 255, 0.2);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 600;
+}
+
+.akrBtnSm:hover:not(:disabled) {
+  background: rgba(0, 214, 255, 0.2);
+  box-shadow: 0 0 8px rgba(0, 214, 255, 0.15);
+}
+
+.akrBtnSm:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.akrBtnActive {
+  background: rgba(0, 214, 255, 0.25) !important;
+  border-color: var(--akr-accent) !important;
+  color: #fff !important;
+}
