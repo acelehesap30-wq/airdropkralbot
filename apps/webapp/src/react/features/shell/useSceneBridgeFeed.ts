@@ -1,10 +1,11 @@
 import { useEffect } from "react";
 import { buildAdminBridgePayloads, buildPlayerBridgePayloads } from "../../../core/runtime/sceneBridgePayloads.js";
+import type { TabKey } from "../../types";
 
 type SceneBridgeFeedOptions = {
   enabled: boolean;
   workspace: "player" | "admin";
-  tab: "home" | "pvp" | "tasks" | "vault";
+  tab: TabKey;
   scene: Record<string, unknown> | null;
   sceneRuntime: Record<string, unknown> | null;
   data: Record<string, unknown> | null;

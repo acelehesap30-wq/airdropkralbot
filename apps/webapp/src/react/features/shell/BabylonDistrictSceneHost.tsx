@@ -5,11 +5,12 @@ import {
   resolveDistrictSceneAssetRuntimeRows
 } from "../../../core/runtime/districtSceneAssets.js";
 import { t, type Lang } from "../../i18n";
+import type { TabKey } from "../../types";
 
 type BabylonDistrictSceneHostProps = {
   lang: Lang;
   workspace: "player" | "admin";
-  tab: "home" | "pvp" | "tasks" | "vault";
+  tab: TabKey;
   sceneChromeMode?: "full" | "backdrop";
   navigationContext: Record<string, unknown> | null;
   scene: Record<string, unknown>;
@@ -33,7 +34,7 @@ type BabylonDistrictSceneHostProps = {
     | {
     districtKey: string;
     workspace: "player" | "admin";
-    tab: "home" | "pvp" | "tasks" | "vault";
+    tab: TabKey;
     protocolCardKey: string;
     protocolPodKey: string;
     microflowKey: string;
@@ -106,7 +107,7 @@ type BabylonDistrictSceneHostProps = {
     clusterKey?: string;
     isSecondary?: boolean;
     workspace: "player" | "admin";
-    tab: "home" | "pvp" | "tasks" | "vault";
+    tab: TabKey;
     districtKey: string;
   }) => void;
 };
@@ -1931,7 +1932,7 @@ export function BabylonDistrictSceneHost(props: BabylonDistrictSceneHostProps) {
       clusterKey?: string;
       isSecondary?: boolean;
       workspace: "player" | "admin";
-      tab: "home" | "pvp" | "tasks" | "vault";
+      tab: TabKey;
       districtKey: string;
     }) => {
       props.onNodeAction?.(payload);

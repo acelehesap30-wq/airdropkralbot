@@ -711,7 +711,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
       | {
       districtKey: string;
       workspace: "player" | "admin";
-      tab: "home" | "pvp" | "tasks" | "vault";
+      tab: TabKey;
       protocolCardKey: string;
       protocolPodKey: string;
       microflowKey: string;

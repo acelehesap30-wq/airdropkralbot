@@ -3,7 +3,7 @@ import { resolvePlayerCommandHintNavigation } from "../../../core/player/command
 import { SHELL_ACTION_KEY } from "../../../core/navigation/shellActions.js";
 import { RouteStrip } from "../shared/RouteStrip";
 import { t, type Lang } from "../../i18n";
-import type { BootstrapV2Data } from "../../types";
+import type { BootstrapV2Data, TabKey } from "../../types";
 
 type HomePanelProps = {
   lang: Lang;
@@ -16,7 +16,7 @@ type HomePanelProps = {
     routeKey?: string;
     panelKey?: string;
     focusKey?: string;
-    tab?: "home" | "pvp" | "tasks" | "vault" | string;
+    tab?: TabKey | string;
     sourcePanelKey?: string;
   }) => void;
 };

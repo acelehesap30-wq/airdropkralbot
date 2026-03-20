@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
 import { t, type Lang } from "../../i18n";
+import type { TabKey } from "../../types";
 
 type SceneBridgeDockProps = {
   lang: Lang;
   workspace: "player" | "admin";
-  tab: "home" | "pvp" | "tasks" | "vault";
+  tab: TabKey;
   advanced: boolean;
 };
 

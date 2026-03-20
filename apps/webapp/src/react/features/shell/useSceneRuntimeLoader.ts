@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { resolveSceneBundlePlan } from "../../../core/runtime/sceneBundlePlan.js";
+import type { TabKey } from "../../types";
 
 type SceneRuntimeLoaderOptions = {
   enabled?: boolean;
   workspace: "player" | "admin";
-  tab: "home" | "pvp" | "tasks" | "vault";
+  tab: TabKey;
   trackUiEvent: (payload: Record<string, unknown>) => void;
   scene: {
     effectiveQuality: string;
@@ -15,7 +16,7 @@ type SceneRuntimeLoaderOptions = {
 type SceneRuntimeStatus = {
   phase: "idle" | "preparing" | "ready" | "error";
   workspace: "player" | "admin";
-  tab: "home" | "pvp" | "tasks" | "vault";
+  tab: TabKey;
   districtKey: string;
   profileKey: string;
   effectiveQuality: string;

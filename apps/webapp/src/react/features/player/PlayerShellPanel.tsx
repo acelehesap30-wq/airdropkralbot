@@ -3,7 +3,7 @@ import { resolvePlayerCommandHintNavigation } from "../../../core/player/command
 import { buildVaultViewModel } from "../../../core/player/vaultViewModel.js";
 import { SHELL_ACTION_KEY } from "../../../core/navigation/shellActions.js";
 import { normalizeLang, t, type Lang } from "../../i18n";
-import type { BootstrapV2Data } from "../../types";
+import type { BootstrapV2Data, TabKey } from "../../types";
 import type { PlayerShellPanelKey } from "./usePlayerShellPanelController";
 
 type PlayerShellPanelProps = {
@@ -23,12 +23,12 @@ type PlayerShellPanelProps = {
   vaultData: Record<string, unknown> | null;
   onClose: () => void;
   onShellAction: (actionKey: string, sourcePanelKey?: string) => void;
-  onTabChange: (tab: "home" | "pvp" | "tasks" | "vault") => void;
+  onTabChange: (tab: TabKey) => void;
   onRouteTarget: (input: {
     routeKey?: string;
     panelKey?: string;
     focusKey?: string;
-    tab?: "home" | "pvp" | "tasks" | "vault" | string;
+    tab?: TabKey | string;
     sourcePanelKey?: string;
   }) => void;
   onToggleReducedMotion: (next: boolean) => void;
