@@ -156,11 +156,10 @@ function resolveWorkspaceFunnelKey(workspace: "player" | "admin", tab: TabKey) {
 
 function WorkspaceLoadingFallback() {
   return (
-    <main className="akrPanelGrid">
-      <section className="akrCard akrCardWide">
-        <p className="akrKicker">arena shell</p>
-        <h2>Preparing arena surface</h2>
-        <p className="akrMuted">Loading the active player or admin lane.</p>
+    <main className="akrPanelGrid akrWorkspaceLoading">
+      <section className="akrCard akrCardWide akrLoadingCard">
+        <div className="akrLoadingSpinner" />
+        <p className="akrMuted">Yukleniyor...</p>
       </section>
     </main>
   );
@@ -877,6 +876,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
     handleTokenSubmitTx,
     handleWalletChallenge,
     handleWalletVerify,
+    handleWalletAutoVerify,
     handleWalletUnlink,
     handlePayoutRequest,
     handlePassPurchase,
@@ -1029,6 +1029,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
             payoutCurrency={payoutCurrency}
             walletChallengeLoading={walletChallengeLoading}
             walletVerifyLoading={walletVerifyLoading}
+            walletAutoVerifyLoading={walletChallengeLoading || walletVerifyLoading}
             walletUnlinkLoading={walletUnlinkLoading}
             payoutRequestLoading={payoutRequestLoading}
             passPurchaseLoading={passPurchaseLoading}
@@ -1056,6 +1057,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
             onTokenSubmitTx={() => void handleTokenSubmitTx()}
             onWalletChallenge={() => void handleWalletChallenge()}
             onWalletVerify={() => void handleWalletVerify()}
+            onWalletAutoVerify={() => void handleWalletAutoVerify()}
             onWalletUnlink={() => void handleWalletUnlink()}
             onPayoutRequest={() => void handlePayoutRequest()}
             onPassPurchase={(passKey, paymentCurrency) => void handlePassPurchase(passKey, paymentCurrency)}

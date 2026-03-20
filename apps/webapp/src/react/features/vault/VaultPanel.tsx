@@ -23,12 +23,14 @@ type VaultPanelProps = {
   onSubmitTx: () => void;
   onWalletChallenge: () => void;
   onWalletVerify: () => void;
+  onWalletAutoVerify: () => void;
   onWalletUnlink: () => void;
   onPayoutRequest: () => void;
   onPassPurchase: (passKey: string, paymentCurrency?: string) => void;
   onCosmeticPurchase: (itemKey: string, paymentCurrency?: string) => void;
   walletChallengeLoading: boolean;
   walletVerifyLoading: boolean;
+  walletAutoVerifyLoading: boolean;
   walletUnlinkLoading: boolean;
   payoutRequestLoading: boolean;
   passPurchaseLoading: boolean;
@@ -260,6 +262,8 @@ export function VaultPanel(props: VaultPanelProps) {
 
       <TonWalletConnect
         lang={props.lang}
+        walletVerified={summary.wallet_active}
+        walletKycStatus={summary.wallet_kyc_status || ""}
         onWalletConnected={(chain, address) => {
           props.onWalletChainChange(chain);
           props.onWalletAddressChange(address);
@@ -267,10 +271,10 @@ export function VaultPanel(props: VaultPanelProps) {
         onWalletDisconnected={() => {
           props.onWalletAddressChange("");
         }}
-        walletChallengeLoading={props.walletChallengeLoading}
-        walletVerifyLoading={props.walletVerifyLoading}
-        onWalletChallenge={props.onWalletChallenge}
-        onWalletVerify={props.onWalletVerify}
+        walletAutoVerifyLoading={props.walletAutoVerifyLoading || props.walletChallengeLoading || props.walletVerifyLoading}
+        onWalletAutoVerify={props.onWalletAutoVerify}
+        onWalletUnlink={props.onWalletUnlink}
+        walletUnlinkLoading={props.walletUnlinkLoading}
       />
 
       <section className="akrGameSpotlight" data-akr-panel-key="vault" data-akr-focus-key="vault_exit_route">
@@ -415,26 +419,68 @@ export function VaultPanel(props: VaultPanelProps) {
       </div>
 
       <div className="akrSplit">
-        <section className="akrMiniPanel">
-          <h4>{copy.tradeLane}</h4>
-          <p className="akrMuted akrMiniPanelBody">{copy.tradeBody}</p>
+        <section className="akrMiniPanel akrTokenStorePanel">
+          <h4>{props.lang === "tr" ? "Token Satin Al" : "Buy Tokens"}</h4>
+          <p className="akrMuted akrMiniPanelBody">
+            {props.lang === "tr"
+              ? "NXT token satin alarak oyun ici ekonomiye katil. BTC, ETH, TRX, SOL veya TON ile odeme yap."
+              : "Join the in-game economy by purchasing NXT tokens. Pay with BTC, ETH, TRX, SOL, or TON."}
+          </p>
+          <div className="akrTokenStorePriceRow">
+            <div className="akrMetricCard">
+              <span>{props.lang === "tr" ? "Token Fiyati" : "Token Price"}</span>
+              <strong>${summary.token_price_usd.toFixed(4)}</strong>
+            </div>
+            <div className="akrMetricCard">
+              <span>{props.lang === "tr" ? "Bakiyen" : "Balance"}</span>
+              <strong>{Math.floor(summary.token_balance)} {summary.token_symbol || "NXT"}</strong>
+            </div>
+          </div>
           <div className="akrInputRow">
-            <input value={props.quoteUsd} onChange={(e) => props.onQuoteUsdChange(e.target.value)} placeholder={copy.quoteHint} aria-label="quote-usd" />
-            <input value={props.quoteChain} onChange={(e) => props.onQuoteChainChange(e.target.value)} placeholder={copy.chainHint} aria-label="quote-chain" />
+            <input
+              value={props.quoteUsd}
+              onChange={(e) => props.onQuoteUsdChange(e.target.value)}
+              placeholder={copy.quoteHint}
+              aria-label="quote-usd"
+              type="number"
+              min="1"
+              max="250"
+            />
+            <select
+              value={props.quoteChain}
+              onChange={(e) => props.onQuoteChainChange(e.target.value)}
+              aria-label="quote-chain"
+              className="akrSelect"
+            >
+              <option value="TON">TON</option>
+              <option value="BTC">BTC</option>
+              <option value="ETH">ETH</option>
+              <option value="TRX">TRX</option>
+              <option value="SOL">SOL</option>
+            </select>
           </div>
-          <div className="akrChipRow">
-            <span className="akrChip">Quote ${latest.quote_usd.toFixed(2)}</span>
-            <span className="akrChip">Token {latest.quote_token_amount.toFixed(4)}</span>
-            <span className="akrChip">Rate {latest.quote_rate.toFixed(6)}</span>
-          </div>
+          {latest.quote_usd > 0 ? (
+            <div className="akrQuoteResult">
+              <div className="akrChipRow">
+                <span className="akrChip akrChipInfo">${latest.quote_usd.toFixed(2)} USD</span>
+                <span className="akrChip">{latest.quote_token_amount.toFixed(4)} {summary.token_symbol || "NXT"}</span>
+                <span className="akrChip">{props.lang === "tr" ? "Kur" : "Rate"}: {latest.quote_rate.toFixed(6)}</span>
+              </div>
+            </div>
+          ) : null}
           <div className="akrActionRow">
             <button type="button" className="akrBtn akrBtnGhost" onClick={props.onQuote}>
-              {t(props.lang, "vault_quote")}
+              {props.lang === "tr" ? "Fiyat Al" : "Get Quote"}
             </button>
             <button type="button" className="akrBtn akrBtnAccent" onClick={props.onBuyIntent}>
-              {t(props.lang, "vault_buy_intent")}
+              {props.lang === "tr" ? "Satin Al" : "Buy Now"}
             </button>
           </div>
+          <p className="akrMuted akrSmallText">
+            {props.lang === "tr"
+              ? "Min $1 — Max $250 | Fiyat bonding curve ile belirlenir"
+              : "Min $1 — Max $250 | Price determined by bonding curve"}
+          </p>
         </section>
 
         <section className="akrMiniPanel">

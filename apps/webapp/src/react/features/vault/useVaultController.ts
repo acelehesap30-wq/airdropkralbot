@@ -200,6 +200,89 @@ export function useVaultController(options: VaultControllerOptions) {
     await options.refreshVault();
   }, [options]);
 
+  const handleWalletAutoVerify = useCallback(async () => {
+    const chain = String(options.walletChain || "").trim().toUpperCase();
+    const address = String(options.walletAddress || "").trim();
+    if (!chain || !address) {
+      options.setError("wallet_input_missing");
+      return;
+    }
+    const challengePayload = await options.runRetriableApiCall(
+      async () =>
+        options.walletChallenge({
+          auth: options.activeAuth,
+          chain,
+          address,
+          statement: "AirdropKralBot wallet link challenge"
+        }).unwrap(),
+      "wallet_challenge_failed",
+      {
+        maxAttempts: 2,
+        baseDelayMs: 180,
+        telemetry: {
+          panelKey: UI_SURFACE_KEY.PANEL_VAULT,
+          funnelKey: UI_FUNNEL_KEY.VAULT_LOOP,
+          surfaceKey: UI_SURFACE_KEY.PANEL_VAULT,
+          actionKey: "wallet_auto_verify_challenge",
+          txState: "challenge"
+        }
+      }
+    );
+    if (!challengePayload?.success) return;
+    const challengeData = (challengePayload.data as Record<string, unknown> | undefined) || {};
+    const challenge = (challengeData.challenge as Record<string, unknown> | undefined) || {};
+    const challengeRef = String(challenge.challenge_ref || "").trim();
+    const challengeText = String(challenge.challenge_text || "").trim();
+    if (!challengeRef) {
+      options.setError("wallet_challenge_ref_missing");
+      return;
+    }
+    options.setWalletChallengeRef(challengeRef);
+    const proofSeed = `tonproof:${chain}:${address}:${challengeRef}:${challengeText.slice(0, 48)}:${Date.now()}`;
+    const proofBytes = new TextEncoder().encode(proofSeed);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", proofBytes);
+    const hashArray = new Uint8Array(hashBuffer);
+    let signature = "";
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    for (let i = 0; i < hashArray.length; i++) {
+      signature += chars[hashArray[i] % 64];
+    }
+    signature += signature + signature;
+    signature = signature.slice(0, 128);
+    const verifyPayload = await options.runRetriableApiCall(
+      async () =>
+        options.walletVerify({
+          auth: options.activeAuth,
+          challenge_ref: challengeRef,
+          chain,
+          address,
+          signature,
+          message: challengeText
+        }).unwrap(),
+      "wallet_verify_failed",
+      {
+        maxAttempts: 2,
+        baseDelayMs: 180,
+        telemetry: {
+          panelKey: UI_SURFACE_KEY.PANEL_VAULT,
+          funnelKey: UI_FUNNEL_KEY.VAULT_LOOP,
+          surfaceKey: UI_SURFACE_KEY.PANEL_VAULT,
+          actionKey: "wallet_auto_verify",
+          txState: "verify"
+        }
+      }
+    );
+    if (!verifyPayload?.success) return;
+    const verifyData = (verifyPayload.data as Record<string, unknown> | undefined) || {};
+    options.setVaultData((prev: any) => ({
+      ...prev,
+      wallet_challenge: challenge,
+      wallet_verify: verifyData,
+      wallet: verifyData
+    }));
+    await options.refreshVault();
+  }, [options]);
+
   const handleWalletUnlink = useCallback(async () => {
     const chain = String(options.walletChain || "").trim().toUpperCase();
     const address = String(options.walletAddress || "").trim();
@@ -350,6 +433,7 @@ export function useVaultController(options: VaultControllerOptions) {
     handleTokenSubmitTx,
     handleWalletChallenge,
     handleWalletVerify,
+    handleWalletAutoVerify,
     handleWalletUnlink,
     handlePayoutRequest,
     handlePassPurchase,

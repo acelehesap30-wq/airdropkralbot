@@ -51,6 +51,7 @@ type PlayerWorkspaceProps = {
   payoutCurrency: string;
   walletChallengeLoading: boolean;
   walletVerifyLoading: boolean;
+  walletAutoVerifyLoading: boolean;
   walletUnlinkLoading: boolean;
   payoutRequestLoading: boolean;
   passPurchaseLoading: boolean;
@@ -78,6 +79,7 @@ type PlayerWorkspaceProps = {
   onTokenSubmitTx: () => void;
   onWalletChallenge: () => void;
   onWalletVerify: () => void;
+  onWalletAutoVerify: () => void;
   onWalletUnlink: () => void;
   onPayoutRequest: () => void;
   onPassPurchase: (passKey: string, paymentCurrency: string) => void;
@@ -207,12 +209,14 @@ export function PlayerWorkspace(props: PlayerWorkspaceProps) {
             onSubmitTx={props.onTokenSubmitTx}
             onWalletChallenge={props.onWalletChallenge}
             onWalletVerify={props.onWalletVerify}
+            onWalletAutoVerify={props.onWalletAutoVerify}
             onWalletUnlink={props.onWalletUnlink}
             onPayoutRequest={props.onPayoutRequest}
             onPassPurchase={props.onPassPurchase}
             onCosmeticPurchase={props.onCosmeticPurchase}
             walletChallengeLoading={props.walletChallengeLoading}
             walletVerifyLoading={props.walletVerifyLoading}
+            walletAutoVerifyLoading={props.walletAutoVerifyLoading}
             walletUnlinkLoading={props.walletUnlinkLoading}
             payoutRequestLoading={props.payoutRequestLoading}
             passPurchaseLoading={props.passPurchaseLoading}

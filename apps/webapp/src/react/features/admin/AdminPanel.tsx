@@ -238,8 +238,18 @@ export function AdminPanel(props: AdminPanelProps) {
 
   return (
     <main className="akrPanelGrid">
-      <section className="akrCard akrCardWide" data-akr-panel-key="panel_admin" data-akr-focus-key="admin_summary">
+      <section className="akrCard akrCardWide akrAdminHeader" data-akr-panel-key="panel_admin" data-akr-focus-key="admin_summary">
         <h2>{showCompactOpsOnly ? t(props.lang, "admin_console_title") : t(props.lang, "admin_title")}</h2>
+        {props.isAdmin ? (
+          <div className="akrAdminIdRow">
+            <span className="akrChip akrChipSuccess">Admin #{String(adminSummary.admin_telegram_id || adminSummary.admin_id || "verified")}</span>
+            <span className="akrChip">{props.lang === "tr" ? "Sistem" : "System"}: {String(adminSummary.freeze?.frozen === true ? (props.lang === "tr" ? "Dondurulmus" : "Frozen") : (props.lang === "tr" ? "Aktif" : "Active"))}</span>
+            <span className="akrChip">{props.lang === "tr" ? "Onay kuyrugu" : "Queue"}: {queueCount}</span>
+            <button type="button" className="akrBtn akrBtnGhost" onClick={props.onRefresh}>
+              {props.lang === "tr" ? "Yenile" : "Refresh"}
+            </button>
+          </div>
+        ) : null}
         {props.isAdmin ? <p className="akrMuted">{showCompactOpsOnly ? copy.summaryBody : t(props.lang, "admin_console_body")}</p> : null}
         {!props.isAdmin && <p className="akrErrorLine">{t(props.lang, "admin_access_denied")}</p>}
         {props.isAdmin ? (

@@ -4868,3 +4868,78 @@ hr, .akrDivider {
   margin-top: 16px;
 }
 
+/* Loading spinner & workspace loading */
+.akrWorkspaceLoading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+}
+.akrLoadingCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 48px 32px;
+}
+.akrLoadingSpinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(0, 255, 170, 0.15);
+  border-top-color: #00ffaa;
+  border-radius: 50%;
+  animation: akrSpin 0.7s linear infinite;
+}
+@keyframes akrSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* Wallet verified chip */
+.akrChipSuccess {
+  background: rgba(0, 200, 83, 0.18);
+  color: #00c853;
+  border-color: rgba(0, 200, 83, 0.25);
+}
+
+/* Token store panel */
+.akrTokenStorePanel {
+  border: 1px solid rgba(0, 255, 170, 0.12);
+  background: rgba(0, 255, 170, 0.03);
+}
+.akrTokenStorePriceRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.akrSelect {
+  appearance: none;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.akrQuoteResult {
+  padding: 8px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.akrSmallText {
+  font-size: 0.75rem;
+  opacity: 0.6;
+}
+
+/* Admin panel header */
+.akrAdminHeader {
+  border-top: 2px solid #00ffaa;
+}
+.akrAdminIdRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+
