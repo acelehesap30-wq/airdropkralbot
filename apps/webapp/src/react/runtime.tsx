@@ -333,13 +333,9 @@ export async function mountReactWebAppV1(): Promise<void> {
 
   root.render(
     <FatalBoundary>
-      {isTelegramWebApp ? (
-        <TonConnectUIProvider manifestUrl={TON_CONNECT_MANIFEST_URL}>
-          {appContent}
-        </TonConnectUIProvider>
-      ) : (
-        appContent
-      )}
+      <TonConnectUIProvider manifestUrl={TON_CONNECT_MANIFEST_URL}>
+        {appContent}
+      </TonConnectUIProvider>
     </FatalBoundary>
   );
 }

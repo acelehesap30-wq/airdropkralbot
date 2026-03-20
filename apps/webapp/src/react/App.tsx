@@ -241,8 +241,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
   const effectiveWorkspace: "player" | "admin" = isAdmin && workspace === "admin" ? "admin" : "player";
   const adminAdvanced = isAdmin && advanced;
   const effectiveOnboardingVisible = effectiveWorkspace === "player" && onboardingVisible;
-  const enableDistrictScene =
-    effectiveWorkspace === "player" && !effectiveOnboardingVisible && (tab === "home" || tab === "pvp");
+  const enableDistrictScene = false; // disabled — game content lives inside panels, not as 3D background
   const tabs = useMemo<TabKey[]>(
     () => (Array.isArray(data?.ui_shell?.tabs) && data?.ui_shell?.tabs.length ? data.ui_shell.tabs : ["home", "pvp", "tasks", "forge", "exchange", "season", "events", "vault", "settings"]),
     [data?.ui_shell?.tabs]
