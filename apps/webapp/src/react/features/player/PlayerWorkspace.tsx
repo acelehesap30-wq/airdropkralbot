@@ -4,6 +4,7 @@ import type { BootstrapV2Payload, TabKey } from "../../types";
 import { resolveShellActionTarget } from "../../../core/navigation/shellActions.js";
 import { usePlayerNavigationController } from "./usePlayerNavigationController";
 import { PlayerTabs } from "../shell/PlayerTabs";
+import { NexusScene } from "../shared/NexusScene";
 import { PvpPanel } from "../pvp/PvpPanel";
 import { TasksPanel } from "../tasks/TasksPanel";
 import { VaultPanel } from "../vault/VaultPanel";
@@ -127,6 +128,7 @@ export function PlayerWorkspace(props: PlayerWorkspaceProps) {
     <>
       <PlayerTabs lang={props.lang} tab={props.tab} tabs={props.tabs} onChange={props.onTabChange} />
       <main className="akrPanelGrid">
+        <NexusScene tab={props.tab} lang={props.lang} />
         {(props.tab === "home" || props.tab === "vault" || props.tab === "settings") && activePanelKey ? (
           <PlayerShellPanel
             lang={props.lang}

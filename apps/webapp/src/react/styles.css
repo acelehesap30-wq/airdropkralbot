@@ -5057,3 +5057,20 @@ hr, .akrDivider {
   border-color: var(--akr-accent) !important;
   color: #fff !important;
 }
+
+/* ─── NexusScene 3D inline scene ─── */
+.akrNexusScene {
+  border: 1px solid rgba(0, 214, 255, 0.15);
+  box-shadow: 0 0 20px rgba(0, 214, 255, 0.05), inset 0 0 30px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes nexusFadeUp {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+}
