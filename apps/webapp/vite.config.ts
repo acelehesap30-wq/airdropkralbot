@@ -7,6 +7,13 @@ export default defineConfig({
   server: {
     fs: {
       allow: [path.resolve(__dirname, "../..")]
+    },
+    proxy: {
+      "/webapp/api": {
+        target: `http://127.0.0.1:${process.env.ADMIN_API_PORT || 4000}`,
+        changeOrigin: true,
+        secure: false
+      }
     }
   },
   build: {

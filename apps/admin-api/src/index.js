@@ -12835,6 +12835,30 @@ registerWebappAdminPayoutDecisionRoutes(fastify, {
   sendTrustNotification: (payload) => chatTrustNotificationService.sendTrustNotification(payload)
 });
 
+// ── CORS support for webapp cross-origin requests ──
+fastify.addHook("onRequest", async (request, reply) => {
+  const origin = request.headers.origin || "";
+  const allowedOrigins = [
+    WEBAPP_PUBLIC_URL ? new URL(WEBAPP_PUBLIC_URL).origin : null,
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:4000",
+    "http://127.0.0.1:4000"
+  ].filter(Boolean);
+  if (origin && allowedOrigins.includes(origin)) {
+    reply.header("Access-Control-Allow-Origin", origin);
+  } else if (!origin) {
+    reply.header("Access-Control-Allow-Origin", "*");
+  }
+  reply.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  reply.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  reply.header("Access-Control-Allow-Credentials", "true");
+  if (request.method === "OPTIONS") {
+    reply.code(204).send();
+    return;
+  }
+});
+
 fastify.addHook("preHandler", async (request, reply) => {
   if (!request.url.startsWith("/admin")) {
     return;

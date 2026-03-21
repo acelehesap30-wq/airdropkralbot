@@ -12,6 +12,7 @@
     "start:all": "node scripts/start_render_single.js",
     "dev:bot": "node apps/bot/src/index.js",
     "dev:admin": "node apps/admin-api/src/index.js",
+    "dev:webapp": "npm run dev --workspace @airdropkralbot/webapp",
     "build:webapp": "npm run build --workspace @airdropkralbot/webapp",
     "dev:miniapp": "npm run dev --workspace @airdropkralbot/miniapp-shell",
     "build:miniapp": "npm run build --workspace @airdropkralbot/miniapp-shell",

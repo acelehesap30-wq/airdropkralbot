@@ -222,7 +222,6 @@ export function NexusScene({ tab, lang }: NexusSceneProps) {
       <canvas
         ref={canvasRef}
         style={canvasStyle}
-        touch-action="none"
       />
 
       {/* Loading overlay */}
