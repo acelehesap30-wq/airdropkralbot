@@ -177,6 +177,156 @@ export function createScene(
     pipeline.bloomScale = 0.5;
   }
 
+  // ── Collectible Crystals (interactive game elements) ──
+  interface CrystalNode {
+    mesh: ReturnType<typeof MeshBuilder.CreatePolyhedron>;
+    baseY: number;
+    angle: number;
+    radius: number;
+    collected: boolean;
+    respawnAt: number;
+    pointLight: PointLight;
+    type: 'sc' | 'hc' | 'rc';
+  }
+  const crystals: CrystalNode[] = [];
+  const crystalColors: Record<string, Color3> = {
+    sc: new Color3(0, 1, 0.53),    // green — SC
+    hc: new Color3(0, 0.82, 1),     // cyan — HC
+    rc: new Color3(0.88, 0.25, 0.98) // purple — RC
+  };
+  const crystalCount = quality === 'low' ? 5 : quality === 'medium' ? 8 : 12;
+  const crystalTypes: Array<'sc' | 'hc' | 'rc'> = ['sc', 'sc', 'sc', 'hc', 'hc', 'rc'];
+
+  for (let i = 0; i < crystalCount; i++) {
+    const cType = crystalTypes[i % crystalTypes.length];
+    const color = crystalColors[cType];
+    const cMat = new StandardMaterial(`crystalMat${i}`, scene);
+    cMat.emissiveColor = color.scale(0.8);
+    cMat.diffuseColor = color.scale(0.3);
+    cMat.alpha = 0.9;
+
+    const crystal = MeshBuilder.CreatePolyhedron(
+      `crystal${i}`,
+      { type: 1, size: 0.6 + Math.random() * 0.4, sizeX: 0.8, sizeY: 1.2, sizeZ: 0.8 },
+      scene,
+    );
+    const ang = (Math.PI * 2 / crystalCount) * i + Math.random() * 0.5;
+    const rad = 15 + Math.random() * 20;
+    crystal.position.set(Math.cos(ang) * rad, 2 + Math.random() * 3, Math.sin(ang) * rad);
+    crystal.material = cMat;
+
+    // small point light per crystal
+    const cLight = new PointLight(`cLight${i}`, crystal.position.clone(), scene);
+    cLight.diffuse = color;
+    cLight.intensity = 0.5;
+    cLight.range = 8;
+
+    crystals.push({
+      mesh: crystal,
+      baseY: crystal.position.y,
+      angle: ang,
+      radius: rad,
+      collected: false,
+      respawnAt: 0,
+      pointLight: cLight,
+      type: cType,
+    });
+  }
+
+  // Crystal collect burst particles
+  const burstPs = new ParticleSystem('burst', 80, scene);
+  burstPs.createPointEmitter(new Vector3(-1, -1, -1), new Vector3(1, 2, 1));
+  burstPs.emitter = new Vector3(0, 0, 0);
+  burstPs.minLifeTime = 0.3;
+  burstPs.maxLifeTime = 0.8;
+  burstPs.minSize = 0.1;
+  burstPs.maxSize = 0.4;
+  burstPs.minEmitPower = 3;
+  burstPs.maxEmitPower = 8;
+  burstPs.emitRate = 0; // manual burst
+  burstPs.color1 = new Color4(0, 1, 0.8, 1);
+  burstPs.color2 = new Color4(0, 0.6, 1, 0.8);
+  burstPs.colorDead = new Color4(0, 0.2, 0.5, 0);
+  burstPs.gravity = new Vector3(0, -5, 0);
+  burstPs.blendMode = ParticleSystem.BLENDMODE_ADD;
+
+  // Score display (HUD overlay created via scene metadata)
+  let score = 0;
+  let combo = 0;
+  let lastCollectTime = 0;
+  scene.metadata = scene.metadata || {};
+  scene.metadata.gameState = { score, combo, crystalsCollected: 0, totalCrystals: crystalCount };
+
+  // Click handler for crystal collection
+  scene.onPointerDown = (_evt, pickResult) => {
+    if (!pickResult?.hit || !pickResult.pickedMesh) return;
+    const name = pickResult.pickedMesh.name;
+    if (!name.startsWith('crystal')) return;
+    const idx = parseInt(name.replace('crystal', ''), 10);
+    const c = crystals[idx];
+    if (!c || c.collected) return;
+
+    // Collect!
+    c.collected = true;
+    c.mesh.setEnabled(false);
+    c.pointLight.intensity = 0;
+    const now = performance.now() / 1000;
+    c.respawnAt = now + 5 + Math.random() * 5; // respawn in 5-10s
+
+    // Burst effect
+    burstPs.emitter = c.mesh.position.clone();
+    const bColor = crystalColors[c.type];
+    burstPs.color1 = new Color4(bColor.r, bColor.g, bColor.b, 1);
+    burstPs.color2 = new Color4(bColor.r * 0.6, bColor.g * 0.6, bColor.b * 0.6, 0.8);
+    burstPs.manualEmitCount = 30;
+    burstPs.start();
+    setTimeout(() => burstPs.stop(), 300);
+
+    // Score & combo
+    if (now - lastCollectTime < 3) {
+      combo++;
+    } else {
+      combo = 1;
+    }
+    lastCollectTime = now;
+    const pts = c.type === 'rc' ? 50 : c.type === 'hc' ? 20 : 5;
+    score += pts * combo;
+    scene.metadata.gameState = {
+      score,
+      combo,
+      crystalsCollected: crystals.filter(cr => cr.collected).length,
+      totalCrystals: crystalCount,
+      lastType: c.type,
+      lastPoints: pts * combo,
+    };
+  };
+
+  // ── Portal Gate (entrance to districts) ──
+  const portalMat = new StandardMaterial('portalMat', scene);
+  portalMat.emissiveColor = new Color3(0, 0.9, 1);
+  portalMat.diffuseColor = Color3.Black();
+  portalMat.alpha = 0.4;
+  portalMat.backFaceCulling = false;
+
+  const portalFrame = MeshBuilder.CreateTorus('portalFrame', { diameter: 8, thickness: 0.4, tessellation: 32 }, scene);
+  portalFrame.position.set(0, 6, -25);
+  portalFrame.rotation.x = Math.PI / 2;
+  const portalFrameMat = new StandardMaterial('portalFrameMat', scene);
+  portalFrameMat.emissiveColor = new Color3(0, 0.7, 1);
+  portalFrameMat.diffuseColor = new Color3(0, 0.15, 0.3);
+  portalFrame.material = portalFrameMat;
+
+  const portalDisc = MeshBuilder.CreateDisc('portalDisc', { radius: 3.8, tessellation: 32 }, scene);
+  portalDisc.position.set(0, 6, -25);
+  portalDisc.rotation.x = Math.PI / 2;
+  portalDisc.material = portalMat;
+
+  // Portal light
+  const portalLight = new PointLight('portalLight', new Vector3(0, 6, -25), scene);
+  portalLight.diffuse = new Color3(0, 0.9, 1);
+  portalLight.intensity = 2;
+  portalLight.range = 15;
+
   // ── Animation loop ──
   let t = 0;
   scene.registerBeforeRender(() => {
@@ -200,6 +350,32 @@ export function createScene(
 
     pointB.diffuse.r = 0.5 + Math.sin(t * 0.4) * 0.15;
     pointB.diffuse.b = 0.8 + Math.sin(t * 0.6) * 0.2;
+
+    // Crystal animations — float, rotate, respawn
+    const now = performance.now() / 1000;
+    for (const c of crystals) {
+      if (c.collected) {
+        if (now >= c.respawnAt) {
+          c.collected = false;
+          c.mesh.setEnabled(true);
+          c.pointLight.intensity = 0.5;
+        }
+        continue;
+      }
+      // floating bob
+      c.mesh.position.y = c.baseY + Math.sin(t * 2 + c.angle) * 0.5;
+      // slow spin
+      c.mesh.rotation.y += 0.02;
+      c.mesh.rotation.x += 0.005;
+      // light pulse
+      c.pointLight.intensity = 0.4 + Math.sin(t * 3 + c.angle * 2) * 0.2;
+    }
+
+    // Portal animation
+    portalDisc.rotation.z += 0.01;
+    portalMat.alpha = 0.3 + Math.sin(t * 2) * 0.15;
+    portalLight.intensity = 1.5 + Math.sin(t * 3) * 0.5;
+    portalFrameMat.emissiveColor.g = 0.6 + Math.sin(t * 2) * 0.2;
   });
 
   return scene;

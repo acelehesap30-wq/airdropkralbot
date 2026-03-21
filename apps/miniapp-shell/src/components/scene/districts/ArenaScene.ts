@@ -226,6 +226,171 @@ export function createScene(
     pipeline.bloomScale = 0.5;
   }
 
+  // ── Combat Targets (interactive enemy drones) ──
+  interface CombatDrone {
+    body: ReturnType<typeof MeshBuilder.CreatePolyhedron>;
+    shield: ReturnType<typeof MeshBuilder.CreateSphere>;
+    hp: number;
+    maxHp: number;
+    angle: number;
+    speed: number;
+    radius: number;
+    baseY: number;
+    alive: boolean;
+    respawnAt: number;
+    light: PointLight;
+  }
+  const drones: CombatDrone[] = [];
+  const droneCount = quality === 'low' ? 3 : quality === 'medium' ? 5 : 7;
+
+  const droneMat = new StandardMaterial('droneMat', scene);
+  droneMat.emissiveColor = new Color3(1, 0.15, 0);
+  droneMat.diffuseColor = new Color3(0.2, 0.05, 0);
+
+  const droneShieldMat = new StandardMaterial('droneShieldMat', scene);
+  droneShieldMat.emissiveColor = new Color3(1, 0.3, 0);
+  droneShieldMat.diffuseColor = Color3.Black();
+  droneShieldMat.alpha = 0.15;
+  droneShieldMat.backFaceCulling = false;
+
+  for (let i = 0; i < droneCount; i++) {
+    const ang = (Math.PI * 2 / droneCount) * i;
+    const rad = 8 + Math.random() * 4;
+    const droneBody = MeshBuilder.CreatePolyhedron(`drone${i}`, { type: 2, size: 0.8 }, scene);
+    droneBody.position.set(Math.cos(ang) * rad, 3 + Math.random() * 2, Math.sin(ang) * rad);
+    droneBody.material = droneMat;
+
+    const droneShield = MeshBuilder.CreateSphere(`droneShield${i}`, { diameter: 2.5, segments: 8 }, scene);
+    droneShield.position = droneBody.position.clone();
+    droneShield.material = droneShieldMat;
+
+    const dLight = new PointLight(`dLight${i}`, droneBody.position.clone(), scene);
+    dLight.diffuse = new Color3(1, 0.3, 0);
+    dLight.intensity = 0.4;
+    dLight.range = 6;
+
+    drones.push({
+      body: droneBody,
+      shield: droneShield,
+      hp: 3,
+      maxHp: 3,
+      angle: ang,
+      speed: 0.008 + Math.random() * 0.008,
+      radius: rad,
+      baseY: droneBody.position.y,
+      alive: true,
+      respawnAt: 0,
+      light: dLight,
+    });
+  }
+
+  // Hit burst effect
+  const hitBurst = new ParticleSystem('hitBurst', 60, scene);
+  hitBurst.createPointEmitter(new Vector3(-1, -1, -1), new Vector3(1, 2, 1));
+  hitBurst.emitter = new Vector3(0, 0, 0);
+  hitBurst.minLifeTime = 0.15;
+  hitBurst.maxLifeTime = 0.4;
+  hitBurst.minSize = 0.1;
+  hitBurst.maxSize = 0.3;
+  hitBurst.minEmitPower = 5;
+  hitBurst.maxEmitPower = 12;
+  hitBurst.emitRate = 0;
+  hitBurst.color1 = new Color4(1, 0.5, 0, 1);
+  hitBurst.color2 = new Color4(1, 0.1, 0, 0.8);
+  hitBurst.colorDead = new Color4(0.3, 0, 0, 0);
+  hitBurst.gravity = new Vector3(0, -8, 0);
+  hitBurst.blendMode = ParticleSystem.BLENDMODE_ADD;
+
+  // Kill explosion effect
+  const killBurst = new ParticleSystem('killBurst', 120, scene);
+  killBurst.createPointEmitter(new Vector3(-2, -1, -2), new Vector3(2, 3, 2));
+  killBurst.emitter = new Vector3(0, 0, 0);
+  killBurst.minLifeTime = 0.3;
+  killBurst.maxLifeTime = 1;
+  killBurst.minSize = 0.2;
+  killBurst.maxSize = 0.6;
+  killBurst.minEmitPower = 6;
+  killBurst.maxEmitPower = 18;
+  killBurst.emitRate = 0;
+  killBurst.color1 = new Color4(1, 0.4, 0, 1);
+  killBurst.color2 = new Color4(1, 0.8, 0, 0.9);
+  killBurst.colorDead = new Color4(0.5, 0.1, 0, 0);
+  killBurst.gravity = new Vector3(0, -4, 0);
+  killBurst.blendMode = ParticleSystem.BLENDMODE_ADD;
+
+  // Arena game state
+  let arenaScore = 0;
+  let killCount = 0;
+  let hitStreak = 0;
+  let lastHitTime = 0;
+  scene.metadata = scene.metadata || {};
+  scene.metadata.gameState = { score: 0, kills: 0, streak: 0, dronesAlive: droneCount };
+
+  // Click to attack drones
+  scene.onPointerDown = (_evt, pickResult) => {
+    if (!pickResult?.hit || !pickResult.pickedMesh) return;
+    const name = pickResult.pickedMesh.name;
+    let droneIdx = -1;
+    if (name.startsWith('drone')) {
+      droneIdx = parseInt(name.replace('drone', '').replace('Shield', ''), 10);
+    } else if (name.startsWith('droneShield')) {
+      droneIdx = parseInt(name.replace('droneShield', ''), 10);
+    }
+    if (droneIdx < 0 || droneIdx >= drones.length) return;
+    const d = drones[droneIdx];
+    if (!d.alive) return;
+
+    // Hit!
+    d.hp--;
+    const now = performance.now() / 1000;
+    if (now - lastHitTime < 2) {
+      hitStreak++;
+    } else {
+      hitStreak = 1;
+    }
+    lastHitTime = now;
+
+    // Hit effect
+    hitBurst.emitter = d.body.position.clone();
+    hitBurst.manualEmitCount = 15;
+    hitBurst.start();
+    setTimeout(() => hitBurst.stop(), 200);
+
+    // Flash shield on hit
+    const shMat = d.shield.material as StandardMaterial;
+    if (shMat) {
+      shMat.alpha = 0.5;
+      setTimeout(() => { shMat.alpha = 0.15; }, 150);
+    }
+
+    if (d.hp <= 0) {
+      // Kill!
+      d.alive = false;
+      d.body.setEnabled(false);
+      d.shield.setEnabled(false);
+      d.light.intensity = 0;
+      d.respawnAt = now + 4 + Math.random() * 4;
+
+      // Kill explosion
+      killBurst.emitter = d.body.position.clone();
+      killBurst.manualEmitCount = 50;
+      killBurst.start();
+      setTimeout(() => killBurst.stop(), 400);
+
+      killCount++;
+      arenaScore += 100 * hitStreak;
+    } else {
+      arenaScore += 10 * hitStreak;
+    }
+
+    scene.metadata.gameState = {
+      score: arenaScore,
+      kills: killCount,
+      streak: hitStreak,
+      dronesAlive: drones.filter(dr => dr.alive).length,
+    };
+  };
+
   // ── Animation ──
   let t = 0;
   scene.registerBeforeRender(() => {
@@ -244,6 +409,35 @@ export function createScene(
 
     // cross lines pulse
     crossMat.alpha = 0.25 + Math.sin(t * 2.5) * 0.1;
+
+    // Drone animations — orbit, bob, respawn
+    const now = performance.now() / 1000;
+    for (const d of drones) {
+      if (!d.alive) {
+        if (now >= d.respawnAt) {
+          d.alive = true;
+          d.hp = d.maxHp;
+          d.body.setEnabled(true);
+          d.shield.setEnabled(true);
+          d.light.intensity = 0.4;
+        }
+        continue;
+      }
+      // orbit around ring
+      d.angle += d.speed;
+      d.body.position.x = Math.cos(d.angle) * d.radius;
+      d.body.position.z = Math.sin(d.angle) * d.radius;
+      d.body.position.y = d.baseY + Math.sin(t * 2 + d.angle) * 0.8;
+      // shield follows
+      d.shield.position.copyFrom(d.body.position);
+      d.light.position.copyFrom(d.body.position);
+      // spin
+      d.body.rotation.y += 0.03;
+      d.body.rotation.x += 0.01;
+      // light pulse based on HP
+      const hpRatio = d.hp / d.maxHp;
+      d.light.intensity = 0.3 + hpRatio * 0.3 + Math.sin(t * 4 + d.angle) * 0.1;
+    }
   });
 
   return scene;
