@@ -4,6 +4,11 @@ import path from "node:path";
 export default defineConfig({
   root: __dirname,
   base: "/webapp/",
+  server: {
+    fs: {
+      allow: [path.resolve(__dirname, "../..")]
+    }
+  },
   build: {
     outDir: path.resolve(__dirname, "dist"),
     emptyOutDir: true,
