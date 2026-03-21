@@ -90,13 +90,8 @@ export function BabylonSceneHost({ districtKey, qualityOverride, onGameStateChan
   const [claiming, setClaiming] = useState(false);
   const [claimResult, setClaimResult] = useState<{ reward: { sc: number; hc: number; rc: number } } | null>(null);
 
-  /** Map district to game type for claim API. */
-  const gameType = districtKey === 'arena' ? 'arena_combat'
-    : districtKey === 'central_hub' ? 'hub_crystals'
-    : districtKey === 'loot_forge' ? 'hub_crystals'
-    : districtKey === 'mission_quarter' ? 'hub_crystals'
-    : districtKey === 'exchange_district' ? 'hub_crystals'
-    : null;
+  /** Map district to game type for claim API. All 9 districts now have interactive mechanics. */
+  const gameType = districtKey === 'arena' ? 'arena_combat' : 'hub_crystals';
 
   /** Claim accumulated game rewards via backend. */
   const claimRewards = useCallback(async () => {

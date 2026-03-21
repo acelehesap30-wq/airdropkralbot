@@ -264,10 +264,89 @@ export function createScene(
     pipeline.bloomScale = 0.5;
   }
 
+  // ── Interactive Trophy Shards ──
+  type ShardTier = 'bronze' | 'silver' | 'gold';
+  interface TrophyShard {
+    mesh: ReturnType<typeof MeshBuilder.CreateSphere>;
+    angle: number;
+    radius: number;
+    speed: number;
+    baseY: number;
+    tier: ShardTier;
+    collected: boolean;
+    respawnAt: number;
+  }
+  const SHARD_CFG = {
+    bronze: { points: 5, color: new Color3(0.8, 0.5, 0.2) },
+    silver: { points: 20, color: new Color3(0.8, 0.8, 0.9) },
+    gold: { points: 50, color: new Color3(1, 0.85, 0.1) },
+  } as const;
+
+  const shardCount = quality === 'low' ? 5 : quality === 'medium' ? 8 : 12;
+  const shards: TrophyShard[] = [];
+  for (let i = 0; i < shardCount; i++) {
+    const tier: ShardTier = i % 5 === 0 ? 'gold' : i % 3 === 0 ? 'silver' : 'bronze';
+    const cfg = SHARD_CFG[tier];
+    const mesh = MeshBuilder.CreateSphere(`shard${i}`, { diameter: tier === 'gold' ? 1.4 : 0.9, segments: 8 }, scene);
+    const mat = new StandardMaterial(`shardMat${i}`, scene);
+    mat.emissiveColor = cfg.color;
+    mat.diffuseColor = Color3.Black();
+    mat.alpha = 0.85;
+    mesh.material = mat;
+    shards.push({
+      mesh, angle: (Math.PI * 2 / shardCount) * i,
+      radius: 8 + Math.random() * 16, speed: 0.004 + Math.random() * 0.006,
+      baseY: 2 + Math.random() * 6, tier, collected: false, respawnAt: 0,
+    });
+  }
+
+  let score = 0, combo = 0, lastCollectTime = 0, shardsCollected = 0;
+  scene.metadata = scene.metadata || {};
+  scene.metadata.gameState = { score: 0, combo: 0, crystalsCollected: 0, totalCrystals: shardCount, lastType: '', lastPoints: 0 };
+
+  scene.onPointerDown = (_evt: any, pickResult: any) => {
+    if (!pickResult?.hit || !pickResult.pickedMesh) return;
+    for (const s of shards) {
+      if (s.collected || s.mesh.name !== pickResult.pickedMesh.name) continue;
+      s.collected = true; s.mesh.setEnabled(false);
+      const now = performance.now();
+      combo = (now - lastCollectTime < 3000) ? Math.min(combo + 1, 10) : 1;
+      lastCollectTime = now;
+      const pts = SHARD_CFG[s.tier].points * combo;
+      score += pts; shardsCollected++;
+      scene.metadata.gameState = { score, combo, crystalsCollected: shardsCollected, totalCrystals: shardCount,
+        lastType: s.tier === 'gold' ? 'rc' : s.tier === 'silver' ? 'hc' : 'sc', lastPoints: pts };
+      const burst = new ParticleSystem(`sBurst${s.mesh.name}`, 20, scene);
+      burst.createPointEmitter(new Vector3(-0.5, -0.5, -0.5), new Vector3(0.5, 0.5, 0.5));
+      burst.emitter = s.mesh.position.clone();
+      burst.minLifeTime = 0.2; burst.maxLifeTime = 0.6; burst.minSize = 0.1; burst.maxSize = 0.35;
+      burst.minEmitPower = 3; burst.maxEmitPower = 6; burst.emitRate = 0;
+      const c = SHARD_CFG[s.tier].color;
+      burst.color1 = new Color4(c.r, c.g, c.b, 1); burst.colorDead = new Color4(0, 0, 0, 0);
+      burst.blendMode = ParticleSystem.BLENDMODE_ADD;
+      burst.manualEmitCount = 20; burst.start(); burst.targetStopDuration = 0.8; burst.disposeOnStop = true;
+      s.respawnAt = now + 6000 + Math.random() * 5000;
+      break;
+    }
+  };
+
   // ── Animation ──
   let t = 0;
   scene.registerBeforeRender(() => {
     t += engine.getDeltaTime() * 0.001;
+    const now = performance.now();
+
+    // shard orbits and respawn
+    for (const s of shards) {
+      if (s.collected && s.respawnAt > 0 && now >= s.respawnAt) {
+        s.collected = false; s.mesh.setEnabled(true); s.respawnAt = 0;
+        s.angle = Math.random() * Math.PI * 2; shardsCollected = Math.max(0, shardsCollected - 1);
+      }
+      if (!s.collected) {
+        s.angle += s.speed;
+        s.mesh.position.set(Math.cos(s.angle) * s.radius, s.baseY + Math.sin(t * 2 + s.angle) * 1, Math.sin(s.angle) * s.radius);
+      }
+    }
 
     // trophy hover and rotate
     for (const tr of trophies) {

@@ -225,10 +225,82 @@ export function createScene(
     pipeline.bloomScale = 0.5;
   }
 
+  // ── Interactive Social Badges ──
+  type BadgeTier = 'friend' | 'ally' | 'legend';
+  interface SocialBadge {
+    mesh: ReturnType<typeof MeshBuilder.CreateSphere>;
+    angle: number; radius: number; speed: number; baseY: number;
+    tier: BadgeTier; collected: boolean; respawnAt: number;
+  }
+  const BADGE_CFG = {
+    friend: { points: 5,  color: new Color3(0, 0.85, 0.75) },
+    ally:   { points: 20, color: new Color3(1, 0.5, 0.15) },
+    legend: { points: 50, color: new Color3(1, 1, 1) },
+  } as const;
+
+  const badgeCount = quality === 'low' ? 5 : quality === 'medium' ? 8 : 11;
+  const badges: SocialBadge[] = [];
+  for (let i = 0; i < badgeCount; i++) {
+    const tier: BadgeTier = i % 6 === 0 ? 'legend' : i % 3 === 0 ? 'ally' : 'friend';
+    const cfg = BADGE_CFG[tier];
+    const mesh = MeshBuilder.CreateSphere(`badge${i}`, { diameter: tier === 'legend' ? 1.4 : 0.9, segments: 8 }, scene);
+    const mat = new StandardMaterial(`badgeMat${i}`, scene);
+    mat.emissiveColor = cfg.color; mat.diffuseColor = Color3.Black(); mat.alpha = 0.85;
+    mesh.material = mat;
+    badges.push({
+      mesh, angle: (Math.PI * 2 / badgeCount) * i,
+      radius: 8 + Math.random() * 15, speed: 0.004 + Math.random() * 0.006,
+      baseY: 2 + Math.random() * 6, tier, collected: false, respawnAt: 0,
+    });
+  }
+
+  let score = 0, combo = 0, lastBadgeTime = 0, badgesCollected = 0;
+  scene.metadata = scene.metadata || {};
+  scene.metadata.gameState = { score: 0, combo: 0, crystalsCollected: 0, totalCrystals: badgeCount, lastType: '', lastPoints: 0 };
+
+  scene.onPointerDown = (_evt: any, pickResult: any) => {
+    if (!pickResult?.hit || !pickResult.pickedMesh) return;
+    for (const b of badges) {
+      if (b.collected || b.mesh.name !== pickResult.pickedMesh.name) continue;
+      b.collected = true; b.mesh.setEnabled(false);
+      const now = performance.now();
+      combo = (now - lastBadgeTime < 3000) ? Math.min(combo + 1, 10) : 1;
+      lastBadgeTime = now;
+      const pts = BADGE_CFG[b.tier].points * combo;
+      score += pts; badgesCollected++;
+      scene.metadata.gameState = { score, combo, crystalsCollected: badgesCollected, totalCrystals: badgeCount,
+        lastType: b.tier === 'legend' ? 'rc' : b.tier === 'ally' ? 'hc' : 'sc', lastPoints: pts };
+      const burst = new ParticleSystem(`bBurst${b.mesh.name}`, 20, scene);
+      burst.createPointEmitter(new Vector3(-0.5, -0.5, -0.5), new Vector3(0.5, 0.5, 0.5));
+      burst.emitter = b.mesh.position.clone();
+      burst.minLifeTime = 0.2; burst.maxLifeTime = 0.6; burst.minSize = 0.1; burst.maxSize = 0.35;
+      burst.minEmitPower = 3; burst.maxEmitPower = 6; burst.emitRate = 0;
+      const c = BADGE_CFG[b.tier].color;
+      burst.color1 = new Color4(c.r, c.g, c.b, 1); burst.colorDead = new Color4(0, 0, 0, 0);
+      burst.blendMode = ParticleSystem.BLENDMODE_ADD;
+      burst.manualEmitCount = 20; burst.start(); burst.targetStopDuration = 0.8; burst.disposeOnStop = true;
+      b.respawnAt = now + 6000 + Math.random() * 5000;
+      break;
+    }
+  };
+
   // ── Animation ──
   let t = 0;
   scene.registerBeforeRender(() => {
     t += engine.getDeltaTime() * 0.001;
+    const now = performance.now();
+
+    // badge orbits and respawn
+    for (const b of badges) {
+      if (b.collected && b.respawnAt > 0 && now >= b.respawnAt) {
+        b.collected = false; b.mesh.setEnabled(true); b.respawnAt = 0;
+        b.angle = Math.random() * Math.PI * 2; badgesCollected = Math.max(0, badgesCollected - 1);
+      }
+      if (!b.collected) {
+        b.angle += b.speed;
+        b.mesh.position.set(Math.cos(b.angle) * b.radius, b.baseY + Math.sin(t * 2 + b.angle) * 1, Math.sin(b.angle) * b.radius);
+      }
+    }
 
     // monument avatar float + glow pulse
     for (const m of monuments) {

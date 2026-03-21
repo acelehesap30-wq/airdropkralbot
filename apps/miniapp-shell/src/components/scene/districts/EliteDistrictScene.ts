@@ -207,10 +207,82 @@ export function createScene(
     pipeline.bloomScale = 0.5;
   }
 
+  // ── Interactive Diamond Gems ──
+  type GemTier = 'amber' | 'diamond' | 'platinum';
+  interface DiamondGem {
+    mesh: ReturnType<typeof MeshBuilder.CreateSphere>;
+    angle: number; radius: number; speed: number; baseY: number;
+    tier: GemTier; collected: boolean; respawnAt: number;
+  }
+  const GEM_CFG = {
+    amber:    { points: 10, color: new Color3(1, 0.7, 0.1) },
+    diamond:  { points: 25, color: new Color3(0.7, 0.9, 1) },
+    platinum: { points: 60, color: new Color3(0.9, 0.85, 1) },
+  } as const;
+
+  const gemCount = quality === 'low' ? 5 : quality === 'medium' ? 8 : 11;
+  const gems: DiamondGem[] = [];
+  for (let i = 0; i < gemCount; i++) {
+    const tier: GemTier = i % 6 === 0 ? 'platinum' : i % 3 === 0 ? 'diamond' : 'amber';
+    const cfg = GEM_CFG[tier];
+    const mesh = MeshBuilder.CreateSphere(`gem${i}`, { diameter: tier === 'platinum' ? 1.5 : 1, segments: 8 }, scene);
+    const mat = new StandardMaterial(`gemMat${i}`, scene);
+    mat.emissiveColor = cfg.color; mat.diffuseColor = Color3.Black(); mat.alpha = 0.9;
+    mesh.material = mat;
+    gems.push({
+      mesh, angle: (Math.PI * 2 / gemCount) * i,
+      radius: 8 + Math.random() * 16, speed: 0.004 + Math.random() * 0.006,
+      baseY: 3 + Math.random() * 7, tier, collected: false, respawnAt: 0,
+    });
+  }
+
+  let score = 0, combo = 0, lastGemTime = 0, gemsCollected = 0;
+  scene.metadata = scene.metadata || {};
+  scene.metadata.gameState = { score: 0, combo: 0, crystalsCollected: 0, totalCrystals: gemCount, lastType: '', lastPoints: 0 };
+
+  scene.onPointerDown = (_evt: any, pickResult: any) => {
+    if (!pickResult?.hit || !pickResult.pickedMesh) return;
+    for (const g of gems) {
+      if (g.collected || g.mesh.name !== pickResult.pickedMesh.name) continue;
+      g.collected = true; g.mesh.setEnabled(false);
+      const now = performance.now();
+      combo = (now - lastGemTime < 3000) ? Math.min(combo + 1, 10) : 1;
+      lastGemTime = now;
+      const pts = GEM_CFG[g.tier].points * combo;
+      score += pts; gemsCollected++;
+      scene.metadata.gameState = { score, combo, crystalsCollected: gemsCollected, totalCrystals: gemCount,
+        lastType: g.tier === 'platinum' ? 'rc' : g.tier === 'diamond' ? 'hc' : 'sc', lastPoints: pts };
+      const burst = new ParticleSystem(`gBurst${g.mesh.name}`, 20, scene);
+      burst.createPointEmitter(new Vector3(-0.5, -0.5, -0.5), new Vector3(0.5, 0.5, 0.5));
+      burst.emitter = g.mesh.position.clone();
+      burst.minLifeTime = 0.2; burst.maxLifeTime = 0.6; burst.minSize = 0.1; burst.maxSize = 0.4;
+      burst.minEmitPower = 3; burst.maxEmitPower = 7; burst.emitRate = 0;
+      const c = GEM_CFG[g.tier].color;
+      burst.color1 = new Color4(c.r, c.g, c.b, 1); burst.colorDead = new Color4(0, 0, 0, 0);
+      burst.blendMode = ParticleSystem.BLENDMODE_ADD;
+      burst.manualEmitCount = 20; burst.start(); burst.targetStopDuration = 0.8; burst.disposeOnStop = true;
+      g.respawnAt = now + 6000 + Math.random() * 5000;
+      break;
+    }
+  };
+
   // ── Animation ──
   let t = 0;
   scene.registerBeforeRender(() => {
     t += engine.getDeltaTime() * 0.001;
+    const now = performance.now();
+
+    // gem orbits and respawn
+    for (const g of gems) {
+      if (g.collected && g.respawnAt > 0 && now >= g.respawnAt) {
+        g.collected = false; g.mesh.setEnabled(true); g.respawnAt = 0;
+        g.angle = Math.random() * Math.PI * 2; gemsCollected = Math.max(0, gemsCollected - 1);
+      }
+      if (!g.collected) {
+        g.angle += g.speed;
+        g.mesh.position.set(Math.cos(g.angle) * g.radius, g.baseY + Math.sin(t * 2 + g.angle) * 1.2, Math.sin(g.angle) * g.radius);
+      }
+    }
 
     // floating diamond towers
     for (const tw of towers) {

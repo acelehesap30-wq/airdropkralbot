@@ -201,10 +201,82 @@ export function createScene(
     pipeline.bloomScale = 0.5;
   }
 
+  // ── Interactive Energy Orbs ──
+  type OrbType = 'plasma' | 'anomaly' | 'nexus';
+  interface EnergyOrb {
+    mesh: ReturnType<typeof MeshBuilder.CreateSphere>;
+    angle: number; radius: number; speed: number; baseY: number;
+    orbType: OrbType; collected: boolean; respawnAt: number;
+  }
+  const ORB_CFG = {
+    plasma:  { points: 8,  color: new Color3(0.2, 1, 0.5) },
+    anomaly: { points: 25, color: new Color3(0.8, 0.15, 0.9) },
+    nexus:   { points: 50, color: new Color3(1, 1, 1) },
+  } as const;
+
+  const eOrbCount = quality === 'low' ? 5 : quality === 'medium' ? 8 : 12;
+  const energyOrbs: EnergyOrb[] = [];
+  for (let i = 0; i < eOrbCount; i++) {
+    const orbType: OrbType = i % 6 === 0 ? 'nexus' : i % 3 === 0 ? 'anomaly' : 'plasma';
+    const cfg = ORB_CFG[orbType];
+    const mesh = MeshBuilder.CreateSphere(`eOrb${i}`, { diameter: orbType === 'nexus' ? 1.6 : 1, segments: 8 }, scene);
+    const mat = new StandardMaterial(`eOrbMat${i}`, scene);
+    mat.emissiveColor = cfg.color; mat.diffuseColor = Color3.Black(); mat.alpha = 0.85;
+    mesh.material = mat;
+    energyOrbs.push({
+      mesh, angle: (Math.PI * 2 / eOrbCount) * i,
+      radius: 6 + Math.random() * 18, speed: 0.005 + Math.random() * 0.008,
+      baseY: 2 + Math.random() * 8, orbType, collected: false, respawnAt: 0,
+    });
+  }
+
+  let score = 0, combo = 0, lastOrbTime = 0, orbsCollected = 0;
+  scene.metadata = scene.metadata || {};
+  scene.metadata.gameState = { score: 0, combo: 0, crystalsCollected: 0, totalCrystals: eOrbCount, lastType: '', lastPoints: 0 };
+
+  scene.onPointerDown = (_evt: any, pickResult: any) => {
+    if (!pickResult?.hit || !pickResult.pickedMesh) return;
+    for (const o of energyOrbs) {
+      if (o.collected || o.mesh.name !== pickResult.pickedMesh.name) continue;
+      o.collected = true; o.mesh.setEnabled(false);
+      const now = performance.now();
+      combo = (now - lastOrbTime < 3000) ? Math.min(combo + 1, 10) : 1;
+      lastOrbTime = now;
+      const pts = ORB_CFG[o.orbType].points * combo;
+      score += pts; orbsCollected++;
+      scene.metadata.gameState = { score, combo, crystalsCollected: orbsCollected, totalCrystals: eOrbCount,
+        lastType: o.orbType === 'nexus' ? 'rc' : o.orbType === 'anomaly' ? 'hc' : 'sc', lastPoints: pts };
+      const burst = new ParticleSystem(`oBurst${o.mesh.name}`, 20, scene);
+      burst.createPointEmitter(new Vector3(-0.5, -0.5, -0.5), new Vector3(0.5, 0.5, 0.5));
+      burst.emitter = o.mesh.position.clone();
+      burst.minLifeTime = 0.2; burst.maxLifeTime = 0.6; burst.minSize = 0.12; burst.maxSize = 0.4;
+      burst.minEmitPower = 3; burst.maxEmitPower = 7; burst.emitRate = 0;
+      const c = ORB_CFG[o.orbType].color;
+      burst.color1 = new Color4(c.r, c.g, c.b, 1); burst.colorDead = new Color4(0, 0, 0, 0);
+      burst.blendMode = ParticleSystem.BLENDMODE_ADD;
+      burst.manualEmitCount = 20; burst.start(); burst.targetStopDuration = 0.8; burst.disposeOnStop = true;
+      o.respawnAt = now + 5000 + Math.random() * 5000;
+      break;
+    }
+  };
+
   // ── Animation ──
   let t = 0;
   scene.registerBeforeRender(() => {
     t += engine.getDeltaTime() * 0.001;
+    const now = performance.now();
+
+    // energy orb orbits and respawn
+    for (const o of energyOrbs) {
+      if (o.collected && o.respawnAt > 0 && now >= o.respawnAt) {
+        o.collected = false; o.mesh.setEnabled(true); o.respawnAt = 0;
+        o.angle = Math.random() * Math.PI * 2; orbsCollected = Math.max(0, orbsCollected - 1);
+      }
+      if (!o.collected) {
+        o.angle += o.speed;
+        o.mesh.position.set(Math.cos(o.angle) * o.radius, o.baseY + Math.sin(t * 2.5 + o.angle) * 1.5, Math.sin(o.angle) * o.radius);
+      }
+    }
 
     // energy ring pulsation + rotation
     for (const er of energyRings) {
