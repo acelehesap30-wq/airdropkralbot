@@ -9027,6 +9027,176 @@ fastify.get("/webapp/api/arena/director", async (request, reply) => {
   }
 });
 
+/* ═══════════════════════════════════════
+   3D Game → Economy: Reward Claim
+   Converts interactive 3D scene scores (hub crystals, arena combat)
+   into real currency balance changes (SC / HC / RC).
+   ═══════════════════════════════════════ */
+
+const GAME_CLAIM_LIMITS = {
+  max_score_per_claim: 50000,
+  max_claims_per_hour: 12,
+  cooldown_ms: 15_000,
+  // Reward conversion rates per game type
+  hub_crystals: { sc_per_point: 1, hc_per_point: 1, rc_per_point: 1 },
+  arena_combat: { sc_per_kill: 10, hc_per_500_score: 5, rc_per_1000_score: 1 }
+};
+
+fastify.post(
+  "/webapp/api/game/claim",
+  {
+    schema: {
+      body: {
+        type: "object",
+        required: ["uid", "ts", "sig", "game_type", "score"],
+        properties: {
+          uid: { type: "string" },
+          ts: { type: "string" },
+          sig: { type: "string" },
+          game_type: { type: "string", enum: ["hub_crystals", "arena_combat"] },
+          score: { type: "number", minimum: 1, maximum: 50000 },
+          stats: {
+            type: "object",
+            properties: {
+              kills: { type: "number" },
+              combo: { type: "number" },
+              streak: { type: "number" },
+              crystals_sc: { type: "number" },
+              crystals_hc: { type: "number" },
+              crystals_rc: { type: "number" }
+            }
+          },
+          claim_id: { type: "string", minLength: 8, maxLength: 96 }
+        }
+      }
+    }
+  },
+  async (request, reply) => {
+    const auth = verifyWebAppAuth(request.body.uid, request.body.ts, request.body.sig);
+    if (!auth.ok) {
+      reply.code(401).send({ success: false, error: auth.reason });
+      return;
+    }
+
+    const { game_type, score, stats, claim_id } = request.body;
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      const profile = await getProfileByTelegram(client, auth.uid);
+      if (!profile) {
+        await client.query("ROLLBACK");
+        reply.code(404).send({ success: false, error: "user_not_started" });
+        return;
+      }
+
+      const freeze = await getFreezeState(client);
+      if (freeze.freeze) {
+        await client.query("ROLLBACK");
+        reply.code(409).send({ success: false, error: "freeze_mode", reason: freeze.reason });
+        return;
+      }
+
+      // ── Anti-abuse: rate limit claims per hour ──
+      const recentClaims = await client.query(
+        `SELECT COUNT(*) AS cnt FROM currency_ledger
+         WHERE user_id = $1 AND reason = 'game_3d_claim'
+         AND created_at > now() - interval '1 hour'`,
+        [profile.user_id]
+      );
+      if (Number(recentClaims.rows[0]?.cnt || 0) >= GAME_CLAIM_LIMITS.max_claims_per_hour) {
+        await client.query("ROLLBACK");
+        reply.code(429).send({ success: false, error: "claim_rate_limited", max_per_hour: GAME_CLAIM_LIMITS.max_claims_per_hour });
+        return;
+      }
+
+      // ── Anti-abuse: cooldown between claims ──
+      const lastClaim = await client.query(
+        `SELECT created_at FROM currency_ledger
+         WHERE user_id = $1 AND reason = 'game_3d_claim'
+         ORDER BY created_at DESC LIMIT 1`,
+        [profile.user_id]
+      );
+      if (lastClaim.rows[0]) {
+        const elapsed = Date.now() - new Date(lastClaim.rows[0].created_at).getTime();
+        if (elapsed < GAME_CLAIM_LIMITS.cooldown_ms) {
+          await client.query("ROLLBACK");
+          reply.code(429).send({ success: false, error: "claim_cooldown", retry_after_ms: GAME_CLAIM_LIMITS.cooldown_ms - elapsed });
+          return;
+        }
+      }
+
+      // ── Cap score ──
+      const cappedScore = Math.min(score, GAME_CLAIM_LIMITS.max_score_per_claim);
+
+      // ── Calculate rewards based on game type ──
+      let reward = { sc: 0, hc: 0, rc: 0 };
+      const safeStats = stats || {};
+
+      if (game_type === "hub_crystals") {
+        const rates = GAME_CLAIM_LIMITS.hub_crystals;
+        reward.sc = Math.floor((safeStats.crystals_sc || 0) * rates.sc_per_point);
+        reward.hc = Math.floor((safeStats.crystals_hc || 0) * rates.hc_per_point);
+        reward.rc = Math.floor((safeStats.crystals_rc || 0) * rates.rc_per_point);
+      } else if (game_type === "arena_combat") {
+        const rates = GAME_CLAIM_LIMITS.arena_combat;
+        const kills = Math.min(safeStats.kills || 0, 200);
+        reward.sc = kills * rates.sc_per_kill;
+        reward.hc = Math.floor(cappedScore / 500) * rates.hc_per_500_score;
+        reward.rc = Math.floor(cappedScore / 1000) * rates.rc_per_1000_score;
+      }
+
+      // Ensure at least something is rewarded (minimum 1 SC for any valid claim)
+      if (reward.sc === 0 && reward.hc === 0 && reward.rc === 0) {
+        reward.sc = Math.max(1, Math.floor(cappedScore / 10));
+      }
+
+      // ── Credit rewards ──
+      const claimRef = claim_id || `game_${game_type}_${auth.uid}_${Date.now()}`;
+      const creditResult = await economyStore.creditReward(client, {
+        userId: profile.user_id,
+        reward,
+        reason: "game_3d_claim",
+        meta: {
+          game_type,
+          score: cappedScore,
+          stats: safeStats,
+          claim_id: claimRef
+        },
+        refEventIds: {
+          SC: `${claimRef}:SC`,
+          HC: `${claimRef}:HC`,
+          RC: `${claimRef}:RC`
+        }
+      });
+
+      await client.query("COMMIT");
+
+      reply.send({
+        success: true,
+        session: issueWebAppSession(auth.uid),
+        data: {
+          reward,
+          balances: {
+            SC: creditResult.SC?.balance ?? 0,
+            HC: creditResult.HC?.balance ?? 0,
+            RC: creditResult.RC?.balance ?? 0
+          },
+          score: cappedScore,
+          game_type,
+          claim_id: claimRef,
+          server_tick: Date.now()
+        }
+      });
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+);
+
 fastify.post(
   "/webapp/api/arena/raid/session/start",
   {

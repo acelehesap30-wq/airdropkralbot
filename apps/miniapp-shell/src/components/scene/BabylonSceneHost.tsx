@@ -49,18 +49,35 @@ function isWebGLAvailable(): boolean {
   }
 }
 
+/** Game state exposed by interactive 3D scenes via scene.metadata.gameState. */
+export interface GameState {
+  score: number;
+  combo?: number;
+  kills?: number;
+  streak?: number;
+  crystalsCollected?: number;
+  totalCrystals?: number;
+  dronesAlive?: number;
+  lastType?: string;
+  lastPoints?: number;
+}
+
 interface BabylonSceneHostProps {
   /** Which district scene to render. */
   districtKey: DistrictKey;
   /** Override auto-detected quality. When unset, quality is determined automatically. */
   qualityOverride?: QualityProfile;
+  /** Callback fired when game state changes in the 3D scene. */
+  onGameStateChange?: (state: GameState) => void;
 }
 
-export function BabylonSceneHost({ districtKey, qualityOverride }: BabylonSceneHostProps) {
+export function BabylonSceneHost({ districtKey, qualityOverride, onGameStateChange }: BabylonSceneHostProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef</* Engine */ any>(null);
   const sceneRef = useRef</* Scene */ any>(null);
   const renderLoopRef = useRef<(() => void) | null>(null);
+  const onGameStateChangeRef = useRef(onGameStateChange);
+  onGameStateChangeRef.current = onGameStateChange;
 
   const [profile, setProfile] = useState<QualityProfile>(
     qualityOverride ?? 'balanced',
@@ -69,6 +86,60 @@ export function BabylonSceneHost({ districtKey, qualityOverride }: BabylonSceneH
   const [fallback, setFallback] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [gameState, setGameState] = useState<GameState | null>(null);
+  const [claiming, setClaiming] = useState(false);
+  const [claimResult, setClaimResult] = useState<{ reward: { sc: number; hc: number; rc: number } } | null>(null);
+
+  /** Map district to game type for claim API. */
+  const gameType = districtKey === 'arena' ? 'arena_combat' : districtKey === 'central_hub' ? 'hub_crystals' : null;
+
+  /** Claim accumulated game rewards via backend. */
+  const claimRewards = useCallback(async () => {
+    if (!gameState || gameState.score <= 0 || claiming || !gameType) return;
+    setClaiming(true);
+    setClaimResult(null);
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const uid = params.get('uid') || '';
+      const ts = params.get('ts') || String(Date.now());
+      const sig = params.get('sig') || '';
+
+      const stats: Record<string, number> = {};
+      if (gameType === 'hub_crystals') {
+        stats.crystals_sc = Math.floor((gameState.crystalsCollected || 0) * 0.6);
+        stats.crystals_hc = Math.floor((gameState.crystalsCollected || 0) * 0.3);
+        stats.crystals_rc = Math.floor((gameState.crystalsCollected || 0) * 0.1);
+      } else {
+        stats.kills = gameState.kills || 0;
+        stats.streak = gameState.streak || 0;
+      }
+
+      const resp = await fetch('/webapp/api/game/claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          uid, ts, sig,
+          game_type: gameType,
+          score: gameState.score,
+          stats,
+          claim_id: `${gameType}_${uid}_${Date.now()}`
+        }),
+      });
+      const data = await resp.json();
+      if (data.success) {
+        setClaimResult({ reward: data.data.reward });
+        // Reset scene game state after successful claim
+        if (sceneRef.current?.metadata) {
+          sceneRef.current.metadata.gameState = { score: 0 };
+        }
+        setGameState({ score: 0 });
+      }
+    } catch (err) {
+      console.error('[BabylonSceneHost] Claim failed:', err);
+    } finally {
+      setClaiming(false);
+    }
+  }, [gameState, claiming, gameType]);
 
   /** Map profile to BabylonJS quality tier. */
   const quality = profileToTier(profile);
@@ -116,9 +187,10 @@ export function BabylonSceneHost({ districtKey, qualityOverride }: BabylonSceneH
       const scene = createScene(engine, canvas, effectiveQuality);
       sceneRef.current = scene;
 
-      // ── FPS monitoring & auto quality ──
+      // ── FPS monitoring & auto quality + game state polling ──
       let frameCount = 0;
       let lastCheck = performance.now();
+      let lastGameScore = -1;
 
       const renderFn = () => {
         scene.render();
@@ -144,6 +216,14 @@ export function BabylonSceneHost({ districtKey, qualityOverride }: BabylonSceneH
               setProfile('balanced');
             }
           }
+        }
+
+        // ── Game state polling (every frame, only updates on change) ──
+        const gs = scene.metadata?.gameState as GameState | undefined;
+        if (gs && gs.score !== lastGameScore) {
+          lastGameScore = gs.score;
+          setGameState({ ...gs });
+          onGameStateChangeRef.current?.({ ...gs });
         }
       };
 
@@ -202,6 +282,12 @@ export function BabylonSceneHost({ districtKey, qualityOverride }: BabylonSceneH
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: 280 }}>
+      <style>{`
+        @keyframes fadeUp {
+          0% { opacity: 1; transform: translateY(0); }
+          100% { opacity: 0; transform: translateY(-20px); }
+        }
+      `}</style>
       <canvas
         ref={canvasRef}
         style={{
@@ -254,6 +340,167 @@ export function BabylonSceneHost({ districtKey, qualityOverride }: BabylonSceneH
           }}
         >
           {error}
+        </div>
+      )}
+
+      {/* Game HUD overlay */}
+      {!loading && gameState && gameState.score > 0 && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 4,
+            fontFamily: 'var(--font-mono, monospace)',
+            pointerEvents: 'none',
+          }}
+        >
+          {/* Score */}
+          <div
+            style={{
+              background: 'rgba(0,0,0,0.6)',
+              border: '1px solid rgba(0,214,255,0.3)',
+              borderRadius: 8,
+              padding: '6px 12px',
+              textAlign: 'right',
+            }}
+          >
+            <div style={{ fontSize: 9, color: 'rgba(0,214,255,0.7)', textTransform: 'uppercase', letterSpacing: 1 }}>
+              Score
+            </div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: '#00d6ff', lineHeight: 1 }}>
+              {gameState.score.toLocaleString()}
+            </div>
+          </div>
+
+          {/* Combo / Streak */}
+          {((gameState.combo && gameState.combo > 1) || (gameState.streak && gameState.streak > 1)) && (
+            <div
+              style={{
+                background: 'rgba(0,0,0,0.6)',
+                border: '1px solid rgba(255,215,0,0.4)',
+                borderRadius: 8,
+                padding: '4px 12px',
+                textAlign: 'right',
+              }}
+            >
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#ffd700' }}>
+                x{gameState.combo || gameState.streak}
+              </span>
+              <span style={{ fontSize: 9, color: 'rgba(255,215,0,0.6)', marginLeft: 4 }}>
+                {gameState.combo ? 'COMBO' : 'STREAK'}
+              </span>
+            </div>
+          )}
+
+          {/* Kills (arena) */}
+          {typeof gameState.kills === 'number' && gameState.kills > 0 && (
+            <div
+              style={{
+                background: 'rgba(0,0,0,0.6)',
+                border: '1px solid rgba(255,68,68,0.3)',
+                borderRadius: 8,
+                padding: '4px 12px',
+                textAlign: 'right',
+              }}
+            >
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#ff4444' }}>
+                {gameState.kills}
+              </span>
+              <span style={{ fontSize: 9, color: 'rgba(255,68,68,0.6)', marginLeft: 4 }}>
+                KILLS
+              </span>
+            </div>
+          )}
+
+          {/* Crystals collected (hub) */}
+          {typeof gameState.crystalsCollected === 'number' && gameState.totalCrystals && gameState.crystalsCollected > 0 && (
+            <div
+              style={{
+                background: 'rgba(0,0,0,0.6)',
+                border: '1px solid rgba(0,255,136,0.3)',
+                borderRadius: 8,
+                padding: '4px 12px',
+                textAlign: 'right',
+              }}
+            >
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#00ff88' }}>
+                {gameState.crystalsCollected}/{gameState.totalCrystals}
+              </span>
+              <span style={{ fontSize: 9, color: 'rgba(0,255,136,0.6)', marginLeft: 4 }}>
+                CRYSTALS
+              </span>
+            </div>
+          )}
+
+          {/* Last collect flash */}
+          {gameState.lastPoints && gameState.lastPoints > 0 && (
+            <div
+              key={gameState.score}
+              style={{
+                textAlign: 'right',
+                fontSize: 16,
+                fontWeight: 700,
+                color: gameState.lastType === 'rc' ? '#e040fb' : gameState.lastType === 'hc' ? '#00d2ff' : '#00ff88',
+                animation: 'fadeUp 0.8s ease-out forwards',
+              }}
+            >
+              +{gameState.lastPoints}
+            </div>
+          )}
+
+          {/* Claim Rewards Button */}
+          {gameType && gameState.score >= 10 && (
+            <button
+              onClick={claimRewards}
+              disabled={claiming}
+              style={{
+                marginTop: 6,
+                padding: '8px 16px',
+                background: claiming
+                  ? 'rgba(100,100,100,0.6)'
+                  : 'linear-gradient(135deg, #00d6ff 0%, #00ff88 100%)',
+                border: 'none',
+                borderRadius: 8,
+                color: '#0a0a1a',
+                fontWeight: 700,
+                fontSize: 12,
+                fontFamily: 'var(--font-mono, monospace)',
+                cursor: claiming ? 'wait' : 'pointer',
+                textTransform: 'uppercase',
+                letterSpacing: 1,
+                pointerEvents: 'auto',
+              }}
+            >
+              {claiming ? 'Claiming...' : 'Claim Rewards'}
+            </button>
+          )}
+
+          {/* Claim success flash */}
+          {claimResult && (
+            <div
+              key={`claim-${Date.now()}`}
+              style={{
+                background: 'rgba(0,0,0,0.7)',
+                border: '1px solid rgba(0,255,136,0.5)',
+                borderRadius: 8,
+                padding: '6px 12px',
+                textAlign: 'right',
+                animation: 'fadeUp 2s ease-out forwards',
+              }}
+            >
+              <div style={{ fontSize: 9, color: 'rgba(0,255,136,0.8)', textTransform: 'uppercase', letterSpacing: 1 }}>
+                Claimed!
+              </div>
+              <div style={{ fontSize: 11, color: '#fff', marginTop: 2 }}>
+                {claimResult.reward.sc > 0 && <span style={{ color: '#00ff88' }}>+{claimResult.reward.sc} SC </span>}
+                {claimResult.reward.hc > 0 && <span style={{ color: '#00d2ff' }}>+{claimResult.reward.hc} HC </span>}
+                {claimResult.reward.rc > 0 && <span style={{ color: '#e040fb' }}>+{claimResult.reward.rc} RC</span>}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
