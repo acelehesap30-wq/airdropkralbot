@@ -181,6 +181,126 @@ export function createScene(
     accent.material = i % 2 === 0 ? statusGreen : statusOrange;
   }
 
+  // ── Scan Targets (interactive blips) ──
+  type TargetTier = 'basic' | 'priority' | 'critical';
+  interface ScanTarget {
+    mesh: ReturnType<typeof MeshBuilder.CreateSphere>;
+    angle: number;
+    radius: number;
+    speed: number;
+    tier: TargetTier;
+    scanned: boolean;
+    respawnAt: number;
+    light: InstanceType<typeof PointLight>;
+  }
+
+  const TIER_CONFIG = {
+    basic:    { points: 5,  color: new Color3(0, 0.9, 0.3) },
+    priority: { points: 20, color: new Color3(1, 0.55, 0) },
+    critical: { points: 50, color: new Color3(1, 0.1, 0.1) },
+  } as const;
+
+  const targetCount = quality === 'low' ? 5 : quality === 'medium' ? 8 : 12;
+  const targets: ScanTarget[] = [];
+
+  for (let i = 0; i < targetCount; i++) {
+    const tier: TargetTier = i % 5 === 0 ? 'critical' : i % 3 === 0 ? 'priority' : 'basic';
+    const cfg = TIER_CONFIG[tier];
+    const blip = MeshBuilder.CreateSphere(`target${i}`, { diameter: tier === 'critical' ? 1.5 : tier === 'priority' ? 1.2 : 0.8, segments: 8 }, scene);
+    const blipMat = new StandardMaterial(`targetMat${i}`, scene);
+    blipMat.emissiveColor = cfg.color;
+    blipMat.diffuseColor = Color3.Black();
+    blipMat.alpha = 0.8;
+    blip.material = blipMat;
+
+    const light = new PointLight(`tLight${i}`, Vector3.Zero(), scene);
+    light.diffuse = cfg.color;
+    light.intensity = 0.4;
+    light.range = 5;
+
+    targets.push({
+      mesh: blip,
+      angle: (Math.PI * 2 / targetCount) * i,
+      radius: 8 + Math.random() * 20,
+      speed: 0.004 + Math.random() * 0.006,
+      tier,
+      scanned: false,
+      respawnAt: 0,
+      light,
+    });
+  }
+
+  // ── Game State ──
+  let score = 0;
+  let streak = 0;
+  let lastScanTime = 0;
+  let targetsScanned = 0;
+
+  scene.metadata = scene.metadata || {};
+  scene.metadata.gameState = { score: 0, streak: 0, crystalsCollected: 0, totalCrystals: targetCount, lastType: '', lastPoints: 0 };
+
+  // ── Click to scan targets ──
+  scene.onPointerDown = (_evt: any, pickResult: any) => {
+    if (!pickResult?.hit || !pickResult.pickedMesh) return;
+    const name = pickResult.pickedMesh.name;
+
+    for (const tgt of targets) {
+      if (tgt.scanned || tgt.mesh.name !== name) continue;
+
+      tgt.scanned = true;
+      tgt.mesh.setEnabled(false);
+      tgt.light.intensity = 0;
+
+      const now = performance.now();
+      if (now - lastScanTime < 3000) {
+        streak = Math.min(streak + 1, 10);
+      } else {
+        streak = 1;
+      }
+      lastScanTime = now;
+
+      const cfg = TIER_CONFIG[tgt.tier];
+      const pts = cfg.points * streak;
+      score += pts;
+      targetsScanned++;
+
+      scene.metadata.gameState = {
+        score,
+        streak,
+        crystalsCollected: targetsScanned,
+        totalCrystals: targetCount,
+        lastType: tgt.tier === 'critical' ? 'rc' : tgt.tier === 'priority' ? 'hc' : 'sc',
+        lastPoints: pts,
+      };
+
+      // Scan burst particles
+      const burst = new ParticleSystem(`scanBurst${tgt.mesh.name}`, quality === 'low' ? 12 : 25, scene);
+      burst.createPointEmitter(new Vector3(-0.5, -0.5, -0.5), new Vector3(0.5, 0.5, 0.5));
+      burst.emitter = tgt.mesh.position.clone();
+      burst.minLifeTime = 0.2;
+      burst.maxLifeTime = 0.6;
+      burst.minSize = 0.1;
+      burst.maxSize = 0.35;
+      burst.minEmitPower = 2;
+      burst.maxEmitPower = 5;
+      burst.emitRate = 0;
+      const c = cfg.color;
+      burst.color1 = new Color4(c.r, c.g, c.b, 1);
+      burst.color2 = new Color4(c.r * 0.6, c.g * 0.6, c.b * 0.6, 0.7);
+      burst.colorDead = new Color4(0, 0, 0, 0);
+      burst.gravity = new Vector3(0, -1, 0);
+      burst.blendMode = ParticleSystem.BLENDMODE_ADD;
+      burst.manualEmitCount = quality === 'low' ? 12 : 25;
+      burst.start();
+      burst.targetStopDuration = 0.8;
+      burst.disposeOnStop = true;
+
+      // Respawn in 5-10 seconds
+      tgt.respawnAt = now + 5000 + Math.random() * 5000;
+      break;
+    }
+  };
+
   // ── Particles – data sparks ──
   const ps = new ParticleSystem('sparks', quality === 'low' ? 100 : 300, scene);
   ps.createPointEmitter(new Vector3(-20, 0, -20), new Vector3(20, 5, 20));
@@ -219,6 +339,27 @@ export function createScene(
   let t = 0;
   scene.registerBeforeRender(() => {
     t += engine.getDeltaTime() * 0.001;
+
+    const now = performance.now();
+
+    // scan target orbits and respawn
+    for (const tgt of targets) {
+      if (tgt.scanned && tgt.respawnAt > 0 && now >= tgt.respawnAt) {
+        tgt.scanned = false;
+        tgt.mesh.setEnabled(true);
+        tgt.respawnAt = 0;
+        tgt.angle = Math.random() * Math.PI * 2;
+        targetsScanned = Math.max(0, targetsScanned - 1);
+      }
+      if (!tgt.scanned) {
+        tgt.angle += tgt.speed;
+        tgt.mesh.position.x = Math.cos(tgt.angle) * tgt.radius;
+        tgt.mesh.position.z = Math.sin(tgt.angle) * tgt.radius;
+        tgt.mesh.position.y = 0.5 + Math.sin(t * 2 + tgt.angle) * 0.5;
+        tgt.light.position.copyFrom(tgt.mesh.position);
+        tgt.light.intensity = 0.3 + Math.sin(t * 4 + tgt.angle) * 0.15;
+      }
+    }
 
     // radar sweep
     sweepArm.rotation.y = t * 1.2;
