@@ -205,6 +205,138 @@ export function createScene(
     chartBars.push({ mesh: bar, baseHeight: h });
   }
 
+  // ── Interactive Trade Orbs ──
+  type TradeSignal = 'bull' | 'bear' | 'golden';
+  interface TradeOrb {
+    mesh: ReturnType<typeof MeshBuilder.CreateSphere>;
+    angle: number;
+    radius: number;
+    speed: number;
+    baseY: number;
+    signal: TradeSignal;
+    tapped: boolean;
+    respawnAt: number;
+    light: InstanceType<typeof PointLight>;
+  }
+
+  const SIGNAL_CONFIG = {
+    bull:   { points: 10, color: new Color3(0.2, 0.9, 0.3) },
+    bear:   { points: 15, color: new Color3(0.9, 0.2, 0.2) },
+    golden: { points: 50, color: new Color3(1, 0.85, 0.1) },
+  } as const;
+
+  const orbCount = quality === 'low' ? 5 : quality === 'medium' ? 8 : 11;
+  const tradeOrbs: TradeOrb[] = [];
+
+  const bullOrbMat = new StandardMaterial('bullOrbMat', scene);
+  bullOrbMat.emissiveColor = new Color3(0.2, 0.9, 0.3);
+  bullOrbMat.diffuseColor = Color3.Black();
+  bullOrbMat.alpha = 0.85;
+
+  const bearOrbMat = new StandardMaterial('bearOrbMat', scene);
+  bearOrbMat.emissiveColor = new Color3(0.9, 0.2, 0.2);
+  bearOrbMat.diffuseColor = Color3.Black();
+  bearOrbMat.alpha = 0.85;
+
+  const goldenOrbMat = new StandardMaterial('goldenOrbMat', scene);
+  goldenOrbMat.emissiveColor = new Color3(1, 0.85, 0.1);
+  goldenOrbMat.diffuseColor = Color3.Black();
+  goldenOrbMat.alpha = 0.9;
+
+  for (let i = 0; i < orbCount; i++) {
+    const signal: TradeSignal = i % 7 === 0 ? 'golden' : i % 2 === 0 ? 'bull' : 'bear';
+    const cfg = SIGNAL_CONFIG[signal];
+    const orb = MeshBuilder.CreateSphere(`tradeOrb${i}`, { diameter: signal === 'golden' ? 1.8 : 1.2, segments: 8 }, scene);
+    orb.material = signal === 'golden' ? goldenOrbMat : signal === 'bull' ? bullOrbMat : bearOrbMat;
+
+    const light = new PointLight(`orbLight${i}`, Vector3.Zero(), scene);
+    light.diffuse = cfg.color;
+    light.intensity = 0.5;
+    light.range = 6;
+
+    tradeOrbs.push({
+      mesh: orb,
+      angle: (Math.PI * 2 / orbCount) * i,
+      radius: 6 + Math.random() * 18,
+      speed: 0.003 + Math.random() * 0.007,
+      baseY: 3 + Math.random() * 8,
+      signal,
+      tapped: false,
+      respawnAt: 0,
+      light,
+    });
+  }
+
+  // ── Game State ──
+  let score = 0;
+  let combo = 0;
+  let lastTapTime = 0;
+  let orbsTapped = 0;
+
+  scene.metadata = scene.metadata || {};
+  scene.metadata.gameState = { score: 0, combo: 0, crystalsCollected: 0, totalCrystals: orbCount, lastType: '', lastPoints: 0 };
+
+  // ── Click to tap trade orbs ──
+  scene.onPointerDown = (_evt: any, pickResult: any) => {
+    if (!pickResult?.hit || !pickResult.pickedMesh) return;
+    const name = pickResult.pickedMesh.name;
+
+    for (const orb of tradeOrbs) {
+      if (orb.tapped || orb.mesh.name !== name) continue;
+
+      orb.tapped = true;
+      orb.mesh.setEnabled(false);
+      orb.light.intensity = 0;
+
+      const now = performance.now();
+      if (now - lastTapTime < 3000) {
+        combo = Math.min(combo + 1, 10);
+      } else {
+        combo = 1;
+      }
+      lastTapTime = now;
+
+      const cfg = SIGNAL_CONFIG[orb.signal];
+      const pts = cfg.points * combo;
+      score += pts;
+      orbsTapped++;
+
+      scene.metadata.gameState = {
+        score,
+        combo,
+        crystalsCollected: orbsTapped,
+        totalCrystals: orbCount,
+        lastType: orb.signal === 'golden' ? 'rc' : orb.signal === 'bull' ? 'hc' : 'sc',
+        lastPoints: pts,
+      };
+
+      // Tap burst particles
+      const burst = new ParticleSystem(`orbBurst${orb.mesh.name}`, quality === 'low' ? 12 : 25, scene);
+      burst.createPointEmitter(new Vector3(-0.5, -0.5, -0.5), new Vector3(0.5, 0.5, 0.5));
+      burst.emitter = orb.mesh.position.clone();
+      burst.minLifeTime = 0.3;
+      burst.maxLifeTime = 0.7;
+      burst.minSize = 0.12;
+      burst.maxSize = 0.4;
+      burst.minEmitPower = 3;
+      burst.maxEmitPower = 7;
+      burst.emitRate = 0;
+      const c = cfg.color;
+      burst.color1 = new Color4(c.r, c.g, c.b, 1);
+      burst.color2 = new Color4(c.r * 0.6, c.g * 0.6, c.b * 0.6, 0.7);
+      burst.colorDead = new Color4(0, 0, 0, 0);
+      burst.gravity = new Vector3(0, -2, 0);
+      burst.blendMode = ParticleSystem.BLENDMODE_ADD;
+      burst.manualEmitCount = quality === 'low' ? 12 : 25;
+      burst.start();
+      burst.targetStopDuration = 0.8;
+      burst.disposeOnStop = true;
+
+      orb.respawnAt = now + 5000 + Math.random() * 5000;
+      break;
+    }
+  };
+
   // ── Currency Stream Particles ──
   const currPs = new ParticleSystem('currency', quality === 'low' ? 150 : 400, scene);
   currPs.createPointEmitter(new Vector3(-5, 0, -5), new Vector3(5, 2, 5));
@@ -243,6 +375,27 @@ export function createScene(
   let t = 0;
   scene.registerBeforeRender(() => {
     t += engine.getDeltaTime() * 0.001;
+
+    const now = performance.now();
+
+    // trade orb orbits and respawn
+    for (const orb of tradeOrbs) {
+      if (orb.tapped && orb.respawnAt > 0 && now >= orb.respawnAt) {
+        orb.tapped = false;
+        orb.mesh.setEnabled(true);
+        orb.respawnAt = 0;
+        orb.angle = Math.random() * Math.PI * 2;
+        orbsTapped = Math.max(0, orbsTapped - 1);
+      }
+      if (!orb.tapped) {
+        orb.angle += orb.speed;
+        orb.mesh.position.x = Math.cos(orb.angle) * orb.radius;
+        orb.mesh.position.z = Math.sin(orb.angle) * orb.radius;
+        orb.mesh.position.y = orb.baseY + Math.sin(t * 2.5 + orb.angle) * 1.5;
+        orb.light.position.copyFrom(orb.mesh.position);
+        orb.light.intensity = 0.4 + Math.sin(t * 3 + orb.angle) * 0.2;
+      }
+    }
 
     // ticker bob
     for (const tk of tickers) {

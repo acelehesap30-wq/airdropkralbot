@@ -95,6 +95,7 @@ export function BabylonSceneHost({ districtKey, qualityOverride, onGameStateChan
     : districtKey === 'central_hub' ? 'hub_crystals'
     : districtKey === 'loot_forge' ? 'hub_crystals'
     : districtKey === 'mission_quarter' ? 'hub_crystals'
+    : districtKey === 'exchange_district' ? 'hub_crystals'
     : null;
 
   /** Claim accumulated game rewards via backend. */
