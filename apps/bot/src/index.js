@@ -4892,7 +4892,7 @@ async function sendPlay(ctx, pool, appConfig) {
   );
 }
 
-async function sendLauncherMenu(ctx, pool) {
+async function sendLauncherMenu(ctx, pool, appConfig) {
   const freeze = await withTransaction(pool, (db) => systemStore.getFreezeState(db));
   if (freeze.freeze) {
     await ctx.replyWithMarkdown(messages.formatFreezeMessage(freeze.reason));
@@ -4912,6 +4912,17 @@ async function sendLauncherMenu(ctx, pool) {
     payoutEligible: Boolean(snapshot.payout?.canRequest)
   };
 
+  // Build webapp mini app URL for 3D launch button
+  let miniAppUrl = "";
+  try {
+    if (appConfig) {
+      const launchBaseUrl = await resolveWebAppLaunchBaseUrl(pool, appConfig, ctx.from?.id);
+      miniAppUrl = buildSignedWebAppUrl(appConfig, ctx.from?.id, launchBaseUrl, {
+        routeKey: CANONICAL_ROUTE_KEY.HUB
+      }) || "";
+    }
+  } catch (_) { /* best-effort */ }
+
   try {
     const bannerPath = path.resolve(__dirname, "../assets/welcome_banner.png");
     const { Input } = require("telegraf");
@@ -4921,16 +4932,29 @@ async function sendLauncherMenu(ctx, pool) {
   }
 
   if (isNewUser) {
-    // First-time user: immersive 3-message onboarding hook
+    // First-time user: single immersive welcome with trust + action
     const welcomeMsg = tr
-      ? `🌌 *Nexus'a Hos Geldin, Kasif!*\n\nAirdropKral Arena seni bekliyor. Gorevleri tamamla, ganimet topla, PvP'de savas ve gercek BTC kazan.\n\nHer adimda guclenir, her zafer seni yaklastirir.`
-      : `🌌 *Welcome to the Nexus, Explorer!*\n\nAirdropKral Arena awaits. Complete tasks, collect loot, battle in PvP and earn real BTC.\n\nEvery step makes you stronger, every victory brings you closer.`;
-    await ctx.replyWithMarkdown(welcomeMsg);
-
-    const trustMsg = tr
-      ? `🛡️ *Guvenli ve Seffaf Sistem*\n\n✅ Kazanclar zincir-ustu dogrulanir\n✅ Cekim talepleri admin onaylidir\n✅ Hicbir gizli kosul yoktur\n\nHazirsan, ilk gorevini al!`
-      : `🛡️ *Secure and Transparent System*\n\n✅ Earnings are on-chain verified\n✅ Payouts are admin-approved\n✅ No hidden conditions\n\nReady? Take your first mission!`;
-    await ctx.replyWithMarkdown(trustMsg, buildStartKeyboard(lang, gameState));
+      ? `🌌 *Nexus'a Hos Geldin, Kasif!*\n\n` +
+        `AirdropKral Arena seni bekliyor.\n` +
+        `Gorevleri tamamla, ganimet topla, PvP'de savas ve *gercek BTC* kazan.\n\n` +
+        `🛡️ *Guvenli Sistem*\n` +
+        `✅ Kazanclar dogrulanir │ ✅ Admin onaylidir │ ✅ Gizli kosul yok\n\n` +
+        `🧭 *Hemen Basla:*\n` +
+        `  1️⃣ \`/tasks\` — ilk gorevini al\n` +
+        `  2️⃣ \`/finish dengeli\` — gorevi tamamla\n` +
+        `  3️⃣ \`/reveal\` — ganimetini ac\n\n` +
+        `Her adimda guclenir, her zafer seni yaklastirir! 🔥`
+      : `🌌 *Welcome to the Nexus, Explorer!*\n\n` +
+        `AirdropKral Arena awaits.\n` +
+        `Complete tasks, collect loot, battle in PvP and earn *real BTC*.\n\n` +
+        `🛡️ *Secure System*\n` +
+        `✅ Verified earnings │ ✅ Admin-approved │ ✅ No hidden fees\n\n` +
+        `🧭 *Quick Start:*\n` +
+        `  1️⃣ \`/tasks\` — pick your first task\n` +
+        `  2️⃣ \`/finish balanced\` — complete the task\n` +
+        `  3️⃣ \`/reveal\` — open your loot\n\n` +
+        `Every step makes you stronger, every victory brings you closer! 🔥`;
+    await ctx.replyWithMarkdown(welcomeMsg, buildStartKeyboard(lang, gameState, miniAppUrl));
     return true;
   }
 
@@ -4943,7 +4967,7 @@ async function sendLauncherMenu(ctx, pool) {
   };
   await ctx.replyWithMarkdown(
     messages.formatStart(snapshot.profile, snapshot.balances, snapshot.season, snapshot.anomaly, snapshot.contract, startOptions),
-    buildStartKeyboard(lang, gameState)
+    buildStartKeyboard(lang, gameState, miniAppUrl)
   );
   return true;
 }
@@ -5172,7 +5196,7 @@ function buildSimpleBotActionHandlers({ pool, appConfig }) {
           : "*Ek Komut Merkezi*\nIleri paneller, ekonomi aksiyonlari ve meta kontroller:";
       return ctx.replyWithMarkdown(text, buildMoreMenuKeyboard(lang));
     },
-    home_menu: async (ctx) => sendLauncherMenu(ctx, pool),
+    home_menu: async (ctx) => sendLauncherMenu(ctx, pool, appConfig),
     guide_finish_balanced: async (ctx) => completeLatestAttemptFromCommand(ctx, pool, appConfig, "balanced"),
     guide_reveal: async (ctx) => revealLatestFromCommand(ctx, pool, appConfig),
     play: async (ctx) => sendPlay(ctx, pool, appConfig),
@@ -6136,7 +6160,7 @@ function buildCommandHandlerMap({ pool, appConfig }) {
   map.set("help", async (ctx) => {
     await sendHelpFromCommand(ctx, pool, appConfig);
   });
-  map.set("menu", async (ctx) => sendLauncherMenu(ctx, pool));
+  map.set("menu", async (ctx) => sendLauncherMenu(ctx, pool, appConfig));
   map.set("story", async (ctx) => sendGuide(ctx, pool));
   map.set("onboard", async (ctx) => sendOnboard(ctx, pool, appConfig));
   map.set("ui_mode", async (ctx) => sendUiMode(ctx, pool));
@@ -6160,7 +6184,7 @@ function buildCommandHandlerMap({ pool, appConfig }) {
   map.set("news", async (ctx) => sendNews(ctx, pool, appConfig));
   map.set("quests", async (ctx) => sendQuests(ctx, pool, appConfig));
   map.set("chests", async (ctx) => sendChests(ctx, pool, appConfig));
-  map.set("hub", async (ctx) => sendLauncherMenu(ctx, pool));
+  map.set("hub", async (ctx) => sendLauncherMenu(ctx, pool, appConfig));
 
   map.set("admin", async (ctx) => sendAdminPanel(ctx, pool, appConfig));
   map.set("admin_live", async (ctx) => sendAdminLive(ctx, pool, appConfig));
@@ -6381,7 +6405,7 @@ async function start() {
   );
 
   bot.start(async (ctx) => {
-    await sendLauncherMenu(ctx, pool);
+    await sendLauncherMenu(ctx, pool, appConfig);
   });
 
   const commandHandlerMap = buildCommandHandlerMap({ pool, appConfig });

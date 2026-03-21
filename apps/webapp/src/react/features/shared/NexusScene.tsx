@@ -4,8 +4,8 @@ import type { TabKey } from "../../types";
 /**
  * NexusScene – Inline 3D BabylonJS district renderer for the webapp.
  *
- * Maps each TabKey to a BabylonJS district scene, lazy-loads the engine,
- * and renders in a canvas with a Game HUD overlay + claim button.
+ * IMPORTANT: Reuses a single BabylonJS Engine across tab switches to avoid
+ * WebGL context exhaustion. Only the Scene is swapped on tab change.
  */
 
 /** Tab → district scene key mapping */
@@ -19,6 +19,17 @@ const TAB_DISTRICT_MAP: Partial<Record<TabKey, string>> = {
   events: "live_event_overlay",
 };
 
+/** Explicit import map for Vite tree-shaking */
+const SCENE_LOADERS: Record<string, () => Promise<any>> = {
+  central_hub: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/CentralHubScene.ts"),
+  arena: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/ArenaScene.ts"),
+  mission_quarter: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/MissionQuarterScene.ts"),
+  loot_forge: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/LootForgeScene.ts"),
+  exchange_district: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/ExchangeDistrictScene.ts"),
+  season_hall: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/SeasonHallScene.ts"),
+  live_event_overlay: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/LiveEventOverlayScene.ts"),
+};
+
 /** Quality detection based on device */
 function detectQuality(): "low" | "medium" | "high" {
   if (typeof navigator === "undefined") return "medium";
@@ -27,6 +38,8 @@ function detectQuality(): "low" | "medium" | "high" {
   if (cores >= 8) return "high";
   return "medium";
 }
+
+const QUALITY = detectQuality();
 
 interface GameState {
   score: number;
@@ -45,10 +58,15 @@ type NexusSceneProps = {
   lang: "tr" | "en";
 };
 
+/** Module-level singleton for the BabylonJS engine (survives tab switches) */
+let _sharedEngine: any = null;
+let _sharedCanvas: HTMLCanvasElement | null = null;
+let _babylonModule: any = null;
+
 export function NexusScene({ tab, lang }: NexusSceneProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const engineRef = useRef<any>(null);
   const sceneRef = useRef<any>(null);
+  const renderLoopRef = useRef<(() => void) | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [gameState, setGameState] = useState<GameState | null>(null);
@@ -58,7 +76,6 @@ export function NexusScene({ tab, lang }: NexusSceneProps) {
   } | null>(null);
 
   const districtKey = TAB_DISTRICT_MAP[tab];
-  const quality = detectQuality();
 
   /** Claim game rewards from the API */
   const claimRewards = useCallback(async () => {
@@ -116,49 +133,109 @@ export function NexusScene({ tab, lang }: NexusSceneProps) {
     }
   }, [gameState, claiming, tab]);
 
+  // ── Engine init (once per component mount) ──
+  useEffect(() => {
+    if (!canvasRef.current) return;
+
+    let cancelled = false;
+
+    async function initEngine() {
+      try {
+        if (!_babylonModule) {
+          _babylonModule = await import("@babylonjs/core");
+        }
+        if (cancelled) return;
+
+        const canvas = canvasRef.current!;
+
+        // Reuse engine if canvas matches, else create new
+        if (!_sharedEngine || _sharedCanvas !== canvas) {
+          if (_sharedEngine) {
+            try { _sharedEngine.stopRenderLoop(); } catch (_) {}
+            try { _sharedEngine.dispose(); } catch (_) {}
+          }
+          _sharedEngine = new _babylonModule.Engine(canvas, true, {
+            preserveDrawingBuffer: false,
+            stencil: true,
+            antialias: QUALITY !== "low",
+            powerPreference: QUALITY === "high" ? "high-performance" : "default",
+          });
+          _sharedCanvas = canvas;
+
+          const resizeHandler = () => {
+            if (_sharedEngine) _sharedEngine.resize();
+          };
+          window.addEventListener("resize", resizeHandler);
+        }
+      } catch (err) {
+        console.error("[NexusScene] Engine init failed:", err);
+      }
+    }
+
+    initEngine();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []); // Only runs once on mount
+
+  // ── Scene swap (runs on each tab change) ──
   useEffect(() => {
     if (!districtKey || !canvasRef.current) return;
 
     let disposed = false;
 
-    async function boot() {
+    async function loadScene() {
       try {
-        const BABYLON = await import("@babylonjs/core");
+        // Ensure engine is ready
+        if (!_babylonModule) {
+          _babylonModule = await import("@babylonjs/core");
+        }
         if (disposed) return;
 
         const canvas = canvasRef.current!;
-        const engine = new BABYLON.Engine(canvas, true, {
-          preserveDrawingBuffer: false,
-          stencil: true,
-          antialias: quality !== "low",
-          powerPreference: quality === "high" ? "high-performance" : "default",
-        });
-        engineRef.current = engine;
 
-        // Explicit import map for Vite tree-shaking
-        const SCENE_LOADERS: Record<string, () => Promise<any>> = {
-          central_hub: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/CentralHubScene.ts"),
-          arena: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/ArenaScene.ts"),
-          mission_quarter: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/MissionQuarterScene.ts"),
-          loot_forge: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/LootForgeScene.ts"),
-          exchange_district: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/ExchangeDistrictScene.ts"),
-          season_hall: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/SeasonHallScene.ts"),
-          live_event_overlay: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/LiveEventOverlayScene.ts"),
-        };
-        const loader = SCENE_LOADERS[districtKey!];
-        if (!loader) throw new Error(`No scene for district: ${districtKey}`);
-        const sceneModule = await loader();
-        if (disposed) {
-          engine.dispose();
-          return;
+        // Ensure engine exists
+        if (!_sharedEngine || _sharedCanvas !== canvas) {
+          _sharedEngine = new _babylonModule.Engine(canvas, true, {
+            preserveDrawingBuffer: false,
+            stencil: true,
+            antialias: QUALITY !== "low",
+            powerPreference: QUALITY === "high" ? "high-performance" : "default",
+          });
+          _sharedCanvas = canvas;
+          window.addEventListener("resize", () => _sharedEngine?.resize());
         }
 
-        const scene = sceneModule.createScene(engine, canvas, quality);
+        // Stop any existing render loop
+        _sharedEngine.stopRenderLoop();
+
+        // Dispose previous scene (NOT the engine)
+        if (sceneRef.current) {
+          try { sceneRef.current.dispose(); } catch (_) {}
+          sceneRef.current = null;
+        }
+
+        if (disposed) return;
+
+        // Load the new district scene module
+        const loader = SCENE_LOADERS[districtKey];
+        if (!loader) throw new Error(`No scene for district: ${districtKey}`);
+
+        const sceneModule = await loader();
+        if (disposed) return;
+
+        const scene = sceneModule.createScene(_sharedEngine, canvas, QUALITY);
+        if (disposed) {
+          scene.dispose();
+          return;
+        }
         sceneRef.current = scene;
 
         // Game state polling
         let lastScore = -1;
         scene.registerAfterRender(() => {
+          if (disposed) return;
           const gs = scene.metadata?.gameState as GameState | undefined;
           if (gs && gs.score !== lastScore) {
             lastScore = gs.score;
@@ -166,14 +243,19 @@ export function NexusScene({ tab, lang }: NexusSceneProps) {
           }
         });
 
-        engine.runRenderLoop(() => scene.render());
-        window.addEventListener("resize", () => engine.resize());
+        // Start render loop for new scene
+        const renderFn = () => scene.render();
+        renderLoopRef.current = renderFn;
+        _sharedEngine.runRenderLoop(renderFn);
 
         setLoading(false);
+        setError(null);
       } catch (err) {
-        console.error("[NexusScene] Boot failed:", err);
-        setError(String(err));
-        setLoading(false);
+        console.error("[NexusScene] Scene load failed:", err);
+        if (!disposed) {
+          setError(String(err));
+          setLoading(false);
+        }
       }
     }
 
@@ -181,20 +263,32 @@ export function NexusScene({ tab, lang }: NexusSceneProps) {
     setError(null);
     setGameState(null);
     setClaimResult(null);
-    boot();
+    loadScene();
 
     return () => {
       disposed = true;
+      // Stop render loop but keep the engine alive
+      if (_sharedEngine) {
+        _sharedEngine.stopRenderLoop();
+      }
       if (sceneRef.current) {
-        sceneRef.current.dispose();
+        try { sceneRef.current.dispose(); } catch (_) {}
         sceneRef.current = null;
       }
-      if (engineRef.current) {
-        engineRef.current.dispose();
-        engineRef.current = null;
+    };
+  }, [districtKey]);
+
+  // ── Cleanup engine only on full unmount ──
+  useEffect(() => {
+    return () => {
+      if (_sharedEngine) {
+        _sharedEngine.stopRenderLoop();
+        _sharedEngine.dispose();
+        _sharedEngine = null;
+        _sharedCanvas = null;
       }
     };
-  }, [districtKey, quality]);
+  }, []);
 
   // Don't render for tabs without districts (vault, settings)
   if (!districtKey) return null;
