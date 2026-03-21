@@ -51,6 +51,36 @@ interface GameState {
   dronesAlive?: number;
   lastType?: string;
   lastPoints?: number;
+  // Mechanic-specific fields
+  mechanic?: string;
+  // Boss fight (live events)
+  bossHp?: number;
+  bossMaxHp?: number;
+  phase?: number;
+  // Trophy race (season hall)
+  timeLeft?: number;
+  nextTarget?: number;
+  round?: number;
+  // Crafting (loot forge)
+  recipe?: string;
+  recipeStep?: number;
+  recipesForged?: number;
+  showingRecipe?: boolean;
+  // Memory vault (elite)
+  sequenceLength?: number;
+  showingPattern?: boolean;
+  bestRound?: number;
+  // Stealth scanner (missions)
+  difficulty?: number;
+  missed?: number;
+  // Market timing (exchange)
+  trades?: number;
+  perfectTrades?: number;
+  timing?: string;
+  // Pair match (social)
+  pairsMatched?: number;
+  // Portal sequence (hub)
+  showingSequence?: boolean;
 }
 
 type NexusSceneProps = {
@@ -88,22 +118,19 @@ export function NexusScene({ tab, lang }: NexusSceneProps) {
       const ts = params.get("ts") || String(Date.now());
       const sig = params.get("sig") || "";
 
-      const gameType = tab === "pvp" ? "arena_combat" : "hub_crystals";
-      const stats: Record<string, number> = {};
-      if (gameType === "hub_crystals") {
-        stats.crystals_sc = Math.floor(
-          (gameState.crystalsCollected || 0) * 0.6
-        );
-        stats.crystals_hc = Math.floor(
-          (gameState.crystalsCollected || 0) * 0.3
-        );
-        stats.crystals_rc = Math.floor(
-          (gameState.crystalsCollected || 0) * 0.1
-        );
-      } else {
-        stats.kills = gameState.kills || 0;
-        stats.streak = gameState.streak || 0;
-      }
+      const mechanic = gameState.mechanic || (tab === "pvp" ? "combat" : "collect");
+      const gameType = `${districtKey || tab}_${mechanic}`;
+      const stats: Record<string, number> = {
+        score: gameState.score,
+        combo: gameState.combo || 0,
+        round: gameState.round || 0,
+      };
+      if (gameState.kills) stats.kills = gameState.kills;
+      if (gameState.streak) stats.streak = gameState.streak;
+      if (gameState.perfectTrades) stats.perfect_trades = gameState.perfectTrades;
+      if (gameState.recipesForged) stats.recipes_forged = gameState.recipesForged;
+      if (gameState.bestRound) stats.best_round = gameState.bestRound;
+      if (gameState.pairsMatched) stats.pairs_matched = gameState.pairsMatched;
 
       const resp = await fetch("/webapp/api/game/claim", {
         method: "POST",
@@ -408,26 +435,61 @@ export function NexusScene({ tab, lang }: NexusSceneProps) {
 
           {/* Kills (arena) */}
           {tab === "pvp" && (gameState.kills || 0) > 0 && (
-            <div
-              style={{
-                fontSize: 10,
-                color: "#ff4444",
-                fontFamily: "var(--font-mono, monospace)",
-              }}
-            >
+            <div style={{ fontSize: 10, color: "#ff4444", fontFamily: "var(--font-mono, monospace)" }}>
               {gameState.kills} {lang === "tr" ? "öldürme" : "kills"}
             </div>
           )}
 
-          {/* Crystal counter */}
-          {(gameState.crystalsCollected || 0) > 0 && (
-            <div
-              style={{
-                fontSize: 10,
-                color: "#00ff88",
-                fontFamily: "var(--font-mono, monospace)",
-              }}
-            >
+          {/* Boss HP bar (live events) */}
+          {gameState.mechanic === "boss_fight" && gameState.bossHp != null && (
+            <div style={{ width: 80, background: "rgba(0,0,0,0.6)", borderRadius: 4, padding: 2, border: "1px solid rgba(255,60,60,0.4)" }}>
+              <div style={{ fontSize: 8, color: "#ff6666", fontFamily: "var(--font-mono, monospace)", marginBottom: 2, textAlign: "center" }}>
+                BOSS {gameState.phase && `P${gameState.phase}`}
+              </div>
+              <div style={{ height: 6, borderRadius: 3, background: "rgba(255,0,0,0.2)", overflow: "hidden" }}>
+                <div style={{ height: "100%", borderRadius: 3, background: (gameState.bossHp / (gameState.bossMaxHp || 1)) > 0.3 ? "#ff4444" : "#ff0000", width: `${Math.max(0, ((gameState.bossHp) / (gameState.bossMaxHp || 1)) * 100)}%`, transition: "width 0.2s" }} />
+              </div>
+            </div>
+          )}
+
+          {/* Timer (trophy race) */}
+          {gameState.mechanic === "trophy_race" && gameState.timeLeft != null && (
+            <div style={{ background: "rgba(0,0,0,0.6)", border: `1px solid ${(gameState.timeLeft || 0) < 10 ? "rgba(255,60,60,0.5)" : "rgba(255,200,0,0.4)"}`, borderRadius: 6, padding: "2px 8px", fontSize: 12, fontWeight: 700, color: (gameState.timeLeft || 0) < 10 ? "#ff4444" : "#ffc800", fontFamily: "var(--font-mono, monospace)" }}>
+              {gameState.timeLeft}s
+            </div>
+          )}
+
+          {/* Round indicator */}
+          {gameState.round != null && gameState.round > 0 && gameState.mechanic !== "boss_fight" && (
+            <div style={{ fontSize: 10, color: "#aa88ff", fontFamily: "var(--font-mono, monospace)" }}>
+              {lang === "tr" ? "Tur" : "R"} {gameState.round}
+            </div>
+          )}
+
+          {/* Timing indicator (market) */}
+          {gameState.timing && (
+            <div style={{ fontSize: 10, fontWeight: 700, fontFamily: "var(--font-mono, monospace)", color: gameState.timing === "perfect" ? "#00ff88" : gameState.timing === "good" ? "#ffc800" : "#888" }}>
+              {gameState.timing === "perfect" ? "PERFECT!" : gameState.timing === "good" ? "GOOD" : ""}
+            </div>
+          )}
+
+          {/* Showing pattern/recipe overlay */}
+          {(gameState.showingPattern || gameState.showingRecipe || gameState.showingSequence) && (
+            <div style={{ background: "rgba(0,0,0,0.5)", border: "1px solid rgba(150,100,255,0.3)", borderRadius: 6, padding: "2px 8px", fontSize: 9, color: "#aa88ff", fontFamily: "var(--font-mono, monospace)" }}>
+              {lang === "tr" ? "İzle..." : "Watch..."}
+            </div>
+          )}
+
+          {/* Missed targets (stealth) */}
+          {gameState.mechanic === "stealth_scan" && (gameState.missed || 0) > 0 && (
+            <div style={{ fontSize: 9, color: "#ff6644", fontFamily: "var(--font-mono, monospace)" }}>
+              {gameState.missed} {lang === "tr" ? "kaçırıldı" : "missed"}
+            </div>
+          )}
+
+          {/* Generic progress counter */}
+          {(gameState.crystalsCollected || 0) > 0 && !gameState.mechanic?.includes("boss") && (
+            <div style={{ fontSize: 10, color: "#00ff88", fontFamily: "var(--font-mono, monospace)" }}>
               {gameState.crystalsCollected}/{gameState.totalCrystals}
             </div>
           )}
@@ -556,8 +618,20 @@ export function NexusScene({ tab, lang }: NexusSceneProps) {
           }}
         >
           {lang === "tr"
-            ? "Parlayan nesnelere dokun ve puan topla"
-            : "Tap glowing objects to collect points"}
+            ? (tab === "pvp" ? "Drone'lara vur ve yok et"
+              : tab === "tasks" ? "Hedefler belirdiğinde hızlıca dokun"
+              : tab === "forge" ? "Elementleri tarif sırasına göre dokun"
+              : tab === "exchange" ? "Zirve değerinde orbları yakala"
+              : tab === "season" ? "Kupaları sırayla topla"
+              : tab === "events" ? "Çekirdeğe vur, tehlikelerden kaçın"
+              : "Sıralamayı izle ve tekrarla")
+            : (tab === "pvp" ? "Hit drones to destroy them"
+              : tab === "tasks" ? "Scan targets before they vanish"
+              : tab === "forge" ? "Tap elements in recipe order"
+              : tab === "exchange" ? "Tap orbs at peak value"
+              : tab === "season" ? "Collect trophies in sequence"
+              : tab === "events" ? "Hit the core, dodge danger orbs"
+              : "Watch the sequence and repeat it")}
         </div>
       )}
     </div>

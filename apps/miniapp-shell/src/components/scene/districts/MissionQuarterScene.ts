@@ -15,9 +15,10 @@ import {
 } from '@babylonjs/core';
 
 /**
- * Mission Quarter District
- * Theme: Military/tech, dark tones, holographic mission board, scanning beam,
- * green/orange neon accents, animated radar ground effect.
+ * Mission Quarter District — STEALTH SCANNER
+ * Mechanic: Targets appear briefly (2-4s) then vanish. Player must scan (click)
+ * before they disappear. Missed targets break streak. Speed increases over time.
+ * Theme: Military/tech, dark tones, holographic mission board, scanning beam.
  */
 export function createScene(
   engine: Engine,
@@ -108,7 +109,6 @@ export function createScene(
   boardFrame.position.set(0, 8, -15);
   boardFrame.material = boardMat;
 
-  // board lines (mission entries)
   const lineMat = new StandardMaterial('lineMat', scene);
   lineMat.emissiveColor = new Color3(0, 0.9, 0.4);
   lineMat.diffuseColor = Color3.Black();
@@ -121,7 +121,6 @@ export function createScene(
     line.material = lineMat;
   }
 
-  // status indicators (small cubes)
   const statusGreen = new StandardMaterial('sGreen', scene);
   statusGreen.emissiveColor = new Color3(0, 1, 0.3);
   statusGreen.diffuseColor = Color3.Black();
@@ -136,7 +135,7 @@ export function createScene(
     dot.material = i % 2 === 0 ? statusGreen : statusOrange;
   }
 
-  // ── Scanning Beam (rotating transparent cylinder) ──
+  // ── Scanning Beam ──
   const scanMat = new StandardMaterial('scanMat', scene);
   scanMat.emissiveColor = new Color3(0, 0.7, 0.25);
   scanMat.diffuseColor = Color3.Black();
@@ -150,7 +149,6 @@ export function createScene(
   scanBeam.position.set(15, 12.5, 0);
   scanBeam.material = scanMat;
 
-  // scan base
   const scanBase = MeshBuilder.CreateCylinder('scanBase', { height: 1, diameter: 3, tessellation: 12 }, scene);
   scanBase.position.set(15, 0.5, 0);
   const scanBaseMat = new StandardMaterial('scanBaseMat', scene);
@@ -174,129 +172,147 @@ export function createScene(
     pillar.position = pillarPositions[i];
     pillar.material = pillarMat;
 
-    // pillar accent light
     const accent = MeshBuilder.CreateBox(`pAcc${i}`, { width: 0.3, height: 6, depth: 0.3 }, scene);
     accent.position = pillarPositions[i].clone();
     accent.position.x += 1.1;
     accent.material = i % 2 === 0 ? statusGreen : statusOrange;
   }
 
-  // ── Scan Targets (interactive blips) ──
+  // ── STEALTH SCANNER MECHANIC ──
+  // Targets appear briefly then auto-vanish. Player must scan before timeout.
   type TargetTier = 'basic' | 'priority' | 'critical';
-  interface ScanTarget {
+  interface StealthTarget {
     mesh: ReturnType<typeof MeshBuilder.CreateSphere>;
-    angle: number;
-    radius: number;
-    speed: number;
-    tier: TargetTier;
-    scanned: boolean;
-    respawnAt: number;
     light: InstanceType<typeof PointLight>;
+    tier: TargetTier;
+    // stealth state
+    visible: boolean;
+    appearAt: number;  // when target becomes visible (ms)
+    hideAt: number;    // when target auto-hides (ms)
+    position: Vector3; // fixed spawn position
   }
 
   const TIER_CONFIG = {
-    basic:    { points: 5,  color: new Color3(0, 0.9, 0.3) },
-    priority: { points: 20, color: new Color3(1, 0.55, 0) },
-    critical: { points: 50, color: new Color3(1, 0.1, 0.1) },
+    basic:    { points: 5,  color: new Color3(0, 0.9, 0.3), visMs: 3500 },
+    priority: { points: 20, color: new Color3(1, 0.55, 0),   visMs: 2500 },
+    critical: { points: 50, color: new Color3(1, 0.1, 0.1),  visMs: 1800 },
   } as const;
 
-  const targetCount = quality === 'low' ? 5 : quality === 'medium' ? 8 : 12;
-  const targets: ScanTarget[] = [];
+  const targetCount = quality === 'low' ? 6 : quality === 'medium' ? 10 : 14;
+  const targets: StealthTarget[] = [];
+  const now0 = performance.now();
 
   for (let i = 0; i < targetCount; i++) {
-    const tier: TargetTier = i % 5 === 0 ? 'critical' : i % 3 === 0 ? 'priority' : 'basic';
+    const tier: TargetTier = i % 6 === 0 ? 'critical' : i % 3 === 0 ? 'priority' : 'basic';
     const cfg = TIER_CONFIG[tier];
-    const blip = MeshBuilder.CreateSphere(`target${i}`, { diameter: tier === 'critical' ? 1.5 : tier === 'priority' ? 1.2 : 0.8, segments: 8 }, scene);
+    const blip = MeshBuilder.CreateSphere(`target${i}`, {
+      diameter: tier === 'critical' ? 1.5 : tier === 'priority' ? 1.2 : 0.8,
+      segments: 8,
+    }, scene);
     const blipMat = new StandardMaterial(`targetMat${i}`, scene);
     blipMat.emissiveColor = cfg.color;
     blipMat.diffuseColor = Color3.Black();
-    blipMat.alpha = 0.8;
+    blipMat.alpha = 0.85;
     blip.material = blipMat;
 
     const light = new PointLight(`tLight${i}`, Vector3.Zero(), scene);
     light.diffuse = cfg.color;
-    light.intensity = 0.4;
-    light.range = 5;
+    light.intensity = 0;
+    light.range = 6;
+
+    // random position in radar field
+    const ang = (Math.PI * 2 / targetCount) * i + (Math.random() - 0.5) * 0.6;
+    const rad = 8 + Math.random() * 22;
+    const pos = new Vector3(Math.cos(ang) * rad, 1.5 + Math.random() * 3, Math.sin(ang) * rad);
+    blip.position.copyFrom(pos);
+    light.position.copyFrom(pos);
+
+    // start hidden, schedule first appear
+    blip.setEnabled(false);
+    const delay = 1000 + Math.random() * 4000;
 
     targets.push({
       mesh: blip,
-      angle: (Math.PI * 2 / targetCount) * i,
-      radius: 8 + Math.random() * 20,
-      speed: 0.004 + Math.random() * 0.006,
-      tier,
-      scanned: false,
-      respawnAt: 0,
       light,
+      tier,
+      visible: false,
+      appearAt: now0 + delay,
+      hideAt: 0,
+      position: pos,
     });
   }
 
   // ── Game State ──
   let score = 0;
   let streak = 0;
-  let lastScanTime = 0;
-  let targetsScanned = 0;
+  let scanned = 0;
+  let missed = 0;
+  let difficulty = 1;
 
   scene.metadata = scene.metadata || {};
-  scene.metadata.gameState = { score: 0, streak: 0, crystalsCollected: 0, totalCrystals: targetCount, lastType: '', lastPoints: 0 };
+  scene.metadata.gameState = {
+    score: 0, streak: 0, combo: 0,
+    crystalsCollected: 0, totalCrystals: targetCount,
+    mechanic: 'stealth_scan', difficulty: 1, missed: 0,
+    lastType: '', lastPoints: 0,
+  };
 
-  // ── Click to scan targets ──
+  // ── Click to scan visible targets ──
+  const burstPs = new ParticleSystem('scanBurst', quality === 'low' ? 15 : 30, scene);
+  burstPs.createPointEmitter(new Vector3(-0.5, -0.5, -0.5), new Vector3(0.5, 0.5, 0.5));
+  burstPs.emitter = Vector3.Zero();
+  burstPs.minLifeTime = 0.2; burstPs.maxLifeTime = 0.6;
+  burstPs.minSize = 0.1; burstPs.maxSize = 0.35;
+  burstPs.minEmitPower = 2; burstPs.maxEmitPower = 6;
+  burstPs.emitRate = 0;
+  burstPs.color1 = new Color4(0, 1, 0.3, 1);
+  burstPs.color2 = new Color4(0, 0.6, 0.1, 0.7);
+  burstPs.colorDead = new Color4(0, 0, 0, 0);
+  burstPs.gravity = new Vector3(0, -2, 0);
+  burstPs.blendMode = ParticleSystem.BLENDMODE_ADD;
+
   scene.onPointerDown = (_evt: any, pickResult: any) => {
     if (!pickResult?.hit || !pickResult.pickedMesh) return;
     const name = pickResult.pickedMesh.name;
 
     for (const tgt of targets) {
-      if (tgt.scanned || tgt.mesh.name !== name) continue;
+      if (!tgt.visible || tgt.mesh.name !== name) continue;
 
-      tgt.scanned = true;
+      // Scanned successfully!
+      tgt.visible = false;
       tgt.mesh.setEnabled(false);
       tgt.light.intensity = 0;
 
-      const now = performance.now();
-      if (now - lastScanTime < 3000) {
-        streak = Math.min(streak + 1, 10);
-      } else {
-        streak = 1;
-      }
-      lastScanTime = now;
-
+      streak++;
+      scanned++;
       const cfg = TIER_CONFIG[tgt.tier];
-      const pts = cfg.points * streak;
+      const timeLeft = tgt.hideAt - performance.now();
+      const timingBonus = Math.max(1, Math.floor(timeLeft / 500)); // bonus for fast scan
+      const pts = cfg.points * Math.min(streak, 10) * timingBonus;
       score += pts;
-      targetsScanned++;
+
+      // burst effect
+      burstPs.emitter = tgt.mesh.position.clone();
+      const c = cfg.color;
+      burstPs.color1 = new Color4(c.r, c.g, c.b, 1);
+      burstPs.manualEmitCount = quality === 'low' ? 15 : 30;
+      burstPs.start();
+      setTimeout(() => burstPs.stop(), 300);
+
+      // schedule reappear at new position
+      const ang = Math.random() * Math.PI * 2;
+      const rad = 8 + Math.random() * 22;
+      tgt.position = new Vector3(Math.cos(ang) * rad, 1.5 + Math.random() * 3, Math.sin(ang) * rad);
+      tgt.appearAt = performance.now() + 3000 + Math.random() * 4000;
 
       scene.metadata.gameState = {
-        score,
-        streak,
-        crystalsCollected: targetsScanned,
-        totalCrystals: targetCount,
+        score, streak, combo: streak,
+        crystalsCollected: scanned, totalCrystals: targetCount,
+        mechanic: 'stealth_scan', difficulty: Math.floor(difficulty),
+        missed,
         lastType: tgt.tier === 'critical' ? 'rc' : tgt.tier === 'priority' ? 'hc' : 'sc',
         lastPoints: pts,
       };
-
-      // Scan burst particles
-      const burst = new ParticleSystem(`scanBurst${tgt.mesh.name}`, quality === 'low' ? 12 : 25, scene);
-      burst.createPointEmitter(new Vector3(-0.5, -0.5, -0.5), new Vector3(0.5, 0.5, 0.5));
-      burst.emitter = tgt.mesh.position.clone();
-      burst.minLifeTime = 0.2;
-      burst.maxLifeTime = 0.6;
-      burst.minSize = 0.1;
-      burst.maxSize = 0.35;
-      burst.minEmitPower = 2;
-      burst.maxEmitPower = 5;
-      burst.emitRate = 0;
-      const c = cfg.color;
-      burst.color1 = new Color4(c.r, c.g, c.b, 1);
-      burst.color2 = new Color4(c.r * 0.6, c.g * 0.6, c.b * 0.6, 0.7);
-      burst.colorDead = new Color4(0, 0, 0, 0);
-      burst.gravity = new Vector3(0, -1, 0);
-      burst.blendMode = ParticleSystem.BLENDMODE_ADD;
-      burst.manualEmitCount = quality === 'low' ? 12 : 25;
-      burst.start();
-      burst.targetStopDuration = 0.8;
-      burst.disposeOnStop = true;
-
-      // Respawn in 5-10 seconds
-      tgt.respawnAt = now + 5000 + Math.random() * 5000;
       break;
     }
   };
@@ -305,12 +321,9 @@ export function createScene(
   const ps = new ParticleSystem('sparks', quality === 'low' ? 100 : 300, scene);
   ps.createPointEmitter(new Vector3(-20, 0, -20), new Vector3(20, 5, 20));
   ps.emitter = new Vector3(0, 1, 0);
-  ps.minLifeTime = 1;
-  ps.maxLifeTime = 3;
-  ps.minSize = 0.1;
-  ps.maxSize = 0.3;
-  ps.minEmitPower = 0.3;
-  ps.maxEmitPower = 1;
+  ps.minLifeTime = 1; ps.maxLifeTime = 3;
+  ps.minSize = 0.1; ps.maxSize = 0.3;
+  ps.minEmitPower = 0.3; ps.maxEmitPower = 1;
   ps.emitRate = quality === 'low' ? 20 : 60;
   ps.color1 = new Color4(0, 0.9, 0.3, 0.6);
   ps.color2 = new Color4(1, 0.55, 0, 0.4);
@@ -339,25 +352,72 @@ export function createScene(
   let t = 0;
   scene.registerBeforeRender(() => {
     t += engine.getDeltaTime() * 0.001;
-
     const now = performance.now();
 
-    // scan target orbits and respawn
+    // difficulty ramps over time (visibility windows shrink)
+    difficulty = 1 + (now - now0) / 60000; // +1 difficulty per minute
+
+    // Stealth target lifecycle: hidden → appear → auto-hide
     for (const tgt of targets) {
-      if (tgt.scanned && tgt.respawnAt > 0 && now >= tgt.respawnAt) {
-        tgt.scanned = false;
-        tgt.mesh.setEnabled(true);
-        tgt.respawnAt = 0;
-        tgt.angle = Math.random() * Math.PI * 2;
-        targetsScanned = Math.max(0, targetsScanned - 1);
-      }
-      if (!tgt.scanned) {
-        tgt.angle += tgt.speed;
-        tgt.mesh.position.x = Math.cos(tgt.angle) * tgt.radius;
-        tgt.mesh.position.z = Math.sin(tgt.angle) * tgt.radius;
-        tgt.mesh.position.y = 0.5 + Math.sin(t * 2 + tgt.angle) * 0.5;
+      if (!tgt.visible) {
+        // Check if it's time to appear
+        if (tgt.appearAt > 0 && now >= tgt.appearAt) {
+          tgt.visible = true;
+          tgt.mesh.position.copyFrom(tgt.position);
+          tgt.light.position.copyFrom(tgt.position);
+          tgt.mesh.setEnabled(true);
+          tgt.light.intensity = 0.5;
+          tgt.mesh.scaling.setAll(0.01); // appear animation start
+          // visibility duration shrinks with difficulty
+          const cfg = TIER_CONFIG[tgt.tier];
+          const visDuration = cfg.visMs / Math.min(difficulty, 3);
+          tgt.hideAt = now + visDuration;
+          tgt.appearAt = 0;
+        }
+      } else {
+        // Visible: animate scale-in, then auto-hide when timer expires
+        const timeLeft = tgt.hideAt - now;
+        const totalDuration = TIER_CONFIG[tgt.tier].visMs / Math.min(difficulty, 3);
+
+        // scale-in effect (first 300ms)
+        if (totalDuration - timeLeft < 300) {
+          const s = Math.min(1, (totalDuration - timeLeft) / 300);
+          tgt.mesh.scaling.setAll(s);
+        } else {
+          tgt.mesh.scaling.setAll(1);
+        }
+
+        // warning flash when about to hide (last 30% of visibility)
+        if (timeLeft < totalDuration * 0.3) {
+          const flash = Math.sin(now * 0.02) > 0;
+          tgt.light.intensity = flash ? 0.8 : 0.2;
+          const mat = tgt.mesh.material as StandardMaterial;
+          if (mat) mat.alpha = flash ? 0.9 : 0.4;
+        } else {
+          tgt.light.intensity = 0.5;
+        }
+
+        // bob animation
+        tgt.mesh.position.y = tgt.position.y + Math.sin(t * 3 + tgt.position.x) * 0.3;
         tgt.light.position.copyFrom(tgt.mesh.position);
-        tgt.light.intensity = 0.3 + Math.sin(t * 4 + tgt.angle) * 0.15;
+
+        // Auto-hide if timer expired (MISSED!)
+        if (now >= tgt.hideAt) {
+          tgt.visible = false;
+          tgt.mesh.setEnabled(false);
+          tgt.light.intensity = 0;
+          streak = 0; // streak broken!
+          missed++;
+          // schedule reappear
+          const ang = Math.random() * Math.PI * 2;
+          const rad = 8 + Math.random() * 22;
+          tgt.position = new Vector3(Math.cos(ang) * rad, 1.5 + Math.random() * 3, Math.sin(ang) * rad);
+          tgt.appearAt = now + 2000 + Math.random() * 3000;
+          scene.metadata.gameState = {
+            ...scene.metadata.gameState,
+            streak: 0, combo: 0, missed,
+          };
+        }
       }
     }
 
@@ -367,18 +427,12 @@ export function createScene(
     // radar ring pulse
     for (let i = 0; i < radarRings.length; i++) {
       const rMat = radarRings[i].material as StandardMaterial;
-      if (rMat) {
-        rMat.alpha = 0.15 + Math.sin(t * 2 + i * 0.5) * 0.1;
-      }
+      if (rMat) rMat.alpha = 0.15 + Math.sin(t * 2 + i * 0.5) * 0.1;
     }
 
     // scan beam rotation
     scanBeam.rotation.y = t * 0.8;
-
-    // board shimmer
     boardMat.alpha = 0.4 + Math.sin(t * 2.5) * 0.1;
-
-    // scanning beam alpha pulse
     scanMat.alpha = 0.1 + Math.sin(t * 3) * 0.06;
   });
 

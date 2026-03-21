@@ -16,9 +16,11 @@ import {
 } from '@babylonjs/core';
 
 /**
- * Loot Forge District
- * Theme: Fire/forge (orange/red/gold), anvil mesh, floating rotating loot boxes,
- * fire particles, molten ground glow.
+ * Loot Forge District — ELEMENTAL CRAFTING
+ * Mechanic: 3 element types (Fire/Water/Earth) are always visible around the anvil.
+ * A recipe sequence is displayed (e.g., Fire→Water→Fire). Player must click elements
+ * in the correct recipe order. Correct recipe = forge bonus. Wrong = recipe resets.
+ * Theme: Fire/forge (orange/red/gold), anvil mesh, fire particles, molten ground.
  */
 export function createScene(
   engine: Engine,
@@ -30,12 +32,9 @@ export function createScene(
 
   // ── Camera ──
   const camera = new ArcRotateCamera(
-    'cam',
-    -Math.PI / 2,
-    Math.PI / 3.2,
+    'cam', -Math.PI / 2, Math.PI / 3.2,
     quality === 'low' ? 65 : 55,
-    new Vector3(0, 5, 0),
-    scene,
+    new Vector3(0, 5, 0), scene,
   );
   camera.lowerRadiusLimit = 25;
   camera.upperRadiusLimit = 100;
@@ -62,14 +61,7 @@ export function createScene(
   goldPt.diffuse = new Color3(1, 0.85, 0.2);
   goldPt.intensity = 1.2;
 
-  const spotDown = new SpotLight(
-    'spotDown',
-    new Vector3(0, 20, 0),
-    new Vector3(0, -1, 0),
-    Math.PI / 4,
-    2,
-    scene,
-  );
+  const spotDown = new SpotLight('spotDown', new Vector3(0, 20, 0), new Vector3(0, -1, 0), Math.PI / 4, 2, scene);
   spotDown.diffuse = new Color3(1, 0.5, 0.1);
   spotDown.intensity = 1.5;
 
@@ -81,7 +73,7 @@ export function createScene(
   groundMat.emissiveColor = new Color3(0.12, 0.03, 0.005);
   ground.material = groundMat;
 
-  // molten cracks (thin glowing strips)
+  // molten cracks
   const crackMat = new StandardMaterial('crackMat', scene);
   crackMat.emissiveColor = new Color3(1, 0.35, 0);
   crackMat.diffuseColor = Color3.Black();
@@ -89,196 +81,235 @@ export function createScene(
 
   const crackCount = quality === 'low' ? 6 : 12;
   for (let i = 0; i < crackCount; i++) {
-    const crack = MeshBuilder.CreateBox(
-      `crack${i}`,
-      { width: 8 + Math.random() * 25, height: 0.04, depth: 0.15 + Math.random() * 0.2 },
-      scene,
-    );
-    crack.position.set(
-      (Math.random() - 0.5) * 60,
-      0.03,
-      (Math.random() - 0.5) * 60,
-    );
+    const crack = MeshBuilder.CreateBox(`crack${i}`, {
+      width: 8 + Math.random() * 25, height: 0.04, depth: 0.15 + Math.random() * 0.2,
+    }, scene);
+    crack.position.set((Math.random() - 0.5) * 60, 0.03, (Math.random() - 0.5) * 60);
     crack.rotation.y = Math.random() * Math.PI;
     crack.material = crackMat;
   }
 
-  // ── Anvil (combined boxes) ──
+  // ── Anvil ──
   const anvilMat = new StandardMaterial('anvilMat', scene);
   anvilMat.diffuseColor = new Color3(0.15, 0.12, 0.1);
   anvilMat.specularColor = new Color3(0.3, 0.25, 0.2);
   anvilMat.emissiveColor = new Color3(0.04, 0.02, 0.01);
 
-  // base
   const anvilBase = MeshBuilder.CreateBox('anvilBase', { width: 5, height: 2, depth: 3 }, scene);
-  anvilBase.position.set(0, 1, 0);
-  anvilBase.material = anvilMat;
-
-  // neck
+  anvilBase.position.set(0, 1, 0); anvilBase.material = anvilMat;
   const anvilNeck = MeshBuilder.CreateBox('anvilNeck', { width: 3, height: 1.5, depth: 2 }, scene);
-  anvilNeck.position.set(0, 2.75, 0);
-  anvilNeck.material = anvilMat;
-
-  // face (top)
+  anvilNeck.position.set(0, 2.75, 0); anvilNeck.material = anvilMat;
   const anvilFace = MeshBuilder.CreateBox('anvilFace', { width: 6, height: 0.8, depth: 3.5 }, scene);
-  anvilFace.position.set(0, 3.9, 0);
-  anvilFace.material = anvilMat;
+  anvilFace.position.set(0, 3.9, 0); anvilFace.material = anvilMat;
+  const anvilHorn = MeshBuilder.CreateCylinder('anvilHorn', { height: 3, diameterTop: 0.3, diameterBottom: 1.5, tessellation: 8 }, scene);
+  anvilHorn.position.set(4, 3.9, 0); anvilHorn.rotation.z = -Math.PI / 2; anvilHorn.material = anvilMat;
 
-  // horn
-  const anvilHorn = MeshBuilder.CreateCylinder(
-    'anvilHorn',
-    { height: 3, diameterTop: 0.3, diameterBottom: 1.5, tessellation: 8 },
-    scene,
-  );
-  anvilHorn.position.set(4, 3.9, 0);
-  anvilHorn.rotation.z = -Math.PI / 2;
-  anvilHorn.material = anvilMat;
-
-  // hot glow on anvil face
   const hotMat = new StandardMaterial('hotMat', scene);
   hotMat.emissiveColor = new Color3(1, 0.4, 0);
   hotMat.diffuseColor = Color3.Black();
   hotMat.alpha = 0.5;
-
   const hotSpot = MeshBuilder.CreatePlane('hotSpot', { width: 2, height: 2 }, scene);
-  hotSpot.position.set(0, 4.35, 0);
-  hotSpot.rotation.x = Math.PI / 2;
-  hotSpot.material = hotMat;
+  hotSpot.position.set(0, 4.35, 0); hotSpot.rotation.x = Math.PI / 2; hotSpot.material = hotMat;
 
-  // ── Floating Loot Boxes ──
-  const boxMat = new StandardMaterial('boxMat', scene);
-  boxMat.emissiveColor = new Color3(1, 0.7, 0);
-  boxMat.diffuseColor = new Color3(0.3, 0.15, 0);
+  // ── ELEMENTAL CRAFTING MECHANIC ──
+  type ElementType = 'fire' | 'water' | 'earth';
+  const ELEMENT_CFG = {
+    fire:  { color: new Color3(1, 0.3, 0),   emissive: new Color3(1, 0.2, 0) },
+    water: { color: new Color3(0.1, 0.4, 1),  emissive: new Color3(0.05, 0.3, 1) },
+    earth: { color: new Color3(0.2, 0.8, 0.1), emissive: new Color3(0.1, 0.6, 0.05) },
+  };
 
-  const rareMat = new StandardMaterial('rareMat', scene);
-  rareMat.emissiveColor = new Color3(1, 0.15, 0);
-  rareMat.diffuseColor = new Color3(0.3, 0.05, 0);
+  // Create 3 element pedestals around the anvil
+  interface ElementNode {
+    mesh: ReturnType<typeof MeshBuilder.CreatePolyhedron>;
+    light: PointLight;
+    type: ElementType;
+    basePos: Vector3;
+    highlighted: boolean;
+  }
+  const elements: ElementNode[] = [];
+  const elementTypes: ElementType[] = ['fire', 'water', 'earth'];
 
-  const boxCount = quality === 'low' ? 4 : quality === 'medium' ? 6 : 8;
-  // Loot rarity types: common (gold), rare (red), epic (purple)
-  type LootRarity = 'common' | 'rare' | 'epic';
-  interface LootBox {
-    mesh: ReturnType<typeof MeshBuilder.CreateBox>;
+  for (let i = 0; i < 3; i++) {
+    const etype = elementTypes[i];
+    const cfg = ELEMENT_CFG[etype];
+    const angle = (Math.PI * 2 / 3) * i - Math.PI / 2;
+    const dist = 10;
+    const pos = new Vector3(Math.cos(angle) * dist, 5, Math.sin(angle) * dist);
+
+    const mat = new StandardMaterial(`elemMat_${etype}`, scene);
+    mat.emissiveColor = cfg.emissive.scale(0.8);
+    mat.diffuseColor = cfg.color.scale(0.3);
+    mat.alpha = 0.9;
+
+    const elem = MeshBuilder.CreatePolyhedron(`elem_${etype}`, { type: 1, size: 1.5 }, scene);
+    elem.position.copyFrom(pos);
+    elem.material = mat;
+
+    // pedestal base
+    const pedMat = new StandardMaterial(`pedMat${i}`, scene);
+    pedMat.emissiveColor = cfg.emissive.scale(0.3);
+    pedMat.diffuseColor = new Color3(0.08, 0.05, 0.03);
+    const ped = MeshBuilder.CreateCylinder(`ped_${etype}`, { height: 3, diameter: 2.5, tessellation: 6 }, scene);
+    ped.position.set(pos.x, 1.5, pos.z);
+    ped.material = pedMat;
+
+    const light = new PointLight(`eLight_${etype}`, pos.clone(), scene);
+    light.diffuse = cfg.color;
+    light.intensity = 0.6;
+    light.range = 10;
+
+    elements.push({ mesh: elem, light, type: etype, basePos: pos, highlighted: false });
+  }
+
+  // Also create extra clickable duplicates orbiting for variety
+  const orbitCount = quality === 'low' ? 3 : quality === 'medium' ? 5 : 7;
+  interface OrbitElement {
+    mesh: ReturnType<typeof MeshBuilder.CreatePolyhedron>;
+    type: ElementType;
     angle: number;
     radius: number;
     speed: number;
-    yBase: number;
-    yAmp: number;
-    rotSpeed: number;
-    rarity: LootRarity;
-    opened: boolean;
-    respawnAt: number;
-    light: InstanceType<typeof PointLight>;
+    baseY: number;
   }
-  const lootBoxes: LootBox[] = [];
-
-  const epicMat = new StandardMaterial('epicMat', scene);
-  epicMat.emissiveColor = new Color3(0.6, 0.1, 1);
-  epicMat.diffuseColor = new Color3(0.2, 0.02, 0.3);
-
-  const RARITY_CONFIG = {
-    common: { points: 5, color: new Color3(1, 0.7, 0), mat: boxMat },
-    rare: { points: 20, color: new Color3(1, 0.15, 0), mat: rareMat },
-    epic: { points: 50, color: new Color3(0.6, 0.1, 1), mat: epicMat },
-  } as const;
-
-  for (let i = 0; i < boxCount; i++) {
-    const rarity: LootRarity = i % 5 === 0 ? 'epic' : i % 3 === 0 ? 'rare' : 'common';
-    const cfg = RARITY_CONFIG[rarity];
-    const box = MeshBuilder.CreateBox(`loot${i}`, { size: 1.2 + Math.random() * 0.8 }, scene);
-    box.material = cfg.mat;
-
-    const light = new PointLight(`lootLight${i}`, Vector3.Zero(), scene);
-    light.diffuse = cfg.color;
-    light.intensity = 0.5;
-    light.range = 6;
-
-    lootBoxes.push({
-      mesh: box,
-      angle: (Math.PI * 2 / boxCount) * i,
-      radius: 12 + Math.random() * 15,
-      speed: 0.003 + Math.random() * 0.005,
-      yBase: 4 + Math.random() * 6,
-      yAmp: 1 + Math.random() * 1.5,
-      rotSpeed: 0.01 + Math.random() * 0.02,
-      rarity,
-      opened: false,
-      respawnAt: 0,
-      light,
+  const orbitElements: OrbitElement[] = [];
+  for (let i = 0; i < orbitCount; i++) {
+    const etype = elementTypes[i % 3];
+    const cfg = ELEMENT_CFG[etype];
+    const mat = new StandardMaterial(`orbElemMat${i}`, scene);
+    mat.emissiveColor = cfg.emissive.scale(0.6);
+    mat.diffuseColor = cfg.color.scale(0.2);
+    mat.alpha = 0.8;
+    const orb = MeshBuilder.CreatePolyhedron(`orbElem_${etype}_${i}`, { type: 1, size: 0.8 }, scene);
+    orb.material = mat;
+    orbitElements.push({
+      mesh: orb, type: etype,
+      angle: (Math.PI * 2 / orbitCount) * i,
+      radius: 16 + Math.random() * 8,
+      speed: 0.004 + Math.random() * 0.004,
+      baseY: 3 + Math.random() * 5,
     });
   }
 
-  // ── Game State ──
+  // Recipe system
+  let currentRecipe: ElementType[] = [];
+  let recipeStep = 0;
+  let recipeLength = 3;
   let score = 0;
-  let combo = 0;
-  let lastOpenTime = 0;
-  let cratesOpened = 0;
-  const totalCrates = boxCount;
+  let recipesForged = 0;
+  let showingRecipe = true;
+  let recipeShowStart = 0;
+
+  function generateRecipe(): ElementType[] {
+    const r: ElementType[] = [];
+    for (let i = 0; i < recipeLength; i++) {
+      r.push(elementTypes[Math.floor(Math.random() * 3)]);
+    }
+    return r;
+  }
+
+  currentRecipe = generateRecipe();
+  recipeShowStart = performance.now();
 
   scene.metadata = scene.metadata || {};
-  scene.metadata.gameState = { score: 0, combo: 0, crystalsCollected: 0, totalCrystals: totalCrates, lastType: '', lastPoints: 0 };
+  scene.metadata.gameState = {
+    score: 0, combo: 0, crystalsCollected: 0, totalCrystals: 10,
+    mechanic: 'crafting',
+    recipe: currentRecipe.join(','),
+    recipeStep: 0, recipesForged: 0, showingRecipe: true,
+    lastType: '', lastPoints: 0,
+  };
 
-  // ── Click to open crates ──
+  // Forge burst effect
+  const forgeBurst = new ParticleSystem('forgeBurst', quality === 'low' ? 30 : 60, scene);
+  forgeBurst.createPointEmitter(new Vector3(-2, 0, -2), new Vector3(2, 4, 2));
+  forgeBurst.emitter = new Vector3(0, 4.5, 0);
+  forgeBurst.minLifeTime = 0.3; forgeBurst.maxLifeTime = 1;
+  forgeBurst.minSize = 0.2; forgeBurst.maxSize = 0.6;
+  forgeBurst.minEmitPower = 4; forgeBurst.maxEmitPower = 12;
+  forgeBurst.emitRate = 0;
+  forgeBurst.color1 = new Color4(1, 0.8, 0, 1);
+  forgeBurst.color2 = new Color4(1, 0.3, 0, 0.8);
+  forgeBurst.colorDead = new Color4(0.3, 0.1, 0, 0);
+  forgeBurst.gravity = new Vector3(0, -3, 0);
+  forgeBurst.blendMode = ParticleSystem.BLENDMODE_ADD;
+
+  // Click handler
   scene.onPointerDown = (_evt: any, pickResult: any) => {
     if (!pickResult?.hit || !pickResult.pickedMesh) return;
+    if (showingRecipe) return; // can't click while recipe is being shown
+
     const name = pickResult.pickedMesh.name;
+    let clickedType: ElementType | null = null;
 
-    for (const lb of lootBoxes) {
-      if (lb.opened || lb.mesh.name !== name) continue;
-
-      lb.opened = true;
-      lb.mesh.setEnabled(false);
-      lb.light.intensity = 0;
-
-      const now = performance.now();
-      // Combo: consecutive opens within 3 seconds
-      if (now - lastOpenTime < 3000) {
-        combo = Math.min(combo + 1, 10);
-      } else {
-        combo = 1;
+    // Check static elements
+    for (const el of elements) {
+      if (el.mesh.name === name) { clickedType = el.type; break; }
+    }
+    // Check orbiting elements
+    if (!clickedType) {
+      for (const oe of orbitElements) {
+        if (oe.mesh.name === name) { clickedType = oe.type; break; }
       }
-      lastOpenTime = now;
+    }
+    if (!clickedType) return;
 
-      const cfg = RARITY_CONFIG[lb.rarity];
-      const pts = cfg.points * combo;
-      score += pts;
-      cratesOpened++;
+    const expected = currentRecipe[recipeStep];
+    if (clickedType === expected) {
+      // Correct element!
+      recipeStep++;
 
-      // Update game state
+      // Flash the element
+      const el = elements.find(e => e.type === clickedType);
+      if (el) {
+        el.highlighted = true;
+        setTimeout(() => { el.highlighted = false; }, 300);
+      }
+
+      if (recipeStep >= currentRecipe.length) {
+        // Recipe complete! FORGE!
+        recipesForged++;
+        const pts = recipeLength * 25 * recipesForged;
+        score += pts;
+
+        // Big forge burst
+        forgeBurst.manualEmitCount = quality === 'low' ? 30 : 60;
+        forgeBurst.start();
+        setTimeout(() => forgeBurst.stop(), 500);
+
+        scene.metadata.gameState = {
+          score, combo: recipesForged,
+          crystalsCollected: recipesForged, totalCrystals: 10,
+          mechanic: 'crafting',
+          recipe: '', recipeStep: 0, recipesForged,
+          showingRecipe: true,
+          lastType: recipeLength >= 5 ? 'rc' : recipeLength >= 4 ? 'hc' : 'sc',
+          lastPoints: pts,
+        };
+
+        // Next recipe (longer)
+        if (recipesForged % 3 === 0 && recipeLength < 7) recipeLength++;
+        currentRecipe = generateRecipe();
+        recipeStep = 0;
+        showingRecipe = true;
+        recipeShowStart = performance.now();
+      } else {
+        scene.metadata.gameState = {
+          ...scene.metadata.gameState,
+          score, recipeStep,
+          recipe: currentRecipe.join(','),
+        };
+      }
+    } else {
+      // Wrong element! Recipe resets
+      recipeStep = 0;
+      showingRecipe = true;
+      recipeShowStart = performance.now();
       scene.metadata.gameState = {
-        score,
-        combo,
-        crystalsCollected: cratesOpened,
-        totalCrystals: totalCrates,
-        lastType: lb.rarity === 'epic' ? 'rc' : lb.rarity === 'rare' ? 'hc' : 'sc',
-        lastPoints: pts,
+        ...scene.metadata.gameState,
+        recipeStep: 0, showingRecipe: true,
+        recipe: currentRecipe.join(','),
       };
-
-      // ── Open burst particles ──
-      const burst = new ParticleSystem(`burst${lb.mesh.name}`, quality === 'low' ? 15 : 30, scene);
-      burst.createPointEmitter(new Vector3(-1, -1, -1), new Vector3(1, 1, 1));
-      burst.emitter = lb.mesh.position.clone();
-      burst.minLifeTime = 0.3;
-      burst.maxLifeTime = 0.8;
-      burst.minSize = 0.15;
-      burst.maxSize = 0.5;
-      burst.minEmitPower = 3;
-      burst.maxEmitPower = 8;
-      burst.emitRate = 0;
-      const c = cfg.color;
-      burst.color1 = new Color4(c.r, c.g, c.b, 1);
-      burst.color2 = new Color4(c.r * 0.7, c.g * 0.7, c.b * 0.7, 0.8);
-      burst.colorDead = new Color4(c.r * 0.3, c.g * 0.3, c.b * 0.3, 0);
-      burst.gravity = new Vector3(0, -2, 0);
-      burst.blendMode = ParticleSystem.BLENDMODE_ADD;
-      burst.manualEmitCount = quality === 'low' ? 15 : 30;
-      burst.start();
-      burst.targetStopDuration = 1;
-      burst.disposeOnStop = true;
-
-      // Respawn after 6-12 seconds
-      lb.respawnAt = now + 6000 + Math.random() * 6000;
-      break;
     }
   };
 
@@ -286,12 +317,9 @@ export function createScene(
   const firePs = new ParticleSystem('fire', quality === 'low' ? 200 : quality === 'medium' ? 500 : 800, scene);
   firePs.createPointEmitter(new Vector3(-2, 0, -2), new Vector3(2, 3, 2));
   firePs.emitter = new Vector3(0, 4.5, 0);
-  firePs.minLifeTime = 0.5;
-  firePs.maxLifeTime = 1.5;
-  firePs.minSize = 0.2;
-  firePs.maxSize = 0.7;
-  firePs.minEmitPower = 1;
-  firePs.maxEmitPower = 3;
+  firePs.minLifeTime = 0.5; firePs.maxLifeTime = 1.5;
+  firePs.minSize = 0.2; firePs.maxSize = 0.7;
+  firePs.minEmitPower = 1; firePs.maxEmitPower = 3;
   firePs.emitRate = quality === 'low' ? 40 : 100;
   firePs.color1 = new Color4(1, 0.5, 0, 0.8);
   firePs.color2 = new Color4(1, 0.15, 0, 0.6);
@@ -300,16 +328,12 @@ export function createScene(
   firePs.blendMode = ParticleSystem.BLENDMODE_ADD;
   firePs.start();
 
-  // ember particles (drifting sparks)
   const emberPs = new ParticleSystem('embers', quality === 'low' ? 50 : 150, scene);
   emberPs.createPointEmitter(new Vector3(-15, 0, -15), new Vector3(15, 0, 15));
   emberPs.emitter = new Vector3(0, 1, 0);
-  emberPs.minLifeTime = 2;
-  emberPs.maxLifeTime = 5;
-  emberPs.minSize = 0.05;
-  emberPs.maxSize = 0.2;
-  emberPs.minEmitPower = 0.5;
-  emberPs.maxEmitPower = 2;
+  emberPs.minLifeTime = 2; emberPs.maxLifeTime = 5;
+  emberPs.minSize = 0.05; emberPs.maxSize = 0.2;
+  emberPs.minEmitPower = 0.5; emberPs.maxEmitPower = 2;
   emberPs.emitRate = quality === 'low' ? 10 : 30;
   emberPs.color1 = new Color4(1, 0.6, 0, 0.7);
   emberPs.color2 = new Color4(1, 0.3, 0, 0.5);
@@ -339,38 +363,74 @@ export function createScene(
   scene.registerBeforeRender(() => {
     t += engine.getDeltaTime() * 0.001;
 
-    const now = performance.now();
+    // Recipe show phase: flash each recipe element in sequence
+    if (showingRecipe) {
+      const elapsed = performance.now() - recipeShowStart;
+      const stepDuration = 600; // ms per step
+      const currentShowStep = Math.floor(elapsed / stepDuration);
 
-    // loot box orbits, spin, and respawn
-    for (const lb of lootBoxes) {
-      // Respawn check
-      if (lb.opened && lb.respawnAt > 0 && now >= lb.respawnAt) {
-        lb.opened = false;
-        lb.mesh.setEnabled(true);
-        lb.respawnAt = 0;
-        lb.angle = Math.random() * Math.PI * 2;
-        cratesOpened = Math.max(0, cratesOpened - 1);
+      for (let i = 0; i < elements.length; i++) {
+        const el = elements[i];
+        const isInRecipe = currentShowStep < currentRecipe.length &&
+                           currentRecipe[currentShowStep] === el.type;
+        const mat = el.mesh.material as StandardMaterial;
+        if (mat) {
+          mat.alpha = isInRecipe ? 1.0 : 0.4;
+        }
+        el.light.intensity = isInRecipe ? 1.5 : 0.3;
+        const scale = isInRecipe ? 1.4 : 1.0;
+        el.mesh.scaling.setAll(scale);
       }
 
-      if (!lb.opened) {
-        lb.angle += lb.speed;
-        lb.mesh.position.x = Math.cos(lb.angle) * lb.radius;
-        lb.mesh.position.z = Math.sin(lb.angle) * lb.radius;
-        lb.mesh.position.y = lb.yBase + Math.sin(t * 2 + lb.angle) * lb.yAmp;
-        lb.mesh.rotation.x += lb.rotSpeed;
-        lb.mesh.rotation.y += lb.rotSpeed * 1.3;
-        lb.light.position.copyFrom(lb.mesh.position);
-        lb.light.intensity = 0.4 + Math.sin(t * 3 + lb.angle) * 0.2;
+      if (currentShowStep >= currentRecipe.length + 1) {
+        showingRecipe = false;
+        // reset all elements to normal
+        for (const el of elements) {
+          const mat = el.mesh.material as StandardMaterial;
+          if (mat) mat.alpha = 0.9;
+          el.light.intensity = 0.6;
+          el.mesh.scaling.setAll(1);
+        }
+        scene.metadata.gameState = {
+          ...scene.metadata.gameState,
+          showingRecipe: false,
+          recipe: currentRecipe.join(','),
+        };
       }
+    } else {
+      // Normal play: highlight next expected element gently
+      for (const el of elements) {
+        const isNext = el.type === currentRecipe[recipeStep];
+        const mat = el.mesh.material as StandardMaterial;
+        if (el.highlighted) {
+          if (mat) mat.alpha = 1.0;
+          el.light.intensity = 2.0;
+          el.mesh.scaling.setAll(1.3);
+        } else {
+          if (mat) mat.alpha = isNext ? (0.8 + Math.sin(t * 5) * 0.15) : 0.7;
+          el.light.intensity = isNext ? (0.6 + Math.sin(t * 4) * 0.3) : 0.4;
+          el.mesh.scaling.setAll(1);
+        }
+        // float animation
+        el.mesh.position.y = el.basePos.y + Math.sin(t * 2 + elements.indexOf(el) * 2) * 0.5;
+        el.mesh.rotation.y += 0.015;
+        el.light.position.copyFrom(el.mesh.position);
+      }
+    }
+
+    // Orbit elements animation
+    for (const oe of orbitElements) {
+      oe.angle += oe.speed;
+      oe.mesh.position.x = Math.cos(oe.angle) * oe.radius;
+      oe.mesh.position.z = Math.sin(oe.angle) * oe.radius;
+      oe.mesh.position.y = oe.baseY + Math.sin(t * 2 + oe.angle) * 1;
+      oe.mesh.rotation.y += 0.02;
+      oe.mesh.rotation.x += 0.01;
     }
 
     // fire light flicker
     firePt.intensity = 2.2 + Math.sin(t * 8) * 0.4 + Math.sin(t * 13) * 0.2;
-
-    // hot spot pulse
     hotMat.alpha = 0.35 + Math.sin(t * 4) * 0.15;
-
-    // crack glow pulse
     crackMat.emissiveColor.g = 0.3 + Math.sin(t * 1.5) * 0.08;
   });
 
