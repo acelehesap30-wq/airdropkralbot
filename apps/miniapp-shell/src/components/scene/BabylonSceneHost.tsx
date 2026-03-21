@@ -91,7 +91,10 @@ export function BabylonSceneHost({ districtKey, qualityOverride, onGameStateChan
   const [claimResult, setClaimResult] = useState<{ reward: { sc: number; hc: number; rc: number } } | null>(null);
 
   /** Map district to game type for claim API. */
-  const gameType = districtKey === 'arena' ? 'arena_combat' : districtKey === 'central_hub' ? 'hub_crystals' : null;
+  const gameType = districtKey === 'arena' ? 'arena_combat'
+    : districtKey === 'central_hub' ? 'hub_crystals'
+    : districtKey === 'loot_forge' ? 'hub_crystals'
+    : null;
 
   /** Claim accumulated game rewards via backend. */
   const claimRewards = useCallback(async () => {

@@ -9039,7 +9039,8 @@ const GAME_CLAIM_LIMITS = {
   cooldown_ms: 15_000,
   // Reward conversion rates per game type
   hub_crystals: { sc_per_point: 1, hc_per_point: 1, rc_per_point: 1 },
-  arena_combat: { sc_per_kill: 10, hc_per_500_score: 5, rc_per_1000_score: 1 }
+  arena_combat: { sc_per_kill: 10, hc_per_500_score: 5, rc_per_1000_score: 1 },
+  loot_forge: { sc_per_common: 5, hc_per_rare: 20, rc_per_epic: 50 }
 };
 
 fastify.post(
@@ -9053,7 +9054,7 @@ fastify.post(
           uid: { type: "string" },
           ts: { type: "string" },
           sig: { type: "string" },
-          game_type: { type: "string", enum: ["hub_crystals", "arena_combat"] },
+          game_type: { type: "string", enum: ["hub_crystals", "arena_combat", "loot_forge"] },
           score: { type: "number", minimum: 1, maximum: 50000 },
           stats: {
             type: "object",
@@ -9144,6 +9145,11 @@ fastify.post(
         reward.sc = kills * rates.sc_per_kill;
         reward.hc = Math.floor(cappedScore / 500) * rates.hc_per_500_score;
         reward.rc = Math.floor(cappedScore / 1000) * rates.rc_per_1000_score;
+      } else if (game_type === "loot_forge") {
+        const rates = GAME_CLAIM_LIMITS.loot_forge;
+        reward.sc = Math.floor((safeStats.crystals_sc || 0)) * rates.sc_per_common;
+        reward.hc = Math.floor((safeStats.crystals_hc || 0)) * rates.hc_per_rare;
+        reward.rc = Math.floor((safeStats.crystals_rc || 0)) * rates.rc_per_epic;
       }
 
       // Ensure at least something is rewarded (minimum 1 SC for any valid claim)

@@ -155,6 +155,8 @@ export function createScene(
   rareMat.diffuseColor = new Color3(0.3, 0.05, 0);
 
   const boxCount = quality === 'low' ? 4 : quality === 'medium' ? 6 : 8;
+  // Loot rarity types: common (gold), rare (red), epic (purple)
+  type LootRarity = 'common' | 'rare' | 'epic';
   interface LootBox {
     mesh: ReturnType<typeof MeshBuilder.CreateBox>;
     angle: number;
@@ -163,12 +165,34 @@ export function createScene(
     yBase: number;
     yAmp: number;
     rotSpeed: number;
+    rarity: LootRarity;
+    opened: boolean;
+    respawnAt: number;
+    light: InstanceType<typeof PointLight>;
   }
   const lootBoxes: LootBox[] = [];
 
+  const epicMat = new StandardMaterial('epicMat', scene);
+  epicMat.emissiveColor = new Color3(0.6, 0.1, 1);
+  epicMat.diffuseColor = new Color3(0.2, 0.02, 0.3);
+
+  const RARITY_CONFIG = {
+    common: { points: 5, color: new Color3(1, 0.7, 0), mat: boxMat },
+    rare: { points: 20, color: new Color3(1, 0.15, 0), mat: rareMat },
+    epic: { points: 50, color: new Color3(0.6, 0.1, 1), mat: epicMat },
+  } as const;
+
   for (let i = 0; i < boxCount; i++) {
+    const rarity: LootRarity = i % 5 === 0 ? 'epic' : i % 3 === 0 ? 'rare' : 'common';
+    const cfg = RARITY_CONFIG[rarity];
     const box = MeshBuilder.CreateBox(`loot${i}`, { size: 1.2 + Math.random() * 0.8 }, scene);
-    box.material = i % 3 === 0 ? rareMat : boxMat;
+    box.material = cfg.mat;
+
+    const light = new PointLight(`lootLight${i}`, Vector3.Zero(), scene);
+    light.diffuse = cfg.color;
+    light.intensity = 0.5;
+    light.range = 6;
+
     lootBoxes.push({
       mesh: box,
       angle: (Math.PI * 2 / boxCount) * i,
@@ -177,8 +201,86 @@ export function createScene(
       yBase: 4 + Math.random() * 6,
       yAmp: 1 + Math.random() * 1.5,
       rotSpeed: 0.01 + Math.random() * 0.02,
+      rarity,
+      opened: false,
+      respawnAt: 0,
+      light,
     });
   }
+
+  // ── Game State ──
+  let score = 0;
+  let combo = 0;
+  let lastOpenTime = 0;
+  let cratesOpened = 0;
+  const totalCrates = boxCount;
+
+  scene.metadata = scene.metadata || {};
+  scene.metadata.gameState = { score: 0, combo: 0, crystalsCollected: 0, totalCrystals: totalCrates, lastType: '', lastPoints: 0 };
+
+  // ── Click to open crates ──
+  scene.onPointerDown = (_evt: any, pickResult: any) => {
+    if (!pickResult?.hit || !pickResult.pickedMesh) return;
+    const name = pickResult.pickedMesh.name;
+
+    for (const lb of lootBoxes) {
+      if (lb.opened || lb.mesh.name !== name) continue;
+
+      lb.opened = true;
+      lb.mesh.setEnabled(false);
+      lb.light.intensity = 0;
+
+      const now = performance.now();
+      // Combo: consecutive opens within 3 seconds
+      if (now - lastOpenTime < 3000) {
+        combo = Math.min(combo + 1, 10);
+      } else {
+        combo = 1;
+      }
+      lastOpenTime = now;
+
+      const cfg = RARITY_CONFIG[lb.rarity];
+      const pts = cfg.points * combo;
+      score += pts;
+      cratesOpened++;
+
+      // Update game state
+      scene.metadata.gameState = {
+        score,
+        combo,
+        crystalsCollected: cratesOpened,
+        totalCrystals: totalCrates,
+        lastType: lb.rarity === 'epic' ? 'rc' : lb.rarity === 'rare' ? 'hc' : 'sc',
+        lastPoints: pts,
+      };
+
+      // ── Open burst particles ──
+      const burst = new ParticleSystem(`burst${lb.mesh.name}`, quality === 'low' ? 15 : 30, scene);
+      burst.createPointEmitter(new Vector3(-1, -1, -1), new Vector3(1, 1, 1));
+      burst.emitter = lb.mesh.position.clone();
+      burst.minLifeTime = 0.3;
+      burst.maxLifeTime = 0.8;
+      burst.minSize = 0.15;
+      burst.maxSize = 0.5;
+      burst.minEmitPower = 3;
+      burst.maxEmitPower = 8;
+      burst.emitRate = 0;
+      const c = cfg.color;
+      burst.color1 = new Color4(c.r, c.g, c.b, 1);
+      burst.color2 = new Color4(c.r * 0.7, c.g * 0.7, c.b * 0.7, 0.8);
+      burst.colorDead = new Color4(c.r * 0.3, c.g * 0.3, c.b * 0.3, 0);
+      burst.gravity = new Vector3(0, -2, 0);
+      burst.blendMode = ParticleSystem.BLENDMODE_ADD;
+      burst.manualEmitCount = quality === 'low' ? 15 : 30;
+      burst.start();
+      burst.targetStopDuration = 1;
+      burst.disposeOnStop = true;
+
+      // Respawn after 6-12 seconds
+      lb.respawnAt = now + 6000 + Math.random() * 6000;
+      break;
+    }
+  };
 
   // ── Fire Particles ──
   const firePs = new ParticleSystem('fire', quality === 'low' ? 200 : quality === 'medium' ? 500 : 800, scene);
@@ -237,14 +339,29 @@ export function createScene(
   scene.registerBeforeRender(() => {
     t += engine.getDeltaTime() * 0.001;
 
-    // loot box orbits and spin
+    const now = performance.now();
+
+    // loot box orbits, spin, and respawn
     for (const lb of lootBoxes) {
-      lb.angle += lb.speed;
-      lb.mesh.position.x = Math.cos(lb.angle) * lb.radius;
-      lb.mesh.position.z = Math.sin(lb.angle) * lb.radius;
-      lb.mesh.position.y = lb.yBase + Math.sin(t * 2 + lb.angle) * lb.yAmp;
-      lb.mesh.rotation.x += lb.rotSpeed;
-      lb.mesh.rotation.y += lb.rotSpeed * 1.3;
+      // Respawn check
+      if (lb.opened && lb.respawnAt > 0 && now >= lb.respawnAt) {
+        lb.opened = false;
+        lb.mesh.setEnabled(true);
+        lb.respawnAt = 0;
+        lb.angle = Math.random() * Math.PI * 2;
+        cratesOpened = Math.max(0, cratesOpened - 1);
+      }
+
+      if (!lb.opened) {
+        lb.angle += lb.speed;
+        lb.mesh.position.x = Math.cos(lb.angle) * lb.radius;
+        lb.mesh.position.z = Math.sin(lb.angle) * lb.radius;
+        lb.mesh.position.y = lb.yBase + Math.sin(t * 2 + lb.angle) * lb.yAmp;
+        lb.mesh.rotation.x += lb.rotSpeed;
+        lb.mesh.rotation.y += lb.rotSpeed * 1.3;
+        lb.light.position.copyFrom(lb.mesh.position);
+        lb.light.intensity = 0.4 + Math.sin(t * 3 + lb.angle) * 0.2;
+      }
     }
 
     // fire light flicker
