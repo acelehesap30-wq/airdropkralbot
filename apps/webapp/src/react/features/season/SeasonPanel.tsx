@@ -304,11 +304,10 @@ export function SeasonPanel(props: SeasonPanelProps) {
             return (
               <div key={entry.rank} style={{
                 display: "flex", justifyContent: "space-between", alignItems: "center",
-                padding: "6px 0",
+                padding: isMe ? "6px 8px" : "6px 0",
                 borderBottom: i < leaderboard.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
                 background: isMe ? "rgba(0,210,255,0.06)" : "transparent",
-                borderRadius: isMe ? 4 : 0,
-                padding: isMe ? "6px 8px" : "6px 0"
+                borderRadius: isMe ? 4 : 0
               }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <span style={{
