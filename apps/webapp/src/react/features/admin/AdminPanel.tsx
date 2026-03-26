@@ -34,6 +34,11 @@ const RuntimeMetaCard = lazy(async () => {
   return { default: module.RuntimeMetaCard };
 });
 
+const AutomationStatusCard = lazy(async () => {
+  const module = await lazyRetry(() => import("./cards/AutomationStatusCard"), "admin-automation-status-card");
+  return { default: module.AutomationStatusCard };
+});
+
 type QueueActionState = {
   action_key: string;
   kind: string;
@@ -402,6 +407,9 @@ export function AdminPanel(props: AdminPanelProps) {
 
       {props.isAdmin && (
         <>
+          <Suspense fallback={<AdminCardFallback lang={props.lang} title="Automation" />}>
+            <AutomationStatusCard lang={props.lang} />
+          </Suspense>
           {props.panelVisibility.queue ? (
             <Suspense fallback={<AdminCardFallback lang={props.lang} title={t(props.lang, "admin_queue_title")} />}>
               <AdminQueueCard

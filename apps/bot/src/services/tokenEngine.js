@@ -17,20 +17,20 @@ const DEFAULT_TOKEN_CONFIG = {
     initial_supply: "10000000"
   },
   curve: {
-    enabled: false,
-    admin_floor_usd: 0.01,
-    base_usd: 0.01,
-    k: 0.08,
+    enabled: true,
+    admin_floor_usd: 0.001,
+    base_usd: 0.001,
+    k: 0.06,
     supply_norm_divisor: 100000,
     demand_factor: 1,
-    volatility_dampen: 0.15
+    volatility_dampen: 0.2
   },
   auto_approve: {
-    enabled: false,
-    auto_usd_limit: 10,
-    risk_threshold: 0.35,
-    velocity_per_hour: 8,
-    require_onchain_verified: true
+    enabled: true,
+    auto_usd_limit: 25,
+    risk_threshold: 0.5,
+    velocity_per_hour: 20,
+    require_onchain_verified: false
   },
   mint: {
     units_per_token: 100,
@@ -56,12 +56,12 @@ const DEFAULT_TOKEN_CONFIG = {
     }
   },
   payout_gate: {
-    enabled: false,
-    min_market_cap_usd: 10000000,
-    target_band_max_usd: 20000000
+    enabled: true,
+    min_market_cap_usd: 5000000,
+    target_band_max_usd: 15000000
   },
   payout_release: {
-    enabled: false,
+    enabled: true,
     mode: "tiered_drip",
     global_cap_min_usd: 20000000,
     daily_drip_pct_max: 0.005,

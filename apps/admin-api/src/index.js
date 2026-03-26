@@ -58,6 +58,9 @@ const { registerWebappV2AdminTokenDynamicPolicyRoutes } = require("./routes/weba
 const { registerWebappAdminPayoutReleaseRoutes } = require("./routes/webapp/admin/payoutReleaseRoutes");
 const { registerWebappAdminFreezeRoutes } = require("./routes/webapp/admin/freezeRoutes");
 const { registerWebappAdminTokenRoutes } = require("./routes/webapp/admin/tokenAdminRoutes");
+const { createQueueAutoProcessor } = require("./services/queueAutoProcessor");
+const { createLiveOpsAutoScheduler } = require("./services/liveOpsAutoScheduler");
+const { resolveLiveOpsSceneGate } = require("../../../packages/shared/src/liveOpsSceneGate");
 const { registerWebappAdminKycTokenDecisionRoutes } = require("./routes/webapp/admin/kycTokenDecisionRoutes");
 const { registerWebappAdminPayoutDecisionRoutes } = require("./routes/webapp/admin/payoutDecisionRoutes");
 const { registerAdminRuntimeRoutes } = require("./routes/admin/runtimeRoutes");
@@ -12039,7 +12042,11 @@ registerWebappV2MonetizationRoutes(fastify, {
 });
 
 registerWebappV2AdminRuntimeRoutes(fastify, {
-  proxyWebAppApiV1
+  proxyWebAppApiV1,
+  getAutomationStats: () => ({
+    queue_processor: queueAutoProcessor.getStats(),
+    live_ops_scheduler: liveOpsScheduler.getStats()
+  })
 });
 
 registerWebappV2AdminLiveOpsRoutes(fastify, {
@@ -13539,7 +13546,23 @@ registerWebappV2AdminOpsRoutes(fastify, {
   logger: fastify.log
 });
 
+// ─── Automation services ───
+const queueAutoProcessor = createQueueAutoProcessor({
+  pool,
+  logger: fastify.log,
+  getRuntimeConfig: () => configService.getConfig ? configService.getConfig() : {}
+});
+
+const liveOpsScheduler = createLiveOpsAutoScheduler({
+  pool,
+  logger: fastify.log,
+  getRuntimeConfig: () => configService.getConfig ? configService.getConfig() : {},
+  resolveSceneGate: (summary) => resolveLiveOpsSceneGate(summary || {}, {})
+});
+
 fastify.addHook("onClose", async () => {
+  queueAutoProcessor.stop();
+  liveOpsScheduler.stop();
   await pool.end();
 });
 
@@ -13551,6 +13574,10 @@ fastify.listen({ port: PORT, host: "0.0.0.0" }, (err, address) => {
     process.exit(1);
   }
   fastify.log.info(`Admin API listening on ${address}`);
+  // Start automation services
+  queueAutoProcessor.start();
+  liveOpsScheduler.start();
+  fastify.log.info({ event: "automation_started", services: ["queueAutoProcessor", "liveOpsScheduler"] });
   (async () => {
     try {
       const marker = await captureReleaseMarker(pool, {

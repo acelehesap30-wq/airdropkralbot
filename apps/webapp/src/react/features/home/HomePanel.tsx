@@ -293,6 +293,8 @@ export function HomePanel(props: HomePanelProps) {
           <span className="akrCurrencyChip akrCurrencySC">SC {Math.floor(summary.sc_earned || 0)}</span>
           <span className="akrCurrencyChip akrCurrencyHC">HC {Math.floor(summary.hc_earned || 0)}</span>
           <span className="akrCurrencyChip akrCurrencyRC">RC {Math.floor(summary.rc_earned || 0)}</span>
+          <span className="akrCurrencyChip" style={{ background: "rgba(0,255,136,0.08)", color: "#00ff88", fontSize: 9 }}>AUTO</span>
+          <span className="akrCurrencyChip" style={{ background: "rgba(0,210,255,0.08)", color: "#00d2ff", fontSize: 9 }}>LIVE</span>
         </div>
         <div className="akrDailyProgress">
           <span className="akrDailyLabel">

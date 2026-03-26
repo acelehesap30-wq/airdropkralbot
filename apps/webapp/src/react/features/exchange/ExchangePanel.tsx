@@ -10,7 +10,7 @@ type ExchangePanelProps = {
   onShellAction: (actionKey: string, sourcePanelKey?: string) => void;
 };
 
-const NXT_PRICE_DEFAULT = 0.01;
+const NXT_PRICE_DEFAULT = 0.001;
 const SC_TO_HC_RATE = 1000;
 const HC_TO_NXT_RATE = 10;
 
@@ -139,15 +139,25 @@ export function ExchangePanel(props: ExchangePanelProps) {
         </div>
         <p className="akrCardBody" style={{ fontSize: 12, opacity: 0.7 }}>
           {isTr
-            ? "Oyun ici doviz cevir, NXT token al-sat, BTC'ye cekim yap."
+            ? "Oyun i\u00e7i d\u00f6viz \u00e7evir, NXT token al-sat, BTC'ye \u00e7ekim yap."
             : "Convert in-game currencies, trade NXT tokens, withdraw to BTC."}
         </p>
       </div>
 
       {/* Token overview card */}
       <div className="akrCard">
-        <div className="akrCardHeader">
+        <div className="akrCardHeader" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <h3 className="akrCardTitle" style={{ fontSize: 13 }}>NXT Token</h3>
+          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            {livePrice > 0 && (
+              <span className="akrBadge" style={{ background: "rgba(0,255,136,0.1)", color: "#00ff88", fontSize: 8 }}>
+                LIVE
+              </span>
+            )}
+            <span className="akrBadge" style={{ background: "rgba(0,210,255,0.1)", color: "#00d2ff", fontSize: 8 }}>
+              AUTO
+            </span>
+          </div>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, padding: "8px 0" }}>
           <div style={{ textAlign: "center" }}>
@@ -216,7 +226,7 @@ export function ExchangePanel(props: ExchangePanelProps) {
       <div className="akrCard">
         <div className="akrCardHeader">
           <h3 className="akrCardTitle" style={{ fontSize: 13 }}>
-            {isTr ? "Islem Ciftleri" : "Trading Pairs"}
+            {isTr ? "\u0130\u015flem \u00c7iftleri" : "Trading Pairs"}
           </h3>
         </div>
         {PAIRS.map((pair) => (
@@ -249,7 +259,7 @@ export function ExchangePanel(props: ExchangePanelProps) {
               >
                 {converting === `${pair.from}-${pair.to}`
                   ? (isTr ? "İşleniyor..." : "Processing...")
-                  : (isTr ? "Cevir" : "Convert")}
+                  : (isTr ? "\u00c7evir" : "Convert")}
               </button>
             </div>
           </div>

@@ -19,6 +19,24 @@ function normalizeAdminRuntimePayload(payload) {
 
 function registerWebappV2AdminRuntimeRoutes(fastify, deps = {}) {
   const proxyWebAppApiV1 = resolveProxy(deps);
+  const getAutomationStats = deps.getAutomationStats || (() => ({}));
+
+  // Automation status — live view of auto-processor & scheduler
+  fastify.get("/webapp/api/v2/admin/automation/status", async (request, reply) => {
+    try {
+      const stats = typeof getAutomationStats === "function" ? getAutomationStats() : {};
+      reply.send(normalizeV2Payload({
+        success: true,
+        data: {
+          queue_processor: stats.queue_processor || {},
+          live_ops_scheduler: stats.live_ops_scheduler || {},
+          generated_at: new Date().toISOString()
+        }
+      }));
+    } catch (err) {
+      reply.status(500).send(normalizeV2Payload({ success: false, error: err.message }));
+    }
+  });
 
   fastify.get("/webapp/api/v2/admin/metrics", async (request, reply) => {
     await proxyWebAppApiV1(request, reply, {
