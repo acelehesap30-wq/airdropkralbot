@@ -3,6 +3,7 @@ import { SHELL_ACTION_KEY } from "../../../core/navigation/shellActions.js";
 import { t, type Lang } from "../../i18n";
 import { RouteStrip } from "../shared/RouteStrip";
 import { TonWalletConnect } from "./TonWalletConnect";
+import { MultiChainWalletConnect } from "./MultiChainWalletConnect";
 
 type VaultPanelProps = {
   lang: Lang;
@@ -277,6 +278,20 @@ export function VaultPanel(props: VaultPanelProps) {
         walletUnlinkLoading={props.walletUnlinkLoading}
       />
 
+      <MultiChainWalletConnect
+        lang={props.lang}
+        walletVerified={summary.wallet_active}
+        walletChain={props.walletChain}
+        walletAddress={props.walletAddress}
+        walletKycStatus={summary.wallet_kyc_status || ""}
+        onChainSelect={props.onWalletChainChange}
+        onAddressChange={props.onWalletAddressChange}
+        onAutoVerify={props.onWalletAutoVerify}
+        onUnlink={props.onWalletUnlink}
+        autoVerifyLoading={props.walletAutoVerifyLoading || props.walletChallengeLoading || props.walletVerifyLoading}
+        unlinkLoading={props.walletUnlinkLoading}
+      />
+
       <section className="akrGameSpotlight" data-akr-panel-key="vault" data-akr-focus-key="vault_exit_route">
         <div className="akrGameSpotlightMain">
           <p className="akrKicker">
@@ -486,39 +501,17 @@ export function VaultPanel(props: VaultPanelProps) {
         <section className="akrMiniPanel">
           <h4>{copy.walletLane}</h4>
           <p className="akrMuted akrMiniPanelBody">{copy.walletBody}</p>
-          <div className="akrInputRow">
-            <select
-              value={props.walletChain}
-              onChange={(e) => props.onWalletChainChange(e.target.value)}
-              aria-label="wallet-chain"
-              className="akrSelect"
-            >
-              <option value="">{copy.chainHint}</option>
-              <option value="TON">TON</option>
-              <option value="BTC">BTC (Bitcoin)</option>
-              <option value="ETH">ETH (Ethereum)</option>
-              <option value="TRX">TRX (Tron)</option>
-              <option value="SOL">SOL (Solana)</option>
-              <option value="BSC">BSC (BNB Chain)</option>
-            </select>
-            <input value={props.walletAddress} onChange={(e) => props.onWalletAddressChange(e.target.value)} placeholder={copy.addressHint} aria-label="wallet-address" />
-          </div>
           <div className="akrChipRow">
             <span className="akrChip">{walletKycLabel}</span>
             <span className="akrChip">{summary.wallet_address_masked || "-"}</span>
+            <span className="akrChip">{summary.wallet_chain || "-"}</span>
             <span className="akrChip">{routeStatusLabel}</span>
           </div>
-          <div className="akrActionRow">
-            <button type="button" className="akrBtn akrBtnGhost" disabled={props.walletChallengeLoading} onClick={props.onWalletChallenge}>
-              {t(props.lang, "vault_wallet_challenge")}
-            </button>
-            <button type="button" className="akrBtn akrBtnAccent" disabled={props.walletVerifyLoading} onClick={props.onWalletVerify}>
-              {t(props.lang, "vault_wallet_verify")}
-            </button>
-            <button type="button" className="akrBtn akrBtnGhost" disabled={props.walletUnlinkLoading} onClick={props.onWalletUnlink}>
-              {t(props.lang, "vault_wallet_unlink")}
-            </button>
-          </div>
+          <p className="akrMuted" style={{ fontSize: 11 }}>
+            {props.lang === "tr"
+              ? "Cüzdan bağlantısı için yukarıdaki paneli kullan. 6 ağ desteklenir."
+              : "Use the wallet panel above to connect. 6 chains supported."}
+          </p>
         </section>
       </div>
 
