@@ -248,7 +248,7 @@ export function AdminPanel(props: AdminPanelProps) {
         {props.isAdmin ? (
           <div className="akrAdminIdRow">
             <span className="akrChip akrChipSuccess">Admin #{String(adminSummary.admin_telegram_id || adminSummary.admin_id || "verified")}</span>
-            <span className="akrChip">{props.lang === "tr" ? "Sistem" : "System"}: {String(adminSummary.freeze?.frozen === true ? (props.lang === "tr" ? "Dondurulmus" : "Frozen") : (props.lang === "tr" ? "Aktif" : "Active"))}</span>
+            <span className="akrChip">{props.lang === "tr" ? "Sistem" : "System"}: {String((adminSummary.freeze as Record<string, unknown> | undefined)?.frozen === true ? (props.lang === "tr" ? "Dondurulmus" : "Frozen") : (props.lang === "tr" ? "Aktif" : "Active"))}</span>
             <span className="akrChip">{props.lang === "tr" ? "Onay kuyrugu" : "Queue"}: {queueCount}</span>
             <button type="button" className="akrBtn akrBtnGhost" onClick={props.onRefresh}>
               {props.lang === "tr" ? "Yenile" : "Refresh"}
