@@ -575,27 +575,35 @@ function formatTokenWallet(profile, view) {
     })
     .join("\n");
 
+  const onchain = view.tokenConfig?.onchain || {};
+  const onchainLine = onchain.enabled && onchain.contract_address
+    ? `\n🔗 *On\\-Chain (${escapeMarkdown(onchain.chain)})*\n` +
+      `   Kontrat: \`${escapeMarkdown(String(onchain.contract_address).slice(0, 20))}...\`\n` +
+      (onchain.explorer_url ? `   [BscScan'de Gör](${onchain.explorer_url})\n` : '')
+    : '';
+
   return (
-    `*Token Treasury*\n` +
-    `Kral: *${escapeMarkdown(profile.public_name)}*\n` +
-    `Token: *${view.symbol}*\n` +
-    `Bakiye: *${Number(view.balance || 0).toFixed(view.tokenConfig.decimals)} ${view.symbol}*\n` +
-    `Spot: *$${Number(view.spotUsd || 0).toFixed(6)}* / ${view.symbol}\n` +
-    `Unify Units: *${Number(view.unifiedUnits || 0).toFixed(2)}*\n` +
-    `Maks Mint: *${Number(view.equivalentToken || 0).toFixed(view.tokenConfig.decimals)} ${view.symbol}*\n\n` +
-    `Zincir Adresleri:\n${lines || "yok"}\n\n` +
-    `Son Talepler:\n${escapeMarkdown(requests || "kayit yok")}\n\n` +
-    `Komut: /mint [miktar], /buytoken <usd> <chain>, /tx <id> <txHash>`
+    `🪙 *TOKEN TREASURY*\n` +
+    `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n` +
+    `👤 *${escapeMarkdown(profile.public_name)}*\n` +
+    `Token: *${view.symbol}*  ·  Spot: *$${Number(view.spotUsd || 0).toFixed(6)}*\n\n` +
+    `💰 Bakiye: *${Number(view.balance || 0).toFixed(view.tokenConfig.decimals)} ${view.symbol}*\n` +
+    `⛏️ Mint Kapasitesi: *${Number(view.equivalentToken || 0).toFixed(view.tokenConfig.decimals)} ${view.symbol}*\n` +
+    `📊 Unified Units: *${Number(view.unifiedUnits || 0).toFixed(2)}*\n` +
+    onchainLine +
+    `\n*Zincir Adresleri:*\n${lines || "Tanımlı adres yok"}\n\n` +
+    `*Son Talepler:*\n${escapeMarkdown(requests || "Kayıt yok")}\n\n` +
+    `💡 /mint \\[miktar\\], /buytoken <usd> <chain>, /tx <id> <txHash>`
   );
 }
 
 function formatTokenMintResult(plan, view) {
   return (
-    `*Token Mint Basarili*\n` +
-    `Kazanc: *${Number(plan.tokenAmount || 0).toFixed(view.tokenConfig.decimals)} ${view.symbol}*\n` +
-    `Harcanan birimler: ${Number(plan.unitsSpent || 0).toFixed(2)}\n` +
-    `Debit: ${Number(plan.debits?.SC || 0).toFixed(4)} SC / ${Number(plan.debits?.HC || 0).toFixed(4)} HC / ${Number(plan.debits?.RC || 0).toFixed(4)} RC\n` +
-    `Yeni bakiye: *${Number(view.balance || 0).toFixed(view.tokenConfig.decimals)} ${view.symbol}*`
+    `✅ *Token Mint Başarılı*\n\n` +
+    `🪙 Kazanç: *${Number(plan.tokenAmount || 0).toFixed(view.tokenConfig.decimals)} ${view.symbol}*\n` +
+    `📊 Harcanan: ${Number(plan.unitsSpent || 0).toFixed(2)} birim\n` +
+    `💰 \`${Number(plan.debits?.SC || 0).toFixed(0)} SC\` 💎 \`${Number(plan.debits?.HC || 0).toFixed(0)} HC\` 🌀 \`${Number(plan.debits?.RC || 0).toFixed(0)} RC\`\n\n` +
+    `💳 Yeni bakiye: *${Number(view.balance || 0).toFixed(view.tokenConfig.decimals)} ${view.symbol}*`
   );
 }
 

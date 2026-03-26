@@ -2,7 +2,20 @@ const DEFAULT_TOKEN_CONFIG = {
   enabled: true,
   symbol: "NXT",
   decimals: 4,
-  usd_price: 0.01,
+  usd_price: 0.001,
+  onchain: {
+    enabled: false,
+    chain: "BSC",
+    chain_id: 56,
+    contract_address: "",
+    explorer_url: "",
+    treasury_address: "",
+    rpc_url: "https://bsc-dataseed1.bnbchain.org",
+    testnet_rpc_url: "https://data-seed-prebsc-1-s1.bnbchain.org:8545",
+    decimals: 18,
+    max_supply: "1000000000",
+    initial_supply: "10000000"
+  },
   curve: {
     enabled: false,
     admin_floor_usd: 0.01,
@@ -34,6 +47,7 @@ const DEFAULT_TOKEN_CONFIG = {
     max_usd: 250,
     slippage_pct: 0.03,
     chains: {
+      BSC: { pay_currency: "BNB", env_key: "bsc" },
       BTC: { pay_currency: "BTC", env_key: "btc" },
       ETH: { pay_currency: "ETH", env_key: "eth" },
       TRX: { pay_currency: "TRX", env_key: "trx" },
@@ -154,6 +168,7 @@ function normalizeTokenConfig(runtimeConfig) {
   for (const [key, value] of Object.entries(incomingChains)) {
     normalizedChains[String(key || "").toUpperCase()] = value;
   }
+  const incomingOnchain = incoming.onchain || {};
   const merged = {
     enabled: incoming.enabled !== false,
     symbol: String(incoming.symbol || DEFAULT_TOKEN_CONFIG.symbol).toUpperCase(),
@@ -260,7 +275,19 @@ function normalizeTokenConfig(runtimeConfig) {
         toNum(incoming.payout_gate?.target_band_max_usd, DEFAULT_TOKEN_CONFIG.payout_gate.target_band_max_usd)
       )
     },
-    payout_release: normalizePayoutReleaseConfig(incoming.payout_release, DEFAULT_TOKEN_CONFIG.payout_release)
+    payout_release: normalizePayoutReleaseConfig(incoming.payout_release, DEFAULT_TOKEN_CONFIG.payout_release),
+    onchain: {
+      enabled: Boolean(incomingOnchain.enabled),
+      chain: String(incomingOnchain.chain || DEFAULT_TOKEN_CONFIG.onchain.chain).toUpperCase(),
+      chain_id: toNum(incomingOnchain.chain_id, DEFAULT_TOKEN_CONFIG.onchain.chain_id),
+      contract_address: String(incomingOnchain.contract_address || DEFAULT_TOKEN_CONFIG.onchain.contract_address).trim(),
+      explorer_url: String(incomingOnchain.explorer_url || DEFAULT_TOKEN_CONFIG.onchain.explorer_url).trim(),
+      treasury_address: String(incomingOnchain.treasury_address || DEFAULT_TOKEN_CONFIG.onchain.treasury_address).trim(),
+      rpc_url: String(incomingOnchain.rpc_url || DEFAULT_TOKEN_CONFIG.onchain.rpc_url).trim(),
+      decimals: toNum(incomingOnchain.decimals, DEFAULT_TOKEN_CONFIG.onchain.decimals),
+      max_supply: String(incomingOnchain.max_supply || DEFAULT_TOKEN_CONFIG.onchain.max_supply),
+      initial_supply: String(incomingOnchain.initial_supply || DEFAULT_TOKEN_CONFIG.onchain.initial_supply)
+    }
   };
 
   if (merged.purchase.max_usd < merged.purchase.min_usd) {
