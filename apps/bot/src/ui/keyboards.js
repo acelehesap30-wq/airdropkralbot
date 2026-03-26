@@ -355,38 +355,39 @@ function buildStartKeyboard(lang = "tr", gameState = {}, miniAppUrl = "") {
   const hasActive = Boolean(gameState.hasActive);
   const rows = [];
 
-  // Priority CTA based on game state (full-width, eye-catching)
+  // ── PRIORITY CTA (full-width, high-contrast) ──
   if (hasReveal) {
     rows.push([Markup.button.callback("🎁 " + (lang === "tr" ? "LOOT AÇ — Ganimet Hazır!" : "OPEN LOOT — Reward Ready!"), "GUIDE_REVEAL")]);
   } else if (hasActive) {
     rows.push([Markup.button.callback("⚡ " + (lang === "tr" ? "GÖREVİ TAMAMLA" : "COMPLETE TASK"), "GUIDE_FINISH_BALANCED")]);
-  } else {
-    rows.push([Markup.button.callback(uiText(lang, "open_play"), "OPEN_PLAY")]);
   }
 
-  // ── 3D WEBAPP LAUNCH (if HTTPS URL available) ──
+  // ── 3D WEBAPP LAUNCH ──
   const launchBtn = miniAppUrl ? buildLaunchButton(
-    lang === "tr" ? "🌐 3D Nexus Arena Aç" : "🌐 Open 3D Nexus Arena",
+    lang === "tr" ? "🌐 3D Nexus Arena" : "🌐 3D Nexus Arena",
     miniAppUrl
   ) : null;
   if (launchBtn) {
     rows.push([launchBtn]);
   }
 
-  // ── GAME SECTION ──
+  // ── 🎮 GAME SECTION ──
   rows.push(
+    [Markup.button.callback(uiText(lang, "section_game"), "NOOP")],
     [Markup.button.callback(uiText(lang, "nav_tasks"), "OPEN_TASKS"), Markup.button.callback(uiText(lang, "nav_arena"), "ARENA_RAID:balanced")],
     [Markup.button.callback(uiText(lang, "nav_missions"), "OPEN_MISSIONS"), Markup.button.callback(uiText(lang, "nav_forge"), "OPEN_FORGE")]
   );
 
-  // ── ECONOMY SECTION ──
+  // ── 💰 ECONOMY SECTION ──
   rows.push(
+    [Markup.button.callback(uiText(lang, "section_economy"), "NOOP")],
     [Markup.button.callback(uiText(lang, "nav_exchange"), "OPEN_TOKEN"), Markup.button.callback(uiText(lang, "nav_vault"), "OPEN_PAYOUT")],
     [Markup.button.callback(uiText(lang, "wallet"), "OPEN_WALLET"), Markup.button.callback(uiText(lang, "nav_season"), "OPEN_SEASON")]
   );
 
-  // ── META SECTION ──
+  // ── ⚙️ META SECTION ──
   rows.push(
+    [Markup.button.callback(uiText(lang, "section_meta"), "NOOP")],
     [Markup.button.callback(uiText(lang, "nav_hub"), "OPEN_NEXUS"), Markup.button.callback(uiText(lang, "nav_events"), "OPEN_EVENTS")],
     [Markup.button.callback(uiText(lang, "nav_settings"), "OPEN_SETTINGS"), Markup.button.callback(uiText(lang, "more"), "OPEN_HOME_MENU")]
   );

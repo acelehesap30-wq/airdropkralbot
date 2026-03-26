@@ -4934,26 +4934,32 @@ async function sendLauncherMenu(ctx, pool, appConfig) {
   if (isNewUser) {
     // First-time user: single immersive welcome with trust + action
     const welcomeMsg = tr
-      ? `🌌 *Nexus'a Hos Geldin, Kasif!*\n\n` +
-        `AirdropKral Arena seni bekliyor.\n` +
-        `Gorevleri tamamla, ganimet topla, PvP'de savas ve *gercek BTC* kazan.\n\n` +
-        `🛡️ *Guvenli Sistem*\n` +
-        `✅ Kazanclar dogrulanir │ ✅ Admin onaylidir │ ✅ Gizli kosul yok\n\n` +
-        `🧭 *Hemen Basla:*\n` +
-        `  1️⃣ \`/tasks\` — ilk gorevini al\n` +
-        `  2️⃣ \`/finish dengeli\` — gorevi tamamla\n` +
-        `  3️⃣ \`/reveal\` — ganimetini ac\n\n` +
-        `Her adimda guclenir, her zafer seni yaklastirir! 🔥`
-      : `🌌 *Welcome to the Nexus, Explorer!*\n\n` +
-        `AirdropKral Arena awaits.\n` +
+      ? `🏰 *AIRDROPKRAL NEXUS*\n` +
+        `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n` +
+        `🌌 *Nexus'a Hoş Geldin, Kaşif!*\n\n` +
+        `Görevleri tamamla, ganimet topla, PvP'de savaş ve *gerçek BTC* kazan.\n\n` +
+        `🛡️ *Güvenli Sistem*\n` +
+        `✅ Kazançlar doğrulanır\n` +
+        `✅ Admin onaylıdır\n` +
+        `✅ Gizli koşul yok\n\n` +
+        `🧭 *Hemen Başla:*\n` +
+        `1️⃣ \`/tasks\` → ilk görevini al\n` +
+        `2️⃣ \`/finish dengeli\` → görevi tamamla\n` +
+        `3️⃣ \`/reveal\` → ganimetini aç\n\n` +
+        `Her adımda güçlenir, her zafer seni yaklaştırır! 🔥`
+      : `🏰 *AIRDROPKRAL NEXUS*\n` +
+        `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n` +
+        `🌌 *Welcome to the Nexus, Explorer!*\n\n` +
         `Complete tasks, collect loot, battle in PvP and earn *real BTC*.\n\n` +
         `🛡️ *Secure System*\n` +
-        `✅ Verified earnings │ ✅ Admin-approved │ ✅ No hidden fees\n\n` +
+        `✅ Verified earnings\n` +
+        `✅ Admin-approved\n` +
+        `✅ No hidden fees\n\n` +
         `🧭 *Quick Start:*\n` +
-        `  1️⃣ \`/tasks\` — pick your first task\n` +
-        `  2️⃣ \`/finish balanced\` — complete the task\n` +
-        `  3️⃣ \`/reveal\` — open your loot\n\n` +
-        `Every step makes you stronger, every victory brings you closer! 🔥`;
+        `1️⃣ \`/tasks\` → pick your first task\n` +
+        `2️⃣ \`/finish balanced\` → complete the task\n` +
+        `3️⃣ \`/reveal\` → open your loot\n\n` +
+        `Every step makes you stronger! 🔥`;
     await ctx.replyWithMarkdown(welcomeMsg, buildStartKeyboard(lang, gameState, miniAppUrl));
     return true;
   }
@@ -6441,6 +6447,9 @@ async function start() {
   });
 
   registerSimpleActionHandlers(bot, buildSimpleCallbackActionMap(simpleBotActionHandlers));
+
+  // Section separator buttons — silent ack, no action
+  bot.action("NOOP", async (ctx) => { await ctx.answerCbQuery(); });
 
   registerPlayerActionHandlers(bot, [
     {
