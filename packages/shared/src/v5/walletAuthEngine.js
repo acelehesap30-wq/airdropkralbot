@@ -2,7 +2,7 @@
 
 const crypto = require("crypto");
 
-const SUPPORTED_WALLET_CHAINS = Object.freeze(["eth", "sol", "ton"]);
+const SUPPORTED_WALLET_CHAINS = Object.freeze(["eth", "sol", "ton", "btc", "trx", "bsc"]);
 
 function normalizeWalletChain(value) {
   const raw = String(value || "")
@@ -11,6 +11,9 @@ function normalizeWalletChain(value) {
   if (raw === "ethereum" || raw === "evm" || raw === "eth") return "eth";
   if (raw === "solana" || raw === "sol") return "sol";
   if (raw === "ton" || raw === "theopennetwork") return "ton";
+  if (raw === "bitcoin" || raw === "btc") return "btc";
+  if (raw === "tron" || raw === "trx") return "trx";
+  if (raw === "bsc" || raw === "bnb" || raw === "binance" || raw === "bnbchain") return "bsc";
   return raw;
 }
 
@@ -21,7 +24,7 @@ function isSupportedWalletChain(value) {
 function normalizeWalletAddress(chainInput, addressInput) {
   const chain = normalizeWalletChain(chainInput);
   const address = String(addressInput || "").trim();
-  if (chain === "eth") {
+  if (chain === "eth" || chain === "bsc") {
     return address.toLowerCase();
   }
   return address;
@@ -43,6 +46,15 @@ function validateWalletAddress(chainInput, addressInput) {
     return { ok: false, error: "wallet_address_invalid", chain, address };
   }
   if (chain === "ton" && !/^([EQkU][A-Za-z0-9_-]{47}|0:[0-9a-fA-F]{64})$/.test(address)) {
+    return { ok: false, error: "wallet_address_invalid", chain, address };
+  }
+  if (chain === "btc" && !/^(1[1-9A-HJ-NP-Za-km-z]{25,34}|3[1-9A-HJ-NP-Za-km-z]{25,34}|bc1[a-zA-HJ-NP-Z0-9]{25,90})$/.test(address)) {
+    return { ok: false, error: "wallet_address_invalid", chain, address };
+  }
+  if (chain === "trx" && !/^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(address)) {
+    return { ok: false, error: "wallet_address_invalid", chain, address };
+  }
+  if (chain === "bsc" && !/^0x[a-f0-9]{40}$/i.test(address)) {
     return { ok: false, error: "wallet_address_invalid", chain, address };
   }
   return { ok: true, error: "", chain, address };
@@ -80,9 +92,9 @@ function buildWalletChallenge(input = {}) {
   const statement = String(input.statement || "AirdropKralBot wallet link challenge").trim();
 
   let challengeText = "";
-  if (chain === "eth") {
+  if (chain === "eth" || chain === "bsc") {
     challengeText =
-      `${domain} wants you to sign in with your Ethereum account:\n` +
+      `${domain} wants you to sign in with your ${chain === "bsc" ? "BNB Chain" : "Ethereum"} account:\n` +
       `${address}\n\n` +
       `${statement}\n\n` +
       `URI: https://${domain}\n` +
@@ -144,12 +156,16 @@ function verifyWalletProof(input = {}) {
   }
 
   let signatureOk = false;
-  if (chain === "eth") {
+  if (chain === "eth" || chain === "bsc") {
     signatureOk = /^0x[a-fA-F0-9]{130}$/.test(signature);
   } else if (chain === "sol") {
     signatureOk = /^[1-9A-HJ-NP-Za-km-z]{64,128}$/.test(signature);
   } else if (chain === "ton") {
     signatureOk = /^[A-Za-z0-9+/_=-]{64,200}$/.test(signature);
+  } else if (chain === "btc") {
+    signatureOk = /^[A-Za-z0-9+/=-]{64,200}$/.test(signature);
+  } else if (chain === "trx") {
+    signatureOk = /^0x[a-fA-F0-9]{130}$/.test(signature) || /^[A-Za-z0-9+/=-]{64,200}$/.test(signature);
   }
   if (!signatureOk) {
     return { ok: false, error: "wallet_signature_invalid_format", chain, address, verification_level: "none" };

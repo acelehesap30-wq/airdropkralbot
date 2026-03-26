@@ -1525,12 +1525,22 @@ function getWalletCapabilities(featureFlags = {}) {
     verify_mode: WALLET_VERIFY_MODE,
     session_ttl_sec: WALLET_SESSION_TTL_SEC,
     challenge_ttl_sec: WALLET_CHALLENGE_TTL_SEC,
-    chains: walletAuthEngine.SUPPORTED_WALLET_CHAINS.map((chain) => ({
-      chain,
-      auth_mode: chain === "eth" ? "siwe_eip4361" : chain === "sol" ? "sol_sign_message" : "ton_proof_message",
-      rollout: "primary",
-      enabled
-    }))
+    chains: walletAuthEngine.SUPPORTED_WALLET_CHAINS.map((chain) => {
+      const AUTH_MODES = {
+        eth: "siwe_eip4361",
+        bsc: "siwe_eip4361",
+        sol: "sol_sign_message",
+        ton: "ton_proof_message",
+        btc: "btc_sign_message",
+        trx: "trx_sign_message"
+      };
+      return {
+        chain,
+        auth_mode: AUTH_MODES[chain] || "generic_sign_message",
+        rollout: "primary",
+        enabled
+      };
+    })
   };
 }
 
@@ -11769,8 +11779,9 @@ fastify.post(
       return;
     }
     const currency = String(request.body.currency || "BTC").toUpperCase();
-    if (currency !== "BTC") {
-      reply.code(400).send({ success: false, error: "unsupported_payout_currency" });
+    const SUPPORTED_PAYOUT_CURRENCIES = ["BTC", "ETH", "TRX", "SOL", "TON", "USDT_TRC20"];
+    if (!SUPPORTED_PAYOUT_CURRENCIES.includes(currency)) {
+      reply.code(400).send({ success: false, error: "unsupported_payout_currency", supported: SUPPORTED_PAYOUT_CURRENCIES });
       return;
     }
 
@@ -11839,7 +11850,8 @@ fastify.post(
         reply.code(409).send({ success: false, error: "no_hc_balance", data: { payout_lock: payoutLock } });
         return;
       }
-      const address = String(getPaymentAddressBook().btc || "").trim();
+      const addressBookKey = currency === "USDT_TRC20" ? "trx" : currency.toLowerCase();
+      const address = String(getPaymentAddressBook()[addressBookKey] || "").trim();
       if (!address) {
         await client.query("ROLLBACK");
         reply.code(409).send({ success: false, error: "payout_address_missing" });
@@ -11848,9 +11860,9 @@ fastify.post(
       const addressHash = crypto.createHash("sha256").update(address).digest("hex");
       const requestRow = await payoutStore.createRequest(client, {
         userId: profile.user_id,
-        currency: "BTC",
+        currency,
         amount: Number(amountBtc.toFixed(8)),
-        addressType: "BTC_MAIN",
+        addressType: `${currency}_MAIN`,
         addressHash,
         cooldownHours: PAYOUT_COOLDOWN_HOURS,
         sourceHcAmount,
