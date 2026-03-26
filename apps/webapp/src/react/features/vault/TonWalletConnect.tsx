@@ -52,7 +52,7 @@ export function TonWalletConnect(props: TonWalletConnectProps) {
     if (wasLoading && !props.walletAutoVerifyLoading && !props.walletVerified && verifyStep === "verifying") {
       setVerifyStep("error");
       setVerifyError(props.lang === "tr"
-        ? "Dogrulama basarisiz. Lutfen tekrar deneyin."
+        ? "Doğrulama başarısız. Lütfen tekrar deneyin."
         : "Verification failed. Please try again.");
     }
   }, [props.walletAutoVerifyLoading, props.walletVerified, verifyStep, props.lang]);
@@ -74,21 +74,21 @@ export function TonWalletConnect(props: TonWalletConnectProps) {
   const copy =
     props.lang === "tr"
       ? {
-          title: "TON Cuzdan Baglantisi",
-          body: "Cuzdanini bagla, bakiye ve payout islemlerini dogrudan cuzdan uzerinden yonet.",
-          connected: "Cuzdan Bagli",
-          verified: "Dogrulanmis",
-          disconnected: "Cuzdan Bagli Degil",
-          connectHint: "Asagidaki butona tiklayarak TON cuzdanini bagla.",
+          title: "TON Cüzdan Bağlantısı",
+          body: "Cüzdanını bağla, bakiye ve payout işlemlerini doğrudan cüzdan üzerinden yönet.",
+          connected: "Cüzdan Bağlı",
+          verified: "Doğrulanmış",
+          disconnected: "Cüzdan Bağlı Değil",
+          connectHint: "Aşağıdaki butona tıklayarak TON cüzdanını bağla.",
           addressLabel: "Adres",
           chainLabel: "Zincir",
-          verifyHint: "Cuzdani dogrulamak icin asagidaki butona tikla. Islem otomatik tamamlanacak.",
-          verifyingHint: "Cuzdan dogrulamasi devam ediyor...",
-          verifiedHint: "Cuzdan basariyla dogrulandi. Payout ve premium ozellikler acik.",
-          disconnect: "Baglantıyi Kes",
-          verify: "Cuzdani Dogrula",
-          verifying: "Dogrulaniyor...",
-          unlink: "Baglantıyı Kaldır",
+          verifyHint: "Cüzdanı doğrulamak için aşağıdaki butona tıkla. İşlem otomatik tamamlanacak.",
+          verifyingHint: "Cüzdan doğrulaması devam ediyor...",
+          verifiedHint: "Cüzdan başarıyla doğrulandı. Payout ve premium özellikler açık.",
+          disconnect: "Bağlantıyı Kes",
+          verify: "Cüzdanı Doğrula",
+          verifying: "Doğrulanıyor...",
+          unlink: "Bağlantıyı Kaldır",
           kycLabel: "KYC"
         }
       : {

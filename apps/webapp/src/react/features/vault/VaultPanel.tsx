@@ -66,61 +66,61 @@ export function VaultPanel(props: VaultPanelProps) {
   const copy =
     props.lang === "tr"
       ? {
-          kicker: "Vault Command",
-          title: "Odul ve wallet rotasi",
-          body: "Burada mint acilir, wallet proof tamamlanir ve cashout hattina gecilir.",
-          routeTitle: "Sonraki cikis rotasi",
-          routeWalletBody: "Wallet proof kapanmadan payout ve reward kapilari tam acilmaz.",
-          routePayoutBody: "Payout hazir; cikisi kilitlemeden request gonder.",
-          routeRewardsBody: "Vault acikken pass ve cosmetic odullerini topla.",
-          routeTradeBody: "Henuz trade lane acik; quote ve intent ile rotayi ileri it.",
-          routeLabelWallet: "proof gate",
-          routeLabelPayout: "cashout window",
-          routeLabelRewards: "prize market",
-          routeLabelTrade: "mint route",
-          chainTitle: "Mission -> proof -> cashout",
-          chainBody: "Mission'dan gelen odul burada wallet proof ile acilir, sonra cashout veya reward market'e dagilir.",
-          chainMission: "Mission close",
-          chainMissionBody: "Claim edilen gorev seni wallet ve odul odasina iter.",
-          chainProof: "Proof gate",
-          chainProofBody: "Wallet verify payout penceresini ve premium odulleri gercekten acar.",
-          chainExit: "Cashout / prize",
-          chainExitBody: "Proof temizse payout request veya reward market sonraki cikistir.",
+          kicker: "Vault Komut",
+          title: "Ödül ve cüzdan rotası",
+          body: "Burada mint açılır, wallet proof tamamlanır ve cashout hattına geçilir.",
+          routeTitle: "Sonraki çıkış rotası",
+          routeWalletBody: "Wallet proof kapanmadan payout ve reward kapıları tam açılmaz.",
+          routePayoutBody: "Payout hazır; çıkışı kilitlemeden request gönder.",
+          routeRewardsBody: "Vault açıkken pass ve cosmetic ödüllerini topla.",
+          routeTradeBody: "Henüz trade lane açık; quote ve intent ile rotayı ileri it.",
+          routeLabelWallet: "proof kapısı",
+          routeLabelPayout: "çıkış penceresi",
+          routeLabelRewards: "ödül pazarı",
+          routeLabelTrade: "mint rotası",
+          chainTitle: "Görev → proof → çıkış",
+          chainBody: "Görevden gelen ödül burada wallet proof ile açılır, sonra cashout veya ödül pazarına dağılır.",
+          chainMission: "Görev tamamla",
+          chainMissionBody: "Claim edilen görev seni wallet ve ödül odasına iter.",
+          chainProof: "Proof kapısı",
+          chainProofBody: "Wallet doğrulama payout penceresini ve premium ödülleri gerçekten açar.",
+          chainExit: "Çıkış / ödül",
+          chainExitBody: "Proof temizse payout request veya ödül pazarı sonraki çıkıştır.",
           stateComplete: "tamam",
-          stateLive: "canli",
-          stateReady: "hazir",
+          stateLive: "canlı",
+          stateReady: "hazır",
           stateLocked: "kilitli",
           balanceShort: "BAL",
-          signalRewards: "odul",
-          routeSideTitle: "Bagli koridorlar",
-          routeSideBody: "Ayni odadan acilan wallet, payout ve reward cikislari.",
-          rewardsExit: "Prize market",
-          walletExit: "Proof lane",
-          payoutExit: "Cashout window",
-          tradeLane: "Mint rotasi",
-          tradeBody: "Quote al, intent kilitle ve gerekiyorsa zincir adimini tamamla.",
-          walletLane: "Proof lane",
-          walletBody: "Cuzdani bagla, challenge dogrula ve payout yolunu ac.",
-          payoutLane: "Cashout penceresi",
-          payoutBody: "Hazir bakiyeyi secilen para biriminde payout istegine cevir.",
-          rewardsLane: "Prize market",
-          rewardsBody: "Pass ve cosmetic odulleri buradan toplanir.",
+          signalRewards: "ödül",
+          routeSideTitle: "Bağlı koridorlar",
+          routeSideBody: "Aynı odadan açılan wallet, payout ve reward çıkışları.",
+          rewardsExit: "Ödül pazarı",
+          walletExit: "Proof yolu",
+          payoutExit: "Çıkış penceresi",
+          tradeLane: "Mint rotası",
+          tradeBody: "Quote al, intent kilitle ve gerekiyorsa zincir adımını tamamla.",
+          walletLane: "Proof yolu",
+          walletBody: "Cüzdanı bağla, challenge doğrula ve payout yolunu aç.",
+          payoutLane: "Çıkış penceresi",
+          payoutBody: "Hazır bakiyeyi seçilen para biriminde payout isteğine çevir.",
+          rewardsLane: "Ödül pazarı",
+          rewardsBody: "Pass ve cosmetic ödülleri buradan toplanır.",
           latestLane: "Son rota izi",
-          latestBody: "En son quote, intent ve payout hareketleri burada kalir.",
-          manualTools: "Arka ofis araclari",
-          manualBody: "Tx hash, request id ve imza gibi agir alanlari ana rotadan ayri tut.",
-          walletOn: "wallet acik",
-          walletOff: "wallet kapali",
-          payoutReady: "payout hazir",
+          latestBody: "En son quote, intent ve payout hareketleri burada kalır.",
+          manualTools: "Arka ofis araçları",
+          manualBody: "Tx hash, request id ve imza gibi ağır alanları ana rotadan ayrı tut.",
+          walletOn: "cüzdan açık",
+          walletOff: "cüzdan kapalı",
+          payoutReady: "payout hazır",
           payoutLocked: "payout kilitli",
           premium: "premium",
-          standard: "standard",
-          quoteHint: "USD miktari",
-          chainHint: "Chain",
-          addressHint: "Wallet adresi",
+          standard: "standart",
+          quoteHint: "USD miktarı",
+          chainHint: "Ağ seçin",
+          addressHint: "Cüzdan adresi",
           currencyHint: "Payout para birimi",
           challengeHint: "Challenge ref",
-          signatureHint: "Wallet signature"
+          signatureHint: "Cüzdan imzası"
         }
       : {
           kicker: "Vault Command",
@@ -420,15 +420,15 @@ export function VaultPanel(props: VaultPanelProps) {
 
       <div className="akrSplit">
         <section className="akrMiniPanel akrTokenStorePanel">
-          <h4>{props.lang === "tr" ? "Token Satin Al" : "Buy Tokens"}</h4>
+          <h4>{props.lang === "tr" ? "Token Satın Al" : "Buy Tokens"}</h4>
           <p className="akrMuted akrMiniPanelBody">
             {props.lang === "tr"
-              ? "NXT token satin alarak oyun ici ekonomiye katil. BTC, ETH, TRX, SOL veya TON ile odeme yap."
+              ? "NXT token satın alarak oyun içi ekonomiye katıl. BTC, ETH, TRX, SOL veya TON ile ödeme yap."
               : "Join the in-game economy by purchasing NXT tokens. Pay with BTC, ETH, TRX, SOL, or TON."}
           </p>
           <div className="akrTokenStorePriceRow">
             <div className="akrMetricCard">
-              <span>{props.lang === "tr" ? "Token Fiyati" : "Token Price"}</span>
+              <span>{props.lang === "tr" ? "Token Fiyatı" : "Token Price"}</span>
               <strong>${summary.token_price_usd.toFixed(4)}</strong>
             </div>
             <div className="akrMetricCard">
@@ -473,7 +473,7 @@ export function VaultPanel(props: VaultPanelProps) {
               {props.lang === "tr" ? "Fiyat Al" : "Get Quote"}
             </button>
             <button type="button" className="akrBtn akrBtnAccent" onClick={props.onBuyIntent}>
-              {props.lang === "tr" ? "Satin Al" : "Buy Now"}
+              {props.lang === "tr" ? "Satın Al" : "Buy Now"}
             </button>
           </div>
           <p className="akrMuted akrSmallText">
@@ -487,7 +487,20 @@ export function VaultPanel(props: VaultPanelProps) {
           <h4>{copy.walletLane}</h4>
           <p className="akrMuted akrMiniPanelBody">{copy.walletBody}</p>
           <div className="akrInputRow">
-            <input value={props.walletChain} onChange={(e) => props.onWalletChainChange(e.target.value)} placeholder={copy.chainHint} aria-label="wallet-chain" />
+            <select
+              value={props.walletChain}
+              onChange={(e) => props.onWalletChainChange(e.target.value)}
+              aria-label="wallet-chain"
+              className="akrSelect"
+            >
+              <option value="">{copy.chainHint}</option>
+              <option value="TON">TON</option>
+              <option value="BTC">BTC (Bitcoin)</option>
+              <option value="ETH">ETH (Ethereum)</option>
+              <option value="TRX">TRX (Tron)</option>
+              <option value="SOL">SOL (Solana)</option>
+              <option value="BSC">BSC (BNB Chain)</option>
+            </select>
             <input value={props.walletAddress} onChange={(e) => props.onWalletAddressChange(e.target.value)} placeholder={copy.addressHint} aria-label="wallet-address" />
           </div>
           <div className="akrChipRow">
@@ -514,16 +527,23 @@ export function VaultPanel(props: VaultPanelProps) {
           <h4>{copy.payoutLane}</h4>
           <p className="akrMuted akrMiniPanelBody">{copy.payoutBody}</p>
           <div className="akrInputRow">
-            <input
+            <select
               value={props.payoutCurrency}
               onChange={(e) => props.onPayoutCurrencyChange(e.target.value)}
-              placeholder={copy.currencyHint}
               aria-label="payout-currency"
-            />
+              className="akrSelect"
+            >
+              <option value="">{copy.currencyHint}</option>
+              <option value="BTC">BTC (Bitcoin)</option>
+              <option value="ETH">ETH (Ethereum)</option>
+              <option value="USDT_TRC20">USDT (TRC-20)</option>
+              <option value="TON">TON</option>
+              <option value="SOL">SOL (Solana)</option>
+            </select>
           </div>
           <div className="akrChipRow">
-            <span className="akrChip">Req {summary.payout_requestable_btc.toFixed(8)} BTC</span>
-            <span className="akrChip">Entitled {summary.payout_entitled_btc.toFixed(8)} BTC</span>
+            <span className="akrChip">{props.lang === "tr" ? "Talep" : "Req"} {summary.payout_requestable_btc.toFixed(8)} BTC</span>
+            <span className="akrChip">{props.lang === "tr" ? "Hak" : "Entitled"} {summary.payout_entitled_btc.toFixed(8)} BTC</span>
             <span className="akrChip">{summary.payout_unlock_tier || "-"}</span>
           </div>
           <div className="akrActionRow">
@@ -612,13 +632,13 @@ export function VaultPanel(props: VaultPanelProps) {
               value={props.submitRequestId}
               onChange={(e) => props.onSubmitRequestIdChange(e.target.value)}
               aria-label="submit-request-id"
-              placeholder="request id"
+              placeholder={props.lang === "tr" ? "İstek ID" : "Request ID"}
             />
             <input
               value={props.submitTxHash}
               onChange={(e) => props.onSubmitTxHashChange(e.target.value)}
               aria-label="submit-tx-hash"
-              placeholder="tx hash"
+              placeholder={props.lang === "tr" ? "İşlem hash" : "TX hash"}
             />
           </div>
           <div className="akrInputRow">

@@ -13,20 +13,20 @@ type SettingsPanelProps = {
 };
 
 const ALERT_FAMILIES = [
-  { key: "chest_ready", label_tr: "Sandik Hazir", label_en: "Chest Ready" },
-  { key: "mission_refresh", label_tr: "Gorev Yenilendi", label_en: "Mission Refresh" },
-  { key: "event_countdown", label_tr: "Etkinlik Geri Sayim", label_en: "Event Countdown" },
-  { key: "kingdom_war", label_tr: "Krallik Savasi", label_en: "Kingdom War" },
+  { key: "chest_ready", label_tr: "Sandık Hazır", label_en: "Chest Ready" },
+  { key: "mission_refresh", label_tr: "Görev Yenilendi", label_en: "Mission Refresh" },
+  { key: "event_countdown", label_tr: "Etkinlik Geri Sayım", label_en: "Event Countdown" },
+  { key: "kingdom_war", label_tr: "Krallık Savaşı", label_en: "Kingdom War" },
   { key: "streak_risk", label_tr: "Streak Riski", label_en: "Streak Risk" },
-  { key: "payout_update", label_tr: "Odeme Durumu", label_en: "Payout Update" },
-  { key: "rare_drop", label_tr: "Nadir Odul", label_en: "Rare Drop" },
-  { key: "comeback_offer", label_tr: "Geri Donus Teklifi", label_en: "Comeback Offer" },
-  { key: "season_deadline", label_tr: "Sezon Bitisi", label_en: "Season Deadline" },
-  { key: "daily_task_available", label_tr: "Gunluk Gorev", label_en: "Daily Task" },
-  { key: "pvp_match_ready", label_tr: "PvP Hazir", label_en: "PvP Ready" },
-  { key: "payout_ready", label_tr: "Cekim Hazir", label_en: "Payout Ready" },
-  { key: "wallet_required", label_tr: "Cuzdan Gerekli", label_en: "Wallet Required" },
-  { key: "tier_upgrade", label_tr: "Tier Yukseltme", label_en: "Tier Upgrade" }
+  { key: "payout_update", label_tr: "Ödeme Durumu", label_en: "Payout Update" },
+  { key: "rare_drop", label_tr: "Nadir Ödül", label_en: "Rare Drop" },
+  { key: "comeback_offer", label_tr: "Geri Dönüş Teklifi", label_en: "Comeback Offer" },
+  { key: "season_deadline", label_tr: "Sezon Bitişi", label_en: "Season Deadline" },
+  { key: "daily_task_available", label_tr: "Günlük Görev", label_en: "Daily Task" },
+  { key: "pvp_match_ready", label_tr: "PvP Hazır", label_en: "PvP Ready" },
+  { key: "payout_ready", label_tr: "Çekim Hazır", label_en: "Payout Ready" },
+  { key: "wallet_required", label_tr: "Cüzdan Gerekli", label_en: "Wallet Required" },
+  { key: "tier_upgrade", label_tr: "Tier Yükseltme", label_en: "Tier Upgrade" }
 ];
 
 export function SettingsPanel(props: SettingsPanelProps) {

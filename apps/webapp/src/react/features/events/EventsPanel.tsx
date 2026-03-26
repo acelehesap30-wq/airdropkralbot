@@ -47,13 +47,16 @@ function authFields(auth?: WebAppAuth | null) {
   return { uid: p.get("uid") || "", ts: p.get("ts") || String(Date.now()), sig: p.get("sig") || "" };
 }
 
-function formatCountdown(endsAt: string): string {
+function formatCountdown(endsAt: string, isTr: boolean): string {
   const diff = new Date(endsAt).getTime() - Date.now();
-  if (diff <= 0) return "Ended";
+  if (diff <= 0) return isTr ? "Bitti" : "Ended";
   const h = Math.floor(diff / 3_600_000);
   const m = Math.floor((diff % 3_600_000) / 60_000);
-  if (h > 24) return `${Math.floor(h / 24)}d ${h % 24}h`;
-  return `${h}h ${m}m`;
+  if (h > 24) {
+    const d = Math.floor(h / 24);
+    return isTr ? `${d}g ${h % 24}s` : `${d}d ${h % 24}h`;
+  }
+  return isTr ? `${h}s ${m}dk` : `${h}h ${m}m`;
 }
 
 export function EventsPanel(props: EventsPanelProps) {
@@ -111,47 +114,7 @@ export function EventsPanel(props: EventsPanelProps) {
     });
   });
 
-  // Fallback events when no live data
-  if (events.filter((e) => e.type === "tournament").length === 0) {
-    events.push({
-      id: "e_tournament",
-      type: "tournament",
-      title_tr: "Arena Turnuvas\u0131",
-      title_en: "Arena Tournament",
-      desc_tr: "PvP turnuvas\u0131nda ilk 10 s\u0131raya gir, \u00f6zel HC \u00f6d\u00fcl\u00fc kazan. Haftal\u0131k s\u0131f\u0131rlan\u0131r.",
-      desc_en: "Reach top 10 in PvP tournament, earn special HC rewards. Resets weekly.",
-      status: "active",
-      reward: "500 HC + Badge",
-      participants: 147
-    });
-  }
-
-  if (events.filter((e) => e.type === "war").length === 0) {
-    events.push({
-      id: "e_war",
-      type: "war",
-      title_tr: "Kral\u0131k Sava\u015f\u0131",
-      title_en: "Kingdom War",
-      desc_tr: "Tak\u0131m\u0131n\u0131 se\u00e7 ve topluluk havuzuna katk\u0131 yap. En \u00e7ok katk\u0131 yapan tak\u0131m kazan\u0131r.",
-      desc_en: "Pick your team and contribute to the community pool. Highest contribution wins.",
-      status: "upcoming",
-      reward: "3x Pool Share",
-      participants: 0
-    });
-  }
-
-  if (events.filter((e) => e.type === "flash").length === 0) {
-    events.push({
-      id: "e_flash",
-      type: "flash",
-      title_tr: "Flash Drop",
-      title_en: "Flash Drop",
-      desc_tr: "S\u0131n\u0131rl\u0131 s\u00fcreli \u00f6zel \u00f6d\u00fcl havuzu. \u0130lk gelenler kazan\u0131r.",
-      desc_en: "Limited time special reward pool. First come, first served.",
-      status: "upcoming",
-      reward: "Mystery Box"
-    });
-  }
+  // No fallback/mock events - only show real data from API
 
   const active = events.filter((e) => e.status === "active");
   const upcoming = events.filter((e) => e.status === "upcoming");
@@ -226,6 +189,21 @@ export function EventsPanel(props: EventsPanelProps) {
             padding: "6px 0"
           }}>
             {joinResult.ok ? "\u2713 " : "\u2717 "}{joinResult.msg}
+          </div>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {events.length === 0 && (
+        <div className="akrCard" style={{ textAlign: "center", padding: "24px 16px" }}>
+          <div style={{ fontSize: 32, marginBottom: 8 }}>🎯</div>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>
+            {isTr ? "Henüz aktif etkinlik yok" : "No active events yet"}
+          </div>
+          <div style={{ fontSize: 11, opacity: 0.5 }}>
+            {isTr
+              ? "Yeni etkinlikler otomatik olarak burada görünecek. Takipte kal!"
+              : "New events will appear here automatically. Stay tuned!"}
           </div>
         </div>
       )}
@@ -330,7 +308,7 @@ function EventCard({ event, isTr, joining, joined, onJoin, countdownTick }: {
                 fontSize: 9, fontFamily: "var(--font-mono, monospace)",
                 color: "#ffd700", opacity: 0.8
               }}>
-                {formatCountdown(event.ends_at)}
+                {formatCountdown(event.ends_at, isTr)}
               </span>
             )}
           </div>

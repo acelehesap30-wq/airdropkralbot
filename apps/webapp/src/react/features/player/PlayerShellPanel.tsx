@@ -66,10 +66,10 @@ export function PlayerShellPanel(props: PlayerShellPanelProps) {
           workspaceLabel: "Alan",
           motionReduced: "motion az",
           motionNormal: "motion normal",
-          largeText: "buyuk metin",
+          largeText: "büyük metin",
           baseText: "standart metin",
-          soundOff: "ses kapali",
-          soundOn: "ses acik",
+          soundOff: "ses kapalı",
+          soundOn: "ses açık",
           perfLabel: "Perf",
           deviceLabel: "Cihaz",
           profileLabel: "Profil",
@@ -78,26 +78,26 @@ export function PlayerShellPanel(props: PlayerShellPanelProps) {
           seasonLabel: "Sezon",
           pointsLabel: "Puan",
           chainLabel: "Chain",
-          tasksLabel: "Gorev",
-          readyLabel: "Hazir",
-          openLabel: "Acik",
+          tasksLabel: "Görev",
+          readyLabel: "Hazır",
+          openLabel: "Açık",
           routeLabel: "Rota",
           requestableLabel: "Talep",
           entitledLabel: "Hak",
           passesLabel: "Pass",
           cosmeticsLabel: "Cosmetic",
           ownedLabel: "Sahip",
-          historyLabel: "Gecmis",
-          premiumOn: "premium acik",
-          premiumOff: "premium kapali",
-          walletReady: "wallet hazir",
+          historyLabel: "Geçmiş",
+          premiumOn: "premium açık",
+          premiumOff: "premium kapalı",
+          walletReady: "wallet hazır",
           walletIdle: "wallet bekliyor",
-          walletOn: "wallet acik",
-          walletOff: "wallet kapali",
+          walletOn: "wallet açık",
+          walletOff: "wallet kapalı",
           kycLabel: "KYC",
           assetLabel: "Asset",
           unlockTierLabel: "Tier",
-          payoutOpen: "talep acik",
+          payoutOpen: "talep açık",
           payoutLocked: "kilitli"
         }
       : {
@@ -185,7 +185,7 @@ export function PlayerShellPanel(props: PlayerShellPanelProps) {
     vaultView.summary.wallet_active
       ? `${props.lang === "tr" ? "Wallet" : "Wallet"} ${vaultView.summary.wallet_chain || "-"}`
       : props.lang === "tr"
-        ? "Wallet kapali"
+        ? "Wallet kapalı"
         : "Wallet idle",
     vaultView.summary.payout_can_request
       ? `${vaultView.summary.payout_requestable_btc.toFixed(8)} BTC`
@@ -298,8 +298,8 @@ export function PlayerShellPanel(props: PlayerShellPanelProps) {
                   <span className="akrAlertPrefLabel">{props.lang === "tr" ? alert.tr : alert.en}</span>
                   <span className={`akrChip ${isEnabled ? "akrChipSuccess" : ""}`}>
                     {isEnabled
-                      ? (props.lang === "tr" ? "Acik" : "On")
-                      : (props.lang === "tr" ? "Kapali" : "Off")}
+                      ? (props.lang === "tr" ? "Açık" : "On")
+                      : (props.lang === "tr" ? "Kapalı" : "Off")}
                   </span>
                 </label>
               );
