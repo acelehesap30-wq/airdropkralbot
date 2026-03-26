@@ -16,8 +16,8 @@ test("formatGuide renders English copy when lang is en", () => {
     { lang: "en" }
   );
 
-  assert.match(text, /\*Nexus Guide\*/);
-  assert.match(text, /Best Next Move/);
+  assert.match(text, /\*NEXUS GUIDE\*/);
+  assert.match(text, /Next Move/);
   assert.doesNotMatch(text, /Nexus Rehber/);
 });
 
@@ -33,9 +33,9 @@ test("formatOnboard renders English copy when lang is en", () => {
     { lang: "en" }
   );
 
-  assert.match(text, /\*Onboard \/\/ 3 Steps\*/);
-  assert.match(text, /Player: \*/);
-  assert.doesNotMatch(text, /Onboard \/\/ 3 Adim/);
+  assert.match(text, /\*ONBOARD — 3 Steps\*/);
+  assert.match(text, /\*Bob\*/);
+  assert.doesNotMatch(text, /ONBOARD — 3 Adım/);
 });
 
 test("buildPlayKeyboard uses English labels for en locale", () => {
