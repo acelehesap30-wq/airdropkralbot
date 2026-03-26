@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type { Lang } from "../../i18n";
 
 type Chain = "TON" | "ETH" | "BSC" | "SOL" | "BTC" | "TRX";
@@ -98,10 +98,12 @@ export function MultiChainWalletConnect(props: MultiChainWalletConnectProps) {
   const isVerifying = props.autoVerifyLoading || step === "verifying";
 
   // Update step when verification completes
-  if (props.walletVerified && step !== "done") {
-    setStep("done");
-    setErrorMsg("");
-  }
+  useEffect(() => {
+    if (props.walletVerified && step !== "done") {
+      setStep("done");
+      setErrorMsg("");
+    }
+  }, [props.walletVerified, step]);
 
   const activeChainInfo = CHAINS.find((c) => c.key === selectedChain);
   const shortAddr = props.walletAddress
