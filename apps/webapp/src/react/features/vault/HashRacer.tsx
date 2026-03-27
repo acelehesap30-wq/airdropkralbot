@@ -2,333 +2,367 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { buildActionRequestId, postJson } from "../../api/common";
 import type { WebAppAuth } from "../../types";
 
-type Props = {
-  lang: "tr" | "en";
-  auth?: WebAppAuth | null;
-  onClose: () => void;
-};
+type Props = { lang: "tr" | "en"; auth?: WebAppAuth | null; onClose: () => void };
 
-type Block = {
-  id: number;
-  hash: string;
-  target: string;
-  nonce: number;
-  difficulty: number;
-  mined: boolean;
-  reward: number;
-};
+type Block = { id:number; difficulty:number; mined:boolean; reward:number; hash:string; nonce:number };
 
-function authFields(auth?: WebAppAuth | null) {
-  if (auth) return { uid: auth.uid, ts: auth.ts, sig: auth.sig };
-  const p = new URLSearchParams(window.location.search);
-  return { uid: p.get("uid") || "", ts: p.get("ts") || String(Date.now()), sig: p.get("sig") || "" };
-}
+type MatrixColumn = { x:number; chars:string[]; y:number; speed:number };
+type MineSpark = { x:number; y:number; vx:number; vy:number; life:number };
 
 const HEX = "0123456789abcdef";
-function randomHex(len: number): string {
-  return Array.from({ length: len }, () => HEX[Math.floor(Math.random() * 16)]).join("");
-}
+function rHex(n:number){ return Array.from({length:n},()=>HEX[Math.floor(Math.random()*16)]).join(""); }
+function makeBlock(id:number,diff:number):Block{ return {id,difficulty:diff,mined:false,reward:diff*15,hash:rHex(8),nonce:0}; }
 
-function generateBlock(id: number, difficulty: number): Block {
-  const target = "0".repeat(difficulty) + randomHex(8 - difficulty);
-  return {
-    id,
-    hash: randomHex(8),
-    target,
-    nonce: 0,
-    difficulty,
-    mined: false,
-    reward: difficulty * 15,
-  };
+function authFields(auth?: WebAppAuth|null){
+  if(auth) return {uid:auth.uid,ts:auth.ts,sig:auth.sig};
+  const p=new URLSearchParams(window.location.search);
+  return {uid:p.get("uid")||"",ts:p.get("ts")||String(Date.now()),sig:p.get("sig")||""};
 }
 
 export function HashRacer({ lang, auth, onClose }: Props) {
-  const isTr = lang === "tr";
-  const [phase, setPhase] = useState<"idle" | "mining" | "done">("idle");
-  const [blocks, setBlocks] = useState<Block[]>([]);
-  const [currentBlock, setCurrentBlock] = useState(0);
+  const isTr = lang==="tr";
+  const [phase, setPhase] = useState<"idle"|"mining"|"done">("idle");
+  const [currentHash, setCurrentHash] = useState("00000000");
   const [timeLeft, setTimeLeft] = useState(30);
   const [totalMined, setTotalMined] = useState(0);
   const [totalReward, setTotalReward] = useState(0);
+  const [currentBlock, setCurrentBlock] = useState(0);
+  const [blocks, setBlocks] = useState<Block[]>([]);
   const [hashRate, setHashRate] = useState(0);
-  const [tapCount, setTapCount] = useState(0);
-  const [currentHash, setCurrentHash] = useState("00000000");
-  const [flash, setFlash] = useState(false);
+  const [mineFlash, setMineFlash] = useState(false);
 
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const totalMinedRef = useRef(0);
-  const totalRewardRef = useRef(0);
-  const tapCountRef = useRef(0);
-  const hashRateRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const stateRef = useRef({
+    phase:"idle", currentHash:"00000000", blocks:[] as Block[],
+    currentBlock:0, totalMined:0, totalReward:0, tapCount:0, sparks:[] as MineSpark[],
+    matrix:[] as MatrixColumn[], nextId:0, flashUntil:0,
+  });
+  const timerRef = useRef<ReturnType<typeof setInterval>|null>(null);
+  const hrRef   = useRef<ReturnType<typeof setInterval>|null>(null);
+  const rafRef  = useRef<number>(0);
 
-  const cleanup = useCallback(() => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    if (hashRateRef.current) clearInterval(hashRateRef.current);
-  }, []);
+  // Init matrix rain columns
+  const initMatrix = useCallback((W:number)=>{
+    const cols:MatrixColumn[] = [];
+    for (let x=0;x<W;x+=12) {
+      cols.push({x,chars:Array.from({length:12},()=>HEX[Math.floor(Math.random()*16)]),y:Math.random()*100,speed:0.5+Math.random()*1.5});
+    }
+    stateRef.current.matrix=cols;
+  },[]);
 
-  useEffect(() => () => cleanup(), [cleanup]);
+  // Canvas render loop
+  useEffect(()=>{
+    const canvas=canvasRef.current;
+    if (!canvas) return;
+    const ctx=canvas.getContext("2d");
+    if (!ctx) return;
+    let alive=true;
+    const W=canvas.width, H=canvas.height;
+    initMatrix(W);
 
-  const startGame = useCallback(() => {
-    const initialBlocks = [
-      generateBlock(1, 1),
-      generateBlock(2, 1),
-      generateBlock(3, 2),
-      generateBlock(4, 2),
-      generateBlock(5, 3),
-      generateBlock(6, 3),
-      generateBlock(7, 4),
-    ];
-    setPhase("mining");
-    setBlocks(initialBlocks);
-    setCurrentBlock(0);
-    setTimeLeft(30);
-    setTotalMined(0);
-    setTotalReward(0);
-    setHashRate(0);
-    setTapCount(0);
-    setCurrentHash("00000000");
-    totalMinedRef.current = 0;
-    totalRewardRef.current = 0;
-    tapCountRef.current = 0;
+    const draw=()=>{
+      if (!alive) return;
+      const st=stateRef.current;
+      const now=performance.now();
+      ctx.clearRect(0,0,W,H);
 
-    timerRef.current = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          cleanup();
-          setPhase("done");
-          const a = authFields(auth);
-          const reward = totalRewardRef.current;
-          postJson("/webapp/api/v2/player/action", {
-            ...a,
-            action_key: "game_hash_racer",
-            action_request_id: buildActionRequestId("game_hash_racer"),
-            payload: { blocks_mined: totalMinedRef.current, reward_sc: reward, total_hashes: tapCountRef.current },
-          }).catch(() => {});
-          return 0;
+      // Background
+      ctx.fillStyle="#030810";
+      ctx.fillRect(0,0,W,H);
+
+      // Matrix rain (subtle background)
+      ctx.font="10px monospace";
+      for (const col of st.matrix) {
+        col.y += col.speed;
+        if (col.y > H+col.chars.length*12) col.y = -col.chars.length*12;
+        for (let i=0;i<col.chars.length;i++) {
+          const cy = col.y + i*12;
+          if (cy<0 || cy>H) continue;
+          const alpha = i===col.chars.length-1 ? 0.8 : 0.08*(1-i/col.chars.length);
+          ctx.fillStyle = `rgba(168,85,247,${alpha})`;
+          ctx.fillText(col.chars[i], col.x, cy);
         }
-        return prev - 1;
-      });
-    }, 1000);
+        // Occasionally flip a char
+        if (Math.random()<0.03) col.chars[Math.floor(Math.random()*col.chars.length)]=HEX[Math.floor(Math.random()*16)];
+      }
 
-    // Hash rate tracker
-    hashRateRef.current = setInterval(() => {
-      setHashRate(tapCountRef.current);
-      tapCountRef.current = 0;
-      setTapCount(0);
-    }, 1000);
-  }, [auth, cleanup]);
+      // Flash overlay on mine
+      if (now < st.flashUntil) {
+        const flashAlpha = ((st.flashUntil-now)/300)*0.3;
+        ctx.fillStyle=`rgba(168,85,247,${flashAlpha})`;
+        ctx.fillRect(0,0,W,H);
+      }
 
-  const handleMine = useCallback(() => {
-    if (phase !== "mining") return;
+      // 3D perspective blockchain (top portion)
+      const chainY = H*0.38;
+      const bW=34, bH=20, bDepth=8;
+      const blocks=st.blocks;
+      if (blocks.length>0) {
+        const totalW=blocks.length*(bW+6);
+        let startX=(W-totalW)/2;
+        for (let i=0;i<blocks.length;i++) {
+          const bk=blocks[i];
+          const x=startX+i*(bW+6), y=chainY;
+          const isCurrent=i===st.currentBlock;
+          const col = bk.mined ? "#a855f7" : isCurrent ? "#00d6ff" : "rgba(255,255,255,0.15)";
+          const colDark = bk.mined ? "#6030a0" : isCurrent ? "#004488" : "rgba(255,255,255,0.05)";
 
-    tapCountRef.current++;
-    setTapCount((p) => p + 1);
+          // Top face
+          ctx.fillStyle = colDark;
+          ctx.beginPath();
+          ctx.moveTo(x+bDepth,y-bDepth); ctx.lineTo(x+bW+bDepth,y-bDepth);
+          ctx.lineTo(x+bW,y); ctx.lineTo(x,y); ctx.closePath();
+          ctx.fill();
 
-    // Generate new hash attempt
-    const newHash = randomHex(8);
+          // Right face
+          ctx.fillStyle=`rgba(0,0,0,0.5)`;
+          ctx.beginPath();
+          ctx.moveTo(x+bW,y); ctx.lineTo(x+bW+bDepth,y-bDepth);
+          ctx.lineTo(x+bW+bDepth,y-bDepth+bH); ctx.lineTo(x+bW,y+bH); ctx.closePath();
+          ctx.fill();
+
+          // Front face
+          const fGrad=ctx.createLinearGradient(x,y,x,y+bH);
+          fGrad.addColorStop(0,col);
+          fGrad.addColorStop(1,colDark);
+          ctx.fillStyle=fGrad;
+          ctx.fillRect(x,y,bW,bH);
+
+          // Glow for current
+          if (isCurrent&&!bk.mined) {
+            const pulse=Math.sin(now*0.005)*0.5+0.5;
+            ctx.shadowBlur=15*pulse; ctx.shadowColor="#00d6ff";
+            ctx.strokeStyle="#00d6ff";
+            ctx.lineWidth=1.5;
+            ctx.strokeRect(x,y,bW,bH);
+            ctx.shadowBlur=0;
+          }
+
+          // Difficulty stars
+          ctx.fillStyle="rgba(255,255,255,0.7)";
+          ctx.font="6px monospace";
+          ctx.textAlign="center";
+          ctx.fillText("★".repeat(bk.difficulty), x+bW/2, y+bH/2+2);
+
+          // Chain connector
+          if (i>0) {
+            ctx.strokeStyle=`rgba(168,85,247,${bk.mined?0.5:0.15})`;
+            ctx.lineWidth=1;
+            ctx.setLineDash([3,3]);
+            ctx.beginPath();
+            ctx.moveTo(x-3,y+bH/2); ctx.lineTo(x-6,y+bH/2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+          }
+        }
+      }
+
+      // Current hash display (center)
+      if (st.phase==="mining") {
+        const hash=st.currentHash;
+        const block=blocks[st.currentBlock];
+        const diff=block?.difficulty||1;
+        ctx.font="bold 18px monospace";
+        ctx.textAlign="center";
+        const hx=W/2, hy=H*0.62;
+        for (let i=0;i<hash.length;i++) {
+          const charX = hx + (i-3.5)*14;
+          const isMatch = i<diff && hash[i]==="0";
+          ctx.fillStyle = isMatch ? "#a855f7" : "rgba(255,255,255,0.4)";
+          ctx.shadowBlur = isMatch ? 10 : 0;
+          ctx.shadowColor="#a855f7";
+          ctx.fillText(hash[i], charX, hy);
+        }
+        ctx.shadowBlur=0;
+
+        // Target prefix
+        ctx.font="10px monospace";
+        ctx.fillStyle="rgba(255,255,255,0.25)";
+        ctx.fillText(`${isTr?"Hedef":"Target"}: ${"0".repeat(diff)}${"_".repeat(8-diff)}`, W/2, hy+18);
+      }
+
+      // Sparks
+      for (const sp of st.sparks) {
+        sp.x+=sp.vx; sp.y+=sp.vy; sp.vy+=0.1; sp.life-=0.04;
+        if (sp.life>0) {
+          ctx.beginPath();
+          ctx.arc(sp.x,sp.y,3*sp.life,0,Math.PI*2);
+          ctx.fillStyle=`rgba(168,85,247,${sp.life})`;
+          ctx.fill();
+        }
+      }
+      st.sparks=st.sparks.filter(s=>s.life>0);
+
+      rafRef.current=requestAnimationFrame(draw);
+    };
+    rafRef.current=requestAnimationFrame(draw);
+    return()=>{alive=false;cancelAnimationFrame(rafRef.current);};
+  },[initMatrix, isTr]);
+
+  const cleanup=useCallback(()=>{
+    if(timerRef.current)clearInterval(timerRef.current);
+    if(hrRef.current)clearInterval(hrRef.current);
+  },[]);
+  useEffect(()=>()=>cleanup(),[cleanup]);
+
+  const handleMine=useCallback(()=>{
+    const st=stateRef.current;
+    if(st.phase!=="mining")return;
+    st.tapCount++;
+    const newHash=rHex(8);
+    st.currentHash=newHash;
     setCurrentHash(newHash);
 
-    // Check if this hash matches the target pattern (leading zeros)
-    const block = blocks[currentBlock];
-    if (!block) return;
-
-    const targetPrefix = "0".repeat(block.difficulty);
-    if (newHash.startsWith(targetPrefix)) {
+    const block=st.blocks[st.currentBlock];
+    if(!block)return;
+    const prefix="0".repeat(block.difficulty);
+    if(newHash.startsWith(prefix)) {
       // Block mined!
-      setFlash(true);
-      setTimeout(() => setFlash(false), 300);
+      st.flashUntil=performance.now()+300;
+      setMineFlash(true); setTimeout(()=>setMineFlash(false),300);
 
-      const updatedBlocks = [...blocks];
-      updatedBlocks[currentBlock] = { ...block, mined: true, hash: newHash, nonce: tapCountRef.current };
-      setBlocks(updatedBlocks);
+      const canvas=canvasRef.current;
+      if(canvas) {
+        const cx=canvas.width/2, cy=canvas.height*0.62;
+        for(let i=0;i<20;i++){
+          const a=Math.random()*Math.PI*2, spd=3+Math.random()*4;
+          st.sparks.push({x:cx,y:cy,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd-2,life:1});
+        }
+      }
 
-      totalMinedRef.current++;
-      totalRewardRef.current += block.reward;
-      setTotalMined(totalMinedRef.current);
-      setTotalReward(totalRewardRef.current);
+      st.blocks[st.currentBlock]={...block,mined:true,hash:newHash,nonce:st.tapCount};
+      setBlocks([...st.blocks]);
+      st.totalMined++; st.totalReward+=block.reward;
+      setTotalMined(st.totalMined); setTotalReward(st.totalReward);
 
-      if (currentBlock + 1 < blocks.length) {
-        setCurrentBlock(currentBlock + 1);
+      if(st.currentBlock+1<st.blocks.length) {
+        st.currentBlock++;
+        setCurrentBlock(st.currentBlock);
       } else {
-        // All blocks mined — bonus!
-        totalRewardRef.current += 100;
-        setTotalReward(totalRewardRef.current);
-        cleanup();
-        setPhase("done");
-        const a = authFields(auth);
-        postJson("/webapp/api/v2/player/action", {
-          ...a,
-          action_key: "game_hash_racer",
-          action_request_id: buildActionRequestId("game_hash_racer"),
-          payload: { blocks_mined: totalMinedRef.current, reward_sc: totalRewardRef.current, total_hashes: tapCountRef.current, perfect: true },
-        }).catch(() => {});
+        st.totalReward+=100;
+        setTotalReward(st.totalReward);
+        cleanup(); st.phase="done"; setPhase("done");
+        const a=authFields(auth);
+        postJson("/webapp/api/v2/player/action",{...a,
+          action_key:"game_hash_racer",
+          action_request_id:buildActionRequestId("game_hash_racer"),
+          payload:{blocks_mined:st.totalMined,reward_sc:st.totalReward,total_hashes:st.tapCount,perfect:true}
+        }).catch(()=>{});
       }
     }
-  }, [phase, blocks, currentBlock, auth, cleanup]);
+  },[auth,cleanup]);
 
-  const block = blocks[currentBlock];
+  const startGame=useCallback(()=>{
+    const initialBlocks=[makeBlock(1,1),makeBlock(2,1),makeBlock(3,2),makeBlock(4,2),makeBlock(5,3),makeBlock(6,3),makeBlock(7,4)];
+    const st=stateRef.current;
+    st.phase="mining"; st.blocks=initialBlocks; st.currentBlock=0;
+    st.totalMined=0; st.totalReward=0; st.tapCount=0; st.sparks=[];
+    st.currentHash="00000000"; st.flashUntil=0;
+    setPhase("mining"); setBlocks(initialBlocks); setCurrentBlock(0);
+    setTimeLeft(30); setTotalMined(0); setTotalReward(0); setHashRate(0);
+    setCurrentHash("00000000"); setMineFlash(false);
+
+    timerRef.current=setInterval(()=>{
+      setTimeLeft(prev=>{
+        if(prev<=1){
+          cleanup(); stateRef.current.phase="done"; setPhase("done");
+          const a=authFields(auth);
+          postJson("/webapp/api/v2/player/action",{...a,
+            action_key:"game_hash_racer",
+            action_request_id:buildActionRequestId("game_hash_racer"),
+            payload:{blocks_mined:stateRef.current.totalMined,reward_sc:stateRef.current.totalReward,total_hashes:stateRef.current.tapCount}
+          }).catch(()=>{});
+          return 0;
+        }
+        return prev-1;
+      });
+    },1000);
+    hrRef.current=setInterval(()=>{ setHashRate(st.tapCount); st.tapCount=0; },1000);
+  },[auth,cleanup]);
+
+  const block=blocks[currentBlock];
 
   return (
-    <div style={{ background: "rgba(0,0,0,0.95)", borderRadius: 16, padding: 16, marginTop: 12 }}>
-      {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+    <div style={{background:"rgba(3,8,16,0.98)",borderRadius:20,overflow:"hidden",border:"1px solid rgba(168,85,247,0.2)"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",background:"rgba(168,85,247,0.05)",borderBottom:"1px solid rgba(168,85,247,0.1)"}}>
         <div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: "#A855F7" }}>
-            ⛏️ {isTr ? "Hash Yarışçısı" : "Hash Racer"}
-          </div>
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", marginTop: 2 }}>
-            {isTr ? "Blokları kazarak NXT madenciliği yap!" : "Mine blocks by tapping to find valid hashes!"}
-          </div>
+          <div style={{fontSize:15,fontWeight:700,color:"#a855f7",letterSpacing:1}}>◧ {isTr?"KUANTUM MADENCİ":"QUANTUM MINER"}</div>
+          <div style={{fontSize:10,color:"rgba(168,85,247,0.5)",marginTop:1}}>{isTr?"Hash bul · Blok kazan · Zinciri büyüt":"Find hash · Mine block · Grow the chain"}</div>
         </div>
-        <button onClick={onClose} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: 18, cursor: "pointer" }}>✕</button>
+        <button onClick={onClose} style={{background:"rgba(168,85,247,0.1)",border:"1px solid rgba(168,85,247,0.2)",borderRadius:8,color:"rgba(255,255,255,0.5)",width:28,height:28,cursor:"pointer",fontSize:14}}>✕</button>
       </div>
 
-      {phase === "idle" && (
-        <div style={{ textAlign: "center", padding: "20px 0" }}>
-          <div style={{ fontSize: 48, marginBottom: 12 }}>⛏️</div>
-          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", marginBottom: 8 }}>
-            {isTr
-              ? "Hızlıca dokunarak hash dene. Doğru hash'i bulduğunda blok kazılır ve SC kazanırsın. 7 blok, 30 saniye, artan zorluk!"
-              : "Tap rapidly to try hashes. When you find a valid hash, the block is mined and you earn SC. 7 blocks, 30 seconds, increasing difficulty!"}
-          </div>
-          <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 16 }}>
-            {[1, 1, 2, 2, 3, 3, 4].map((d, i) => (
-              <div key={i} style={{
-                width: 28, height: 28, borderRadius: 6,
-                background: `rgba(168,85,247,${0.1 + d * 0.1})`,
-                border: "1px solid rgba(168,85,247,0.3)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 10, color: "#A855F7",
-              }}>
-                {d}★
+      {phase==="idle"&&(
+        <div style={{padding:"20px 16px",textAlign:"center"}}>
+          <div style={{display:"flex",justifyContent:"center",gap:4,marginBottom:16}}>
+            {[1,1,2,2,3,3,4].map((d,i)=>(
+              <div key={i} style={{width:30,height:30,borderRadius:6,background:`rgba(168,85,247,${0.08+d*0.06})`,border:"1px solid rgba(168,85,247,0.25)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#a855f7"}}>
+                {"★".repeat(d)}
               </div>
             ))}
           </div>
-          <button
-            onClick={startGame}
-            style={{ background: "linear-gradient(135deg, #A855F7, #7C3AED)", color: "#fff", border: "none", borderRadius: 12, padding: "12px 32px", fontSize: 15, fontWeight: 700, cursor: "pointer" }}
-          >
-            {isTr ? "Madenciliğe Başla" : "Start Mining"}
+          <div style={{fontSize:12,color:"rgba(255,255,255,0.4)",marginBottom:20,lineHeight:1.7}}>
+            {isTr?"Her dokunuş rastgele hash üretir. Başındaki sıfır sayısı yeterince örtüşürse blok kazılır!"
+            :"Each tap generates a random hash. Match enough leading zeros and the block is mined!"}
+          </div>
+          <button onClick={startGame} style={{background:"linear-gradient(135deg,#a855f7,#6030d0)",color:"#fff",border:"none",borderRadius:12,padding:"13px 36px",fontSize:14,fontWeight:700,cursor:"pointer",boxShadow:"0 0 30px rgba(168,85,247,0.35)"}}>
+            {isTr?"MADENCİLİĞE BAŞLA":"START MINING"}
           </button>
         </div>
       )}
 
-      {phase === "mining" && block && (
+      {(phase==="mining"||phase==="done")&&(
         <>
-          {/* Status bar */}
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>⏱ {timeLeft}s</span>
-            <span style={{ fontSize: 12, color: "#FFD700", fontWeight: 700 }}>{totalReward} SC</span>
-            <span style={{ fontSize: 12, color: "#A855F7" }}>⛏ {totalMined}/7</span>
-            <span style={{ fontSize: 12, color: "#00D2FF" }}>{hashRate} H/s</span>
-          </div>
-
-          {/* Block progress */}
-          <div style={{ display: "flex", gap: 4, marginBottom: 12 }}>
-            {blocks.map((b, i) => (
-              <div key={b.id} style={{
-                flex: 1, height: 6, borderRadius: 3,
-                background: b.mined ? "#A855F7" : i === currentBlock ? "rgba(168,85,247,0.3)" : "rgba(255,255,255,0.06)",
-                transition: "background 0.3s",
-              }} />
-            ))}
-          </div>
-
-          {/* Current block info */}
-          <div style={{
-            background: flash ? "rgba(168,85,247,0.15)" : "rgba(255,255,255,0.03)",
-            borderRadius: 12,
-            padding: 16,
-            textAlign: "center",
-            marginBottom: 12,
-            border: flash ? "1px solid #A855F7" : "1px solid rgba(255,255,255,0.04)",
-            transition: "all 0.2s",
-          }}>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 4 }}>
-              {isTr ? "Blok" : "Block"} #{block.id} · {isTr ? "Zorluk" : "Difficulty"}: {"★".repeat(block.difficulty)}
+          {phase==="mining"&&(
+            <div style={{display:"flex",justifyContent:"space-between",padding:"8px 16px",background:"rgba(0,0,0,0.3)",fontFamily:"monospace",fontSize:11}}>
+              <span style={{color:"#ff6060"}}>⏱ {String(timeLeft).padStart(2,"0")}s</span>
+              <span style={{color:"#ffd700"}}>+{totalReward} SC</span>
+              <span style={{color:"#a855f7"}}>⛏ {totalMined}/7</span>
+              <span style={{color:"#00d6ff"}}>{hashRate} H/s</span>
             </div>
-            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginBottom: 8, fontFamily: "monospace" }}>
-              {isTr ? "Hedef" : "Target"}: {block.target.slice(0, block.difficulty)}{"_".repeat(8 - block.difficulty)}
-            </div>
+          )}
 
-            {/* Current hash display */}
-            <div style={{ fontSize: 24, fontWeight: 700, fontFamily: "monospace", letterSpacing: 2, marginBottom: 4 }}>
-              {currentHash.split("").map((c, i) => (
-                <span key={i} style={{ color: i < block.difficulty && c === "0" ? "#A855F7" : "rgba(255,255,255,0.6)" }}>
-                  {c}
-                </span>
-              ))}
-            </div>
-            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)" }}>
-              {isTr ? "Ödül" : "Reward"}: {block.reward} SC
-            </div>
-          </div>
+          <canvas ref={canvasRef} width={380} height={220} style={{display:"block",width:"100%"}}/>
 
-          {/* Mine button */}
-          <button
-            onClick={handleMine}
-            style={{
-              width: "100%",
-              background: "linear-gradient(135deg, rgba(168,85,247,0.3), rgba(124,58,237,0.3))",
-              border: "2px solid rgba(168,85,247,0.5)",
-              borderRadius: 16,
-              padding: "24px 0",
-              color: "#A855F7",
-              fontSize: 20,
-              fontWeight: 700,
-              cursor: "pointer",
-              transition: "transform 0.05s",
-            }}
-            onTouchStart={(e) => { (e.target as HTMLElement).style.transform = "scale(0.97)"; }}
-            onTouchEnd={(e) => { (e.target as HTMLElement).style.transform = "scale(1)"; }}
-          >
-            ⛏️ {isTr ? "HASH DENEMESİ YAP" : "TRY HASH"}
-          </button>
+          {phase==="mining"&&(
+            <div style={{padding:"8px 16px 12px"}}>
+              <button
+                onClick={handleMine}
+                style={{
+                  width:"100%",background:mineFlash?"rgba(168,85,247,0.4)":"linear-gradient(135deg,rgba(168,85,247,0.2),rgba(96,48,208,0.2))",
+                  border:`2px solid ${mineFlash?"#a855f7":"rgba(168,85,247,0.3)"}`,
+                  borderRadius:14,padding:"20px 0",color:mineFlash?"#fff":"#a855f7",
+                  fontSize:16,fontWeight:700,cursor:"pointer",letterSpacing:1,
+                  transition:"all 0.15s",boxShadow:mineFlash?"0 0 30px rgba(168,85,247,0.6)":"none"
+                }}
+                onTouchStart={e=>{(e.currentTarget as HTMLElement).style.transform="scale(0.97)";}}
+                onTouchEnd={e=>{(e.currentTarget as HTMLElement).style.transform="scale(1)";}}
+              >
+                ⛏ {isTr?"HASH DENEMESİ":"TRY HASH"}
+              </button>
+              {block&&(
+                <div style={{textAlign:"center",marginTop:6,fontSize:10,color:"rgba(255,255,255,0.25)",fontFamily:"monospace"}}>
+                  {isTr?"Blok":"Block"} #{block.id} · {"★".repeat(block.difficulty)} · {block.reward} SC
+                </div>
+              )}
+            </div>
+          )}
         </>
       )}
 
-      {phase === "done" && (
-        <div style={{ textAlign: "center", padding: "16px 0" }}>
-          <div style={{ fontSize: 36, marginBottom: 8 }}>{totalMined === 7 ? "🏆" : "⛏️"}</div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: "#A855F7", marginBottom: 4 }}>
-            {totalReward} SC {isTr ? "kazanıldı!" : "earned!"}
+      {phase==="done"&&(
+        <div style={{padding:"20px 16px",textAlign:"center"}}>
+          <div style={{fontSize:30,fontWeight:800,color:"#a855f7",fontFamily:"monospace",marginBottom:4}}>
+            +{totalReward} SC
           </div>
-          {totalMined === 7 && (
-            <div style={{ fontSize: 13, color: "#FFD700", marginBottom: 4 }}>
-              ⭐ {isTr ? "TÜM BLOKLAR KAZILDI! +100 SC bonus" : "ALL BLOCKS MINED! +100 SC bonus"}
-            </div>
-          )}
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginBottom: 16 }}>
-            ⛏ {totalMined}/7 {isTr ? "blok kazıldı" : "blocks mined"}
-          </div>
-
-          {/* Mined blocks */}
-          <div style={{ display: "flex", gap: 4, justifyContent: "center", marginBottom: 16 }}>
-            {blocks.map((b) => (
-              <div key={b.id} style={{
-                width: 32, height: 32, borderRadius: 8,
-                background: b.mined ? "rgba(168,85,247,0.2)" : "rgba(255,255,255,0.04)",
-                border: `1px solid ${b.mined ? "#A855F7" : "rgba(255,255,255,0.08)"}`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 12,
-              }}>
-                {b.mined ? "⛏" : "·"}
-              </div>
-            ))}
-          </div>
-
-          <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-            <button
-              onClick={startGame}
-              style={{ background: "linear-gradient(135deg, #A855F7, #7C3AED)", color: "#fff", border: "none", borderRadius: 10, padding: "10px 24px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
-            >
-              {isTr ? "Tekrar Oyna" : "Play Again"}
+          {totalMined===7&&<div style={{fontSize:12,color:"#ffd700",marginBottom:8}}>⭐ {isTr?"TÜM BLOKLAR! +100 SC bonus":"ALL BLOCKS! +100 SC bonus"}</div>}
+          <div style={{fontSize:11,color:"rgba(255,255,255,0.4)",marginBottom:16}}>⛏ {totalMined}/7 {isTr?"blok":"blocks"}</div>
+          <div style={{display:"flex",gap:8,justifyContent:"center"}}>
+            <button onClick={startGame} style={{background:"linear-gradient(135deg,#a855f7,#6030d0)",color:"#fff",border:"none",borderRadius:10,padding:"10px 24px",fontSize:13,fontWeight:700,cursor:"pointer"}}>
+              {isTr?"Tekrar":"Replay"}
             </button>
-            <button
-              onClick={onClose}
-              style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "10px 24px", fontSize: 14, cursor: "pointer" }}
-            >
-              {isTr ? "Kapat" : "Close"}
+            <button onClick={onClose} style={{background:"rgba(255,255,255,0.06)",color:"rgba(255,255,255,0.5)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:10,padding:"10px 24px",fontSize:13,cursor:"pointer"}}>
+              {isTr?"Kapat":"Close"}
             </button>
           </div>
         </div>

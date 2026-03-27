@@ -15,130 +15,198 @@ function authFields(auth?: WebAppAuth | null) {
   return { uid: p.get("uid") || "", ts: p.get("ts") || String(Date.now()), sig: p.get("sig") || "" };
 }
 
-// ─── TAP BLITZ ────────────────────────────────────
+// ─── PLASMA CORE TAP BLITZ ────────────────────────
+type PlasmaRing = { id:number; r:number; alpha:number; color:string };
+type PlasmaSpark = { x:number; y:number; vx:number; vy:number; life:number; color:string };
+
 function TapBlitz({ lang, auth }: { lang: Lang; auth?: WebAppAuth | null }) {
   const isTr = lang === "tr";
   const [phase, setPhase] = useState<"idle" | "playing" | "done">("idle");
   const [taps, setTaps] = useState(0);
   const [timeLeft, setTimeLeft] = useState(10);
   const [reward, setReward] = useState<number | null>(null);
-  const [claiming, setClaiming] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const tapsRef = useRef(0);
+  const rafRef = useRef<number>(0);
+  const stateRef = useRef({ taps:0, rings:[] as PlasmaRing[], sparks:[] as PlasmaSpark[], nextId:0, phase:"idle" });
 
-  const startGame = useCallback(() => {
-    setPhase("playing");
-    setTaps(0);
-    tapsRef.current = 0;
-    setTimeLeft(10);
-    setReward(null);
-
-    timerRef.current = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          if (timerRef.current) clearInterval(timerRef.current);
-          setPhase("done");
-          // SC reward = taps * 2
-          const earned = tapsRef.current * 2;
-          setReward(earned);
-          // Claim via API
-          const a = authFields(auth);
-          postJson("/webapp/api/v2/player/action", {
-            ...a,
-            action_key: "game_tap_blitz",
-            action_request_id: buildActionRequestId("game_tap_blitz"),
-            payload: { taps: tapsRef.current, reward_sc: earned }
-          }).catch(() => {});
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  }, [auth]);
-
-  const handleTap = useCallback(() => {
-    if (phase !== "playing") return;
-    tapsRef.current += 1;
-    setTaps((p) => p + 1);
-  }, [phase]);
-
+  // Canvas animation
   useEffect(() => {
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    let alive = true;
+    const W = canvas.width, H = canvas.height;
+    const cx = W/2, cy = H/2;
+    const COLORS = ["#e040fb","#00d6ff","#ff6090","#ffd700","#00ff88"];
+
+    const draw = () => {
+      if (!alive) return;
+      ctx.clearRect(0,0,W,H);
+
+      // Dark BG
+      ctx.fillStyle = "#080012";
+      ctx.fillRect(0,0,W,H);
+
+      const st = stateRef.current;
+      const t = Date.now()*0.001;
+
+      // Core intensity grows with taps
+      const intensity = Math.min(1, st.taps/80);
+      const coreSize = 28 + intensity*20;
+
+      // Outer glow rings (ambient)
+      for (let i=3;i>=0;i--) {
+        const r2 = coreSize*(1.8+i*0.7);
+        const pulse = Math.sin(t*2+i)*0.5+0.5;
+        ctx.beginPath();
+        ctx.arc(cx,cy,r2,0,Math.PI*2);
+        ctx.strokeStyle=`rgba(224,64,251,${(0.06-i*0.01)*pulse*(0.4+intensity*0.6)})`;
+        ctx.lineWidth=3-i*0.5;
+        ctx.stroke();
+      }
+
+      // Energy rings (on tap)
+      for (const ring of st.rings) {
+        ring.r += 3; ring.alpha -= 0.04;
+        if (ring.alpha>0) {
+          ctx.beginPath();
+          ctx.arc(cx,cy,ring.r,0,Math.PI*2);
+          ctx.strokeStyle = ring.color.replace("rgb","rgba").replace(")",`,${ring.alpha})`);
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+      }
+      st.rings = st.rings.filter(r=>r.alpha>0);
+
+      // Sparks
+      for (const sp of st.sparks) {
+        sp.x+=sp.vx; sp.y+=sp.vy; sp.vy+=0.15; sp.life-=0.05;
+        if (sp.life>0) {
+          ctx.beginPath();
+          ctx.arc(sp.x,sp.y,2*sp.life,0,Math.PI*2);
+          ctx.fillStyle=sp.color.replace("rgb","rgba").replace(")",`,${sp.life})`);
+          ctx.fill();
+        }
+      }
+      st.sparks = st.sparks.filter(s=>s.life>0);
+
+      // Core plasma
+      const coreGrad = ctx.createRadialGradient(cx,cy,0,cx,cy,coreSize);
+      const c1 = intensity>0.6 ? "#ffd700" : intensity>0.3 ? "#e040fb" : "#6020a0";
+      const c2 = intensity>0.6 ? "#ff4400" : intensity>0.3 ? "#00d6ff" : "#2000ff";
+      coreGrad.addColorStop(0,c1);
+      coreGrad.addColorStop(0.5,c2);
+      coreGrad.addColorStop(1,"transparent");
+      ctx.shadowBlur = 40*(0.3+intensity);
+      ctx.shadowColor = c1;
+      ctx.beginPath();
+      ctx.arc(cx,cy,coreSize,0,Math.PI*2);
+      ctx.fillStyle=coreGrad;
+      ctx.fill();
+      ctx.shadowBlur=0;
+
+      // Tap count text
+      if (st.phase==="playing") {
+        ctx.fillStyle="rgba(255,255,255,0.9)";
+        ctx.font=`bold ${28+intensity*12}px monospace`;
+        ctx.textAlign="center";
+        ctx.textBaseline="middle";
+        ctx.fillText(String(st.taps), cx, cy);
+      }
+
+      // Orbiting particles
+      for (let i=0;i<4;i++) {
+        const angle = t*1.5 + i*(Math.PI/2) + intensity*t;
+        const orbitR = coreSize*1.6+intensity*10;
+        const ox=cx+Math.cos(angle)*orbitR, oy=cy+Math.sin(angle)*orbitR;
+        ctx.beginPath(); ctx.arc(ox,oy,2+intensity*2,0,Math.PI*2);
+        ctx.fillStyle=COLORS[i]; ctx.fill();
+      }
+
+      rafRef.current = requestAnimationFrame(draw);
+    };
+    rafRef.current = requestAnimationFrame(draw);
+    return ()=>{ alive=false; cancelAnimationFrame(rafRef.current); };
   }, []);
 
-  const tapRank = taps >= 80 ? (isTr ? "Efsane" : "Legend") :
-                  taps >= 60 ? (isTr ? "Hızlı" : "Fast") :
-                  taps >= 40 ? (isTr ? "İyi" : "Good") :
-                  taps >= 20 ? (isTr ? "Normal" : "Normal") :
-                  (isTr ? "Yavaş" : "Slow");
+  const tapCore = useCallback(() => {
+    const st = stateRef.current;
+    if (st.phase!=="playing") return;
+    st.taps++;
+    setTaps(st.taps);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const cx=canvas.width/2, cy=canvas.height/2;
+    const COLORS = ["#e040fb","#00d6ff","#ff6090","#ffd700","#00ff88"];
+    const col = COLORS[st.taps%COLORS.length];
+    st.rings.push({id:st.nextId++, r:30, alpha:0.8, color:col});
+    for (let i=0;i<6;i++) {
+      const a=Math.random()*Math.PI*2, spd=2+Math.random()*3;
+      st.sparks.push({x:cx,y:cy,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd-1,life:1,color:col});
+    }
+  }, []);
+
+  const startGame = useCallback(() => {
+    const st = stateRef.current;
+    st.taps=0; st.rings=[]; st.sparks=[]; st.phase="playing";
+    setPhase("playing"); setTaps(0); setTimeLeft(10); setReward(null);
+    timerRef.current = setInterval(()=>{
+      setTimeLeft(prev=>{
+        if (prev<=1) {
+          if (timerRef.current) clearInterval(timerRef.current);
+          stateRef.current.phase="done";
+          setPhase("done");
+          const earned = stateRef.current.taps*2;
+          setReward(earned);
+          const a=authFields(auth);
+          postJson("/webapp/api/v2/player/action",{...a,
+            action_key:"game_tap_blitz",
+            action_request_id:buildActionRequestId("game_tap_blitz"),
+            payload:{taps:stateRef.current.taps,reward_sc:earned}
+          }).catch(()=>{});
+          return 0;
+        }
+        return prev-1;
+      });
+    },1000);
+  },[auth]);
+
+  useEffect(()=>()=>{if(timerRef.current)clearInterval(timerRef.current);},[]);
+
+  const tapRank = taps>=80?(isTr?"Efsane":"Legend"):taps>=60?(isTr?"Hızlı":"Fast"):taps>=40?(isTr?"İyi":"Good"):taps>=20?(isTr?"Normal":"Normal"):(isTr?"Yavaş":"Slow");
 
   return (
-    <div className="akrCard" style={{ borderLeft: "3px solid #e040fb" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-        <span style={{ fontSize: 20 }}>⚡</span>
+    <div className="akrCard" style={{borderLeft:"3px solid #e040fb",padding:0,overflow:"hidden"}}>
+      <div style={{padding:"10px 12px 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#e040fb" }}>
-            {isTr ? "Dokunma Yarışı" : "Tap Blitz"}
-          </div>
-          <div style={{ fontSize: 10, opacity: 0.5 }}>
-            {isTr ? "10 saniyede mümkün olduğunca hızlı dokun" : "Tap as fast as you can in 10 seconds"}
-          </div>
+          <div style={{fontSize:13,fontWeight:700,color:"#e040fb"}}>⚡ {isTr?"Plazma Çekirdeği":"Plasma Core"}</div>
+          <div style={{fontSize:10,opacity:0.5}}>{isTr?"10s·Çekirdeği patlat":"10s · Detonate the core"}</div>
         </div>
+        {phase==="playing"&&<span style={{fontSize:12,color:timeLeft<=3?"#ff4444":"#e040fb",fontFamily:"monospace",fontWeight:700}}>{timeLeft}s</span>}
+        {phase==="done"&&<span style={{fontSize:12,color:"#ffd700",fontFamily:"monospace"}}>+{reward} SC</span>}
       </div>
 
-      {phase === "idle" && (
-        <button className="akrBtn akrBtnAccent" onClick={startGame} style={{ width: "100%" }}>
-          {isTr ? "Başla" : "Start"}
-        </button>
-      )}
-
-      {phase === "playing" && (
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 4 }}>
-            {isTr ? `Kalan: ${timeLeft}s` : `Time: ${timeLeft}s`}
+      {/* Canvas always visible */}
+      <div style={{position:"relative",cursor:phase==="playing"?"pointer":"default"}} onClick={phase==="playing"?tapCore:undefined}>
+        <canvas ref={canvasRef} width={340} height={130} style={{display:"block",width:"100%"}}/>
+        {phase==="idle"&&(
+          <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+            <button onClick={e=>{e.stopPropagation();startGame();}} style={{background:"linear-gradient(135deg,#e040fb,#7c00ff)",color:"#fff",border:"none",borderRadius:10,padding:"10px 28px",fontSize:13,fontWeight:700,cursor:"pointer",boxShadow:"0 0 20px rgba(224,64,251,0.4)"}}>
+              {isTr?"BAŞLAT":"LAUNCH"}
+            </button>
           </div>
-          <div style={{
-            width: "100%", height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 2, marginBottom: 8
-          }}>
-            <div style={{
-              width: `${(timeLeft / 10) * 100}%`, height: "100%",
-              background: timeLeft <= 3 ? "#ff4444" : "#e040fb",
-              borderRadius: 2, transition: "width 1s linear"
-            }} />
+        )}
+        {phase==="done"&&(
+          <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"rgba(8,0,18,0.7)"}}>
+            <div style={{fontSize:16,fontWeight:800,color:"#e040fb",fontFamily:"monospace"}}>{taps} {isTr?"vuruş":"hits"} · {tapRank}</div>
+            <button onClick={e=>{e.stopPropagation();stateRef.current.phase="idle";setPhase("idle");setTaps(0);setReward(null);}} style={{marginTop:8,background:"rgba(224,64,251,0.15)",border:"1px solid rgba(224,64,251,0.4)",color:"#e040fb",borderRadius:8,padding:"6px 20px",fontSize:12,cursor:"pointer"}}>
+              {isTr?"Tekrar":"Replay"}
+            </button>
           </div>
-          <button
-            className="akrBtn"
-            onClick={handleTap}
-            style={{
-              width: "100%", height: 80, fontSize: 24, fontWeight: 800,
-              background: "linear-gradient(135deg, #e040fb20, #00d2ff10)",
-              border: "2px solid #e040fb40",
-              borderRadius: 12, cursor: "pointer",
-              transition: "transform 0.05s",
-              transform: `scale(${1 - (taps % 2) * 0.02})`
-            }}
-          >
-            👆 {taps}
-          </button>
-          <div style={{ fontSize: 10, opacity: 0.4, marginTop: 4 }}>
-            {isTr ? `Her dokunma = 2 SC` : `Each tap = 2 SC`}
-          </div>
-        </div>
-      )}
-
-      {phase === "done" && (
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 24, fontWeight: 800, color: "#e040fb", fontFamily: "var(--font-mono)" }}>
-            {taps} {isTr ? "dokunma" : "taps"}
-          </div>
-          <div style={{ fontSize: 11, opacity: 0.6, margin: "4px 0" }}>
-            {tapRank} | +{reward} SC
-          </div>
-          <button className="akrBtn akrBtnGhost" onClick={() => { setPhase("idle"); setTaps(0); setReward(null); }} style={{ width: "100%" }}>
-            {isTr ? "Tekrar Oyna" : "Play Again"}
-          </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
