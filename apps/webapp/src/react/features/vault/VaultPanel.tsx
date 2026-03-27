@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { buildVaultViewModel } from "../../../core/player/vaultViewModel.js";
 import { SHELL_ACTION_KEY } from "../../../core/navigation/shellActions.js";
 import { t, type Lang } from "../../i18n";
 import { RouteStrip } from "../shared/RouteStrip";
 import { TonWalletConnect } from "./TonWalletConnect";
 import { MultiChainWalletConnect } from "./MultiChainWalletConnect";
+import { HashRacer } from "./HashRacer";
 
 type VaultPanelProps = {
   lang: Lang;
@@ -58,6 +60,7 @@ function shortStatus(value: string, onText: string, offText: string) {
 }
 
 export function VaultPanel(props: VaultPanelProps) {
+  const [showGame, setShowGame] = useState(false);
   const view = buildVaultViewModel({
     vaultData: props.vaultData
   });
@@ -658,6 +661,34 @@ export function VaultPanel(props: VaultPanelProps) {
           </div>
         </div>
       </details>
+
+      {/* Hash Racer Mini Game */}
+      <div style={{ margin: "16px 0" }}>
+        {!showGame ? (
+          <button
+            onClick={() => setShowGame(true)}
+            style={{
+              width: "100%",
+              background: "linear-gradient(135deg, rgba(168,85,247,0.1), rgba(124,58,237,0.1))",
+              border: "1px solid rgba(168,85,247,0.2)",
+              borderRadius: 12,
+              padding: "14px 16px",
+              color: "#A855F7",
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+            }}
+          >
+            ⛏️ {props.lang === "tr" ? "Hash Yarışçısı Oyna — SC Kazan!" : "Play Hash Racer — Earn SC!"}
+          </button>
+        ) : (
+          <HashRacer lang={props.lang} onClose={() => setShowGame(false)} />
+        )}
+      </div>
 
       {!view.has_data ? <p className="akrMuted">{t(props.lang, "vault_empty")}</p> : null}
       {props.advanced ? <pre className="akrJsonBlock">{JSON.stringify(props.vaultData || {}, null, 2)}</pre> : null}

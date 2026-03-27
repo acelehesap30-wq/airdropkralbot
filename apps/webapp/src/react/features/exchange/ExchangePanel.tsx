@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { t, type Lang } from "../../i18n";
 import type { BootstrapV2Data, WebAppAuth } from "../../types";
+import { PricePredictor } from "./PricePredictor";
 
 type ExchangePanelProps = {
   lang: Lang;
@@ -36,6 +37,7 @@ export function ExchangePanel(props: ExchangePanelProps) {
   const [livePrice, setLivePrice] = useState<number>(0);
   const [converting, setConverting] = useState<string | null>(null);
   const [convertResult, setConvertResult] = useState<string | null>(null);
+  const [showGame, setShowGame] = useState(false);
 
   const nxtPrice = livePrice > 0 ? livePrice : bootstrapPrice > 0 ? bootstrapPrice : NXT_PRICE_DEFAULT;
   const nxtMcap = Number((token as any)?.market_cap_usd || 0);
@@ -264,6 +266,34 @@ export function ExchangePanel(props: ExchangePanelProps) {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Price Predictor Mini Game */}
+      <div style={{ margin: "16px 0" }}>
+        {!showGame ? (
+          <button
+            onClick={() => setShowGame(true)}
+            style={{
+              width: "100%",
+              background: "linear-gradient(135deg, rgba(16,185,129,0.1), rgba(5,150,105,0.1))",
+              border: "1px solid rgba(16,185,129,0.2)",
+              borderRadius: 12,
+              padding: "14px 16px",
+              color: "#10B981",
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+            }}
+          >
+            📈 {isTr ? "Fiyat Tahmincisi Oyna — SC Kazan!" : "Play Price Predictor — Earn SC!"}
+          </button>
+        ) : (
+          <PricePredictor lang={props.lang} auth={props.auth} currentPrice={nxtPrice} onClose={() => setShowGame(false)} />
+        )}
       </div>
     </section>
   );

@@ -9227,7 +9227,14 @@ const PLAYER_ACTION_REWARDS = {
   forge_nxt_compound:{ cost: { sc: 100, hc: 1, rc: 1 }, reward: { sc: 0 }, cooldown_ms: 120000 },
   game_tap_blitz:    { cost: {},           reward: { sc: 0 },  cooldown_ms: 15000, dynamic: true },
   game_coin_flip:    { cost: {},           reward: { sc: 0 },  cooldown_ms: 5000,  dynamic: true },
-  game_daily_spin:   { cost: {},           reward: { sc: 0 },  cooldown_ms: 86400000, dynamic: true }
+  game_daily_spin:   { cost: {},           reward: { sc: 0 },  cooldown_ms: 86400000, dynamic: true },
+  game_airdrop_catcher: { cost: {},        reward: { sc: 0 },  cooldown_ms: 30000,  dynamic: true },
+  game_price_predictor: { cost: {},        reward: { sc: 0 },  cooldown_ms: 20000,  dynamic: true },
+  game_hash_racer:      { cost: {},        reward: { sc: 0 },  cooldown_ms: 45000,  dynamic: true },
+  game_arena_reflex:    { cost: {},        reward: { sc: 0 },  cooldown_ms: 20000,  dynamic: true },
+  game_streak_challenge:{ cost: {},        reward: { sc: 0 },  cooldown_ms: 30000,  dynamic: true },
+  game_resource_merge:  { cost: {},        reward: { sc: 0 },  cooldown_ms: 45000,  dynamic: true },
+  game_quick_match:     { cost: {},        reward: { sc: 0 },  cooldown_ms: 20000,  dynamic: true }
 };
 
 fastify.post(
@@ -9311,6 +9318,20 @@ fastify.post(
         } else if (actionKey === "game_daily_spin") {
           const spinValue = Math.min(Number(payload.prize_value || 10), 500);
           reward.sc = spinValue;
+        } else if (actionKey === "game_airdrop_catcher") {
+          reward.sc = Math.min(Math.max(Number(payload.reward_sc || 0), 0), 500);
+        } else if (actionKey === "game_price_predictor") {
+          reward.sc = Math.min(Math.max(Number(payload.reward_sc || 0), 0), 300);
+        } else if (actionKey === "game_hash_racer") {
+          reward.sc = Math.min(Math.max(Number(payload.reward_sc || 0), 0), 400);
+        } else if (actionKey === "game_arena_reflex") {
+          reward.sc = Math.min(Math.max(Number(payload.reward_sc || 0), 0), 300);
+        } else if (actionKey === "game_streak_challenge") {
+          reward.sc = Math.min(Math.max(Number(payload.reward_sc || 0), 0), 400);
+        } else if (actionKey === "game_resource_merge") {
+          reward.sc = Math.min(Math.max(Number(payload.reward_sc || 0), 0), 500);
+        } else if (actionKey === "game_quick_match") {
+          reward.sc = Math.min(Math.max(Number(payload.reward_sc || 0), 0), 200);
         }
       } else {
         reward = { ...config.reward };

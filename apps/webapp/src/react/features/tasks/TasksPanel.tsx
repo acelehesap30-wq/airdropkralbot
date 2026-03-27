@@ -1,11 +1,15 @@
+import { useState } from "react";
 import { buildTasksViewModel } from "../../../core/player/tasksViewModel.js";
 import { SHELL_ACTION_KEY } from "../../../core/navigation/shellActions.js";
 import { t, type Lang } from "../../i18n";
 import { RouteStrip } from "../shared/RouteStrip";
+import { AirdropCatcher } from "./AirdropCatcher";
+import type { WebAppAuth } from "../../types";
 
 type TasksPanelProps = {
   lang: Lang;
   advanced: boolean;
+  auth?: WebAppAuth | null;
   offers: Array<Record<string, unknown>>;
   missions: Array<Record<string, unknown>>;
   attempts: Record<string, unknown> | null;
@@ -25,6 +29,7 @@ function asText(value: unknown, fallback = "-") {
 }
 
 export function TasksPanel(props: TasksPanelProps) {
+  const [showGame, setShowGame] = useState(false);
   const view = buildTasksViewModel({
     offers: props.offers,
     missions: props.missions,
@@ -496,6 +501,34 @@ export function TasksPanel(props: TasksPanelProps) {
             </button>
           </div>
         </section>
+      </div>
+
+      {/* Airdrop Catcher Mini Game */}
+      <div style={{ margin: "16px 0" }}>
+        {!showGame ? (
+          <button
+            onClick={() => setShowGame(true)}
+            style={{
+              width: "100%",
+              background: "linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,140,0,0.1))",
+              border: "1px solid rgba(255,215,0,0.2)",
+              borderRadius: 12,
+              padding: "14px 16px",
+              color: "#FFD700",
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+            }}
+          >
+            🪂 {props.lang === "tr" ? "Airdrop Avcısı Oyna — SC Kazan!" : "Play Airdrop Catcher — Earn SC!"}
+          </button>
+        ) : (
+          <AirdropCatcher lang={props.lang} auth={props.auth} onClose={() => setShowGame(false)} />
+        )}
       </div>
 
       {!view.has_data ? <p className="akrMuted">{t(props.lang, "tasks_empty")}</p> : null}
