@@ -385,7 +385,7 @@ const WHEEL_PRIZES = [
 function DailySpin({ lang, auth }: { lang: Lang; auth?: WebAppAuth | null }) {
   const isTr = lang === "tr";
   const [spinning, setSpinning] = useState(false);
-  const [result, setResult] = useState<{ label: string; value: number } | null>(null);
+  const [result, setResult] = useState<{ label: string; value: number; color: string } | null>(null);
   const [rotation, setRotation] = useState(0);
   const [canSpin, setCanSpin] = useState(() => {
     const lastSpin = localStorage.getItem("akr_daily_spin_ts");
