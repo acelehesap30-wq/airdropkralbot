@@ -9216,6 +9216,148 @@ fastify.post(
   }
 );
 
+// ═══════════════════════════════════════════════════════════════
+// Generic player action handler (forge, mini-games, etc.)
+// ═══════════════════════════════════════════════════════════════
+const PLAYER_ACTION_REWARDS = {
+  forge_sc_to_hc:    { cost: { sc: 1000 }, reward: { hc: 1 }, cooldown_ms: 60000 },
+  forge_hc_boost:    { cost: { hc: 5 },    reward: { sc: 0 },  cooldown_ms: 60000 },
+  forge_rc_craft:    { cost: { rc: 10 },   reward: { sc: 50 }, cooldown_ms: 60000 },
+  forge_tier_forge:  { cost: { sc: 500 },  reward: { sc: 0 },  cooldown_ms: 120000 },
+  forge_nxt_compound:{ cost: { sc: 100, hc: 1, rc: 1 }, reward: { sc: 0 }, cooldown_ms: 120000 },
+  game_tap_blitz:    { cost: {},           reward: { sc: 0 },  cooldown_ms: 15000, dynamic: true },
+  game_coin_flip:    { cost: {},           reward: { sc: 0 },  cooldown_ms: 5000,  dynamic: true },
+  game_daily_spin:   { cost: {},           reward: { sc: 0 },  cooldown_ms: 86400000, dynamic: true }
+};
+
+fastify.post(
+  "/webapp/api/v2/player/action",
+  {
+    schema: {
+      body: {
+        type: "object",
+        required: ["uid", "ts", "sig", "action_key"],
+        properties: {
+          uid: { type: "string" },
+          ts: { type: "string" },
+          sig: { type: "string" },
+          action_key: { type: "string", minLength: 3, maxLength: 64 },
+          action_request_id: { type: "string", minLength: 6, maxLength: 120 },
+          payload: { type: "object" }
+        }
+      }
+    }
+  },
+  async (request, reply) => {
+    const auth = verifyWebAppAuth(request.body.uid, request.body.ts, request.body.sig);
+    if (!auth.ok) {
+      reply.code(401).send({ success: false, error: auth.reason });
+      return;
+    }
+
+    const actionKey = String(request.body.action_key || "").trim().toLowerCase();
+    const payload = request.body.payload || {};
+    const config = PLAYER_ACTION_REWARDS[actionKey];
+
+    if (!config) {
+      reply.send({ success: true, data: { action_key: actionKey, reward_text: "acknowledged", server_tick: Date.now() } });
+      return;
+    }
+
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      const profile = await getProfileByTelegram(client, auth.uid);
+      if (!profile) {
+        await client.query("ROLLBACK");
+        reply.code(404).send({ success: false, error: "user_not_started" });
+        return;
+      }
+
+      const freeze = await getFreezeState(client);
+      if (freeze.freeze) {
+        await client.query("ROLLBACK");
+        reply.code(409).send({ success: false, error: "freeze_mode", reason: freeze.reason });
+        return;
+      }
+
+      // Rate limit
+      const lastAction = await client.query(
+        `SELECT created_at FROM currency_ledger WHERE user_id = $1 AND reason = $2 ORDER BY created_at DESC LIMIT 1`,
+        [profile.user_id, `action_${actionKey}`]
+      );
+      if (lastAction.rows[0] && config.cooldown_ms) {
+        const elapsed = Date.now() - new Date(lastAction.rows[0].created_at).getTime();
+        if (elapsed < config.cooldown_ms) {
+          await client.query("ROLLBACK");
+          reply.code(429).send({ success: false, error: "cooldown", retry_after_ms: config.cooldown_ms - elapsed });
+          return;
+        }
+      }
+
+      // Calculate reward
+      let reward = { sc: 0, hc: 0, rc: 0 };
+      if (config.dynamic) {
+        // Mini-game rewards from payload
+        if (actionKey === "game_tap_blitz") {
+          const taps = Math.min(Number(payload.taps || 0), 150);
+          reward.sc = taps * 2;
+        } else if (actionKey === "game_coin_flip") {
+          const betSc = Math.min(Math.max(Number(payload.bet_sc || 0), 0), 200);
+          const won = Math.random() > 0.5;
+          if (won) reward.sc = Math.floor(betSc * 1.8);
+          else reward.sc = -betSc;
+        } else if (actionKey === "game_daily_spin") {
+          const spinValue = Math.min(Number(payload.prize_value || 10), 500);
+          reward.sc = spinValue;
+        }
+      } else {
+        reward = { ...config.reward };
+      }
+
+      // Ensure minimum reward
+      if (reward.sc === 0 && reward.hc === 0 && reward.rc === 0) {
+        reward.sc = 1;
+      }
+
+      // Skip negative rewards (coin flip loss) from crediting, but still track
+      const creditReward = { sc: Math.max(0, reward.sc), hc: Math.max(0, reward.hc), rc: Math.max(0, reward.rc) };
+      const claimRef = `action_${actionKey}_${auth.uid}_${Date.now()}`;
+
+      if (creditReward.sc > 0 || creditReward.hc > 0 || creditReward.rc > 0) {
+        await economyStore.creditReward(client, {
+          userId: profile.user_id,
+          reward: creditReward,
+          reason: `action_${actionKey}`,
+          meta: { action_key: actionKey, payload, claim_ref: claimRef },
+          refEventIds: { SC: `${claimRef}:SC`, HC: `${claimRef}:HC`, RC: `${claimRef}:RC` }
+        });
+      }
+
+      await client.query("COMMIT");
+
+      const resultData = {
+        action_key: actionKey,
+        reward_text: `+${creditReward.sc} SC${creditReward.hc ? ` +${creditReward.hc} HC` : ""}${creditReward.rc ? ` +${creditReward.rc} RC` : ""}`,
+        reward_sc: creditReward.sc,
+        reward_hc: creditReward.hc,
+        reward_rc: creditReward.rc,
+        won: reward.sc >= 0,
+        result_side: actionKey === "game_coin_flip" ? (reward.sc >= 0 ? payload.choice : (payload.choice === "heads" ? "tails" : "heads")) : undefined,
+        server_tick: Date.now()
+      };
+
+      reply.send({ success: true, data: resultData });
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+);
+
 fastify.post(
   "/webapp/api/arena/raid/session/start",
   {

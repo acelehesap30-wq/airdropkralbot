@@ -2,14 +2,16 @@ import { buildHomeFeedViewModel } from "../../../core/player/homeFeedViewModel.j
 import { resolvePlayerCommandHintNavigation } from "../../../core/player/commandHintNavigation.js";
 import { SHELL_ACTION_KEY } from "../../../core/navigation/shellActions.js";
 import { RouteStrip } from "../shared/RouteStrip";
+import { MiniGames } from "./MiniGames";
 import { t, type Lang } from "../../i18n";
-import type { BootstrapV2Data, TabKey } from "../../types";
+import type { BootstrapV2Data, WebAppAuth, TabKey } from "../../types";
 
 type HomePanelProps = {
   lang: Lang;
   advanced: boolean;
   homeFeed: Record<string, unknown> | null;
   data: BootstrapV2Data | null;
+  auth?: WebAppAuth | null;
   onRefresh: () => void;
   onShellAction: (actionKey: string, sourcePanelKey?: string) => void;
   onRouteTarget: (input: {
@@ -518,6 +520,8 @@ export function HomePanel(props: HomePanelProps) {
           </div>
         </section>
       </div>
+
+      <MiniGames lang={props.lang} auth={props.auth} sc={Math.floor(summary.sc_earned || 0)} />
 
       <div className="akrActionRow akrHomeFooterActions">
         <button type="button" className="akrBtn akrBtnGhost" onClick={props.onRefresh}>
