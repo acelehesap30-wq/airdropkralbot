@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { buildActionRequestId, postJson } from "../../api/common";
 import type { WebAppAuth } from "../../types";
 import type { Lang } from "../../i18n";
+import { NexusRush } from "./NexusRush";
 
 type MiniGamesProps = { lang: Lang; auth?: WebAppAuth | null; sc: number };
 
@@ -27,13 +28,14 @@ function rrect(ctx: CanvasRenderingContext2D, x:number, y:number, w:number, h:nu
 
 // ─── TABS ────────────────────────────────────────────────────────────────────
 const TABS = [
-  { id: "plasma" as const, icon: "⚡", tr: "Plazma",    en: "Plasma",  color: "#e040fb" },
-  { id: "coin"   as const, icon: "🪙", tr: "Yazı·Tura",  en: "Coin",    color: "#ffd700" },
-  { id: "spin"   as const, icon: "🎰", tr: "Çark",      en: "Spin",    color: "#00d2ff" },
-  { id: "vault"  as const, icon: "💎", tr: "Vault",     en: "Vault",   color: "#00ff88" },
-  { id: "sniper" as const, icon: "🎯", tr: "Keskin",    en: "Sniper",  color: "#ff6600" },
+  { id: "plasma" as const, icon: "⚡", tr: "Plazma",  en: "Plasma", color: "#e040fb" },
+  { id: "coin"   as const, icon: "🪙", tr: "Yazı·Tura", en: "Coin", color: "#ffd700" },
+  { id: "spin"   as const, icon: "🎰", tr: "Çark",    en: "Spin",   color: "#00d2ff" },
+  { id: "vault"  as const, icon: "💎", tr: "Vault",   en: "Vault",  color: "#00ff88" },
+  { id: "sniper" as const, icon: "🎯", tr: "Keskin",  en: "Sniper", color: "#ff6600" },
+  { id: "rush"   as const, icon: "🚀", tr: "Rush",    en: "Rush",   color: "#00d2ff" },
 ];
-type TabId = "plasma" | "coin" | "spin" | "vault" | "sniper";
+type TabId = "plasma" | "coin" | "spin" | "vault" | "sniper" | "rush";
 
 // ─── shared types ─────────────────────────────────────────────────────────────
 type PlasmaRing  = { id:number; r:number; alpha:number; color:string; tilt:number };
@@ -57,6 +59,8 @@ function TapBlitz({ lang, auth }: { lang:Lang; auth?:WebAppAuth|null }) {
     taps:0, rings:[] as PlasmaRing[], sparks:[] as PlasmaSpark[],
     floatTexts:[] as FloatText[], comboTimes:[] as number[], combo:0,
     shockwave:0, shockwaveR:0,
+    levelBurst:0, levelBurstR:0, levelBurstColor:"#ffd700",
+    lastLevelMilestone:0,
     nextId:0, phase:"idle" as "idle"|"playing"|"done",
   });
 
@@ -107,6 +111,16 @@ function TapBlitz({ lang, auth }: { lang:Lang; auth?:WebAppAuth|null }) {
         // second ring
         ctx.beginPath(); ctx.arc(cx,cy,st.shockwaveR*0.65,0,Math.PI*2);
         ctx.strokeStyle=`rgba(224,64,251,${st.shockwave*0.6})`; ctx.lineWidth=1.5; ctx.stroke();
+      }
+      // power level burst ring
+      if (st.levelBurst>0) {
+        st.levelBurstR+=7; st.levelBurst-=0.028;
+        const [lr,lg,lb]=hexToRgb(st.levelBurstColor);
+        for(let ri=0;ri<3;ri++){
+          const rr=st.levelBurstR*(1-ri*0.22);
+          ctx.beginPath(); ctx.arc(cx,cy,rr,0,Math.PI*2);
+          ctx.strokeStyle=`rgba(${lr},${lg},${lb},${st.levelBurst*(0.9-ri*0.25)})`; ctx.lineWidth=3-ri*0.8; ctx.stroke();
+        }
       }
       // ambient glow rings
       for (let i=3;i>=0;i--) {
@@ -219,12 +233,26 @@ function TapBlitz({ lang, auth }: { lang:Lang; auth?:WebAppAuth|null }) {
       st.shockwave=1; st.shockwaveR=28;
       st.floatTexts.push({x:cx,y:cy-52,vy:-1.2,text:`${st.taps} 🔥`,life:1,color:"#ffd700"});
     }
+    // Power-level bursts at 30/60/90 taps
+    const LEVEL_MILESTONES=[30,60,90];
+    if(LEVEL_MILESTONES.includes(st.taps)&&st.taps!==st.lastLevelMilestone){
+      st.lastLevelMilestone=st.taps;
+      const lvlColor=st.taps===30?"#00ff88":st.taps===60?"#e040fb":"#ffd700";
+      st.levelBurst=1; st.levelBurstR=0; st.levelBurstColor=lvlColor;
+      const lvlLabel=st.taps===30?(isTr?"LV.2 ⚡":"LV.2 ⚡"):st.taps===60?(isTr?"LV.3 🔥":"LV.3 🔥"):(isTr?"MAX 👑":"MAX 👑");
+      st.floatTexts.push({x:cx,y:cy-65,vy:-1.8,text:lvlLabel,life:1.4,color:lvlColor});
+      // extra sparks burst
+      for(let i=0;i<20;i++){
+        const a=i/20*Math.PI*2,spd=4+Math.random()*5;
+        st.sparks.push({x:cx,y:cy,z:0,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd-2,vz:0,life:1,color:lvlColor});
+      }
+    }
     if(st.combo>=5) st.floatTexts.push({x:cx+Math.random()*60-30,y:cy-36,vy:-0.9,text:`x${st.combo}!`,life:1,color:st.combo>=8?"#ffd700":"#e040fb"});
   },[]);
 
   const startGame=useCallback(()=>{
     const st=stRef.current;
-    st.taps=0;st.rings=[];st.sparks=[];st.floatTexts=[];st.comboTimes=[];st.combo=0;st.shockwave=0;st.shockwaveR=0;st.phase="playing";
+    st.taps=0;st.rings=[];st.sparks=[];st.floatTexts=[];st.comboTimes=[];st.combo=0;st.shockwave=0;st.shockwaveR=0;st.levelBurst=0;st.levelBurstR=0;st.lastLevelMilestone=0;st.phase="playing";
     setPhase("playing");setTaps(0);setTimeLeft(10);setReward(null);
     timerRef.current=setInterval(()=>{
       setTimeLeft(prev=>{
@@ -526,12 +554,14 @@ function DailySpin({lang,auth}:{lang:Lang;auth?:WebAppAuth|null}){
     settled:boolean; settleCallbackFired:boolean; prizeIdx:number;
     tickFlash:number; lastBoundaryCount:number;
     particles:Particle[];
+    jackpotFlash:number;
     onSettle:null|(()=>void);
   }>({
     rot:0, velocity:0, spinning:false,
     settled:false, settleCallbackFired:false, prizeIdx:-1,
     tickFlash:0, lastBoundaryCount:0,
     particles:[],
+    jackpotFlash:0,
     onSettle:null,
   });
 
@@ -573,10 +603,13 @@ function DailySpin({lang,auth}:{lang:Lang;auth?:WebAppAuth|null}){
             // burst particles
             const prize=WHEEL_PRIZES[ws.prizeIdx];
             const [pr,pg,pb]=hexToRgb(prize.color);
-            for(let i=0;i<38;i++){
-              const a=Math.random()*Math.PI*2,spd=2+Math.random()*7;
-              ws.particles.push({x:cx,y:cy,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd-3,life:1,r:pr,g:pg,b:pb});
+            const isJackpot=ws.prizeIdx>=5; // x2 SC, 3 HC, 500 SC
+            const burstCount=isJackpot?90:38;
+            for(let i=0;i<burstCount;i++){
+              const a=Math.random()*Math.PI*2,spd=(isJackpot?3:2)+Math.random()*(isJackpot?10:7);
+              ws.particles.push({x:cx,y:cy,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd-4,life:1,r:isJackpot?255:pr,g:isJackpot?215:pg,b:isJackpot?0:pb});
             }
+            if(isJackpot){ ws.jackpotFlash=55; }
           }
         }
       }
@@ -662,6 +695,29 @@ function DailySpin({lang,auth}:{lang:Lang;auth?:WebAppAuth|null}){
       }
       ws.particles=ws.particles.filter(p=>p.life>0);
 
+      // jackpot screen flash
+      if(ws.jackpotFlash>0){
+        ws.jackpotFlash--;
+        const fAlpha=(ws.jackpotFlash/55)*0.42;
+        const fg=ctx.createRadialGradient(cx,cy,0,cx,cy,R*1.5);
+        fg.addColorStop(0,`rgba(255,215,0,${fAlpha})`);
+        fg.addColorStop(0.6,`rgba(255,140,0,${fAlpha*0.5})`);
+        fg.addColorStop(1,"rgba(0,0,0,0)");
+        ctx.fillStyle=fg; ctx.fillRect(0,0,W,H);
+        // JACKPOT text at peak
+        if(ws.jackpotFlash>30){
+          const tScale=Math.min(1,(55-ws.jackpotFlash)/8);
+          ctx.save();
+          ctx.globalAlpha=(ws.jackpotFlash-30)/25;
+          ctx.font=`bold ${Math.round(22*tScale)}px monospace`;
+          ctx.fillStyle="#ffd700";
+          ctx.textAlign="center";
+          ctx.shadowBlur=20; ctx.shadowColor="#ffd700";
+          ctx.fillText("✨ JACKPOT! ✨",cx,cy-R*0.55);
+          ctx.restore();
+        }
+      }
+
       rafRef.current=requestAnimationFrame(draw);
     };
     rafRef.current=requestAnimationFrame(draw);
@@ -733,14 +789,16 @@ function NexusVault({lang,auth,sc:_sc}:{lang:Lang;auth?:WebAppAuth|null;sc:numbe
     cells:[] as number[],
     revealed:Array(9).fill(false) as boolean[],
     flipAnim:Array(9).fill(0) as number[],
-    phase:"playing" as "playing"|"lost"|"won"|"cashout",
+    phase:"playing" as "playing"|"lost"|"won"|"cashout"|"bonus",
     gemsFound:0,
     particles:[] as Particle[],
     dangerRatio:0,
   });
-  const [gamePhase,setGamePhase]=useState<"playing"|"lost"|"won"|"cashout">("playing");
+  const [gamePhase,setGamePhase]=useState<"playing"|"lost"|"won"|"cashout"|"bonus">("playing");
   const [gemsFound,setGemsFound]=useState(0);
   const [roundKey,setRoundKey]=useState(0);
+  const [bonusChests,setBonusChests]=useState<number[]>([]);
+  const [bonusPicked,setBonusPicked]=useState<number|null>(null);
 
   useEffect(()=>{
     const vt=vRef.current;
@@ -909,8 +967,9 @@ function NexusVault({lang,auth,sc:_sc}:{lang:Lang;auth?:WebAppAuth|null;sc:numbe
     } else {
       vt.gemsFound++; setGemsFound(vt.gemsFound);
       if(vt.gemsFound>=5){
-        vt.phase="won"; setGamePhase("won");
-        postJson("/webapp/api/v2/player/action",{...authFields(auth),action_key:"game_nexus_vault",action_request_id:buildActionRequestId("game_nexus_vault"),payload:{gems_found:5,reward_sc:VAULT_GEM_REWARD*5+200,busted:false}}).catch(()=>{});
+        vt.phase="bonus"; setGamePhase("bonus");
+        const rewards=[100,200,400]; for(let i=2;i>0;i--){const j=Math.floor(Math.random()*(i+1));[rewards[i],rewards[j]]=[rewards[j],rewards[i]];}
+        setBonusChests(rewards); setBonusPicked(null);
       }
     }
   },[auth]);
@@ -942,7 +1001,7 @@ function NexusVault({lang,auth,sc:_sc}:{lang:Lang;auth?:WebAppAuth|null;sc:numbe
   },[revealCell]);
 
   const earned=gemsFound*VAULT_GEM_REWARD;
-  const isGameOver=gamePhase==="lost"||gamePhase==="won"||gamePhase==="cashout";
+  const isGameOver=gamePhase==="lost"||gamePhase==="won"||gamePhase==="cashout"||gamePhase==="bonus";
 
   return(
     <div className="akrCard" style={{borderLeft:"3px solid #00ff88",padding:0,overflow:"hidden"}}>
@@ -961,23 +1020,49 @@ function NexusVault({lang,auth,sc:_sc}:{lang:Lang;auth?:WebAppAuth|null;sc:numbe
           style={{display:"block",width:"100%",cursor:gamePhase==="playing"?"pointer":"default"}}
           onClick={handleCanvasClick}/>
         {isGameOver&&(
-          <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"rgba(4,0,16,0.82)",backdropFilter:"blur(2px)"}}>
+          <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"rgba(4,0,16,0.88)",backdropFilter:"blur(2px)",padding:"12px 16px"}}>
             {gamePhase==="lost"&&<>
               <div style={{fontSize:32,marginBottom:8}}>💀</div>
               <div style={{fontSize:18,fontWeight:800,color:"#ff4444",fontFamily:"monospace",textShadow:"0 0 16px #ff4444"}}>{isTr?"PATLATILDI!":"BUSTED!"}</div>
               <div style={{fontSize:12,color:"rgba(255,255,255,0.6)",marginTop:4}}>{isTr?`${gemsFound} kristal bulundu`:`Found ${gemsFound} gems`}</div>
             </>}
-            {(gamePhase==="won"||gamePhase==="cashout")&&<>
-              <div style={{fontSize:32,marginBottom:8}}>{gamePhase==="won"?"🏆":"💰"}</div>
-              <div style={{fontSize:18,fontWeight:800,color:"#00ff88",fontFamily:"monospace",textShadow:"0 0 16px #00ff88"}}>
-                {gamePhase==="won"?(isTr?"TAM KAZANIM!":"JACKPOT!"):(isTr?"ÇIKARILDI!":"CASHED OUT!")}
+            {gamePhase==="bonus"&&<>
+              <div style={{fontSize:22,marginBottom:6}}>🏆</div>
+              <div style={{fontSize:14,fontWeight:800,color:"#ffd700",marginBottom:4}}>{isTr?"TÜM KRİSTALLER! BONUS SANDIK!":"ALL GEMS! BONUS CHEST!"}</div>
+              <div style={{fontSize:10,opacity:0.6,marginBottom:10}}>{isTr?"Bir sandık seç — bonus ödül!":"Pick a chest — bonus reward!"}</div>
+              <div style={{display:"flex",gap:10,justifyContent:"center"}}>
+                {bonusChests.map((val,idx)=>(
+                  <button key={idx} onClick={()=>{
+                    if(bonusPicked!==null) return;
+                    setBonusPicked(idx);
+                    const totalReward=VAULT_GEM_REWARD*5+200+val;
+                    vRef.current.phase="won"; setGamePhase("won");
+                    postJson("/webapp/api/v2/player/action",{...authFields(auth),action_key:"game_nexus_vault",action_request_id:buildActionRequestId("game_nexus_vault"),payload:{gems_found:5,reward_sc:totalReward,busted:false,bonus:val}}).catch(()=>{});
+                  }}
+                    style={{width:72,height:72,borderRadius:14,fontSize:28,cursor:bonusPicked===null?"pointer":"default",border:`2px solid ${bonusPicked===null?"rgba(255,215,0,0.5)":bonusPicked===idx?"#ffd700":"rgba(255,255,255,0.12)"}`,background:bonusPicked===idx?"rgba(255,215,0,0.18)":"rgba(255,255,255,0.04)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",transition:"all 0.2s",boxShadow:bonusPicked===null?"0 0 14px rgba(255,215,0,0.18)":"none"}}>
+                    <span>{bonusPicked===idx?`+${val}`:"📦"}</span>
+                    {bonusPicked===idx&&<span style={{fontSize:8,color:"#ffd700",marginTop:2}}>SC</span>}
+                  </button>
+                ))}
               </div>
-              <div style={{fontSize:14,color:"#ffd700",marginTop:6,fontFamily:"monospace",fontWeight:700}}>+{gamePhase==="won"?VAULT_GEM_REWARD*5+200:earned} SC</div>
             </>}
-            <button onClick={()=>setRoundKey(k=>k+1)}
-              style={{marginTop:16,background:"rgba(0,255,136,0.15)",border:"1px solid rgba(0,255,136,0.45)",color:"#00ff88",borderRadius:10,padding:"10px 28px",fontSize:13,fontWeight:700,cursor:"pointer",boxShadow:"0 0 16px rgba(0,255,136,0.2)"}}>
-              {isTr?"Yeni Oyun":"New Game"}
-            </button>
+            {gamePhase==="won"&&<>
+              <div style={{fontSize:32,marginBottom:8}}>🏆</div>
+              <div style={{fontSize:18,fontWeight:800,color:"#ffd700",fontFamily:"monospace",textShadow:"0 0 16px #ffd700"}}>{isTr?"TAM KAZANIM!":"JACKPOT!"}</div>
+              <div style={{fontSize:14,color:"#00ff88",marginTop:6,fontFamily:"monospace",fontWeight:700}}>+{VAULT_GEM_REWARD*5+200+(bonusPicked!==null?bonusChests[bonusPicked]:0)} SC</div>
+              {bonusPicked!==null&&<div style={{fontSize:11,color:"#ffd700",opacity:0.8}}>💎 +{bonusChests[bonusPicked]} SC {isTr?"bonus":"bonus"}</div>}
+            </>}
+            {(gamePhase==="cashout")&&<>
+              <div style={{fontSize:32,marginBottom:8}}>💰</div>
+              <div style={{fontSize:18,fontWeight:800,color:"#00ff88",fontFamily:"monospace",textShadow:"0 0 16px #00ff88"}}>{isTr?"ÇIKARILDI!":"CASHED OUT!"}</div>
+              <div style={{fontSize:14,color:"#ffd700",marginTop:6,fontFamily:"monospace",fontWeight:700}}>+{earned} SC</div>
+            </>}
+            {gamePhase!=="bonus"&&(
+              <button onClick={()=>setRoundKey(k=>k+1)}
+                style={{marginTop:16,background:"rgba(0,255,136,0.15)",border:"1px solid rgba(0,255,136,0.45)",color:"#00ff88",borderRadius:10,padding:"10px 28px",fontSize:13,fontWeight:700,cursor:"pointer",boxShadow:"0 0 16px rgba(0,255,136,0.2)"}}>
+                {isTr?"Yeni Oyun":"New Game"}
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -1202,7 +1287,7 @@ export function MiniGames(props: MiniGamesProps) {
           <span style={{ fontSize: 18 }}>🎮</span>
           <div>
             <div style={{ fontSize: 14, fontWeight: 700 }}>{isTr ? "Mini Oyunlar" : "Mini Games"}</div>
-            <div style={{ fontSize: 10, opacity: 0.5 }}>{isTr ? "5 × 3D arena · SC/HC kazan" : "5 × 3D arena · Earn SC/HC"}</div>
+            <div style={{ fontSize: 10, opacity: 0.5 }}>{isTr ? "6 × 3D arena · SC/HC kazan" : "6 × 3D arena · Earn SC/HC"}</div>
           </div>
         </div>
       </div>
@@ -1230,11 +1315,12 @@ export function MiniGames(props: MiniGamesProps) {
       </div>
 
       {/* active game */}
-      {activeTab === "plasma" && <TapBlitz  lang={props.lang} auth={props.auth} />}
-      {activeTab === "coin"   && <CoinFlip  lang={props.lang} auth={props.auth} sc={props.sc} />}
-      {activeTab === "spin"   && <DailySpin lang={props.lang} auth={props.auth} />}
+      {activeTab === "plasma" && <TapBlitz   lang={props.lang} auth={props.auth} />}
+      {activeTab === "coin"   && <CoinFlip   lang={props.lang} auth={props.auth} sc={props.sc} />}
+      {activeTab === "spin"   && <DailySpin  lang={props.lang} auth={props.auth} />}
       {activeTab === "vault"  && <NexusVault lang={props.lang} auth={props.auth} sc={props.sc} />}
       {activeTab === "sniper" && <NexusSniper lang={props.lang} auth={props.auth} />}
+      {activeTab === "rush"   && <NexusRush  lang={props.lang} auth={props.auth} />}
     </div>
   );
 }
