@@ -67,6 +67,7 @@ const { registerWebappV2QuestRoutes } = require("./routes/webapp/v2/questRoutes"
 const { registerWebappV2InviteRoutes } = require("./routes/webapp/v2/inviteRoutes");
 const { registerWebappV2DailyCheckinRoutes } = require("./routes/webapp/v2/dailyCheckinRoutes");
 const { registerWebappV2TournamentRoutes } = require("./routes/webapp/v2/tournamentRoutes");
+const { registerWebappV2ChestRoutes } = require("./routes/webapp/v2/chestRoutes");
 const { registerAdminRuntimeRoutes } = require("./routes/admin/runtimeRoutes");
 const { registerAdminSystemOpsRoutes } = require("./routes/admin/systemOpsRoutes");
 const { registerAdminTokenPolicyRoutes } = require("./routes/admin/tokenPolicyRoutes");
@@ -13067,6 +13068,13 @@ registerWebappV2DailyCheckinRoutes(fastify, {
 
 // Blueprint §season_hall — Season Tournament Routes
 registerWebappV2TournamentRoutes(fastify, {
+  pool,
+  verifyWebAppAuth,
+  getProfileByTelegram,
+});
+
+// Blueprint §forge:chests — Chest Loot Reveal Routes
+registerWebappV2ChestRoutes(fastify, {
   pool,
   verifyWebAppAuth,
   getProfileByTelegram,

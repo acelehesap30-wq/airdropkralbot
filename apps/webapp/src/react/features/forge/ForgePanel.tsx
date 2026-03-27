@@ -3,6 +3,7 @@ import { t, type Lang } from "../../i18n";
 import type { BootstrapV2Data, WebAppAuth } from "../../types";
 import { buildActionRequestId, postJson } from "../../api/common";
 import { ResourceMerge } from "./ResourceMerge";
+import { ChestReveal } from "./ChestReveal";
 
 type ForgePanelProps = {
   lang: Lang;
@@ -275,6 +276,9 @@ export function ForgePanel(props: ForgePanelProps) {
           ))}
         </div>
       )}
+      {/* Chest Loot Reveal — Blueprint §forge:chests */}
+      <ChestReveal lang={props.lang} auth={props.auth} />
+
       <ResourceMerge lang={props.lang} />
     </section>
   );
