@@ -10,6 +10,12 @@ import * as navigationContract from "../core/shared/navigationContract.js";
 
 const TON_CONNECT_MANIFEST_URL = "https://webapp.k99-exchange.xyz/webapp/tonconnect-manifest.json";
 
+declare global {
+  interface Window {
+    Telegram?: { WebApp?: { initData?: string; platform?: string } };
+  }
+}
+
 const { decodeStartAppPayload, resolveLaunchTarget } = navigationContract;
 const BOOTSTRAP_FETCH_TIMEOUT_MS = 25000;
 
