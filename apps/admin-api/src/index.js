@@ -65,6 +65,7 @@ const { registerWebappAdminKycTokenDecisionRoutes } = require("./routes/webapp/a
 const { registerWebappAdminPayoutDecisionRoutes } = require("./routes/webapp/admin/payoutDecisionRoutes");
 const { registerWebappV2QuestRoutes } = require("./routes/webapp/v2/questRoutes");
 const { registerWebappV2InviteRoutes } = require("./routes/webapp/v2/inviteRoutes");
+const { registerWebappV2DailyCheckinRoutes } = require("./routes/webapp/v2/dailyCheckinRoutes");
 const { registerAdminRuntimeRoutes } = require("./routes/admin/runtimeRoutes");
 const { registerAdminSystemOpsRoutes } = require("./routes/admin/systemOpsRoutes");
 const { registerAdminTokenPolicyRoutes } = require("./routes/admin/tokenPolicyRoutes");
@@ -13054,6 +13055,13 @@ registerWebappV2InviteRoutes(fastify, {
   verifyWebAppAuth,
   getProfileByTelegram,
   botUsername: BOT_USERNAME,
+});
+
+// Blueprint §12-daily — Daily Streak Check-in Routes
+registerWebappV2DailyCheckinRoutes(fastify, {
+  pool,
+  verifyWebAppAuth,
+  getProfileByTelegram,
 });
 
 // ── CORS support for webapp cross-origin requests ──
