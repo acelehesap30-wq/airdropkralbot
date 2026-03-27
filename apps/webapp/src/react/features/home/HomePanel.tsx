@@ -3,6 +3,7 @@ import { resolvePlayerCommandHintNavigation } from "../../../core/player/command
 import { SHELL_ACTION_KEY } from "../../../core/navigation/shellActions.js";
 import { RouteStrip } from "../shared/RouteStrip";
 import { MiniGames } from "./MiniGames";
+import { InviteWidget } from "./InviteWidget";
 import { t, type Lang } from "../../i18n";
 import type { BootstrapV2Data, WebAppAuth, TabKey } from "../../types";
 
@@ -522,6 +523,11 @@ export function HomePanel(props: HomePanelProps) {
       </div>
 
       <MiniGames lang={props.lang} auth={props.auth} sc={Math.floor(summary.sc_earned || 0)} />
+
+      {/* Invite Widget — Blueprint §11 */}
+      <div style={{ marginTop: 8 }}>
+        <InviteWidget lang={props.lang} auth={props.auth} />
+      </div>
 
       <div className="akrActionRow akrHomeFooterActions">
         <button type="button" className="akrBtn akrBtnGhost" onClick={props.onRefresh}>

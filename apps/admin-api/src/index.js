@@ -63,6 +63,8 @@ const { createLiveOpsAutoScheduler } = require("./services/liveOpsAutoScheduler"
 const { resolveLiveOpsSceneGate } = require("../../../packages/shared/src/liveOpsSceneGate.cjs");
 const { registerWebappAdminKycTokenDecisionRoutes } = require("./routes/webapp/admin/kycTokenDecisionRoutes");
 const { registerWebappAdminPayoutDecisionRoutes } = require("./routes/webapp/admin/payoutDecisionRoutes");
+const { registerWebappV2QuestRoutes } = require("./routes/webapp/v2/questRoutes");
+const { registerWebappV2InviteRoutes } = require("./routes/webapp/v2/inviteRoutes");
 const { registerAdminRuntimeRoutes } = require("./routes/admin/runtimeRoutes");
 const { registerAdminSystemOpsRoutes } = require("./routes/admin/systemOpsRoutes");
 const { registerAdminTokenPolicyRoutes } = require("./routes/admin/tokenPolicyRoutes");
@@ -13037,6 +13039,21 @@ registerWebappAdminPayoutDecisionRoutes(fastify, {
   configService,
   buildAdminSummary,
   sendTrustNotification: (payload) => chatTrustNotificationService.sendTrustNotification(payload)
+});
+
+// Blueprint §10 — Quest Chain Routes
+registerWebappV2QuestRoutes(fastify, {
+  pool,
+  verifyWebAppAuth,
+  getProfileByTelegram,
+});
+
+// Blueprint §11 — Social Invite Routes
+registerWebappV2InviteRoutes(fastify, {
+  pool,
+  verifyWebAppAuth,
+  getProfileByTelegram,
+  botUsername: BOT_USERNAME,
 });
 
 // ── CORS support for webapp cross-origin requests ──

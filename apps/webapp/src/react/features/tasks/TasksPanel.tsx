@@ -4,6 +4,7 @@ import { SHELL_ACTION_KEY } from "../../../core/navigation/shellActions.js";
 import { t, type Lang } from "../../i18n";
 import { RouteStrip } from "../shared/RouteStrip";
 import { AirdropCatcher } from "./AirdropCatcher";
+import { QuestChains } from "./QuestChains";
 import type { WebAppAuth } from "../../types";
 
 type TasksPanelProps = {
@@ -529,6 +530,11 @@ export function TasksPanel(props: TasksPanelProps) {
         ) : (
           <AirdropCatcher lang={props.lang} auth={props.auth} onClose={() => setShowGame(false)} />
         )}
+      </div>
+
+      {/* Quest Chains — Blueprint §10 */}
+      <div style={{ marginTop: 12 }}>
+        <QuestChains lang={props.lang} auth={props.auth} />
       </div>
 
       {!view.has_data ? <p className="akrMuted">{t(props.lang, "tasks_empty")}</p> : null}
