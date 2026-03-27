@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { t, type Lang } from "../../i18n";
 import type { BootstrapV2Data, WebAppAuth } from "../../types";
 import { buildActionRequestId, postJson, getJson, withAuthQuery } from "../../api/common";
+import { StreakChallenge } from "./StreakChallenge";
 
 type SeasonPanelProps = {
   lang: Lang;
@@ -343,6 +344,8 @@ export function SeasonPanel(props: SeasonPanelProps) {
           </div>
         )}
       </div>
+
+      <StreakChallenge lang={props.lang} />
     </section>
   );
 }

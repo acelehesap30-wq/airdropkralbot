@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { t, type Lang } from "../../i18n";
 import type { BootstrapV2Data, WebAppAuth } from "../../types";
 import { buildActionRequestId, postJson } from "../../api/common";
+import { ResourceMerge } from "./ResourceMerge";
 
 type ForgePanelProps = {
   lang: Lang;
@@ -274,6 +275,7 @@ export function ForgePanel(props: ForgePanelProps) {
           ))}
         </div>
       )}
+      <ResourceMerge lang={props.lang} />
     </section>
   );
 }
