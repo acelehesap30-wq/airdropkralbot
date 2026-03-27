@@ -1,6 +1,6 @@
 "use strict";
 
-const { emitWalletVerified } = require("../../../../services/playerLifecycleEventService");
+const { emitWalletVerified } = require("../../../services/playerLifecycleEventService");
 
 function requireDependency(deps, key, type) {
   const value = deps[key];
