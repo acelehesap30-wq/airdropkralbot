@@ -1,5 +1,7 @@
 "use strict";
 
+const { emitWalletVerified } = require("../../../../services/playerLifecycleEventService");
+
 function requireDependency(deps, key, type) {
   const value = deps[key];
   if (type === "function" && typeof value !== "function") {
@@ -361,6 +363,14 @@ function registerWebappV2WalletRoutes(fastify, deps = {}) {
             }
           });
         await client.query("COMMIT");
+
+        // Blueprint §5 — Emit wallet analytics event (fire-and-forget, post-commit)
+        emitWalletVerified(pool, {
+          userId: profile.user_id,
+          walletChain: String(chain || ""),
+          sessionRef: String(request.body.challenge_ref || "")
+        }).catch(() => {});
+
         reply.send({
           success: true,
           session: issueWebAppSession(auth.uid),

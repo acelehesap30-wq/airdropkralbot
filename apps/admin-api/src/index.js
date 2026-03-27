@@ -70,6 +70,11 @@ const { registerAdminTokenRequestRoutes } = require("./routes/admin/tokenRequest
 const { registerAdminPayoutRoutes } = require("./routes/admin/payoutAdminRoutes");
 const { createCriticalAdminPolicyService } = require("./services/policy/criticalAdminPolicyService");
 const {
+  emitGameComplete,
+  emitPayoutRequested,
+  emitWalletVerified
+} = require("./services/playerLifecycleEventService");
+const {
   DEFAULT_EXPERIMENT_KEY,
   DEFAULT_VARIANT_CONTROL,
   buildExperimentAssignment,
@@ -9358,6 +9363,14 @@ fastify.post(
 
       await client.query("COMMIT");
 
+      // Blueprint §5 — Emit canonical analytics event (fire-and-forget, post-commit)
+      emitGameComplete(pool, {
+        userId: profile.user_id,
+        actionKey,
+        payload,
+        sessionRef: String(request.body.action_request_id || "")
+      }).catch(() => {});
+
       const resultData = {
         action_key: actionKey,
         reward_text: `+${creditReward.sc} SC${creditReward.hc ? ` +${creditReward.hc} HC` : ""}${creditReward.rc ? ` +${creditReward.rc} RC` : ""}`,
@@ -12091,6 +12104,14 @@ fastify.post(
       const tokenAfter = await buildTokenSummary(client, profile, runtimeConfig, balancesAfter);
       const payoutAfter = await buildPayoutLockState(client, profile, runtimeConfig, balancesAfter, tokenAfter);
       await client.query("COMMIT");
+
+      // Blueprint §5 — Emit payout analytics event (fire-and-forget, post-commit)
+      emitPayoutRequested(pool, {
+        userId: profile.user_id,
+        currency,
+        amountSc: Number(sourceHcAmount || 0)
+      }).catch(() => {});
+
       reply.send({
         success: true,
         session: issueWebAppSession(auth.uid),
@@ -12114,7 +12135,8 @@ fastify.post(
 );
 
 registerWebappV2PayoutRoutes(fastify, {
-  proxyWebAppApiV1
+  proxyWebAppApiV1,
+  pool
 });
 
 registerWebappV2PlayerRoutes(fastify, {
