@@ -3,6 +3,7 @@ import { t, type Lang } from "../../i18n";
 import type { BootstrapV2Data, WebAppAuth } from "../../types";
 import { buildActionRequestId, postJson, getJson, withAuthQuery } from "../../api/common";
 import { StreakChallenge } from "./StreakChallenge";
+import { TournamentBracket } from "./TournamentBracket";
 
 type SeasonPanelProps = {
   lang: Lang;
@@ -346,6 +347,9 @@ export function SeasonPanel(props: SeasonPanelProps) {
       </div>
 
       <StreakChallenge lang={props.lang} />
+
+      {/* Tournament Bracket — Blueprint §season_hall */}
+      <TournamentBracket lang={props.lang} auth={props.auth} />
     </section>
   );
 }

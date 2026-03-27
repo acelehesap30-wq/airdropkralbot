@@ -66,6 +66,7 @@ const { registerWebappAdminPayoutDecisionRoutes } = require("./routes/webapp/adm
 const { registerWebappV2QuestRoutes } = require("./routes/webapp/v2/questRoutes");
 const { registerWebappV2InviteRoutes } = require("./routes/webapp/v2/inviteRoutes");
 const { registerWebappV2DailyCheckinRoutes } = require("./routes/webapp/v2/dailyCheckinRoutes");
+const { registerWebappV2TournamentRoutes } = require("./routes/webapp/v2/tournamentRoutes");
 const { registerAdminRuntimeRoutes } = require("./routes/admin/runtimeRoutes");
 const { registerAdminSystemOpsRoutes } = require("./routes/admin/systemOpsRoutes");
 const { registerAdminTokenPolicyRoutes } = require("./routes/admin/tokenPolicyRoutes");
@@ -13059,6 +13060,13 @@ registerWebappV2InviteRoutes(fastify, {
 
 // Blueprint §12-daily — Daily Streak Check-in Routes
 registerWebappV2DailyCheckinRoutes(fastify, {
+  pool,
+  verifyWebAppAuth,
+  getProfileByTelegram,
+});
+
+// Blueprint §season_hall — Season Tournament Routes
+registerWebappV2TournamentRoutes(fastify, {
   pool,
   verifyWebAppAuth,
   getProfileByTelegram,
