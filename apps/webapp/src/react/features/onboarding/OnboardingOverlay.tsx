@@ -127,7 +127,7 @@ export function OnboardingOverlay(props: OnboardingOverlayProps) {
               className="akrBtn akrBtnGhost"
               onClick={() => setStep(step - 1)}
             >
-              ← {props.lang === "en" ? "Back" : "Geri"}
+              ← {t(props.lang, "nav_back")}
             </button>
           )}
           {step === 0 && <div />}
@@ -143,7 +143,7 @@ export function OnboardingOverlay(props: OnboardingOverlayProps) {
           >
             {isLastStep
               ? t(props.lang, "onboarding_continue")
-              : props.lang === "en" ? "Next →" : "İleri →"
+              : `${t(props.lang, "nav_next")} →`
             }
           </button>
         </div>

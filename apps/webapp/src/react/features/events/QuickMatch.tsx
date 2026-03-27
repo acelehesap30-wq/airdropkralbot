@@ -84,9 +84,9 @@ export function QuickMatch({ lang }: QuickMatchProps) {
               const a = authFields();
               postJson("/webapp/api/v2/player/action", {
                 ...a,
-                action_key: "game_tap_blitz",
+                action_key: "game_quick_match",
                 action_request_id: buildActionRequestId("game_quick_match"),
-                payload: { taps: 16 - (moves + 1), reward_sc: earned }
+                payload: { moves: moves + 1, pairs: 8, reward_sc: earned }
               }).catch(() => {});
             }
 

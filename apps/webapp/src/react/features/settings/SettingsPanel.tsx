@@ -48,7 +48,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
           <h2 className="akrCardTitle">{isTr ? "Ayarlar" : "Settings"}</h2>
         </div>
         <p className="akrCardBody" style={{ fontSize: 12, opacity: 0.7 }}>
-          {isTr ? "Profil, bildirimler ve arayuz tercihleri." : "Profile, notifications and UI preferences."}
+          {isTr ? "Profil, bildirimler ve arayüz tercihleri." : "Profile, notifications and UI preferences."}
         </p>
       </div>
 
@@ -61,7 +61,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, padding: "8px 0" }}>
           <div>
-            <div style={{ fontSize: 9, opacity: 0.5, textTransform: "uppercase" }}>{isTr ? "Kullanici" : "Username"}</div>
+            <div style={{ fontSize: 9, opacity: 0.5, textTransform: "uppercase" }}>{isTr ? "Kullanıcı" : "Username"}</div>
             <div style={{ fontSize: 13, fontWeight: 600 }}>
               {String((profile as any)?.public_name || "-")}
             </div>
@@ -80,7 +80,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <div style={{ fontSize: 13, fontWeight: 600 }}>{isTr ? "Dil" : "Language"}</div>
-            <div style={{ fontSize: 11, opacity: 0.5 }}>{isTr ? "Turkce / English" : "Turkish / English"}</div>
+            <div style={{ fontSize: 11, opacity: 0.5 }}>{isTr ? "Türkçe / English" : "Turkish / English"}</div>
           </div>
           <div style={{ display: "flex", gap: 4 }}>
             <button
@@ -105,16 +105,16 @@ export function SettingsPanel(props: SettingsPanelProps) {
       <div className="akrCard">
         <div className="akrCardHeader">
           <h3 className="akrCardTitle" style={{ fontSize: 13 }}>
-            {isTr ? "Arayuz" : "Interface"}
+            {isTr ? "Arayüz" : "Interface"}
           </h3>
         </div>
         <ToggleRow
-          label={isTr ? "Azaltilmis Hareket" : "Reduced Motion"}
+          label={isTr ? "Azaltılmış Hareket" : "Reduced Motion"}
           checked={Boolean(prefs.reduced_motion)}
           onChange={(v) => props.onToggleReducedMotion(v)}
         />
         <ToggleRow
-          label={isTr ? "Buyuk Yazi" : "Large Text"}
+          label={isTr ? "Büyük Yazı" : "Large Text"}
           checked={Boolean(prefs.large_text)}
           onChange={(v) => props.onToggleLargeText(v)}
         />
@@ -144,7 +144,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
       {/* App info */}
       <div className="akrCard" style={{ opacity: 0.6 }}>
         <div style={{ fontSize: 10, textAlign: "center" }}>
-          AirdropKralBot v{props.data?.api_version || "2.0"} &bull; {isTr ? "Blueprintten uretildi" : "Built from Blueprint"}
+          AirdropKralBot v{props.data?.api_version || "2.0"} &bull; {isTr ? "Blueprint'ten üretildi" : "Built from Blueprint"}
         </div>
       </div>
     </section>

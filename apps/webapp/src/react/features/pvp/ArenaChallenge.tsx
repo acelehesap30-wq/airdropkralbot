@@ -72,9 +72,9 @@ export function ArenaChallenge({ lang }: ArenaChallengeProps) {
           const a = authFields();
           postJson("/webapp/api/v2/player/action", {
             ...a,
-            action_key: "game_tap_blitz",
+            action_key: "game_arena_reflex",
             action_request_id: buildActionRequestId("game_arena_reflex"),
-            payload: { taps: hitsRef.current, reward_sc: earned }
+            payload: { hits: hitsRef.current, score: scoreRef.current, reward_sc: earned }
           }).catch(() => {});
           return 0;
         }

@@ -105,9 +105,9 @@ export function StreakChallenge({ lang }: StreakChallengeProps) {
       const a = authFields();
       postJson("/webapp/api/v2/player/action", {
         ...a,
-        action_key: "game_tap_blitz",
+        action_key: "game_streak_challenge",
         action_request_id: buildActionRequestId("game_streak_challenge"),
-        payload: { taps: bestRef.current, reward_sc: earned }
+        payload: { best_streak: bestRef.current, rounds: 20, reward_sc: earned }
       }).catch(() => {});
     } else {
       setRound(nextRound);

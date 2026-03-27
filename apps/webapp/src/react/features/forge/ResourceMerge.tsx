@@ -72,9 +72,9 @@ export function ResourceMerge({ lang }: ResourceMergeProps) {
           const a = authFields();
           postJson("/webapp/api/v2/player/action", {
             ...a,
-            action_key: "game_tap_blitz",
+            action_key: "game_resource_merge",
             action_request_id: buildActionRequestId("game_resource_merge"),
-            payload: { taps: scoreRef.current, reward_sc: earned }
+            payload: { score: scoreRef.current, reward_sc: earned }
           }).catch(() => {});
           return 0;
         }
