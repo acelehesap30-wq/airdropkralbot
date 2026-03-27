@@ -211,329 +211,449 @@ function TapBlitz({ lang, auth }: { lang: Lang; auth?: WebAppAuth | null }) {
   );
 }
 
-// ─── COIN FLIP ────────────────────────────────────
+// ─── COIN FLIP (Canvas 3D) ─────────────────────────
+type CoinParticle = { x:number; y:number; vx:number; vy:number; life:number; r:number; g:number; b:number };
+
 function CoinFlip({ lang, auth, sc }: { lang: Lang; auth?: WebAppAuth | null; sc: number }) {
   const isTr = lang === "tr";
   const [bet, setBet] = useState(50);
   const [choice, setChoice] = useState<"heads" | "tails" | null>(null);
-  const [result, setResult] = useState<{ side: "heads" | "tails"; won: boolean; amount: number } | null>(null);
-  const [flipping, setFlipping] = useState(false);
-  const [animAngle, setAnimAngle] = useState(0);
+  const [phase, setPhase] = useState<"idle" | "flipping" | "done">("idle");
+  const [flipResult, setFlipResult] = useState<{ side: "heads"|"tails"; won: boolean; amount: number } | null>(null);
+
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const rafRef = useRef<number>(0);
+  const stRef = useRef({
+    phase: "idle" as "idle"|"flipping"|"done",
+    angle: 0, startTime: 0, duration: 1800,
+    targetFace: "heads" as "heads"|"tails",
+    face: "heads" as "heads"|"tails",
+    choice: null as "heads"|"tails"|null,
+    particles: [] as CoinParticle[],
+    resultTriggered: false,
+    onDone: null as ((side:"heads"|"tails",won:boolean,amount:number)=>void) | null
+  });
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    let alive = true;
+    const W = canvas.width, H = canvas.height;
+    const cx = W/2, cy = H/2 + 4;
+    const R = 40;
+
+    const draw = () => {
+      if (!alive) return;
+      const st = stRef.current;
+      const now = Date.now();
+
+      ctx.fillStyle = "#080012";
+      ctx.fillRect(0,0,W,H);
+
+      // Starfield ambient
+      const t = now * 0.0007;
+      for (let i=0;i<8;i++) {
+        const sx = (Math.sin(i*2.1+t)*0.5+0.5)*W;
+        const sy = (Math.cos(i*1.7+t)*0.5+0.5)*H;
+        ctx.beginPath(); ctx.arc(sx,sy,0.8,0,Math.PI*2);
+        ctx.fillStyle = `rgba(255,255,255,${0.2+0.1*Math.sin(i+t*2)})`;
+        ctx.fill();
+      }
+
+      // Compute coin Y-rotation angle
+      let scaleX = 1;
+      if (st.phase === "flipping") {
+        const elapsed = now - st.startTime;
+        const p = Math.min(1, elapsed / st.duration);
+        const eased = 1 - Math.pow(1-p, 3);
+        const totalDeg = eased * (st.targetFace === "heads" ? 720 : 900); // land on correct face
+        st.angle = totalDeg;
+        scaleX = Math.cos((totalDeg * Math.PI) / 180);
+        if (p >= 1 && !st.resultTriggered) {
+          st.resultTriggered = true;
+          st.phase = "done";
+          st.face = st.targetFace;
+          scaleX = 1;
+          // Particles
+          const won = st.targetFace === st.choice;
+          const pr = won?0:255, pg = won?255:68, pb = won?136:68;
+          for (let i=0;i<24;i++) {
+            const a = Math.random()*Math.PI*2, spd = 2+Math.random()*5;
+            st.particles.push({x:cx,y:cy,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd-2,life:1,r:pr,g:pg,b:pb});
+          }
+          if (st.onDone) st.onDone(st.targetFace, won, won ? Math.floor(0) : 0);
+        }
+      } else if (st.phase === "idle") {
+        scaleX = Math.cos(now * 0.001);
+      }
+
+      const absScale = Math.max(0.01, Math.abs(scaleX));
+      const isHeads = scaleX >= 0;
+      const faceNow = st.phase === "done" ? st.face : (st.phase === "idle" ? "heads" : (isHeads ? "heads" : "tails"));
+
+      // Coin shadow
+      ctx.beginPath();
+      ctx.ellipse(cx, cy+R+6, R*absScale*0.85, 8, 0, 0, Math.PI*2);
+      ctx.fillStyle = "rgba(0,0,0,0.3)"; ctx.fill();
+
+      // Coin glow
+      ctx.save();
+      ctx.shadowBlur = 28 + 10*Math.sin(t*2);
+      ctx.shadowColor = faceNow==="heads" ? "#ffd700" : "#9b4dff";
+
+      const grad = ctx.createLinearGradient(cx-R*absScale, cy-R, cx+R*absScale, cy+R);
+      if (faceNow==="heads") {
+        grad.addColorStop(0,"#7a4d00"); grad.addColorStop(0.35,"#FFD700");
+        grad.addColorStop(0.65,"#FFF5A0"); grad.addColorStop(1,"#7a4d00");
+      } else {
+        grad.addColorStop(0,"#3b0082"); grad.addColorStop(0.35,"#9b4dff");
+        grad.addColorStop(0.65,"#c8a0ff"); grad.addColorStop(1,"#3b0082");
+      }
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, R*absScale, R, 0, 0, Math.PI*2);
+      ctx.fillStyle = grad; ctx.fill();
+      ctx.strokeStyle = faceNow==="heads" ? "rgba(255,215,0,0.6)" : "rgba(155,77,255,0.6)";
+      ctx.lineWidth = 2.5; ctx.stroke();
+      ctx.restore();
+
+      // Edge highlights (ridged coin effect)
+      for (let ring=1;ring<=2;ring++) {
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, (R-ring*4)*absScale, R-ring*4, 0, 0, Math.PI*2);
+        ctx.strokeStyle = faceNow==="heads" ? `rgba(255,215,0,${0.2-ring*0.06})` : `rgba(155,77,255,${0.2-ring*0.06})`;
+        ctx.lineWidth = 0.8; ctx.stroke();
+      }
+
+      // Face symbol
+      if (absScale > 0.18) {
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.scale(absScale, 1);
+        ctx.font = `bold ${Math.floor(16*Math.min(1,absScale))}px monospace`;
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillStyle = faceNow==="heads" ? "rgba(60,30,0,0.85)" : "rgba(20,0,50,0.85)";
+        ctx.fillText(faceNow==="heads"?(isTr?"YAZI":"HEAD"):(isTr?"TURA":"TAIL"), 0, 0);
+        ctx.restore();
+      }
+
+      // Particles
+      for (const p of st.particles) {
+        p.x+=p.vx; p.y+=p.vy; p.vy+=0.18; p.life-=0.035;
+        if (p.life>0) {
+          ctx.beginPath(); ctx.arc(p.x,p.y,3*p.life,0,Math.PI*2);
+          ctx.fillStyle=`rgba(${p.r},${p.g},${p.b},${p.life})`; ctx.fill();
+        }
+      }
+      st.particles = st.particles.filter(p=>p.life>0);
+
+      rafRef.current = requestAnimationFrame(draw);
+    };
+    rafRef.current = requestAnimationFrame(draw);
+    return () => { alive=false; cancelAnimationFrame(rafRef.current); };
+  }, [isTr]);
 
   const flip = useCallback(async () => {
-    if (!choice || flipping || sc < bet) return;
-    setFlipping(true);
-    setResult(null);
+    const st = stRef.current;
+    if (!choice || st.phase==="flipping" || sc<bet) return;
+    setPhase("flipping"); setFlipResult(null);
+    st.phase="flipping"; st.startTime=Date.now(); st.duration=1800;
+    st.resultTriggered=false; st.particles=[]; st.choice=choice;
 
-    // Animate
-    let angle = 0;
-    const anim = setInterval(() => {
-      angle += 180;
-      setAnimAngle(angle);
-    }, 150);
+    let resolvedSide: "heads"|"tails" = Math.random()>0.5?"heads":"tails";
+    let resolvedWon = false, resolvedAmount = 0;
 
     try {
       const a = authFields(auth);
       const resp = await postJson<any>("/webapp/api/v2/player/action", {
-        ...a,
-        action_key: "game_coin_flip",
-        action_request_id: buildActionRequestId("game_coin_flip"),
-        payload: { bet_sc: bet, choice }
+        ...a, action_key:"game_coin_flip",
+        action_request_id:buildActionRequestId("game_coin_flip"),
+        payload:{bet_sc:bet,choice}
       });
-
-      clearInterval(anim);
-      setAnimAngle(0);
-
       if (resp.success && resp.data) {
-        setResult({
-          side: resp.data.result_side || (Math.random() > 0.5 ? "heads" : "tails"),
-          won: !!resp.data.won,
-          amount: Number(resp.data.reward_sc || 0)
-        });
+        resolvedSide = resp.data.result_side || resolvedSide;
+        resolvedWon = !!resp.data.won;
+        resolvedAmount = Number(resp.data.reward_sc || 0);
       } else {
-        // Simulate locally if API fails
-        const side = Math.random() > 0.5 ? "heads" as const : "tails" as const;
-        const won = side === choice;
-        setResult({ side, won, amount: won ? Math.floor(bet * 1.8) : 0 });
+        resolvedSide = Math.random()>0.5?"heads":"tails";
+        resolvedWon = resolvedSide===choice;
+        resolvedAmount = resolvedWon ? Math.floor(bet*1.8) : 0;
       }
     } catch {
-      clearInterval(anim);
-      setAnimAngle(0);
-      const side = Math.random() > 0.5 ? "heads" as const : "tails" as const;
-      const won = side === choice;
-      setResult({ side, won, amount: won ? Math.floor(bet * 1.8) : 0 });
-    } finally {
-      setFlipping(false);
+      resolvedSide = Math.random()>0.5?"heads":"tails";
+      resolvedWon = resolvedSide===choice;
+      resolvedAmount = resolvedWon ? Math.floor(bet*1.8) : 0;
     }
-  }, [choice, flipping, bet, sc, auth]);
+
+    // Update particle color now that we know result
+    st.targetFace = resolvedSide;
+    st.onDone = () => {
+      setFlipResult({ side:resolvedSide, won:resolvedWon, amount:resolvedAmount });
+      setPhase("done");
+    };
+  }, [choice, bet, sc, auth]);
 
   return (
-    <div className="akrCard" style={{ borderLeft: "3px solid #ffd700" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-        <span style={{ fontSize: 20 }}>🪙</span>
+    <div className="akrCard" style={{borderLeft:"3px solid #ffd700",padding:0,overflow:"hidden"}}>
+      <div style={{padding:"10px 12px 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#ffd700" }}>
-            {isTr ? "Yazı Tura" : "Coin Flip"}
-          </div>
-          <div style={{ fontSize: 10, opacity: 0.5 }}>
-            {isTr ? "SC bahis koy, kazan veya kaybet. x1.8 ödül." : "Bet SC, win or lose. x1.8 reward."}
-          </div>
+          <div style={{fontSize:13,fontWeight:700,color:"#ffd700"}}>🪙 {isTr?"Yazı Tura":"Coin Flip"}</div>
+          <div style={{fontSize:10,opacity:0.5}}>{isTr?"SC bahis koy · x1.8 ödül":"Bet SC · x1.8 reward"}</div>
         </div>
+        {flipResult && (
+          <span style={{fontSize:13,fontWeight:800,color:flipResult.won?"#00ff88":"#ff4444",fontFamily:"monospace"}}>
+            {flipResult.won?`+${flipResult.amount}`:`-${bet}`} SC
+          </span>
+        )}
       </div>
 
-      {/* Bet amount */}
-      <div style={{ display: "flex", gap: 6, marginBottom: 8, justifyContent: "center" }}>
-        {[10, 25, 50, 100].map((v) => (
-          <button
-            key={v}
-            className="akrBtn akrBtnSm"
-            onClick={() => setBet(v)}
-            style={{
-              opacity: bet === v ? 1 : 0.4,
-              border: bet === v ? "1px solid #ffd700" : "1px solid transparent",
-              fontSize: 10
-            }}
-          >
-            {v} SC
+      <canvas ref={canvasRef} width={340} height={120} style={{display:"block",width:"100%"}} />
+
+      <div style={{padding:"6px 12px 12px"}}>
+        <div style={{display:"flex",gap:6,marginBottom:8,justifyContent:"center"}}>
+          {[10,25,50,100].map(v=>(
+            <button key={v} className="akrBtn akrBtnSm" onClick={()=>setBet(v)}
+              style={{opacity:bet===v?1:0.4,border:bet===v?"1px solid #ffd700":"1px solid transparent",fontSize:10}}>
+              {v} SC
+            </button>
+          ))}
+        </div>
+        <div style={{display:"flex",gap:8,marginBottom:8}}>
+          <button className="akrBtn" onClick={()=>setChoice("heads")}
+            style={{flex:1,fontSize:12,fontWeight:600,background:choice==="heads"?"rgba(255,215,0,0.15)":"rgba(255,255,255,0.03)",border:choice==="heads"?"1px solid #ffd700":"1px solid rgba(255,255,255,0.08)",borderRadius:8}}>
+            👑 {isTr?"Yazı":"Heads"}
           </button>
-        ))}
-      </div>
-
-      {/* Choice */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-        <button
-          className="akrBtn"
-          onClick={() => setChoice("heads")}
-          style={{
-            flex: 1, fontSize: 12, fontWeight: 600,
-            background: choice === "heads" ? "rgba(255,215,0,0.15)" : "rgba(255,255,255,0.03)",
-            border: choice === "heads" ? "1px solid #ffd700" : "1px solid rgba(255,255,255,0.08)",
-            borderRadius: 8
-          }}
-        >
-          👑 {isTr ? "Yazı" : "Heads"}
-        </button>
-        <button
-          className="akrBtn"
-          onClick={() => setChoice("tails")}
-          style={{
-            flex: 1, fontSize: 12, fontWeight: 600,
-            background: choice === "tails" ? "rgba(255,215,0,0.15)" : "rgba(255,255,255,0.03)",
-            border: choice === "tails" ? "1px solid #ffd700" : "1px solid rgba(255,255,255,0.08)",
-            borderRadius: 8
-          }}
-        >
-          🔢 {isTr ? "Tura" : "Tails"}
+          <button className="akrBtn" onClick={()=>setChoice("tails")}
+            style={{flex:1,fontSize:12,fontWeight:600,background:choice==="tails"?"rgba(155,77,255,0.15)":"rgba(255,255,255,0.03)",border:choice==="tails"?"1px solid #9b4dff":"1px solid rgba(255,255,255,0.08)",borderRadius:8}}>
+            🔢 {isTr?"Tura":"Tails"}
+          </button>
+        </div>
+        <button className="akrBtn akrBtnAccent" onClick={flip}
+          disabled={!choice||phase==="flipping"||sc<bet}
+          style={{width:"100%",opacity:(!choice||phase==="flipping"||sc<bet)?0.4:1}}>
+          {phase==="flipping"?(isTr?"Uçuyor...":"Flipping..."):sc<bet?(isTr?"Yetersiz SC":"Not enough SC"):(isTr?`${bet} SC Bahis`:`Flip ${bet} SC`)}
         </button>
       </div>
-
-      {/* Coin animation */}
-      <div style={{ textAlign: "center", margin: "8px 0" }}>
-        <div style={{
-          fontSize: 36,
-          transform: `rotateY(${animAngle}deg)`,
-          transition: "transform 0.15s ease",
-          display: "inline-block"
-        }}>
-          {result ? (result.side === "heads" ? "👑" : "🔢") : "🪙"}
-        </div>
-      </div>
-
-      {/* Flip button */}
-      <button
-        className="akrBtn akrBtnAccent"
-        onClick={flip}
-        disabled={!choice || flipping || sc < bet}
-        style={{ width: "100%", opacity: (!choice || flipping || sc < bet) ? 0.4 : 1 }}
-      >
-        {flipping
-          ? (isTr ? "Havada..." : "Flipping...")
-          : sc < bet
-            ? (isTr ? "Yetersiz SC" : "Not enough SC")
-            : (isTr ? `${bet} SC ile Çevir` : `Flip for ${bet} SC`)}
-      </button>
-
-      {/* Result */}
-      {result && (
-        <div style={{
-          textAlign: "center", marginTop: 8, padding: "8px 0",
-          color: result.won ? "#00ff88" : "#ff4444",
-          fontWeight: 700, fontSize: 13,
-          fontFamily: "var(--font-mono)"
-        }}>
-          {result.won
-            ? `✓ ${isTr ? "Kazandın" : "Won"} +${result.amount} SC`
-            : `✗ ${isTr ? "Kaybettin" : "Lost"} -${bet} SC`}
-        </div>
-      )}
     </div>
   );
 }
 
-// ─── DAILY SPIN ───────────────────────────────────
+// ─── DAILY SPIN (Canvas wheel) ─────────────────────
 const WHEEL_PRIZES = [
-  { label: "10 SC", value: 10, color: "#00ff88", weight: 30 },
-  { label: "25 SC", value: 25, color: "#00d2ff", weight: 25 },
-  { label: "50 SC", value: 50, color: "#e040fb", weight: 15 },
-  { label: "1 HC", value: 100, color: "#ffd700", weight: 10 },
-  { label: "100 SC", value: 100, color: "#ff8800", weight: 8 },
-  { label: "x2 Boost", value: 200, color: "#ff4444", weight: 5 },
-  { label: "3 HC", value: 300, color: "#00ffaa", weight: 4 },
-  { label: "500 SC", value: 500, color: "#ff00ff", weight: 3 },
+  { label: "10 SC",   value: 10,  color: "#00ff88", weight: 30 },
+  { label: "25 SC",   value: 25,  color: "#00d2ff", weight: 25 },
+  { label: "50 SC",   value: 50,  color: "#e040fb", weight: 15 },
+  { label: "1 HC",    value: 100, color: "#ffd700", weight: 10 },
+  { label: "100 SC",  value: 100, color: "#ff8800", weight: 8  },
+  { label: "x2 SC",   value: 200, color: "#ff4444", weight: 5  },
+  { label: "3 HC",    value: 300, color: "#00ffaa", weight: 4  },
+  { label: "500 SC",  value: 500, color: "#ff00ff", weight: 3  },
 ];
+
+type WheelParticle = { x:number; y:number; vx:number; vy:number; life:number; r:number; g:number; b:number };
 
 function DailySpin({ lang, auth }: { lang: Lang; auth?: WebAppAuth | null }) {
   const isTr = lang === "tr";
   const [spinning, setSpinning] = useState(false);
   const [result, setResult] = useState<{ label: string; value: number; color: string } | null>(null);
-  const [rotation, setRotation] = useState(0);
   const [canSpin, setCanSpin] = useState(() => {
     const lastSpin = localStorage.getItem("akr_daily_spin_ts");
     if (!lastSpin) return true;
     return Date.now() - Number(lastSpin) > 86400000;
   });
 
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const rafRef = useRef<number>(0);
+  const wsRef = useRef({
+    rot: 0,        // current rotation (rad)
+    velocity: 0,   // rad/frame
+    spinning: false,
+    particles: [] as WheelParticle[],
+  });
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    let alive = true;
+    const W = canvas.width, H = canvas.height;
+    const cx = W/2, cy = H/2 + 4;
+    const R = Math.min(W,H)*0.41;
+    const N = WHEEL_PRIZES.length;
+    const seg = (Math.PI*2)/N;
+
+    const draw = () => {
+      if (!alive) return;
+      const ws = wsRef.current;
+      const t = Date.now()*0.001;
+
+      // Physics
+      if (ws.spinning) {
+        ws.velocity *= 0.976;
+        ws.rot += ws.velocity;
+        if (ws.velocity < 0.003) {
+          ws.velocity = 0; ws.spinning = false;
+        }
+      }
+
+      ctx.fillStyle = "#050010";
+      ctx.fillRect(0,0,W,H);
+
+      // Outer pulse halo
+      const haloGrad = ctx.createRadialGradient(cx,cy,R*0.7,cx,cy,R*1.15);
+      haloGrad.addColorStop(0,"rgba(0,0,0,0)");
+      haloGrad.addColorStop(0.7,`rgba(60,0,120,${0.06+0.04*Math.sin(t*1.8)})`);
+      haloGrad.addColorStop(1,"rgba(0,0,0,0)");
+      ctx.beginPath(); ctx.arc(cx,cy,R*1.15,0,Math.PI*2);
+      ctx.fillStyle=haloGrad; ctx.fill();
+
+      // Sectors
+      for (let i=0;i<N;i++) {
+        const s = ws.rot + i*seg - Math.PI/2;
+        const e = s + seg;
+        const mid = s + seg/2;
+        const prize = WHEEL_PRIZES[i];
+
+        ctx.beginPath();
+        ctx.moveTo(cx,cy);
+        ctx.arc(cx,cy,R,s,e);
+        ctx.closePath();
+
+        const gx = cx + Math.cos(mid)*R*0.55;
+        const gy = cy + Math.sin(mid)*R*0.55;
+        const grd = ctx.createRadialGradient(gx,gy,0,cx,cy,R);
+        grd.addColorStop(0, prize.color+"55");
+        grd.addColorStop(0.7, prize.color+"18");
+        grd.addColorStop(1, prize.color+"06");
+        ctx.fillStyle = grd; ctx.fill();
+        ctx.strokeStyle = prize.color+"30"; ctx.lineWidth=1; ctx.stroke();
+
+        // Label
+        const lr = R*0.63;
+        const lx = cx + Math.cos(mid)*lr;
+        const ly = cy + Math.sin(mid)*lr;
+        ctx.save();
+        ctx.translate(lx,ly); ctx.rotate(mid+Math.PI/2);
+        ctx.font = "bold 10px monospace";
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillStyle = prize.color;
+        ctx.shadowBlur=5; ctx.shadowColor=prize.color;
+        ctx.fillText(prize.label, 0, 0);
+        ctx.shadowBlur=0;
+        ctx.restore();
+      }
+
+      // Outer ring with shimmer
+      ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2);
+      ctx.strokeStyle=`rgba(255,255,255,${0.08+0.04*Math.sin(t*3)})`; ctx.lineWidth=2.5; ctx.stroke();
+
+      // Center hub
+      const hubGrd = ctx.createRadialGradient(cx,cy,0,cx,cy,R*0.17);
+      hubGrd.addColorStop(0,"rgba(255,255,255,0.2)"); hubGrd.addColorStop(1,"rgba(0,0,0,0.6)");
+      ctx.beginPath(); ctx.arc(cx,cy,R*0.17,0,Math.PI*2);
+      ctx.fillStyle=hubGrd; ctx.fill();
+      ctx.strokeStyle="rgba(255,255,255,0.2)"; ctx.lineWidth=1.5; ctx.stroke();
+
+      // Pointer (top)
+      ctx.save();
+      ctx.shadowBlur=14; ctx.shadowColor="#ffd700";
+      ctx.beginPath();
+      ctx.moveTo(cx, cy-R+2);
+      ctx.lineTo(cx-9, cy-R+20);
+      ctx.lineTo(cx+9, cy-R+20);
+      ctx.closePath();
+      ctx.fillStyle="#ffd700"; ctx.fill();
+      ctx.restore();
+
+      // Particles
+      for (const p of ws.particles) {
+        p.x+=p.vx; p.y+=p.vy; p.vy+=0.12; p.life-=0.025;
+        if (p.life>0) {
+          ctx.beginPath(); ctx.arc(p.x,p.y,3.5*p.life,0,Math.PI*2);
+          ctx.fillStyle=`rgba(${p.r},${p.g},${p.b},${p.life})`; ctx.fill();
+        }
+      }
+      ws.particles = ws.particles.filter(p=>p.life>0);
+
+      rafRef.current = requestAnimationFrame(draw);
+    };
+    rafRef.current = requestAnimationFrame(draw);
+    return ()=>{ alive=false; cancelAnimationFrame(rafRef.current); };
+  }, []);
+
   const spin = useCallback(async () => {
-    if (spinning || !canSpin) return;
-    setSpinning(true);
-    setResult(null);
+    const ws = wsRef.current;
+    if (ws.spinning || spinning || !canSpin) return;
+    setSpinning(true); setResult(null);
 
-    // Weighted random
-    const totalWeight = WHEEL_PRIZES.reduce((s, p) => s + p.weight, 0);
-    let r = Math.random() * totalWeight;
-    let prizeIndex = 0;
-    for (let i = 0; i < WHEEL_PRIZES.length; i++) {
+    // Weighted random prize
+    const total = WHEEL_PRIZES.reduce((s,p)=>s+p.weight, 0);
+    let r = Math.random()*total, prizeIdx = 0;
+    for (let i=0;i<WHEEL_PRIZES.length;i++) {
       r -= WHEEL_PRIZES[i].weight;
-      if (r <= 0) { prizeIndex = i; break; }
+      if (r<=0) { prizeIdx=i; break; }
     }
+    const prize = WHEEL_PRIZES[prizeIdx];
 
-    const prize = WHEEL_PRIZES[prizeIndex];
-    const segAngle = 360 / WHEEL_PRIZES.length;
-    const targetRotation = rotation + 1440 + (360 - prizeIndex * segAngle - segAngle / 2);
-    setRotation(targetRotation);
+    // Launch physics spin
+    ws.spinning = true;
+    ws.velocity = 0.32 + Math.random()*0.12;
 
-    // API call
+    // API
     try {
       const a = authFields(auth);
       await postJson("/webapp/api/v2/player/action", {
-        ...a,
-        action_key: "game_daily_spin",
-        action_request_id: buildActionRequestId("game_daily_spin"),
-        payload: { prize_label: prize.label, prize_value: prize.value }
+        ...a, action_key:"game_daily_spin",
+        action_request_id:buildActionRequestId("game_daily_spin"),
+        payload:{prize_label:prize.label, prize_value:prize.value}
       });
     } catch {}
 
+    // Snap to prize + burst after ~4s
     setTimeout(() => {
-      setResult(prize);
-      setSpinning(false);
-      setCanSpin(false);
+      const N = WHEEL_PRIZES.length;
+      const seg = (Math.PI*2)/N;
+      ws.velocity = 0; ws.spinning = false;
+      // Snap rotation so prize is at pointer (top)
+      ws.rot = (-prizeIdx*seg - seg/2 + Math.PI/2 + Math.PI*2*5) % (Math.PI*2*100);
+
+      // Particle burst
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const cx=canvas.width/2, cy=canvas.height/2+4;
+        const hex = prize.color.replace("#","");
+        const pr=parseInt(hex.slice(0,2),16), pg=parseInt(hex.slice(2,4),16), pb=parseInt(hex.slice(4,6),16);
+        for (let i=0;i<32;i++) {
+          const a=Math.random()*Math.PI*2, spd=2+Math.random()*6;
+          ws.particles.push({x:cx,y:cy,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd-3,life:1,r:pr,g:pg,b:pb});
+        }
+      }
+      setResult(prize); setSpinning(false); setCanSpin(false);
       localStorage.setItem("akr_daily_spin_ts", String(Date.now()));
-    }, 3000);
-  }, [spinning, canSpin, rotation, auth]);
+    }, 4200);
+  }, [spinning, canSpin, auth]);
 
   return (
-    <div className="akrCard" style={{ borderLeft: "3px solid #00d2ff" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-        <span style={{ fontSize: 20 }}>🎰</span>
+    <div className="akrCard" style={{borderLeft:"3px solid #00d2ff",padding:0,overflow:"hidden"}}>
+      <div style={{padding:"10px 12px 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#00d2ff" }}>
-            {isTr ? "Günlük Çark" : "Daily Spin"}
-          </div>
-          <div style={{ fontSize: 10, opacity: 0.5 }}>
-            {isTr ? "Günde 1 çevirme hakkı. Şansını dene!" : "1 spin per day. Try your luck!"}
-          </div>
+          <div style={{fontSize:13,fontWeight:700,color:"#00d2ff"}}>🎰 {isTr?"Günlük Çark":"Daily Spin"}</div>
+          <div style={{fontSize:10,opacity:0.5}}>{isTr?"Günde 1 çevirme hakkı · Şansını dene":"1 spin per day · Try your luck"}</div>
         </div>
+        {result && <span style={{fontSize:14,fontWeight:800,color:result.color,fontFamily:"monospace"}}>🎉 {result.label}</span>}
       </div>
 
-      {/* Wheel */}
-      <div style={{ position: "relative", width: "100%", maxWidth: 220, margin: "0 auto", aspectRatio: "1" }}>
-        {/* Pointer */}
-        <div style={{
-          position: "absolute", top: -4, left: "50%", transform: "translateX(-50%)",
-          width: 0, height: 0,
-          borderLeft: "8px solid transparent", borderRight: "8px solid transparent",
-          borderTop: "14px solid #ffd700",
-          zIndex: 2, filter: "drop-shadow(0 2px 4px rgba(255,215,0,0.4))"
-        }} />
+      <canvas ref={canvasRef} width={320} height={260} style={{display:"block",width:"100%"}} />
 
-        {/* Wheel circle */}
-        <div style={{
-          width: "100%", height: "100%", borderRadius: "50%",
-          overflow: "hidden", position: "relative",
-          transform: `rotate(${rotation}deg)`,
-          transition: spinning ? "transform 3s cubic-bezier(0.2, 0.8, 0.3, 1)" : "none",
-          border: "3px solid rgba(255,255,255,0.1)"
-        }}>
-          {WHEEL_PRIZES.map((prize, i) => {
-            const segAngle = 360 / WHEEL_PRIZES.length;
-            const startAngle = i * segAngle;
-            return (
-              <div
-                key={prize.label}
-                style={{
-                  position: "absolute",
-                  width: "50%", height: "50%",
-                  transformOrigin: "100% 100%",
-                  transform: `rotate(${startAngle}deg) skewY(${-(90 - segAngle)}deg)`,
-                  background: `${prize.color}25`,
-                  borderRight: `1px solid ${prize.color}40`,
-                  left: 0, top: 0
-                }}
-              />
-            );
-          })}
-          {/* Labels */}
-          {WHEEL_PRIZES.map((prize, i) => {
-            const segAngle = 360 / WHEEL_PRIZES.length;
-            const midAngle = (i * segAngle + segAngle / 2) * (Math.PI / 180);
-            const r = 38;
-            const x = 50 + r * Math.sin(midAngle);
-            const y = 50 - r * Math.cos(midAngle);
-            return (
-              <div
-                key={`label_${prize.label}`}
-                style={{
-                  position: "absolute",
-                  left: `${x}%`, top: `${y}%`,
-                  transform: "translate(-50%, -50%)",
-                  fontSize: 8, fontWeight: 700,
-                  color: prize.color,
-                  textShadow: "0 1px 3px rgba(0,0,0,0.8)",
-                  whiteSpace: "nowrap", pointerEvents: "none"
-                }}
-              >
-                {prize.label}
-              </div>
-            );
-          })}
-        </div>
+      <div style={{padding:"0 12px 12px"}}>
+        <button className="akrBtn akrBtnAccent" onClick={spin}
+          disabled={spinning||!canSpin}
+          style={{width:"100%",opacity:(spinning||!canSpin)?0.4:1}}>
+          {spinning?(isTr?"Dönüyor...":"Spinning..."):!canSpin?(isTr?"Yarın tekrar gel":"Come back tomorrow"):(isTr?"Çarkı Çevir":"Spin the Wheel")}
+        </button>
       </div>
-
-      {/* Spin button */}
-      <button
-        className="akrBtn akrBtnAccent"
-        onClick={spin}
-        disabled={spinning || !canSpin}
-        style={{ width: "100%", marginTop: 8, opacity: (spinning || !canSpin) ? 0.4 : 1 }}
-      >
-        {spinning
-          ? (isTr ? "Dönüyor..." : "Spinning...")
-          : !canSpin
-            ? (isTr ? "Yarın tekrar gel" : "Come back tomorrow")
-            : (isTr ? "Çarkı Çevir" : "Spin the Wheel")}
-      </button>
-
-      {/* Result */}
-      {result && (
-        <div style={{
-          textAlign: "center", marginTop: 8, padding: "8px 0",
-          color: result.color || "#00ff88",
-          fontWeight: 700, fontSize: 14,
-          fontFamily: "var(--font-mono)"
-        }}>
-          🎉 {isTr ? "Kazandın" : "Won"}: {result.label}!
-        </div>
-      )}
     </div>
   );
 }

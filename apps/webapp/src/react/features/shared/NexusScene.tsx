@@ -21,13 +21,13 @@ const TAB_DISTRICT_MAP: Partial<Record<TabKey, string>> = {
 
 /** Explicit import map for Vite tree-shaking */
 const SCENE_LOADERS: Record<string, () => Promise<any>> = {
-  central_hub: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/CentralHubScene.ts"),
-  arena: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/ArenaScene.ts"),
-  mission_quarter: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/MissionQuarterScene.ts"),
-  loot_forge: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/LootForgeScene.ts"),
-  exchange_district: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/ExchangeDistrictScene.ts"),
-  season_hall: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/SeasonHallScene.ts"),
-  live_event_overlay: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/LiveEventOverlayScene.ts"),
+  central_hub: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/CentralHubScene"),
+  arena: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/ArenaScene"),
+  mission_quarter: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/MissionQuarterScene"),
+  loot_forge: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/LootForgeScene"),
+  exchange_district: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/ExchangeDistrictScene"),
+  season_hall: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/SeasonHallScene"),
+  live_event_overlay: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/LiveEventOverlayScene"),
 };
 
 /** Quality detection based on device */
