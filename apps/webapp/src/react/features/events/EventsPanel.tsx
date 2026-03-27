@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { t, type Lang } from "../../i18n";
 import type { BootstrapV2Data, WebAppAuth } from "../../types";
 import { buildActionRequestId, postJson, getJson, withAuthQuery } from "../../api/common";
+import { QuickMatch } from "./QuickMatch";
 
 type EventsPanelProps = {
   lang: Lang;
@@ -247,6 +248,9 @@ export function EventsPanel(props: EventsPanelProps) {
           ))}
         </>
       )}
+
+      {/* Mini game */}
+      <QuickMatch lang={props.lang} />
 
       {/* Event stats summary */}
       <div className="akrCard">

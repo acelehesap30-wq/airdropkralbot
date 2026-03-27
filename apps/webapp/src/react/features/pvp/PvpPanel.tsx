@@ -2,6 +2,7 @@ import { t, type Lang } from "../../i18n";
 import { buildPvpLiveViewModel } from "../../../core/player/pvpLiveViewModel.js";
 import { SHELL_ACTION_KEY } from "../../../core/navigation/shellActions.js";
 import { RouteStrip } from "../shared/RouteStrip";
+import { ArenaChallenge } from "./ArenaChallenge";
 
 type PvpPanelProps = {
   lang: Lang;
@@ -477,6 +478,8 @@ export function PvpPanel(props: PvpPanelProps) {
           </div>
         </section>
       </div>
+
+      <ArenaChallenge lang={props.lang} />
 
       {props.advanced ? (
         <>
