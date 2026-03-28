@@ -1,7 +1,138 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { getJson, postJson } from "../../api/common";
 import type { WebAppAuth } from "../../types";
 import type { Lang } from "../../i18n";
+
+/** Canvas bracket tree visualization */
+function BracketCanvas({ entries, bracketSize, statusColor }: { entries: TournamentEntry[]; bracketSize: number; statusColor: string }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const c = ref.current; if (!c) return;
+    const ctx = c.getContext("2d"); if (!ctx) return;
+    const W = c.width, H = c.height;
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = "#04000e"; ctx.fillRect(0, 0, W, H);
+
+    // Parse status color → RGB
+    const m = /([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i.exec(statusColor.replace("#", ""));
+    const [cr, cg, cb] = m ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)] : [224, 64, 251];
+
+    // Grid BG
+    ctx.save(); ctx.globalAlpha = 0.04;
+    for (let gx = 0; gx < W; gx += 20) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.strokeStyle = `rgb(${cr},${cg},${cb})`; ctx.lineWidth = 0.5; ctx.stroke(); }
+    for (let gy = 0; gy < H; gy += 20) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.strokeStyle = `rgb(${cr},${cg},${cb})`; ctx.lineWidth = 0.5; ctx.stroke(); }
+    ctx.restore();
+
+    // Calculate bracket rounds
+    const slots = Math.max(4, bracketSize);
+    const rounds = Math.ceil(Math.log2(slots));
+    const firstRoundSlots = Math.pow(2, rounds);
+    const colW = (W - 20) / (rounds + 1);
+
+    // Draw bracket lines + slots
+    const drawSlots = (round: number, count: number, yPositions: number[]): number[] => {
+      const nextPositions: number[] = [];
+      const x = 10 + round * colW;
+      const nextX = 10 + (round + 1) * colW;
+
+      for (let i = 0; i < count; i += 2) {
+        const y1 = yPositions[i];
+        const y2 = yPositions[i + 1] ?? y1;
+        const midY = (y1 + y2) / 2;
+        nextPositions.push(midY);
+
+        // Connecting lines
+        ctx.save();
+        ctx.strokeStyle = `rgba(${cr},${cg},${cb},0.25)`;
+        ctx.lineWidth = 1.5;
+        ctx.shadowColor = `rgba(${cr},${cg},${cb},0.3)`;
+        ctx.shadowBlur = 4;
+        // Horizontal from slot to mid
+        ctx.beginPath(); ctx.moveTo(x + 50, y1); ctx.lineTo(x + colW * 0.45, y1); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x + 50, y2); ctx.lineTo(x + colW * 0.45, y2); ctx.stroke();
+        // Vertical connector
+        ctx.beginPath(); ctx.moveTo(x + colW * 0.45, y1); ctx.lineTo(x + colW * 0.45, y2); ctx.stroke();
+        // Horizontal to next round
+        ctx.beginPath(); ctx.moveTo(x + colW * 0.45, midY); ctx.lineTo(nextX, midY); ctx.stroke();
+        ctx.restore();
+      }
+
+      // Draw slot boxes for this round
+      for (let i = 0; i < count; i++) {
+        const y = yPositions[i];
+        const entry = round === 0 && i < entries.length ? entries[i] : null;
+        const eliminated = entry?.eliminated_at;
+
+        ctx.save();
+        ctx.shadowColor = `rgba(${cr},${cg},${cb},${entry ? 0.4 : 0.1})`;
+        ctx.shadowBlur = entry ? 8 : 2;
+        // Slot box
+        ctx.beginPath();
+        ctx.rect(x, y - 9, 48, 18);
+        ctx.fillStyle = eliminated
+          ? "rgba(255,60,60,0.08)"
+          : entry ? `rgba(${cr},${cg},${cb},0.12)` : "rgba(255,255,255,0.03)";
+        ctx.fill();
+        ctx.strokeStyle = eliminated
+          ? "rgba(255,60,60,0.35)"
+          : entry ? `rgba(${cr},${cg},${cb},0.4)` : "rgba(255,255,255,0.1)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        if (entry) {
+          ctx.textAlign = "left"; ctx.textBaseline = "middle";
+          ctx.font = "9px monospace";
+          ctx.fillStyle = eliminated ? "rgba(255,100,100,0.6)" : `rgba(${cr},${cg},${cb},0.85)`;
+          const name = entry.display_name.length > 7 ? entry.display_name.slice(0, 6) + "…" : entry.display_name;
+          ctx.fillText(name, x + 3, y);
+        } else if (round === 0) {
+          ctx.textAlign = "center"; ctx.textBaseline = "middle";
+          ctx.font = "8px monospace";
+          ctx.fillStyle = "rgba(255,255,255,0.15)";
+          ctx.fillText("—", x + 24, y);
+        }
+        ctx.restore();
+      }
+
+      return nextPositions;
+    };
+
+    // Calculate Y positions for first round
+    const margin = 12;
+    const spacing = Math.max(20, (H - margin * 2) / firstRoundSlots);
+    let yPos = Array.from({ length: firstRoundSlots }, (_, i) => margin + i * spacing + spacing / 2);
+
+    // Draw each round
+    let count = firstRoundSlots;
+    for (let r = 0; r < rounds; r++) {
+      yPos = drawSlots(r, count, yPos);
+      count = Math.ceil(count / 2);
+    }
+
+    // Final winner slot
+    if (yPos.length > 0) {
+      const fy = yPos[0];
+      const fx = 10 + rounds * colW;
+      ctx.save();
+      ctx.shadowColor = `rgba(255,215,0,0.7)`;
+      ctx.shadowBlur = 12;
+      ctx.beginPath(); ctx.rect(fx, fy - 11, 52, 22);
+      ctx.fillStyle = "rgba(255,215,0,0.15)"; ctx.fill();
+      ctx.strokeStyle = "rgba(255,215,0,0.6)"; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.font = "11px serif";
+      ctx.fillText("🏆", fx + 26, fy);
+      ctx.restore();
+    }
+  }, [entries, bracketSize, statusColor]);
+
+  const rounds = Math.ceil(Math.log2(Math.max(4, bracketSize)));
+  const slots = Math.pow(2, rounds);
+  const canvasH = Math.max(140, slots * 22 + 24);
+  return <canvas ref={ref} width={320} height={canvasH} style={{ display: "block", width: "100%", borderRadius: 8, marginBottom: 8 }} />;
+}
 
 type TournamentEntry = {
   seed: number | null;
@@ -262,6 +393,11 @@ export function TournamentBracket({ lang, auth }: TournamentBracketProps) {
                   <div style={{ textAlign: "center", fontSize: 11, color: "#00ff88", fontWeight: 700, marginBottom: 10 }}>
                     ✅ {isTr ? "Kayıtlısın!" : "You're registered!"}
                   </div>
+                )}
+
+                {/* Bracket tree canvas */}
+                {!detailLoading && entries.length > 0 && (
+                  <BracketCanvas entries={entries} bracketSize={t.bracket_size} statusColor={sl.color} />
                 )}
 
                 {/* Participant list */}

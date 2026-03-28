@@ -3,6 +3,50 @@ import { getJson, postJson } from "../../api/common";
 import type { WebAppAuth } from "../../types";
 import type { Lang } from "../../i18n";
 
+type FXParticle = { x:number; y:number; vx:number; vy:number; life:number; maxLife:number; r:number; g:number; b:number; size:number };
+
+/** Canvas particle celebration burst */
+function ChestBurst({ color, mega }: { color: string; mega?: boolean }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const c = ref.current; if (!c) return;
+    const ctx = c.getContext("2d"); if (!ctx) return;
+    const W = c.width, H = c.height;
+    let alive = true;
+    const ps: FXParticle[] = [];
+    // Parse hex color
+    const m = /([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i.exec(color.replace("#",""));
+    const [cr,cg,cb] = m ? [parseInt(m[1],16),parseInt(m[2],16),parseInt(m[3],16)] : [255,215,0];
+    const count = mega ? 55 : 30;
+    for (let i = 0; i < count; i++) {
+      const a = Math.random()*Math.PI*2;
+      const spd = 1.5+Math.random()*(mega?7:5);
+      ps.push({x:W/2,y:H*0.6,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd-2.5,life:30+Math.random()*30,maxLife:60,r:cr+Math.random()*40,g:cg+Math.random()*30,b:cb,size:2+Math.random()*2.5});
+    }
+    // Gold sparkles for all
+    for (let i = 0; i < 15; i++) {
+      const a = Math.random()*Math.PI*2;
+      ps.push({x:W/2,y:H*0.6,vx:Math.cos(a)*(2+Math.random()*3),vy:Math.sin(a)*2-3,life:35+Math.random()*20,maxLife:55,r:255,g:255,b:200,size:1.5});
+    }
+    const draw = () => {
+      if (!alive) return;
+      ctx.clearRect(0,0,W,H);
+      for (const p of ps) {
+        p.x+=p.vx; p.y+=p.vy; p.vy+=0.12; p.life--;
+        const al = p.life/p.maxLife;
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.size*al+0.3,0,Math.PI*2);
+        ctx.fillStyle=`rgba(${Math.min(255,p.r|0)},${Math.min(255,p.g|0)},${Math.min(255,p.b|0)},${al})`;
+        ctx.fill();
+      }
+      ps.splice(0,ps.length,...ps.filter(p=>p.life>0));
+      if (ps.length>0) requestAnimationFrame(draw);
+    };
+    requestAnimationFrame(draw);
+    return ()=>{alive=false;};
+  },[color,mega]);
+  return <canvas ref={ref} width={300} height={100} style={{display:"block",width:"100%",pointerEvents:"none"}} />;
+}
+
 type ChestDef = {
   type: "common" | "rare" | "epic";
   label_tr: string;
@@ -157,6 +201,7 @@ export function ChestReveal({ lang, auth }: ChestRevealProps) {
           textAlign: "center",
           animation: "none"
         }}>
+          <ChestBurst color={chestColor(reveal.chest_type)} mega={reveal.chest_type === "epic"} />
           <div style={{ fontSize: 32, marginBottom: 6 }}>
             {reveal.chest_type === "epic" ? "🔮" : reveal.chest_type === "rare" ? "💠" : "📦"}
           </div>

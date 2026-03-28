@@ -3,6 +3,45 @@ import { getJson, postJson } from "../../api/common";
 import type { WebAppAuth } from "../../types";
 import type { Lang } from "../../i18n";
 
+type ConfettiP = { x:number;y:number;vx:number;vy:number;life:number;maxLife:number;r:number;g:number;b:number;rot:number;w:number;h:number };
+
+/** Canvas confetti celebration — plays once then stops */
+function ConfettiBurst({ mega }: { mega?: boolean }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(()=>{
+    const c=ref.current; if(!c) return;
+    const ctx=c.getContext("2d"); if(!ctx) return;
+    const W=c.width, H=c.height;
+    let alive=true;
+    const ps:ConfettiP[]=[];
+    const colors:Array<[number,number,number]>=[[255,215,0],[0,214,255],[224,64,251],[0,255,136],[255,100,50]];
+    const count=mega?65:35;
+    for(let i=0;i<count;i++){
+      const [r,g,b]=colors[i%colors.length];
+      const angle=-Math.PI/2+((Math.random()-0.5)*Math.PI*0.8);
+      const spd=3+Math.random()*(mega?8:5);
+      ps.push({x:W/2+(Math.random()-0.5)*60,y:H*0.85,vx:Math.cos(angle)*spd,vy:Math.sin(angle)*spd,life:50+Math.random()*40,maxLife:90,r,g,b,rot:Math.random()*Math.PI*2,w:3+Math.random()*4,h:2+Math.random()*2});
+    }
+    const draw=()=>{
+      if(!alive)return;
+      ctx.clearRect(0,0,W,H);
+      for(const p of ps){
+        p.x+=p.vx; p.y+=p.vy; p.vy+=0.08; p.rot+=0.05; p.life--;
+        const a=Math.min(1,p.life/30);
+        ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+        ctx.fillStyle=`rgba(${p.r},${p.g},${p.b},${a})`;
+        ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+        ctx.restore();
+      }
+      ps.splice(0,ps.length,...ps.filter(p=>p.life>0));
+      if(ps.length>0) requestAnimationFrame(draw);
+    };
+    requestAnimationFrame(draw);
+    return()=>{alive=false;};
+  },[mega]);
+  return <canvas ref={ref} width={260} height={120} style={{display:"block",width:"100%",pointerEvents:"none",position:"absolute",top:-10,left:"50%",transform:"translateX(-50%)"}} />;
+}
+
 type CalendarDay = {
   date: string;
   claimed: boolean;
@@ -211,8 +250,9 @@ export function DailyCheckin({ lang, auth }: DailyCheckinProps) {
           border: reward.mega ? "2px solid #ffd700" : "1px solid rgba(0,255,136,0.4)",
           borderRadius: 16, padding: "18px 28px", zIndex: 9999,
           textAlign: "center", boxShadow: "0 8px 40px rgba(0,0,0,0.6)",
-          animation: "fadeInDown 0.3s ease"
+          animation: "fadeInDown 0.3s ease", overflow: "visible"
         }}>
+          <div style={{ position: "relative" }}><ConfettiBurst mega={reward.mega} /></div>
           <div style={{ fontSize: reward.mega ? 32 : 24, marginBottom: 6 }}>
             {reward.mega ? "🏆" : "🎁"}
           </div>
