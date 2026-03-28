@@ -60,7 +60,7 @@ function shortStatus(value: string, onText: string, offText: string) {
 }
 
 export function VaultPanel(props: VaultPanelProps) {
-  const [showGame, setShowGame] = useState(false);
+  const [showGame, setShowGame] = useState(true);
   const view = buildVaultViewModel({
     vaultData: props.vaultData
   });

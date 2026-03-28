@@ -37,7 +37,7 @@ export function ExchangePanel(props: ExchangePanelProps) {
   const [livePrice, setLivePrice] = useState<number>(0);
   const [converting, setConverting] = useState<string | null>(null);
   const [convertResult, setConvertResult] = useState<string | null>(null);
-  const [showGame, setShowGame] = useState(false);
+  const [showGame, setShowGame] = useState(true);
 
   const nxtPrice = livePrice > 0 ? livePrice : bootstrapPrice > 0 ? bootstrapPrice : NXT_PRICE_DEFAULT;
   const nxtMcap = Number((token as any)?.market_cap_usd || 0);

@@ -30,7 +30,7 @@ function asText(value: unknown, fallback = "-") {
 }
 
 export function TasksPanel(props: TasksPanelProps) {
-  const [showGame, setShowGame] = useState(false);
+  const [showGame, setShowGame] = useState(true);
   const view = buildTasksViewModel({
     offers: props.offers,
     missions: props.missions,
