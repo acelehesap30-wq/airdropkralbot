@@ -1,639 +1,300 @@
-import { useRef, useEffect, useState, useCallback, type CSSProperties } from "react";
+import { useRef, useEffect, type CSSProperties } from "react";
 import type { TabKey } from "../../types";
 
 /**
- * NexusScene – Inline 3D BabylonJS district renderer for the webapp.
- *
- * IMPORTANT: Reuses a single BabylonJS Engine across tab switches to avoid
- * WebGL context exhaustion. Only the Scene is swapped on tab change.
+ * NexusScene — Beautiful Canvas 2D animated background per tab.
+ * Replaces BabylonJS 3D district scenes with lightweight pseudo-3D visuals.
  */
 
-/** Tab → district scene key mapping */
-const TAB_DISTRICT_MAP: Partial<Record<TabKey, string>> = {
-  home: "central_hub",
-  pvp: "arena",
-  tasks: "mission_quarter",
-  forge: "loot_forge",
-  exchange: "exchange_district",
-  season: "season_hall",
-  events: "live_event_overlay",
+type Theme = {
+  bg: [number, number, number];
+  primary: [number, number, number];
+  secondary: [number, number, number];
+  label: string;
+  particleCount: number;
 };
 
-/** Explicit import map for Vite tree-shaking */
-const SCENE_LOADERS: Record<string, () => Promise<any>> = {
-  central_hub: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/CentralHubScene"),
-  arena: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/ArenaScene"),
-  mission_quarter: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/MissionQuarterScene"),
-  loot_forge: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/LootForgeScene"),
-  exchange_district: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/ExchangeDistrictScene"),
-  season_hall: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/SeasonHallScene"),
-  live_event_overlay: () => import("../../../../../../apps/miniapp-shell/src/components/scene/districts/LiveEventOverlayScene"),
+const THEMES: Record<string, Theme> = {
+  home:     { bg: [6, 16, 34],   primary: [0, 214, 255],   secondary: [47, 255, 181], label: "NEXUS HUB",     particleCount: 60 },
+  pvp:      { bg: [20, 8, 12],   primary: [255, 60, 80],   secondary: [255, 140, 0],  label: "ARENA",          particleCount: 80 },
+  tasks:    { bg: [8, 20, 16],   primary: [47, 255, 181],  secondary: [0, 214, 255],  label: "MISSIONS",       particleCount: 50 },
+  forge:    { bg: [16, 8, 24],   primary: [224, 64, 251],  secondary: [255, 178, 94], label: "FORGE",          particleCount: 70 },
+  exchange: { bg: [16, 14, 6],   primary: [255, 178, 94],  secondary: [0, 214, 255],  label: "EXCHANGE",       particleCount: 45 },
+  season:   { bg: [14, 12, 6],   primary: [255, 215, 0],   secondary: [224, 64, 251], label: "SEASON HALL",    particleCount: 55 },
+  events:   { bg: [6, 12, 24],   primary: [0, 214, 255],   secondary: [255, 60, 80],  label: "EVENTS",         particleCount: 65 },
 };
 
-/** Quality detection based on device */
-function detectQuality(): "low" | "medium" | "high" {
-  if (typeof navigator === "undefined") return "medium";
-  const cores = navigator.hardwareConcurrency || 2;
-  if (cores <= 2) return "low";
-  if (cores >= 8) return "high";
-  return "medium";
-}
-
-const QUALITY = detectQuality();
-
-interface GameState {
-  score: number;
-  combo?: number;
-  kills?: number;
-  streak?: number;
-  crystalsCollected?: number;
-  totalCrystals?: number;
-  dronesAlive?: number;
-  lastType?: string;
-  lastPoints?: number;
-  // Mechanic-specific fields
-  mechanic?: string;
-  // Boss fight (live events)
-  bossHp?: number;
-  bossMaxHp?: number;
-  phase?: number;
-  // Trophy race (season hall)
-  timeLeft?: number;
-  nextTarget?: number;
-  round?: number;
-  // Crafting (loot forge)
-  recipe?: string;
-  recipeStep?: number;
-  recipesForged?: number;
-  showingRecipe?: boolean;
-  // Memory vault (elite)
-  sequenceLength?: number;
-  showingPattern?: boolean;
-  bestRound?: number;
-  // Stealth scanner (missions)
-  difficulty?: number;
-  missed?: number;
-  // Market timing (exchange)
-  trades?: number;
-  perfectTrades?: number;
-  timing?: string;
-  // Pair match (social)
-  pairsMatched?: number;
-  // Portal sequence (hub)
-  showingSequence?: boolean;
-}
-
-type NexusSceneProps = {
-  tab: TabKey;
-  lang: "tr" | "en";
+type Particle = {
+  x: number; y: number; z: number;
+  vx: number; vy: number; vz: number;
+  size: number; alpha: number;
+  color: [number, number, number];
+  life: number; maxLife: number;
+  type: "dot" | "ring" | "hex";
 };
 
-/** Module-level singleton for the BabylonJS engine (survives tab switches) */
-let _sharedEngine: any = null;
-let _sharedCanvas: HTMLCanvasElement | null = null;
-let _babylonModule: any = null;
+type NexusSceneProps = { tab: TabKey; lang: "tr" | "en" };
 
-export function NexusScene({ tab, lang }: NexusSceneProps) {
+export function NexusScene({ tab }: NexusSceneProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const sceneRef = useRef<any>(null);
-  const renderLoopRef = useRef<(() => void) | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [gameState, setGameState] = useState<GameState | null>(null);
-  const [claiming, setClaiming] = useState(false);
-  const [claimResult, setClaimResult] = useState<{
-    reward: { sc: number; hc: number; rc: number };
+  const stRef = useRef<{
+    particles: Particle[];
+    time: number;
+    raf: number;
+    w: number; h: number;
+    theme: Theme;
   } | null>(null);
 
-  const districtKey = TAB_DISTRICT_MAP[tab];
+  const theme = THEMES[tab];
+  if (!theme) return null;
 
-  /** Claim game rewards from the API */
-  const claimRewards = useCallback(async () => {
-    if (!gameState || gameState.score <= 0 || claiming) return;
-    setClaiming(true);
-    setClaimResult(null);
-    try {
-      const params = new URLSearchParams(window.location.search);
-      const uid = params.get("uid") || "";
-      const ts = params.get("ts") || String(Date.now());
-      const sig = params.get("sig") || "";
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-      const mechanic = gameState.mechanic || (tab === "pvp" ? "combat" : "collect");
-      const gameType = `${districtKey || tab}_${mechanic}`;
-      const stats: Record<string, number> = {
-        score: gameState.score,
-        combo: gameState.combo || 0,
-        round: gameState.round || 0,
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const W = canvas.clientWidth;
+    const H = canvas.clientHeight;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    ctx.scale(dpr, dpr);
+
+    const mkParticle = (): Particle => {
+      const isPrimary = Math.random() > 0.35;
+      const col = isPrimary ? theme.primary : theme.secondary;
+      const types: Particle["type"][] = ["dot", "dot", "dot", "ring", "hex"];
+      return {
+        x: Math.random() * W,
+        y: Math.random() * H,
+        z: 0.3 + Math.random() * 0.7,
+        vx: (Math.random() - 0.5) * 0.4,
+        vy: (Math.random() - 0.5) * 0.3 - 0.15,
+        vz: (Math.random() - 0.5) * 0.01,
+        size: 1.5 + Math.random() * 3,
+        alpha: 0.15 + Math.random() * 0.5,
+        color: col,
+        life: 0,
+        maxLife: 200 + Math.random() * 400,
+        type: types[Math.floor(Math.random() * types.length)],
       };
-      if (gameState.kills) stats.kills = gameState.kills;
-      if (gameState.streak) stats.streak = gameState.streak;
-      if (gameState.perfectTrades) stats.perfect_trades = gameState.perfectTrades;
-      if (gameState.recipesForged) stats.recipes_forged = gameState.recipesForged;
-      if (gameState.bestRound) stats.best_round = gameState.bestRound;
-      if (gameState.pairsMatched) stats.pairs_matched = gameState.pairsMatched;
+    };
 
-      const resp = await fetch("/webapp/api/game/claim", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          uid,
-          ts,
-          sig,
-          game_type: gameType,
-          score: gameState.score,
-          stats,
-          claim_id: `${gameType}_${uid}_${Date.now()}`,
-        }),
-      });
-      const data = await resp.json();
-      if (data.success) {
-        setClaimResult({ reward: data.data.reward });
-        if (sceneRef.current?.metadata) {
-          sceneRef.current.metadata.gameState = { score: 0 };
-        }
-        setGameState({ score: 0 });
-      }
-    } catch (err) {
-      console.error("[NexusScene] Claim failed:", err);
-    } finally {
-      setClaiming(false);
+    const particles: Particle[] = [];
+    for (let i = 0; i < theme.particleCount; i++) {
+      const p = mkParticle();
+      p.life = Math.random() * p.maxLife;
+      particles.push(p);
     }
-  }, [gameState, claiming, tab]);
 
-  // ── Engine init (once per component mount) ──
-  useEffect(() => {
-    if (!canvasRef.current) return;
+    const st = { particles, time: 0, raf: 0, w: W, h: H, theme };
+    stRef.current = st;
 
-    let cancelled = false;
+    const drawHex = (cx: number, cy: number, r: number) => {
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const a = (Math.PI / 3) * i - Math.PI / 6;
+        const px = cx + r * Math.cos(a);
+        const py = cy + r * Math.sin(a);
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+    };
 
-    async function initEngine() {
-      try {
-        if (!_babylonModule) {
-          _babylonModule = await import("@babylonjs/core");
+    const drawGrid = (t: number) => {
+      ctx.save();
+      ctx.globalAlpha = 0.04;
+      ctx.strokeStyle = `rgb(${theme.primary.join(",")})`;
+      ctx.lineWidth = 0.5;
+      const spacing = 40;
+      const offset = (t * 8) % spacing;
+      for (let x = -spacing + offset; x < W + spacing; x += spacing) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, H);
+        ctx.stroke();
+      }
+      for (let y = -spacing + offset * 0.5; y < H + spacing; y += spacing) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(W, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    };
+
+    const drawOrb = (cx: number, cy: number, r: number, col: [number, number, number], alpha: number) => {
+      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+      grad.addColorStop(0, `rgba(${col.join(",")},${alpha * 0.8})`);
+      grad.addColorStop(0.5, `rgba(${col.join(",")},${alpha * 0.3})`);
+      grad.addColorStop(1, `rgba(${col.join(",")},0)`);
+      ctx.fillStyle = grad;
+      ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+    };
+
+    const render = () => {
+      st.time += 0.016;
+      const t = st.time;
+
+      // Background gradient
+      const bg = theme.bg;
+      const grad = ctx.createLinearGradient(0, 0, 0, H);
+      grad.addColorStop(0, `rgb(${bg[0]}, ${bg[1]}, ${bg[2]})`);
+      grad.addColorStop(1, `rgb(${Math.floor(bg[0] * 1.4)}, ${Math.floor(bg[1] * 1.4)}, ${Math.floor(bg[2] * 1.4)})`);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, W, H);
+
+      // Background grid
+      drawGrid(t);
+
+      // Large ambient orbs
+      drawOrb(W * 0.2, H * 0.3, 120, theme.primary, 0.06 + Math.sin(t * 0.5) * 0.02);
+      drawOrb(W * 0.8, H * 0.7, 100, theme.secondary, 0.05 + Math.cos(t * 0.4) * 0.02);
+      drawOrb(W * 0.5, H * 0.15, 80, theme.primary, 0.04 + Math.sin(t * 0.3 + 1) * 0.015);
+
+      // Center orb glow pulse
+      const centerR = 30 + Math.sin(t * 1.5) * 5;
+      drawOrb(W * 0.5, H * 0.45, centerR, theme.primary, 0.12 + Math.sin(t * 2) * 0.04);
+
+      // Particles
+      for (let i = st.particles.length - 1; i >= 0; i--) {
+        const p = st.particles[i];
+        p.life++;
+        if (p.life > p.maxLife) {
+          st.particles[i] = mkParticle();
+          continue;
         }
-        if (cancelled) return;
 
-        const canvas = canvasRef.current!;
+        p.x += p.vx * p.z;
+        p.y += p.vy * p.z;
+        p.z += p.vz;
+        if (p.z < 0.2) p.z = 0.2;
+        if (p.z > 1.2) p.z = 1.2;
 
-        // Reuse engine if canvas matches, else create new
-        if (!_sharedEngine || _sharedCanvas !== canvas) {
-          if (_sharedEngine) {
-            try { _sharedEngine.stopRenderLoop(); } catch (_) {}
-            try { _sharedEngine.dispose(); } catch (_) {}
+        if (p.x < -20) p.x = W + 20;
+        if (p.x > W + 20) p.x = -20;
+        if (p.y < -20) p.y = H + 20;
+        if (p.y > H + 20) p.y = -20;
+
+        const fadeIn = Math.min(1, p.life / 30);
+        const fadeOut = Math.min(1, (p.maxLife - p.life) / 40);
+        const a = p.alpha * fadeIn * fadeOut * p.z;
+        const s = p.size * p.z;
+
+        ctx.save();
+        ctx.globalAlpha = a;
+
+        if (p.type === "dot") {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, s, 0, Math.PI * 2);
+          ctx.fillStyle = `rgb(${p.color.join(",")})`;
+          ctx.fill();
+          // Glow
+          if (s > 2) {
+            ctx.globalAlpha = a * 0.3;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, s * 3, 0, Math.PI * 2);
+            ctx.fillStyle = `rgb(${p.color.join(",")})`;
+            ctx.fill();
           }
-          _sharedEngine = new _babylonModule.Engine(canvas, true, {
-            preserveDrawingBuffer: false,
-            stencil: true,
-            antialias: QUALITY !== "low",
-            powerPreference: QUALITY === "high" ? "high-performance" : "default",
-          });
-          _sharedCanvas = canvas;
-
-          const resizeHandler = () => {
-            if (_sharedEngine) _sharedEngine.resize();
-          };
-          window.addEventListener("resize", resizeHandler);
+        } else if (p.type === "ring") {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, s * 2, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgb(${p.color.join(",")})`;
+          ctx.lineWidth = 0.8;
+          ctx.stroke();
+        } else {
+          drawHex(p.x, p.y, s * 1.5);
+          ctx.strokeStyle = `rgb(${p.color.join(",")})`;
+          ctx.lineWidth = 0.6;
+          ctx.stroke();
         }
-      } catch (err) {
-        console.error("[NexusScene] Engine init failed:", err);
+        ctx.restore();
       }
-    }
 
-    initEngine();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []); // Only runs once on mount
-
-  // ── Scene swap (runs on each tab change) ──
-  useEffect(() => {
-    if (!districtKey || !canvasRef.current) return;
-
-    let disposed = false;
-
-    async function loadScene() {
-      try {
-        // Ensure engine is ready
-        if (!_babylonModule) {
-          _babylonModule = await import("@babylonjs/core");
-        }
-        if (disposed) return;
-
-        const canvas = canvasRef.current!;
-
-        // Ensure engine exists
-        if (!_sharedEngine || _sharedCanvas !== canvas) {
-          _sharedEngine = new _babylonModule.Engine(canvas, true, {
-            preserveDrawingBuffer: false,
-            stencil: true,
-            antialias: QUALITY !== "low",
-            powerPreference: QUALITY === "high" ? "high-performance" : "default",
-          });
-          _sharedCanvas = canvas;
-          window.addEventListener("resize", () => _sharedEngine?.resize());
-        }
-
-        // Stop any existing render loop
-        _sharedEngine.stopRenderLoop();
-
-        // Dispose previous scene (NOT the engine)
-        if (sceneRef.current) {
-          try { sceneRef.current.dispose(); } catch (_) {}
-          sceneRef.current = null;
-        }
-
-        if (disposed) return;
-
-        // Load the new district scene module
-        const loader = SCENE_LOADERS[districtKey];
-        if (!loader) throw new Error(`No scene for district: ${districtKey}`);
-
-        const sceneModule = await loader();
-        if (disposed) return;
-
-        const scene = sceneModule.createScene(_sharedEngine, canvas, QUALITY);
-        if (disposed) {
-          scene.dispose();
-          return;
-        }
-        sceneRef.current = scene;
-
-        // Game state polling
-        let lastScore = -1;
-        scene.registerAfterRender(() => {
-          if (disposed) return;
-          const gs = scene.metadata?.gameState as GameState | undefined;
-          if (gs && gs.score !== lastScore) {
-            lastScore = gs.score;
-            setGameState({ ...gs });
+      // Connecting lines between close particles
+      ctx.save();
+      ctx.lineWidth = 0.3;
+      for (let i = 0; i < st.particles.length; i++) {
+        const a = st.particles[i];
+        for (let j = i + 1; j < st.particles.length; j++) {
+          const b = st.particles[j];
+          const dx = a.x - b.x;
+          const dy = a.y - b.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 60) {
+            const lineAlpha = (1 - dist / 60) * 0.08 * a.alpha * b.alpha;
+            ctx.globalAlpha = lineAlpha;
+            ctx.strokeStyle = `rgb(${theme.primary.join(",")})`;
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.stroke();
           }
-        });
-
-        // Start render loop for new scene
-        const renderFn = () => scene.render();
-        renderLoopRef.current = renderFn;
-        _sharedEngine.runRenderLoop(renderFn);
-
-        setLoading(false);
-        setError(null);
-      } catch (err) {
-        console.error("[NexusScene] Scene load failed:", err);
-        if (!disposed) {
-          setError(String(err));
-          setLoading(false);
         }
       }
-    }
+      ctx.restore();
 
-    setLoading(true);
-    setError(null);
-    setGameState(null);
-    setClaimResult(null);
-    loadScene();
+      // Horizontal scan line
+      const scanY = (t * 30) % (H + 40) - 20;
+      ctx.save();
+      const scanGrad = ctx.createLinearGradient(0, scanY - 2, 0, scanY + 2);
+      scanGrad.addColorStop(0, `rgba(${theme.primary.join(",")},0)`);
+      scanGrad.addColorStop(0.5, `rgba(${theme.primary.join(",")},0.08)`);
+      scanGrad.addColorStop(1, `rgba(${theme.primary.join(",")},0)`);
+      ctx.fillStyle = scanGrad;
+      ctx.fillRect(0, scanY - 8, W, 16);
+      ctx.restore();
+
+      // Top/bottom vignette
+      const vigTop = ctx.createLinearGradient(0, 0, 0, 40);
+      vigTop.addColorStop(0, `rgba(${bg[0]},${bg[1]},${bg[2]},0.8)`);
+      vigTop.addColorStop(1, "transparent");
+      ctx.fillStyle = vigTop;
+      ctx.fillRect(0, 0, W, 40);
+
+      const vigBot = ctx.createLinearGradient(0, H - 40, 0, H);
+      vigBot.addColorStop(0, "transparent");
+      vigBot.addColorStop(1, `rgba(${bg[0]},${bg[1]},${bg[2]},0.9)`);
+      ctx.fillStyle = vigBot;
+      ctx.fillRect(0, H - 40, W, 40);
+
+      // Label
+      ctx.save();
+      ctx.globalAlpha = 0.12;
+      ctx.font = "bold 36px 'Bebas Neue', 'Arial Black', sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillStyle = `rgb(${theme.primary.join(",")})`;
+      ctx.fillText(theme.label, W / 2, H / 2 + 12);
+      ctx.restore();
+
+      st.raf = requestAnimationFrame(render);
+    };
+
+    st.raf = requestAnimationFrame(render);
 
     return () => {
-      disposed = true;
-      // Stop render loop but keep the engine alive
-      if (_sharedEngine) {
-        _sharedEngine.stopRenderLoop();
-      }
-      if (sceneRef.current) {
-        try { sceneRef.current.dispose(); } catch (_) {}
-        sceneRef.current = null;
-      }
+      cancelAnimationFrame(st.raf);
+      stRef.current = null;
     };
-  }, [districtKey]);
-
-  // ── Cleanup engine only on full unmount ──
-  useEffect(() => {
-    return () => {
-      if (_sharedEngine) {
-        _sharedEngine.stopRenderLoop();
-        _sharedEngine.dispose();
-        _sharedEngine = null;
-        _sharedCanvas = null;
-      }
-    };
-  }, []);
-
-  // Don't render for tabs without districts (vault, settings)
-  if (!districtKey) return null;
+  }, [tab]);
 
   const containerStyle: CSSProperties = {
     position: "relative",
     width: "100%",
-    height: 280,
-    borderRadius: 12,
+    height: 180,
+    borderRadius: 16,
     overflow: "hidden",
-    background: "#0a0a1a",
     marginBottom: 12,
-  };
-
-  const canvasStyle: CSSProperties = {
-    width: "100%",
-    height: "100%",
-    display: "block",
-    outline: "none",
-    touchAction: "none",
   };
 
   return (
     <div style={containerStyle} className="akrNexusScene">
       <canvas
         ref={canvasRef}
-        style={canvasStyle}
+        style={{ width: "100%", height: "100%", display: "block" }}
       />
-
-      {/* Loading overlay */}
-      {loading && (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "rgba(10, 10, 26, 0.9)",
-            color: "#555",
-            fontFamily: "var(--font-mono, monospace)",
-            fontSize: 12,
-          }}
-        >
-          {lang === "tr" ? "3D sahne yükleniyor..." : "Loading 3D scene..."}
-        </div>
-      )}
-
-      {/* Error overlay */}
-      {error && (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "rgba(10, 10, 26, 0.9)",
-            color: "#f44",
-            fontFamily: "var(--font-mono, monospace)",
-            fontSize: 11,
-            padding: 16,
-            textAlign: "center",
-          }}
-        >
-          {lang === "tr" ? "Sahne yüklenemedi" : "Scene failed to load"}
-        </div>
-      )}
-
-      {/* Game HUD */}
-      {!loading && gameState && gameState.score > 0 && (
-        <div
-          style={{
-            position: "absolute",
-            top: 8,
-            right: 8,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "flex-end",
-            gap: 4,
-            pointerEvents: "none",
-          }}
-        >
-          {/* Score */}
-          <div
-            style={{
-              background: "rgba(0,0,0,0.6)",
-              border: "1px solid rgba(0,180,255,0.3)",
-              borderRadius: 8,
-              padding: "4px 10px",
-              fontFamily: "var(--font-mono, monospace)",
-              fontSize: 14,
-              fontWeight: 700,
-              color: "#00d2ff",
-            }}
-          >
-            {gameState.score}
-          </div>
-
-          {/* Combo/Streak */}
-          {((gameState.combo || 0) > 1 || (gameState.streak || 0) > 1) && (
-            <div
-              style={{
-                background: "rgba(0,0,0,0.5)",
-                border: "1px solid rgba(255,200,0,0.4)",
-                borderRadius: 6,
-                padding: "2px 8px",
-                fontSize: 11,
-                fontWeight: 700,
-                color: "#ffc800",
-                fontFamily: "var(--font-mono, monospace)",
-              }}
-            >
-              x{gameState.combo || gameState.streak}
-            </div>
-          )}
-
-          {/* Kills (arena) */}
-          {tab === "pvp" && (gameState.kills || 0) > 0 && (
-            <div style={{ fontSize: 10, color: "#ff4444", fontFamily: "var(--font-mono, monospace)" }}>
-              {gameState.kills} {lang === "tr" ? "öldürme" : "kills"}
-            </div>
-          )}
-
-          {/* Boss HP bar (live events) */}
-          {gameState.mechanic === "boss_fight" && gameState.bossHp != null && (
-            <div style={{ width: 80, background: "rgba(0,0,0,0.6)", borderRadius: 4, padding: 2, border: "1px solid rgba(255,60,60,0.4)" }}>
-              <div style={{ fontSize: 8, color: "#ff6666", fontFamily: "var(--font-mono, monospace)", marginBottom: 2, textAlign: "center" }}>
-                BOSS {gameState.phase && `P${gameState.phase}`}
-              </div>
-              <div style={{ height: 6, borderRadius: 3, background: "rgba(255,0,0,0.2)", overflow: "hidden" }}>
-                <div style={{ height: "100%", borderRadius: 3, background: (gameState.bossHp / (gameState.bossMaxHp || 1)) > 0.3 ? "#ff4444" : "#ff0000", width: `${Math.max(0, ((gameState.bossHp) / (gameState.bossMaxHp || 1)) * 100)}%`, transition: "width 0.2s" }} />
-              </div>
-            </div>
-          )}
-
-          {/* Timer (trophy race) */}
-          {gameState.mechanic === "trophy_race" && gameState.timeLeft != null && (
-            <div style={{ background: "rgba(0,0,0,0.6)", border: `1px solid ${(gameState.timeLeft || 0) < 10 ? "rgba(255,60,60,0.5)" : "rgba(255,200,0,0.4)"}`, borderRadius: 6, padding: "2px 8px", fontSize: 12, fontWeight: 700, color: (gameState.timeLeft || 0) < 10 ? "#ff4444" : "#ffc800", fontFamily: "var(--font-mono, monospace)" }}>
-              {gameState.timeLeft}s
-            </div>
-          )}
-
-          {/* Round indicator */}
-          {gameState.round != null && gameState.round > 0 && gameState.mechanic !== "boss_fight" && (
-            <div style={{ fontSize: 10, color: "#aa88ff", fontFamily: "var(--font-mono, monospace)" }}>
-              {lang === "tr" ? "Tur" : "R"} {gameState.round}
-            </div>
-          )}
-
-          {/* Timing indicator (market) */}
-          {gameState.timing && (
-            <div style={{ fontSize: 10, fontWeight: 700, fontFamily: "var(--font-mono, monospace)", color: gameState.timing === "perfect" ? "#00ff88" : gameState.timing === "good" ? "#ffc800" : "#888" }}>
-              {gameState.timing === "perfect" ? "PERFECT!" : gameState.timing === "good" ? "GOOD" : ""}
-            </div>
-          )}
-
-          {/* Showing pattern/recipe overlay */}
-          {(gameState.showingPattern || gameState.showingRecipe || gameState.showingSequence) && (
-            <div style={{ background: "rgba(0,0,0,0.5)", border: "1px solid rgba(150,100,255,0.3)", borderRadius: 6, padding: "2px 8px", fontSize: 9, color: "#aa88ff", fontFamily: "var(--font-mono, monospace)" }}>
-              {lang === "tr" ? "İzle..." : "Watch..."}
-            </div>
-          )}
-
-          {/* Missed targets (stealth) */}
-          {gameState.mechanic === "stealth_scan" && (gameState.missed || 0) > 0 && (
-            <div style={{ fontSize: 9, color: "#ff6644", fontFamily: "var(--font-mono, monospace)" }}>
-              {gameState.missed} {lang === "tr" ? "kaçırıldı" : "missed"}
-            </div>
-          )}
-
-          {/* Generic progress counter */}
-          {(gameState.crystalsCollected || 0) > 0 && !gameState.mechanic?.includes("boss") && (
-            <div style={{ fontSize: 10, color: "#00ff88", fontFamily: "var(--font-mono, monospace)" }}>
-              {gameState.crystalsCollected}/{gameState.totalCrystals}
-            </div>
-          )}
-
-          {/* Points flash */}
-          {gameState.lastPoints && gameState.lastPoints > 0 && (
-            <div
-              key={gameState.score}
-              style={{
-                fontSize: 14,
-                fontWeight: 700,
-                color:
-                  gameState.lastType === "rc"
-                    ? "#e040fb"
-                    : gameState.lastType === "hc"
-                      ? "#00d2ff"
-                      : "#00ff88",
-                animation: "nexusFadeUp 0.8s ease-out forwards",
-                fontFamily: "var(--font-mono, monospace)",
-              }}
-            >
-              +{gameState.lastPoints}
-            </div>
-          )}
-
-          {/* Claim button */}
-          {gameState.score >= 10 && (
-            <button
-              onClick={claimRewards}
-              disabled={claiming}
-              style={{
-                marginTop: 4,
-                padding: "6px 14px",
-                background: claiming
-                  ? "rgba(100,100,100,0.6)"
-                  : "linear-gradient(135deg, #00d6ff 0%, #00ff88 100%)",
-                border: "none",
-                borderRadius: 8,
-                color: "#0a0a1a",
-                fontWeight: 700,
-                fontSize: 11,
-                fontFamily: "var(--font-mono, monospace)",
-                cursor: claiming ? "wait" : "pointer",
-                textTransform: "uppercase",
-                letterSpacing: 1,
-                pointerEvents: "auto",
-              }}
-            >
-              {claiming
-                ? lang === "tr"
-                  ? "Talep ediliyor..."
-                  : "Claiming..."
-                : lang === "tr"
-                  ? "Ödül Al"
-                  : "Claim"}
-            </button>
-          )}
-
-          {/* Claim result */}
-          {claimResult && (
-            <div
-              style={{
-                background: "rgba(0,0,0,0.7)",
-                border: "1px solid rgba(0,255,136,0.5)",
-                borderRadius: 8,
-                padding: "4px 10px",
-                textAlign: "right",
-                animation: "nexusFadeUp 2s ease-out forwards",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 9,
-                  color: "rgba(0,255,136,0.8)",
-                  textTransform: "uppercase",
-                  letterSpacing: 1,
-                  fontFamily: "var(--font-mono, monospace)",
-                }}
-              >
-                {lang === "tr" ? "Alındı!" : "Claimed!"}
-              </div>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: "#fff",
-                  marginTop: 2,
-                  fontFamily: "var(--font-mono, monospace)",
-                }}
-              >
-                {claimResult.reward.sc > 0 && (
-                  <span style={{ color: "#00ff88" }}>
-                    +{claimResult.reward.sc} SC{" "}
-                  </span>
-                )}
-                {claimResult.reward.hc > 0 && (
-                  <span style={{ color: "#00d2ff" }}>
-                    +{claimResult.reward.hc} HC{" "}
-                  </span>
-                )}
-                {claimResult.reward.rc > 0 && (
-                  <span style={{ color: "#e040fb" }}>
-                    +{claimResult.reward.rc} RC
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Tap hint */}
-      {!loading && !error && (!gameState || gameState.score === 0) && (
-        <div
-          style={{
-            position: "absolute",
-            bottom: 8,
-            left: "50%",
-            transform: "translateX(-50%)",
-            background: "rgba(0,0,0,0.5)",
-            borderRadius: 6,
-            padding: "4px 12px",
-            color: "rgba(255,255,255,0.4)",
-            fontSize: 10,
-            fontFamily: "var(--font-mono, monospace)",
-            pointerEvents: "none",
-          }}
-        >
-          {lang === "tr"
-            ? (tab === "pvp" ? "Drone'lara vur ve yok et"
-              : tab === "tasks" ? "Hedefler belirdiğinde hızlıca dokun"
-              : tab === "forge" ? "Elementleri tarif sırasına göre dokun"
-              : tab === "exchange" ? "Zirve değerinde orbları yakala"
-              : tab === "season" ? "Kupaları sırayla topla"
-              : tab === "events" ? "Çekirdeğe vur, tehlikelerden kaçın"
-              : "Sıralamayı izle ve tekrarla")
-            : (tab === "pvp" ? "Hit drones to destroy them"
-              : tab === "tasks" ? "Scan targets before they vanish"
-              : tab === "forge" ? "Tap elements in recipe order"
-              : tab === "exchange" ? "Tap orbs at peak value"
-              : tab === "season" ? "Collect trophies in sequence"
-              : tab === "events" ? "Hit the core, dodge danger orbs"
-              : "Watch the sequence and repeat it")}
-        </div>
-      )}
     </div>
   );
 }
