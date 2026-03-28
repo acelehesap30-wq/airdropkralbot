@@ -268,32 +268,18 @@ export function ExchangePanel(props: ExchangePanelProps) {
         ))}
       </div>
 
-      {/* Price Predictor Mini Game */}
+      {/* Price Predictor Mini Game — Always visible */}
       <div style={{ margin: "16px 0" }}>
-        {!showGame ? (
-          <button
-            onClick={() => setShowGame(true)}
-            style={{
-              width: "100%",
-              background: "linear-gradient(135deg, rgba(16,185,129,0.1), rgba(5,150,105,0.1))",
-              border: "1px solid rgba(16,185,129,0.2)",
-              borderRadius: 12,
-              padding: "14px 16px",
-              color: "#10B981",
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-            }}
-          >
-            📈 {isTr ? "Fiyat Tahmincisi Oyna — SC Kazan!" : "Play Price Predictor — Earn SC!"}
-          </button>
-        ) : (
-          <PricePredictor lang={props.lang} auth={props.auth} currentPrice={nxtPrice} onClose={() => setShowGame(false)} />
-        )}
+        <div className="akrCard akrCardGlow" style={{ padding: "8px 12px 4px", marginBottom: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 18 }}>📈</span>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#10B981" }}>{isTr ? "Fiyat Tahmincisi" : "Price Predictor"}</div>
+              <div style={{ fontSize: 10, opacity: 0.5 }}>{isTr ? "NXT fiyatını tahmin et · SC kazan" : "Predict NXT price · Earn SC"}</div>
+            </div>
+          </div>
+        </div>
+        <PricePredictor lang={props.lang} auth={props.auth} currentPrice={nxtPrice} onClose={() => setShowGame(false)} />
       </div>
     </section>
   );

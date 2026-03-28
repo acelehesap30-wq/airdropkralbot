@@ -504,32 +504,18 @@ export function TasksPanel(props: TasksPanelProps) {
         </section>
       </div>
 
-      {/* Airdrop Catcher Mini Game */}
+      {/* Airdrop Catcher — Always visible */}
       <div style={{ margin: "16px 0" }}>
-        {!showGame ? (
-          <button
-            onClick={() => setShowGame(true)}
-            style={{
-              width: "100%",
-              background: "linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,140,0,0.1))",
-              border: "1px solid rgba(255,215,0,0.2)",
-              borderRadius: 12,
-              padding: "14px 16px",
-              color: "#FFD700",
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-            }}
-          >
-            🪂 {props.lang === "tr" ? "Airdrop Avcısı Oyna — SC Kazan!" : "Play Airdrop Catcher — Earn SC!"}
-          </button>
-        ) : (
-          <AirdropCatcher lang={props.lang} auth={props.auth} onClose={() => setShowGame(false)} />
-        )}
+        <div className="akrCard akrCardGlow" style={{ padding: "8px 12px 4px", marginBottom: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 18 }}>🪂</span>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#FFD700" }}>{props.lang === "tr" ? "Airdrop Avcısı" : "Airdrop Catcher"}</div>
+              <div style={{ fontSize: 10, opacity: 0.5 }}>{props.lang === "tr" ? "Düşen ödülleri yakala · SC kazan" : "Catch falling rewards · Earn SC"}</div>
+            </div>
+          </div>
+        </div>
+        <AirdropCatcher lang={props.lang} auth={props.auth} onClose={() => setShowGame(false)} />
       </div>
 
       {/* Quest Chains — Blueprint §10 */}

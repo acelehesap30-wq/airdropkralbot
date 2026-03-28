@@ -346,9 +346,28 @@ export function SeasonPanel(props: SeasonPanelProps) {
         )}
       </div>
 
+      {/* StreakChallenge — Featured Game */}
+      <div className="akrCard akrCardGlow" style={{ padding: "8px 12px 4px", marginBottom: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 18 }}>🎯</span>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#00d2ff" }}>{props.lang === "tr" ? "Seri Mücadelesi" : "Streak Challenge"}</div>
+            <div style={{ fontSize: 10, opacity: 0.5 }}>{props.lang === "tr" ? "Zamanlama halkası · 20 tur · SC kazan" : "Timing ring · 20 rounds · Earn SC"}</div>
+          </div>
+        </div>
+      </div>
       <StreakChallenge lang={props.lang} />
 
       {/* Tournament Bracket — Blueprint §season_hall */}
+      <div className="akrCard akrCardGlow" style={{ padding: "8px 12px 4px", marginBottom: 0, marginTop: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 18 }}>🏆</span>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#ffd700" }}>{props.lang === "tr" ? "Turnuva Bracketi" : "Tournament Bracket"}</div>
+            <div style={{ fontSize: 10, opacity: 0.5 }}>{props.lang === "tr" ? "Sezon turnuva ağacı · Sıralama" : "Season tournament tree · Rankings"}</div>
+          </div>
+        </div>
+      </div>
       <TournamentBracket lang={props.lang} auth={props.auth} />
     </section>
   );

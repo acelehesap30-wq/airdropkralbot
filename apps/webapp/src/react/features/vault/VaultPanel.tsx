@@ -662,32 +662,18 @@ export function VaultPanel(props: VaultPanelProps) {
         </div>
       </details>
 
-      {/* Hash Racer Mini Game */}
+      {/* Hash Racer Mini Game — Always visible */}
       <div style={{ margin: "16px 0" }}>
-        {!showGame ? (
-          <button
-            onClick={() => setShowGame(true)}
-            style={{
-              width: "100%",
-              background: "linear-gradient(135deg, rgba(168,85,247,0.1), rgba(124,58,237,0.1))",
-              border: "1px solid rgba(168,85,247,0.2)",
-              borderRadius: 12,
-              padding: "14px 16px",
-              color: "#A855F7",
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-            }}
-          >
-            ⛏️ {props.lang === "tr" ? "Hash Yarışçısı Oyna — SC Kazan!" : "Play Hash Racer — Earn SC!"}
-          </button>
-        ) : (
-          <HashRacer lang={props.lang} onClose={() => setShowGame(false)} />
-        )}
+        <div className="akrCard akrCardGlow" style={{ padding: "8px 12px 4px", marginBottom: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 18 }}>⛏️</span>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#A855F7" }}>{props.lang === "tr" ? "Hash Yarışçısı" : "Hash Racer"}</div>
+              <div style={{ fontSize: 10, opacity: 0.5 }}>{props.lang === "tr" ? "Hash blokları kazan · SC ödülü" : "Mine hash blocks · Earn SC"}</div>
+            </div>
+          </div>
+        </div>
+        <HashRacer lang={props.lang} onClose={() => setShowGame(false)} />
       </div>
 
       {!view.has_data ? <p className="akrMuted">{t(props.lang, "vault_empty")}</p> : null}
