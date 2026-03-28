@@ -87,16 +87,16 @@ module.exports = {
            GROUP BY chest_type`,
           [userId]
         );
-        const cooldownMap: Record<string, Date> = {};
-        res.rows.forEach((r: any) => { cooldownMap[r.chest_type] = new Date(r.last_opened); });
+        const cooldownMap = {};
+        res.rows.forEach((r) => { cooldownMap[r.chest_type] = new Date(r.last_opened); });
 
         // Fetch SC and HC balances
         const balRes = await pool.query(
           `SELECT currency, balance FROM currency_balances WHERE user_id = $1 AND currency IN ('SC','HC')`,
           [userId]
         );
-        const balances: Record<string, number> = {};
-        balRes.rows.forEach((r: any) => { balances[r.currency] = Number(r.balance); });
+        const balances = {};
+        balRes.rows.forEach((r) => { balances[r.currency] = Number(r.balance); });
 
         const now = Date.now();
         const chestList = Object.entries(CHESTS).map(([type, def]) => {
