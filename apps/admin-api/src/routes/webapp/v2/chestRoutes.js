@@ -135,7 +135,7 @@ module.exports = {
         const authErr = await verifyWebAppAuth(uid, ts, sig);
         if (authErr) return reply.status(401).send({ success: false, error: authErr });
 
-        const def = CHESTS[chest_type as keyof typeof CHESTS];
+        const def = CHESTS[chest_type];
         if (!def) return reply.status(400).send({ success: false, error: "invalid_chest_type" });
 
         const profile = await getProfileByTelegram(uid);
@@ -218,7 +218,7 @@ module.exports = {
           [userId, chest_type, loot.sc, loot.hc, loot.rc, loot.label]
         );
 
-        for (const [currency, amount] of [["SC", loot.sc], ["HC", loot.hc], ["RC", loot.rc]] as [string, number][]) {
+        for (const [currency, amount] of [["SC", loot.sc], ["HC", loot.hc], ["RC", loot.rc]]) {
           if (amount <= 0) continue;
           await client.query(
             `INSERT INTO currency_ledger (user_id, currency, amount, source, ref_type, note)
