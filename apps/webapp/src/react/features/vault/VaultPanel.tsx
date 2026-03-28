@@ -662,15 +662,14 @@ export function VaultPanel(props: VaultPanelProps) {
         </div>
       </details>
 
-      {/* Hash Racer Mini Game — Always visible */}
-      <div style={{ margin: "16px 0" }}>
-        <div className="akrCard akrCardGlow" style={{ padding: "8px 12px 4px", marginBottom: 8 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 18 }}>⛏️</span>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#A855F7" }}>{props.lang === "tr" ? "Hash Yarışçısı" : "Hash Racer"}</div>
-              <div style={{ fontSize: 10, opacity: 0.5 }}>{props.lang === "tr" ? "Hash blokları kazan · SC ödülü" : "Mine hash blocks · Earn SC"}</div>
-            </div>
+      {/* Hash Racer Mini Game — Featured Game */}
+      <div className="akrCard akrCardGlow" style={{ marginTop: 16 }}>
+        <div className="akrFeaturedHeader">
+          <div className="akrFeaturedIcon">⛏️</div>
+          <div>
+            <div className="akrFeaturedTitle">{props.lang === "tr" ? "Hash Yarışçısı" : "Hash Racer"}</div>
+            <div className="akrFeaturedSub">{props.lang === "tr" ? "3D matrix · Hash blokları kazan · SC ödülü" : "3D matrix · Mine hash blocks · Earn SC"}</div>
+            <div className="akrFeaturedBadge">⛏️ MINE</div>
           </div>
         </div>
         <HashRacer lang={props.lang} onClose={() => setShowGame(false)} />

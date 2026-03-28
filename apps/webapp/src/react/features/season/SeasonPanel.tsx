@@ -347,28 +347,30 @@ export function SeasonPanel(props: SeasonPanelProps) {
       </div>
 
       {/* StreakChallenge — Featured Game */}
-      <div className="akrCard akrCardGlow" style={{ padding: "8px 12px 4px", marginBottom: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 18 }}>🎯</span>
+      <div className="akrCard akrCardGlow">
+        <div className="akrFeaturedHeader">
+          <div className="akrFeaturedIcon">🎯</div>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#00d2ff" }}>{props.lang === "tr" ? "Seri Mücadelesi" : "Streak Challenge"}</div>
-            <div style={{ fontSize: 10, opacity: 0.5 }}>{props.lang === "tr" ? "Zamanlama halkası · 20 tur · SC kazan" : "Timing ring · 20 rounds · Earn SC"}</div>
+            <div className="akrFeaturedTitle">{props.lang === "tr" ? "Seri Mücadelesi" : "Streak Challenge"}</div>
+            <div className="akrFeaturedSub">{props.lang === "tr" ? "3D zamanlama halkası · 20 tur · SC kazan" : "3D timing ring · 20 rounds · Earn SC"}</div>
+            <div className="akrFeaturedBadge">⚡ STREAK</div>
           </div>
         </div>
+        <StreakChallenge lang={props.lang} />
       </div>
-      <StreakChallenge lang={props.lang} />
 
       {/* Tournament Bracket — Blueprint §season_hall */}
-      <div className="akrCard akrCardGlow" style={{ padding: "8px 12px 4px", marginBottom: 0, marginTop: 12 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 18 }}>🏆</span>
+      <div className="akrCard akrCardGlow" style={{ marginTop: 12 }}>
+        <div className="akrFeaturedHeader">
+          <div className="akrFeaturedIcon">🏆</div>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#ffd700" }}>{props.lang === "tr" ? "Turnuva Bracketi" : "Tournament Bracket"}</div>
-            <div style={{ fontSize: 10, opacity: 0.5 }}>{props.lang === "tr" ? "Sezon turnuva ağacı · Sıralama" : "Season tournament tree · Rankings"}</div>
+            <div className="akrFeaturedTitle">{props.lang === "tr" ? "Turnuva Bracketi" : "Tournament Bracket"}</div>
+            <div className="akrFeaturedSub">{props.lang === "tr" ? "Sezon turnuva ağacı · Sıralama" : "Season tournament tree · Rankings"}</div>
+            <div className="akrFeaturedBadge">🏆 SEASON</div>
           </div>
         </div>
+        <TournamentBracket lang={props.lang} auth={props.auth} />
       </div>
-      <TournamentBracket lang={props.lang} auth={props.auth} />
     </section>
   );
 }

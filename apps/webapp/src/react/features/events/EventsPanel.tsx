@@ -250,16 +250,17 @@ export function EventsPanel(props: EventsPanelProps) {
       )}
 
       {/* QuickMatch — Featured Game */}
-      <div className="akrCard akrCardGlow" style={{ padding: "8px 12px 4px", marginBottom: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 18 }}>🃏</span>
+      <div className="akrCard akrCardGlow">
+        <div className="akrFeaturedHeader">
+          <div className="akrFeaturedIcon">🃏</div>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#00d2ff" }}>{isTr ? "Hızlı Eşleşme" : "Quick Match"}</div>
-            <div style={{ fontSize: 10, opacity: 0.5 }}>{isTr ? "Kartları eşle · Hafıza oyunu · SC kazan" : "Match cards · Memory game · Earn SC"}</div>
+            <div className="akrFeaturedTitle">{isTr ? "Hızlı Eşleşme" : "Quick Match"}</div>
+            <div className="akrFeaturedSub">{isTr ? "3D kartları eşle · Hafıza oyunu · SC kazan" : "Match 3D cards · Memory game · Earn SC"}</div>
+            <div className="akrFeaturedBadge">🧠 MEMORY</div>
           </div>
         </div>
+        <QuickMatch lang={props.lang} />
       </div>
-      <QuickMatch lang={props.lang} />
 
       {/* Event stats summary */}
       <div className="akrCard">

@@ -5649,3 +5649,84 @@ hr, .akrDivider {
   padding-top: 12px;
   border-top: 1px solid rgba(0, 214, 255, 0.06);
 }
+
+/* ═══════════════════════════════════════════════
+   FEATURED GAME PROMOTION v2
+   ═══════════════════════════════════════════════ */
+.akrCardGlow {
+  position: relative;
+  border: 1px solid rgba(0, 214, 255, 0.25) !important;
+  background: linear-gradient(160deg, rgba(0, 214, 255, 0.06), rgba(99, 102, 241, 0.04), rgba(8, 22, 43, 0.95)) !important;
+  overflow: hidden;
+  animation: akrFeaturedPulse 3s ease-in-out infinite;
+}
+
+.akrCardGlow::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 200%; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(0, 214, 255, 0.6), rgba(167, 139, 250, 0.4), transparent);
+  animation: akrFeaturedScan 4s ease-in-out infinite;
+}
+
+@keyframes akrFeaturedPulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(0, 214, 255, 0.06); }
+  50% { box-shadow: 0 0 36px rgba(0, 214, 255, 0.14); }
+}
+
+@keyframes akrFeaturedScan {
+  0% { left: -100%; }
+  50%, 100% { left: 100%; }
+}
+
+.akrFeaturedHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, rgba(0, 214, 255, 0.06), rgba(167, 139, 250, 0.04));
+  border-radius: 14px;
+  position: relative;
+  overflow: hidden;
+}
+
+.akrFeaturedHeader::after {
+  content: ''; position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+  width: 6px; height: 6px; border-radius: 50%;
+  background: rgba(47, 255, 181, 0.7); box-shadow: 0 0 10px rgba(47, 255, 181, 0.5);
+  animation: akrLiveDot 1.5s ease-in-out infinite;
+}
+
+@keyframes akrLiveDot {
+  0%, 100% { opacity: 0.4; transform: translateY(-50%) scale(1); }
+  50% { opacity: 1; transform: translateY(-50%) scale(1.3); }
+}
+
+.akrFeaturedIcon {
+  font-size: 26px; width: 44px; height: 44px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 13px;
+  background: linear-gradient(135deg, rgba(0, 214, 255, 0.12), rgba(167, 139, 250, 0.08));
+  border: 1px solid rgba(0, 214, 255, 0.2);
+  flex-shrink: 0;
+}
+
+.akrFeaturedTitle {
+  font-size: 14px; font-weight: 800; letter-spacing: 0.03em;
+  background: linear-gradient(135deg, #e9f5ff, #38d0ff);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  margin: 0;
+}
+
+.akrFeaturedSub {
+  font-size: 10px; color: var(--akr-muted); margin: 2px 0 0; opacity: 0.7;
+}
+
+.akrFeaturedBadge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 6px;
+  font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+  background: rgba(47, 255, 181, 0.1); border: 1px solid rgba(47, 255, 181, 0.25); color: #2fffb5;
+  margin-top: 3px;
+}

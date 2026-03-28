@@ -480,16 +480,17 @@ export function PvpPanel(props: PvpPanelProps) {
       </div>
 
       {/* Arena Challenge — Featured Game */}
-      <div className="akrCard akrCardGlow" style={{ padding: "8px 12px 4px", marginBottom: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 18 }}>⚔️</span>
+      <div className="akrCard akrCardGlow">
+        <div className="akrFeaturedHeader">
+          <div className="akrFeaturedIcon">⚔️</div>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#ff5f7f" }}>{props.lang === "tr" ? "Arena Mücadelesi" : "Arena Challenge"}</div>
-            <div style={{ fontSize: 10, opacity: 0.5 }}>{props.lang === "tr" ? "3 dalga · Drone imhası · Kombo puanı" : "3 waves · Drone destruction · Combo scoring"}</div>
+            <div className="akrFeaturedTitle">{props.lang === "tr" ? "Arena Mücadelesi" : "Arena Challenge"}</div>
+            <div className="akrFeaturedSub">{props.lang === "tr" ? "3 dalga · Drone imhası · Kombo puanı" : "3 waves · Drone destruction · Combo scoring"}</div>
+            <div className="akrFeaturedBadge">🎮 {props.lang === "tr" ? "CANLI" : "LIVE"}</div>
           </div>
         </div>
+        <ArenaChallenge lang={props.lang} />
       </div>
-      <ArenaChallenge lang={props.lang} />
 
       {props.advanced ? (
         <>

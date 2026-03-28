@@ -504,15 +504,14 @@ export function TasksPanel(props: TasksPanelProps) {
         </section>
       </div>
 
-      {/* Airdrop Catcher — Always visible */}
-      <div style={{ margin: "16px 0" }}>
-        <div className="akrCard akrCardGlow" style={{ padding: "8px 12px 4px", marginBottom: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 18 }}>🪂</span>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#FFD700" }}>{props.lang === "tr" ? "Airdrop Avcısı" : "Airdrop Catcher"}</div>
-              <div style={{ fontSize: 10, opacity: 0.5 }}>{props.lang === "tr" ? "Düşen ödülleri yakala · SC kazan" : "Catch falling rewards · Earn SC"}</div>
-            </div>
+      {/* Airdrop Catcher — Featured Game */}
+      <div className="akrCard akrCardGlow" style={{ marginTop: 16 }}>
+        <div className="akrFeaturedHeader">
+          <div className="akrFeaturedIcon">🪂</div>
+          <div>
+            <div className="akrFeaturedTitle">{props.lang === "tr" ? "Airdrop Avcısı" : "Airdrop Catcher"}</div>
+            <div className="akrFeaturedSub">{props.lang === "tr" ? "Düşen ödülleri yakala · SC kazan" : "Catch falling rewards · Earn SC"}</div>
+            <div className="akrFeaturedBadge">🎮 {props.lang === "tr" ? "OYNA" : "PLAY"}</div>
           </div>
         </div>
         <AirdropCatcher lang={props.lang} auth={props.auth} onClose={() => setShowGame(false)} />

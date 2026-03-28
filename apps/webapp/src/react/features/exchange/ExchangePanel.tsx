@@ -268,15 +268,14 @@ export function ExchangePanel(props: ExchangePanelProps) {
         ))}
       </div>
 
-      {/* Price Predictor Mini Game — Always visible */}
-      <div style={{ margin: "16px 0" }}>
-        <div className="akrCard akrCardGlow" style={{ padding: "8px 12px 4px", marginBottom: 8 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 18 }}>📈</span>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#10B981" }}>{isTr ? "Fiyat Tahmincisi" : "Price Predictor"}</div>
-              <div style={{ fontSize: 10, opacity: 0.5 }}>{isTr ? "NXT fiyatını tahmin et · SC kazan" : "Predict NXT price · Earn SC"}</div>
-            </div>
+      {/* Price Predictor — Featured Game */}
+      <div className="akrCard akrCardGlow" style={{ marginTop: 16 }}>
+        <div className="akrFeaturedHeader">
+          <div className="akrFeaturedIcon">📈</div>
+          <div>
+            <div className="akrFeaturedTitle">{isTr ? "Fiyat Tahmincisi" : "Price Predictor"}</div>
+            <div className="akrFeaturedSub">{isTr ? "NXT fiyatını tahmin et · SC kazan" : "Predict NXT price · Earn SC"}</div>
+            <div className="akrFeaturedBadge">📊 TRADE</div>
           </div>
         </div>
         <PricePredictor lang={props.lang} auth={props.auth} currentPrice={nxtPrice} onClose={() => setShowGame(false)} />
