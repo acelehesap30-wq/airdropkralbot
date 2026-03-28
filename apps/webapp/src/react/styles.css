@@ -887,6 +887,71 @@ body {
   box-shadow: 0 22px 54px rgba(74, 16, 28, 0.34);
 }
 
+/* ═══════════════ SUB-NAVIGATION & GAME CARDS ═══════════════ */
+
+/* Sub-tab bar inside panels */
+.akrSubNav {
+  display: flex;
+  gap: 4px;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.25);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  margin-bottom: 8px;
+  position: sticky;
+  top: 48px; /* below main tab bar */
+  z-index: 50;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Featured game card glow pulse */
+.akrCardGlow {
+  animation: akrCardGlowPulse 3s ease-in-out infinite;
+}
+
+@keyframes akrCardGlowPulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(0, 214, 255, 0.08); }
+  50%      { box-shadow: 0 0 32px rgba(0, 214, 255, 0.16); }
+}
+
+/* Featured header inside game cards */
+.akrFeaturedHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px 10px;
+}
+
+.akrFeaturedIcon {
+  font-size: 28px;
+  filter: drop-shadow(0 0 8px rgba(0, 214, 255, 0.5));
+}
+
+.akrFeaturedTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #e8f4ff;
+  letter-spacing: 0.5px;
+}
+
+.akrFeaturedSub {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 2px;
+}
+
+.akrFeaturedBadge {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 9px;
+  font-weight: 700;
+  background: rgba(0, 255, 136, 0.12);
+  color: #00ff88;
+  letter-spacing: 1px;
+}
+
 .akrSceneEntrySurface[data-light-profile="arena_scope"],
 .akrSceneTerminalConsole[data-light-profile="arena_scope"],
 .akrSceneInteractionModal[data-light-profile="arena_scope"] {
