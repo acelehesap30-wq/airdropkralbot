@@ -19,10 +19,35 @@ const TYPE_ICON: Record<CellType, string> = {
   sc: "💰", hc: "💎", rc: "🔮", nxt: "⭐", empty: "",
 };
 
-const COLS = 4, CW = 62, CH = 62, GAP = 6;
+/* ═══════════ ISOMETRIC 3D CONSTANTS ═══════════ */
+const COLS = 4;
 const W_CV = 300, H_CV = 340;
-const GX0 = Math.round((W_CV - (COLS * CW + (COLS - 1) * GAP)) / 2);
-const GY0 = 50;
+const IW = 60, IH = 30;        // iso tile width & vertical span
+const ISO_X = W_CV / 2;        // grid origin x (center)
+const ISO_Y = 120;              // grid origin y (where col=0,row=0 base sits)
+
+/** Back-to-front draw order for 4×4 iso grid */
+const ISO_DRAW_ORDER: number[] = (() => {
+  const order: number[] = [];
+  for (let d = 0; d <= 6; d++)
+    for (let c = 0; c < COLS; c++) {
+      const r = d - c;
+      if (r >= 0 && r < COLS) order.push(c + r * COLS);
+    }
+  return order;
+})();
+
+/** Grid (col,row) → screen (sx,sy) base position */
+function isoXY(col: number, row: number): [number, number] {
+  return [ISO_X + (col - row) * IW / 2, ISO_Y + (col + row) * IH / 2];
+}
+
+/** Block pixel height based on cell type & level */
+function getBlockH(cell: Cell): number {
+  if (cell.type === "empty") return 3;
+  if (cell.type === "nxt") return 30;
+  return 10 + cell.level * 8; // lv1→18, lv2→26, lv3→34
+}
 
 function randomCell(): Cell {
   const types: CellType[] = ["sc", "sc", "sc", "hc", "hc", "rc"];
@@ -34,9 +59,9 @@ type Particle = { x: number; y: number; vx: number; vy: number; life: number; ma
 type CellFlash = { idx: number; alpha: number; r: number; g: number; b: number };
 
 /**
- * ResourceMerge: Canvas 4×4 forge puzzle.
- * Merge same-type adjacent cells. Level 3 promotes: SC→HC→RC→NXT.
- * 30 seconds. Score + NXT bonus.
+ * ResourceMerge — Isometric 3D Forge Puzzle
+ * Merge same-type adjacent blocks on an isometric grid.
+ * Level 3 promotes: SC→HC→RC→NXT.
  */
 export function ResourceMerge({ lang }: ResourceMergeProps) {
   const isTr = lang === "tr";
@@ -59,7 +84,7 @@ export function ResourceMerge({ lang }: ResourceMergeProps) {
     flashes: [] as CellFlash[],
   });
 
-  // Canvas draw loop
+  /* ═══════════ CANVAS DRAW LOOP ═══════════ */
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -67,19 +92,118 @@ export function ResourceMerge({ lang }: ResourceMergeProps) {
     if (!ctx) return;
     let alive = true;
 
-    const cellCenter = (i: number): [number, number] => {
-      const col = i % COLS, row = Math.floor(i / COLS);
-      return [GX0 + col * (CW + GAP) + CW / 2, GY0 + row * (CH + GAP) + CH / 2];
-    };
+    /** Draw one isometric 3D block */
+    const drawIsoBlock = (col: number, row: number, cell: Cell, now: number) => {
+      const [sx, sy] = isoXY(col, row);
+      const [r, g, b] = TYPE_RGB[cell.type];
+      const idx = col + row * COLS;
+      const isSelected = stRef.current.selected === idx;
+      const isNxt = cell.type === "nxt";
+      const bh = getBlockH(cell) + (isNxt ? Math.sin(now * 0.004) * 3 : 0);
 
-    const drawRR = (x: number, y: number, w: number, h: number, r: number) => {
+      const topA = cell.type === "empty" ? 0.08 : (isNxt ? 0.78 + Math.sin(now * 0.003) * 0.12 : 0.55);
+      const leftA = topA * 0.55;
+      const rightA = topA * 0.38;
+
+      if (isSelected || isNxt) {
+        ctx.shadowBlur = isSelected ? 22 : 14;
+        ctx.shadowColor = `rgba(${r},${g},${b},${isSelected ? 0.9 : 0.65})`;
+      }
+
+      /* ── Top face (rhombus) ── */
       ctx.beginPath();
-      ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y);
-      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-      ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-      ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-      ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.moveTo(sx,           sy - bh - IH / 2); // north
+      ctx.lineTo(sx + IW / 2,  sy - bh);           // east
+      ctx.lineTo(sx,           sy - bh + IH / 2);  // south
+      ctx.lineTo(sx - IW / 2,  sy - bh);           // west
       ctx.closePath();
+
+      if (cell.type !== "empty") {
+        const tg = ctx.createLinearGradient(sx - IW / 2, sy - bh - IH / 2, sx + IW / 2, sy - bh + IH / 2);
+        tg.addColorStop(0, `rgba(${r},${g},${b},${topA * 1.3})`);
+        tg.addColorStop(0.5, `rgba(${r},${g},${b},${topA})`);
+        tg.addColorStop(1, `rgba(${r},${g},${b},${topA * 0.65})`);
+        ctx.fillStyle = tg;
+      } else {
+        ctx.fillStyle = `rgba(${r},${g},${b},${topA})`;
+      }
+      ctx.fill();
+      ctx.strokeStyle = `rgba(${r},${g},${b},${isSelected ? 0.95 : 0.35})`;
+      ctx.lineWidth = isSelected ? 2.5 : 0.8;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      if (bh > 4) {
+        /* ── Left face (SW side) ── */
+        ctx.beginPath();
+        ctx.moveTo(sx - IW / 2, sy - bh);           // top-west
+        ctx.lineTo(sx,           sy - bh + IH / 2);  // top-south
+        ctx.lineTo(sx,           sy + IH / 2);        // base-south
+        ctx.lineTo(sx - IW / 2, sy);                  // base-west
+        ctx.closePath();
+        const lg = ctx.createLinearGradient(sx - IW / 2, sy - bh, sx, sy + IH / 2);
+        lg.addColorStop(0, `rgba(${r},${g},${b},${leftA * 1.1})`);
+        lg.addColorStop(1, `rgba(${r},${g},${b},${leftA * 0.45})`);
+        ctx.fillStyle = lg;
+        ctx.fill();
+        ctx.strokeStyle = `rgba(${r},${g},${b},0.18)`;
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+
+        /* ── Right face (SE side) ── */
+        ctx.beginPath();
+        ctx.moveTo(sx,           sy - bh + IH / 2);  // top-south
+        ctx.lineTo(sx + IW / 2,  sy - bh);            // top-east
+        ctx.lineTo(sx + IW / 2,  sy);                  // base-east
+        ctx.lineTo(sx,           sy + IH / 2);         // base-south
+        ctx.closePath();
+        const rg = ctx.createLinearGradient(sx, sy - bh, sx + IW / 2, sy + IH / 2);
+        rg.addColorStop(0, `rgba(${r},${g},${b},${rightA * 1.0})`);
+        rg.addColorStop(1, `rgba(${r},${g},${b},${rightA * 0.35})`);
+        ctx.fillStyle = rg;
+        ctx.fill();
+        ctx.strokeStyle = `rgba(${r},${g},${b},0.12)`;
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+
+        /* ── Edge highlights ── */
+        // Front edge (bottom-center vertical)
+        ctx.beginPath();
+        ctx.moveTo(sx, sy - bh + IH / 2);
+        ctx.lineTo(sx, sy + IH / 2);
+        ctx.strokeStyle = `rgba(${r},${g},${b},0.25)`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      /* ── Icon on top face ── */
+      if (cell.type !== "empty") {
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.font = isNxt ? "16px serif" : "13px serif";
+        ctx.fillText(TYPE_ICON[cell.type], sx, sy - bh);
+
+        // Level badge
+        if (cell.level > 1 && cell.type !== "nxt") {
+          ctx.font = "bold 8px monospace";
+          ctx.fillStyle = `rgba(${r},${g},${b},0.9)`;
+          ctx.fillText(`Lv${cell.level}`, sx + IW / 4 - 2, sy - bh + 6);
+        }
+      }
+
+      /* ── Selected pulse ring (iso diamond) ── */
+      if (isSelected) {
+        const pulse = 0.35 + 0.45 * Math.sin(now * 0.008);
+        ctx.beginPath();
+        ctx.moveTo(sx,           sy - bh - IH / 2 - 6);
+        ctx.lineTo(sx + IW / 2 + 5, sy - bh);
+        ctx.lineTo(sx,           sy - bh + IH / 2 + 6);
+        ctx.lineTo(sx - IW / 2 - 5, sy - bh);
+        ctx.closePath();
+        ctx.strokeStyle = `rgba(${r},${g},${b},${pulse})`;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
     };
 
     const draw = () => {
@@ -88,110 +212,110 @@ export function ResourceMerge({ lang }: ResourceMergeProps) {
       const now = performance.now();
       ctx.clearRect(0, 0, W_CV, H_CV);
 
-      // BG
-      ctx.fillStyle = "#0a0514"; ctx.fillRect(0, 0, W_CV, H_CV);
-      // Forge ambient glow
-      const fg = ctx.createRadialGradient(W_CV / 2, H_CV / 2, 20, W_CV / 2, H_CV / 2, W_CV * 0.8);
-      fg.addColorStop(0, "rgba(255,100,0,0.05)"); fg.addColorStop(1, "rgba(0,0,0,0)");
-      ctx.fillStyle = fg; ctx.fillRect(0, 0, W_CV, H_CV);
+      /* ── Background ── */
+      const bg = ctx.createLinearGradient(0, 0, 0, H_CV);
+      bg.addColorStop(0, "#0a0514");
+      bg.addColorStop(0.6, "#080312");
+      bg.addColorStop(1, "#0c0618");
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, W_CV, H_CV);
+
+      /* ── Ambient forge glow ── */
+      const ambGlow = ctx.createRadialGradient(W_CV / 2, ISO_Y + 50, 10, W_CV / 2, ISO_Y + 50, W_CV * 0.65);
+      ambGlow.addColorStop(0, "rgba(255,100,0,0.06)");
+      ambGlow.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = ambGlow;
+      ctx.fillRect(0, 0, W_CV, H_CV);
+
+      /* ── Subtle isometric floor grid ── */
+      ctx.save();
+      ctx.globalAlpha = 0.035;
+      ctx.strokeStyle = "#ff8800";
+      ctx.lineWidth = 0.5;
+      for (let r2 = -1; r2 <= COLS + 1; r2++) {
+        const [x1, y1] = isoXY(-1, r2);
+        const [x2, y2] = isoXY(COLS + 1, r2);
+        ctx.beginPath(); ctx.moveTo(x1, y1 + IH / 2); ctx.lineTo(x2, y2 + IH / 2); ctx.stroke();
+      }
+      for (let c2 = -1; c2 <= COLS + 1; c2++) {
+        const [x1, y1] = isoXY(c2, -1);
+        const [x2, y2] = isoXY(c2, COLS + 1);
+        ctx.beginPath(); ctx.moveTo(x1, y1 + IH / 2); ctx.lineTo(x2, y2 + IH / 2); ctx.stroke();
+      }
+      ctx.restore();
 
       if (st.phase === "playing" || st.phase === "done") {
-        // Timer bar
-        const barW = W_CV - 40, barH = 6, barX = 20, barY = 12;
+        /* ── Timer bar ── */
+        const barW = W_CV - 40, barH = 5, barX = 20, barY = 14;
         ctx.fillStyle = "rgba(255,255,255,0.06)";
-        drawRR(barX, barY, barW, barH, 3); ctx.fill();
+        ctx.fillRect(barX, barY, barW, barH);
         const pct = st.timeLeft / 30;
-        const [tr, tg, tb] = st.timeLeft <= 10 ? [255, 68, 68] : [255, 136, 0];
-        ctx.fillStyle = `rgb(${tr},${tg},${tb})`;
-        drawRR(barX, barY, barW * pct, barH, 3); ctx.fill();
+        const [tr2, tg2, tb2] = st.timeLeft <= 10 ? [255, 68, 68] : [255, 136, 0];
+        ctx.fillStyle = `rgb(${tr2},${tg2},${tb2})`;
+        ctx.fillRect(barX, barY, barW * pct, barH);
 
-        // HUD text
-        ctx.font = "bold 11px monospace"; ctx.textBaseline = "top";
+        /* ── HUD text ── */
+        ctx.font = "bold 11px monospace";
+        ctx.textBaseline = "top";
         ctx.textAlign = "left";
-        ctx.fillStyle = `rgb(${tr},${tg},${tb})`;
-        ctx.fillText(`⏱${st.timeLeft}s`, 20, 22);
+        ctx.fillStyle = `rgb(${tr2},${tg2},${tb2})`;
+        ctx.fillText(`⏱${st.timeLeft}s`, 20, 24);
         ctx.textAlign = "center";
         ctx.fillStyle = "#ff8800";
-        ctx.fillText(`${st.score} pts`, W_CV / 2, 22);
+        ctx.fillText(`${st.score} pts`, W_CV / 2, 24);
         ctx.textAlign = "right";
         ctx.fillStyle = "#ffd700";
-        ctx.fillText(`⭐${st.nxtCreated} NXT`, W_CV - 20, 22);
+        ctx.fillText(`⭐${st.nxtCreated} NXT`, W_CV - 20, 24);
 
-        // Grid
-        for (let i = 0; i < 16; i++) {
+        /* ── ISOMETRIC 3D GRID (back→front) ── */
+        ctx.textBaseline = "middle";
+        for (const i of ISO_DRAW_ORDER) {
           const cell = st.grid[i];
           if (!cell) continue;
-          const [cx, cy] = cellCenter(i);
-          const x = cx - CW / 2, y = cy - CH / 2;
-          const [cr, cg, cb] = TYPE_RGB[cell.type];
-          const isSelected = st.selected === i;
-          const isNxt = cell.type === "nxt";
-
-          ctx.save();
-
-          // Glow
-          ctx.shadowColor = `rgba(${cr},${cg},${cb},${isSelected ? 0.8 : isNxt ? 0.6 + 0.3 * Math.sin(now * 0.005) : 0.3})`;
-          ctx.shadowBlur = isSelected ? 20 : isNxt ? 16 : 6;
-
-          // Cell body
-          drawRR(x + 1, y + 1, CW - 2, CH - 2, 8);
-          const bg = ctx.createLinearGradient(x, y, x + CW, y + CH);
-          bg.addColorStop(0, `rgba(${cr},${cg},${cb},${cell.type === "empty" ? 0.04 : 0.15})`);
-          bg.addColorStop(1, `rgba(${cr},${cg},${cb},${cell.type === "empty" ? 0.02 : 0.06})`);
-          ctx.fillStyle = bg; ctx.fill();
-
-          // Border
-          const borderAlpha = isSelected ? 0.9 : isNxt ? 0.6 + 0.3 * Math.sin(now * 0.005) : 0.3;
-          ctx.strokeStyle = `rgba(${cr},${cg},${cb},${borderAlpha})`;
-          ctx.lineWidth = isSelected ? 2.5 : 1.2;
-          ctx.stroke();
-          ctx.shadowBlur = 0;
-
-          // Icon
-          if (cell.type !== "empty") {
-            ctx.textAlign = "center"; ctx.textBaseline = "middle";
-            ctx.font = isNxt ? "22px serif" : "18px serif";
-            ctx.fillText(TYPE_ICON[cell.type], cx, cy);
-
-            // Level subscript
-            if (cell.level > 1 && cell.type !== "nxt") {
-              ctx.font = "bold 10px monospace";
-              ctx.fillStyle = `rgba(${cr},${cg},${cb},0.9)`;
-              ctx.textAlign = "right"; ctx.textBaseline = "bottom";
-              ctx.fillText(`${cell.level}`, cx + CW / 2 - 5, cy + CH / 2 - 3);
-            }
-          }
-
-          // Selected ring pulse
-          if (isSelected) {
-            const pulse = 0.4 + 0.4 * Math.sin(now * 0.008);
-            ctx.beginPath(); ctx.arc(cx, cy, CW / 2 + 4, 0, Math.PI * 2);
-            ctx.strokeStyle = `rgba(${cr},${cg},${cb},${pulse})`; ctx.lineWidth = 2; ctx.stroke();
-          }
-
-          ctx.restore();
+          drawIsoBlock(i % COLS, Math.floor(i / COLS), cell, now);
         }
 
-        // Cell flashes
+        /* ── Cell flash overlays (iso diamond) ── */
         for (const f of st.flashes) {
-          f.alpha -= 0.04;
+          f.alpha -= 0.03;
           if (f.alpha <= 0) continue;
-          const [fx, fy] = cellCenter(f.idx);
+          const col = f.idx % COLS, row = Math.floor(f.idx / COLS);
+          const [fx, fy] = isoXY(col, row);
+          const cell = st.grid[f.idx];
+          const bh = cell ? getBlockH(cell) : 10;
           ctx.save();
-          ctx.globalAlpha = f.alpha;
-          ctx.beginPath(); ctx.arc(fx, fy, CW / 2 + 8, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(${f.r},${f.g},${f.b},0.3)`; ctx.fill();
+          ctx.globalAlpha = f.alpha * 0.5;
+          ctx.beginPath();
+          ctx.moveTo(fx,           fy - bh - IH / 2 - 10);
+          ctx.lineTo(fx + IW / 2 + 8, fy - bh);
+          ctx.lineTo(fx,           fy - bh + IH / 2 + 10);
+          ctx.lineTo(fx - IW / 2 - 8, fy - bh);
+          ctx.closePath();
+          ctx.fillStyle = `rgba(${f.r},${f.g},${f.b},0.35)`;
+          ctx.fill();
           ctx.restore();
         }
         st.flashes = st.flashes.filter(f => f.alpha > 0);
+
+        /* ── "FORGE" label at bottom ── */
+        ctx.save();
+        ctx.globalAlpha = 0.08;
+        ctx.font = "bold 38px monospace";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "bottom";
+        ctx.fillStyle = "#ff8800";
+        ctx.fillText("FORGE", W_CV / 2, H_CV - 8);
+        ctx.restore();
       }
 
-      // Particles
+      /* ── Particles ── */
       for (const p of st.particles) {
         p.x += p.vx; p.y += p.vy; p.vy += 0.1; p.life--;
         const a = p.life / p.maxLife;
-        ctx.beginPath(); ctx.arc(p.x, p.y, 2.8 * a + 0.5, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${p.r},${p.g},${p.b},${a})`; ctx.fill();
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 2.8 * a + 0.5, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${p.r},${p.g},${p.b},${a})`;
+        ctx.fill();
       }
       st.particles = st.particles.filter(p => p.life > 0);
 
@@ -201,15 +325,21 @@ export function ResourceMerge({ lang }: ResourceMergeProps) {
     return () => { alive = false; cancelAnimationFrame(rafRef.current); };
   }, []);
 
+  /* ═══════════ GAME LOGIC ═══════════ */
+
   const isAdjacent = (a: number, b: number) => {
     const rA = Math.floor(a / 4), cA = a % 4;
     const rB = Math.floor(b / 4), cB = b % 4;
     return (Math.abs(rA - rB) + Math.abs(cA - cB)) === 1;
   };
 
+  /** Get iso screen center of cell's TOP FACE for burst placement */
   const cellCenter = (i: number): [number, number] => {
     const col = i % COLS, row = Math.floor(i / COLS);
-    return [GX0 + col * (CW + GAP) + CW / 2, GY0 + row * (CH + GAP) + CH / 2];
+    const [sx, sy] = isoXY(col, row);
+    const cell = stRef.current.grid[i];
+    const bh = cell ? getBlockH(cell) : 10;
+    return [sx, sy - bh];
   };
 
   const addBurst = (idx: number, rgb: [number, number, number], count: number) => {
@@ -219,13 +349,14 @@ export function ResourceMerge({ lang }: ResourceMergeProps) {
       const a = Math.random() * Math.PI * 2;
       const spd = 1.5 + Math.random() * 4;
       st.particles.push({
-        x: cx, y: cy, vx: Math.cos(a) * spd, vy: Math.sin(a) * spd - 1,
+        x: cx, y: cy, vx: Math.cos(a) * spd, vy: Math.sin(a) * spd - 1.5,
         life: 22 + Math.floor(Math.random() * 16), maxLife: 38,
         r: rgb[0], g: rgb[1], b: rgb[2],
       });
     }
   };
 
+  /** Click handler — iso diamond hit-test (front→back) */
   const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const st = stRef.current;
     if (st.phase !== "playing") return;
@@ -235,60 +366,75 @@ export function ResourceMerge({ lang }: ResourceMergeProps) {
     const mx = (e.clientX - rect.left) * (W_CV / rect.width);
     const my = (e.clientY - rect.top) * (H_CV / rect.height);
 
-    // Find clicked cell
-    for (let i = 0; i < 16; i++) {
-      const col = i % COLS, row = Math.floor(i / COLS);
-      const x = GX0 + col * (CW + GAP), y = GY0 + row * (CH + GAP);
-      if (mx < x || mx > x + CW || my < y || my > y + CH) continue;
+    // Front-to-back hit test: check nearest cells first
+    let hitIdx = -1;
+    for (let oi = ISO_DRAW_ORDER.length - 1; oi >= 0; oi--) {
+      const i = ISO_DRAW_ORDER[oi];
       const cell = st.grid[i];
-      if (!cell || cell.type === "empty" || cell.type === "nxt") {
-        st.selected = null; return;
+      if (!cell) continue;
+      const col = i % COLS, row = Math.floor(i / COLS);
+      const [sx, sy] = isoXY(col, row);
+      const bh = getBlockH(cell);
+      // Diamond (rhombus) hit test on top face
+      const dx = mx - sx;
+      const dy2 = my - (sy - bh);
+      if (Math.abs(dx) / (IW / 2) + Math.abs(dy2) / (IH / 2) <= 1.15) {
+        hitIdx = i; break;
       }
-
-      if (st.selected === null) { st.selected = i; return; }
-      if (st.selected === i) { st.selected = null; return; }
-
-      const selCell = st.grid[st.selected];
-      if (selCell.type === cell.type && selCell.level === cell.level && isAdjacent(st.selected, i)) {
-        const newLevel = cell.level + 1;
-        const srcIdx = st.selected;
-
-        // Burst from source
-        addBurst(srcIdx, TYPE_RGB[cell.type], 10);
-
-        if (newLevel >= 3) {
-          const promoMap: Record<string, CellType> = { sc: "hc", hc: "rc", rc: "nxt" };
-          const promoted: CellType = (promoMap[cell.type] as CellType) || "nxt";
-
-          if (promoted === "nxt") {
-            st.grid[i] = { type: "nxt", level: 1 };
-            st.nxtCreated++; st.score += 25;
-            setNxtCreated(st.nxtCreated); setScore(st.score);
-            // Gold mega burst
-            addBurst(i, [255, 215, 0], 28);
-          } else {
-            st.grid[i] = { type: promoted, level: 1 };
-            st.score += 10; setScore(st.score);
-            // Promotion burst with new color
-            addBurst(i, TYPE_RGB[promoted], 18);
-          }
-          // Flash on target
-          const [pr, pg, pb] = TYPE_RGB[promoted === "nxt" ? "nxt" : promoted];
-          st.flashes.push({ idx: i, alpha: 1, r: pr, g: pg, b: pb });
-        } else {
-          st.grid[i] = { type: cell.type, level: newLevel };
-          st.score += 5; setScore(st.score);
-          addBurst(i, TYPE_RGB[cell.type], 8);
-          const [cr, cg, cb] = TYPE_RGB[cell.type];
-          st.flashes.push({ idx: i, alpha: 0.7, r: cr, g: cg, b: cb });
+      // Also check side faces (below top face, within block body)
+      if (bh > 4 && my >= sy - bh + IH / 2 && my <= sy + IH / 2) {
+        if (mx >= sx - IW / 2 && mx <= sx + IW / 2) {
+          hitIdx = i; break;
         }
-
-        st.grid[srcIdx] = randomCell();
-        st.merges++; setMerges(st.merges);
       }
-      st.selected = null;
-      return;
     }
+    if (hitIdx < 0) return;
+
+    const i = hitIdx;
+    const cell = st.grid[i];
+    if (!cell || cell.type === "empty" || cell.type === "nxt") {
+      st.selected = null; return;
+    }
+
+    if (st.selected === null) { st.selected = i; return; }
+    if (st.selected === i)    { st.selected = null; return; }
+
+    const selCell = st.grid[st.selected];
+    if (selCell && selCell.type === cell.type && selCell.level === cell.level && isAdjacent(st.selected, i)) {
+      const newLevel = cell.level + 1;
+      const srcIdx = st.selected;
+
+      // Burst from source cell
+      addBurst(srcIdx, TYPE_RGB[cell.type], 10);
+
+      if (newLevel >= 3) {
+        const promoMap: Record<string, CellType> = { sc: "hc", hc: "rc", rc: "nxt" };
+        const promoted: CellType = (promoMap[cell.type] as CellType) || "nxt";
+
+        if (promoted === "nxt") {
+          st.grid[i] = { type: "nxt", level: 1 };
+          st.nxtCreated++; st.score += 25;
+          setNxtCreated(st.nxtCreated); setScore(st.score);
+          addBurst(i, [255, 215, 0], 28);
+        } else {
+          st.grid[i] = { type: promoted, level: 1 };
+          st.score += 10; setScore(st.score);
+          addBurst(i, TYPE_RGB[promoted], 18);
+        }
+        const [pr, pg, pb] = TYPE_RGB[promoted === "nxt" ? "nxt" : promoted];
+        st.flashes.push({ idx: i, alpha: 1, r: pr, g: pg, b: pb });
+      } else {
+        st.grid[i] = { type: cell.type, level: newLevel };
+        st.score += 5; setScore(st.score);
+        addBurst(i, TYPE_RGB[cell.type], 8);
+        const [cr, cg, cb] = TYPE_RGB[cell.type];
+        st.flashes.push({ idx: i, alpha: 0.7, r: cr, g: cg, b: cb });
+      }
+
+      st.grid[srcIdx] = randomCell();
+      st.merges++; setMerges(st.merges);
+    }
+    st.selected = null;
   }, []);
 
   const startGame = useCallback(() => {
@@ -321,14 +467,15 @@ export function ResourceMerge({ lang }: ResourceMergeProps) {
 
   useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
 
+  /* ═══════════ JSX ═══════════ */
   return (
     <div style={{ background: "rgba(10,5,20,0.98)", borderRadius: 20, overflow: "hidden", border: "1px solid rgba(255,136,0,0.15)" }}>
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: "rgba(255,136,0,0.04)", borderBottom: "1px solid rgba(255,136,0,0.08)" }}>
         <div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "#ff8800", letterSpacing: 2 }}>⚗️ NEXUS FORGE</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#ff8800", letterSpacing: 2 }}>⚗️ NEXUS FORGE 3D</div>
           <div style={{ fontSize: 10, color: "rgba(255,136,0,0.4)", marginTop: 1 }}>
-            {isTr ? "Birleştir · Yükselt · NXT üret" : "Merge · Evolve · Create NXT"}
+            {isTr ? "İzometrik blokları birleştir · NXT üret" : "Merge isometric blocks · Create NXT"}
           </div>
         </div>
         {phase === "playing" && (
@@ -345,8 +492,8 @@ export function ResourceMerge({ lang }: ResourceMergeProps) {
           <div style={{ fontSize: 44, marginBottom: 10, filter: "drop-shadow(0 0 16px #ff8800)" }}>⚗️</div>
           <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginBottom: 6, lineHeight: 1.6 }}>
             {isTr
-              ? "Aynı tipte komşu hücreleri birleştir. Seviye 3'te terfi: SC→HC→RC→NXT"
-              : "Merge adjacent same-type cells. Level 3 promotes: SC→HC→RC→NXT"}
+              ? "İzometrik 3D blokları eşleştir. Seviye 3'te terfi: SC→HC→RC→NXT"
+              : "Merge adjacent 3D blocks. Level 3 promotes: SC→HC→RC→NXT"}
           </div>
           <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: 14 }}>
             {(["sc", "hc", "rc", "nxt"] as CellType[]).map(t => {

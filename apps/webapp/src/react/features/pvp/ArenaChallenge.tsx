@@ -137,7 +137,7 @@ export function ArenaChallenge({ lang }: Props) {
       sg.addColorStop(1, "rgba(0,214,255,0)");
       ctx.fillStyle = sg; ctx.fillRect(0, 0, W, H);
 
-      // Targets
+      // ── 3D HOLOGRAPHIC SPHERE TARGETS ──
       for (const tgt of st.targets) {
         const age = (now - tgt.born) / tgt.ttl;
         if (age >= 1) { tgt.phase = "dying"; continue; }
@@ -151,35 +151,70 @@ export function ArenaChallenge({ lang }: Props) {
         const sz = tgt.size * pulse *
           (tgt.phase === "appear" ? 0.4 + 0.6 * Math.min(1, (now - tgt.born) / 240) : 1);
 
-        ctx.save();
-        ctx.shadowBlur = 28 * alpha;
-        ctx.shadowColor = `rgba(${tgt.r},${tgt.g},${tgt.b},${alpha})`;
+        const dr = Math.max(0, tgt.r - 90), dg = Math.max(0, tgt.g - 90), db = Math.max(0, tgt.b - 90);
 
+        ctx.save();
+        ctx.shadowBlur = 32 * alpha;
+        ctx.shadowColor = `rgba(${tgt.r},${tgt.g},${tgt.b},${alpha * 0.8})`;
+
+        // Orbit rings (tilted 3D perspective)
         for (let ring = 0; ring < 3; ring++) {
-          const rr = sz * (1 + ring * 0.5);
-          const ra = alpha * Math.max(0, 0.5 - ring * 0.14) * Math.abs(Math.sin(now * 0.004 - ring));
-          ctx.beginPath(); ctx.arc(tgt.x, tgt.y, rr, 0, Math.PI * 2);
+          const rr = sz * (1.3 + ring * 0.45);
+          const ra = alpha * Math.max(0, 0.45 - ring * 0.12) * Math.abs(Math.sin(now * 0.004 - ring));
+          const tilt = 0.3 + ring * 0.12;
+          ctx.beginPath();
+          ctx.ellipse(tgt.x, tgt.y, rr, rr * tilt, now * 0.001 + ring * 1.2, 0, Math.PI * 2);
           ctx.strokeStyle = `rgba(${tgt.r},${tgt.g},${tgt.b},${ra})`;
-          ctx.lineWidth = 1; ctx.stroke();
+          ctx.lineWidth = 1.2; ctx.stroke();
         }
 
-        const grd = ctx.createRadialGradient(tgt.x, tgt.y, 0, tgt.x, tgt.y, sz);
-        grd.addColorStop(0, `rgba(${tgt.r},${tgt.g},${tgt.b},${0.95 * alpha})`);
-        grd.addColorStop(0.5, `rgba(${tgt.r},${tgt.g},${tgt.b},${0.5 * alpha})`);
-        grd.addColorStop(1, `rgba(${tgt.r},${tgt.g},${tgt.b},0)`);
+        // 3D sphere body (specular lighting from top-left)
+        const hlx = tgt.x - sz * 0.32, hly = tgt.y - sz * 0.32;
+        const sphereGrad = ctx.createRadialGradient(hlx, hly, 0, tgt.x, tgt.y, sz);
+        sphereGrad.addColorStop(0,    `rgba(255,255,255,${0.75 * alpha})`);
+        sphereGrad.addColorStop(0.18, `rgba(${tgt.r},${tgt.g},${tgt.b},${0.92 * alpha})`);
+        sphereGrad.addColorStop(0.65, `rgba(${tgt.r},${tgt.g},${tgt.b},${0.55 * alpha})`);
+        sphereGrad.addColorStop(1,    `rgba(${dr},${dg},${db},${0.85 * alpha})`);
         ctx.beginPath(); ctx.arc(tgt.x, tgt.y, sz, 0, Math.PI * 2);
-        ctx.fillStyle = grd; ctx.fill();
+        ctx.fillStyle = sphereGrad; ctx.fill();
 
-        ctx.strokeStyle = `rgba(${tgt.r},${tgt.g},${tgt.b},${0.55 * alpha})`;
-        ctx.lineWidth = 0.8;
-        ctx.beginPath(); ctx.moveTo(tgt.x - sz * 1.6, tgt.y); ctx.lineTo(tgt.x + sz * 1.6, tgt.y); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(tgt.x, tgt.y - sz * 1.6); ctx.lineTo(tgt.x, tgt.y + sz * 1.6); ctx.stroke();
+        // Rim light (bottom-right edge glow)
+        const rimGrad = ctx.createRadialGradient(tgt.x, tgt.y, sz * 0.55, tgt.x, tgt.y, sz * 1.05);
+        rimGrad.addColorStop(0, "rgba(0,0,0,0)");
+        rimGrad.addColorStop(0.85, `rgba(${tgt.r},${tgt.g},${tgt.b},0)`);
+        rimGrad.addColorStop(1, `rgba(${tgt.r},${tgt.g},${tgt.b},${0.3 * alpha})`);
+        ctx.beginPath(); ctx.arc(tgt.x, tgt.y, sz, 0, Math.PI * 2);
+        ctx.fillStyle = rimGrad; ctx.fill();
+
+        // Specular dot (bright highlight)
+        ctx.beginPath();
+        ctx.arc(hlx + sz * 0.08, hly + sz * 0.08, sz * 0.15, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${0.65 * alpha})`;
+        ctx.fill();
+
+        // Crosshair lines (holographic)
+        ctx.globalAlpha = 0.35 * alpha;
+        ctx.strokeStyle = `rgba(${tgt.r},${tgt.g},${tgt.b},0.6)`;
+        ctx.lineWidth = 0.7;
+        ctx.beginPath(); ctx.moveTo(tgt.x - sz * 1.8, tgt.y); ctx.lineTo(tgt.x - sz * 0.5, tgt.y); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(tgt.x + sz * 0.5, tgt.y); ctx.lineTo(tgt.x + sz * 1.8, tgt.y); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(tgt.x, tgt.y - sz * 1.8); ctx.lineTo(tgt.x, tgt.y - sz * 0.5); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(tgt.x, tgt.y + sz * 0.5); ctx.lineTo(tgt.x, tgt.y + sz * 1.8); ctx.stroke();
+        ctx.globalAlpha = 1;
+
+        // Ground shadow
+        ctx.beginPath();
+        ctx.ellipse(tgt.x, tgt.y + sz * 1.4, sz * 0.7, sz * 0.15, 0, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${tgt.r},${tgt.g},${tgt.b},${0.08 * alpha})`;
+        ctx.fill();
+
         ctx.restore();
 
+        // Timer arc (active phase countdown)
         if (tgt.phase === "active") {
           ctx.beginPath();
-          ctx.arc(tgt.x, tgt.y, sz * 1.3, -Math.PI / 2, -Math.PI / 2 + (1 - age) * Math.PI * 2);
-          ctx.strokeStyle = `rgba(${tgt.r},${tgt.g},${tgt.b},0.35)`;
+          ctx.arc(tgt.x, tgt.y, sz * 1.35, -Math.PI / 2, -Math.PI / 2 + (1 - age) * Math.PI * 2);
+          ctx.strokeStyle = `rgba(${tgt.r},${tgt.g},${tgt.b},0.4)`;
           ctx.lineWidth = 2.5; ctx.stroke();
         }
       }

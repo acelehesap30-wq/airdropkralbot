@@ -163,24 +163,35 @@ export function NexusRush({ lang, auth }: NexusRushProps) {
       ctx.fillStyle = "#04000f";
       ctx.fillRect(0, 0, W_CV, H_CV);
 
-      // ── Tunnel rings (perspective scroll) ──
+      // ── 3D CYLINDRICAL TUNNEL RINGS ──
       const tn = Date.now() * 0.001;
       st.tunnelPhase += 0.018;
       const RING_COLORS = ["#00d2ff","#e040fb","#00ff88","#ffd700"];
-      for (let i = 0; i < 10; i++) {
-        const t = ((i / 10 + st.tunnelPhase) % 1);
-        const scale = t;                             // 0=far, 1=near
-        if (scale < 0.05) continue;
-        const rw = W_CV * scale;
-        const rh = H_CV * scale * 0.85;
-        const rx = (W_CV - rw) * 0.5;
-        const ry = (H_CV - rh) * 0.5;
-        const alpha = scale * 0.22;
+      const VP_X = W_CV / 2, VP_Y = H_CV * 0.12; // vanishing point
+      for (let i = 0; i < 12; i++) {
+        const t = ((i / 12 + st.tunnelPhase) % 1);
+        if (t < 0.04) continue;
+        const scale = t * t; // quadratic = more perspective bunching near VP
+        const rw = W_CV * 0.52 * scale;
+        const rh = H_CV * 0.48 * scale;
+        const cx = VP_X;
+        const cy = VP_Y + (H_CV * 0.42 - VP_Y) * scale;
+        const alpha = scale * 0.28;
+        const col = RING_COLORS[i % RING_COLORS.length];
         ctx.save();
+        // Outer glow ring
+        ctx.globalAlpha = alpha * 0.35;
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 6 + scale * 8;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rw, rh * 0.45, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        // Inner sharp ring
         ctx.globalAlpha = alpha;
-        ctx.strokeStyle = RING_COLORS[i % RING_COLORS.length];
-        ctx.lineWidth = 1.2;
-        ctx.strokeRect(rx, ry, rw, rh);
+        ctx.lineWidth = 1.5 + scale * 2;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rw, rh * 0.45, 0, 0, Math.PI * 2);
+        ctx.stroke();
         ctx.restore();
       }
 
@@ -193,15 +204,16 @@ export function NexusRush({ lang, auth }: NexusRushProps) {
         ctx.restore();
       }
 
-      // ── Lane dividers ──
+      // ── PERSPECTIVE LANE DIVIDERS (converge at VP) ──
       for (let c = 0; c <= LANE_COUNT; c++) {
-        const x = c * colW;
+        const xBottom = c * colW;
+        const xTop = VP_X + (xBottom - VP_X) * 0.08; // converge toward VP
         ctx.save();
-        ctx.globalAlpha = 0.12;
+        ctx.globalAlpha = 0.14;
         ctx.strokeStyle = "#00d2ff";
         ctx.lineWidth = 0.8;
         ctx.setLineDash([5, 8]);
-        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H_CV); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(xTop, 0); ctx.lineTo(xBottom, H_CV); ctx.stroke();
         ctx.setLineDash([]);
         ctx.restore();
       }
@@ -240,15 +252,39 @@ export function NexusRush({ lang, auth }: NexusRushProps) {
             ctx.save();
             ctx.shadowBlur = 18;
             ctx.shadowColor = obs.color;
+
+            // Perspective factor: how much to converge toward VP
+            const vpFrac = Math.max(0.05, obs.y / H_CV);
+            const topH = 4 + vpFrac * 8; // depth of top face (thicker when near)
+
+            // Front face (main gradient block)
             const grad = ctx.createLinearGradient(bx, obs.y, bx, obs.y + blockH);
-            grad.addColorStop(0, obs.color + "ee");
+            grad.addColorStop(0, obs.color + "dd");
             grad.addColorStop(1, obs.color + "44");
             ctx.fillStyle = grad;
             ctx.fillRect(bx, obs.y, bw, blockH);
-            // top highlight
-            ctx.globalAlpha = 0.4;
+
+            // 3D Top face (perspective trapezoid converging toward VP)
+            const leftVP  = VP_X + (bx - VP_X) * (vpFrac * 0.82);
+            const rightVP = VP_X + (bx + bw - VP_X) * (vpFrac * 0.82);
+            ctx.beginPath();
+            ctx.moveTo(bx, obs.y);              // front-left
+            ctx.lineTo(bx + bw, obs.y);         // front-right
+            ctx.lineTo(rightVP, obs.y - topH);  // back-right (toward VP)
+            ctx.lineTo(leftVP, obs.y - topH);   // back-left (toward VP)
+            ctx.closePath();
+            ctx.fillStyle = obs.color + "88";
+            ctx.fill();
+
+            // Top face highlight edge
+            ctx.strokeStyle = obs.color + "55";
+            ctx.lineWidth = 0.8;
+            ctx.stroke();
+
+            // Front face bottom edge glow
+            ctx.globalAlpha = 0.35;
             ctx.fillStyle = "#fff";
-            ctx.fillRect(bx + 2, obs.y, bw - 4, 2);
+            ctx.fillRect(bx + 2, obs.y, bw - 4, 1.5);
             ctx.restore();
 
             // ── Collision ──
@@ -342,36 +378,61 @@ export function NexusRush({ lang, auth }: NexusRushProps) {
         if (st.invincible > 0) st.invincible--;
         const showPlayer = st.invincible <= 0 || Math.floor(st.invincible / 7) % 2 === 0;
 
-        // ── Draw player ship ──
+        // ── Draw 3D player ship ──
         if (showPlayer) {
           ctx.save();
-          ctx.shadowBlur = 28;
-          ctx.shadowColor = st.collectFlash > 0 ? "#ffd700" : "#00d2ff";
           const px = st.lane * colW + colW / 2;
-          const shipH = 18;
-          // Main body
-          ctx.fillStyle = st.collectFlash > 0 ? "#ffd700" : "#00d2ff";
+          const shipH = 20;
+          const accentColor = st.collectFlash > 0 ? "#ffd700" : "#00d2ff";
+          const accentRGB = st.collectFlash > 0 ? "255,215,0" : "0,210,255";
+
+          ctx.shadowBlur = 30;
+          ctx.shadowColor = accentColor;
+
+          // Ship body with gradient (3D lit from top-left)
+          const bodyGrad = ctx.createLinearGradient(px - 12, PLAYER_Y - shipH, px + 12, PLAYER_Y + 8);
+          bodyGrad.addColorStop(0, `rgba(${accentRGB},1)`);
+          bodyGrad.addColorStop(0.5, `rgba(${accentRGB},0.7)`);
+          bodyGrad.addColorStop(1, `rgba(${accentRGB},0.35)`);
+          ctx.fillStyle = bodyGrad;
           ctx.beginPath();
           ctx.moveTo(px, PLAYER_Y - shipH);
-          ctx.lineTo(px - 11, PLAYER_Y + 6);
-          ctx.lineTo(px - 4, PLAYER_Y + 1);
-          ctx.lineTo(px, PLAYER_Y + 7);
-          ctx.lineTo(px + 4, PLAYER_Y + 1);
-          ctx.lineTo(px + 11, PLAYER_Y + 6);
+          ctx.lineTo(px - 13, PLAYER_Y + 6);
+          ctx.lineTo(px - 5, PLAYER_Y + 1);
+          ctx.lineTo(px, PLAYER_Y + 8);
+          ctx.lineTo(px + 5, PLAYER_Y + 1);
+          ctx.lineTo(px + 13, PLAYER_Y + 6);
           ctx.closePath();
           ctx.fill();
-          // Cockpit glow
-          ctx.globalAlpha = 0.9;
-          ctx.fillStyle = "#fff";
+
+          // Wing edge highlights
+          ctx.strokeStyle = `rgba(${accentRGB},0.6)`;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          // Cockpit dome (3D sphere highlight)
+          const ckpGrad = ctx.createRadialGradient(px - 1, PLAYER_Y - shipH * 0.4, 0, px, PLAYER_Y - shipH * 0.3, 4);
+          ckpGrad.addColorStop(0, "rgba(255,255,255,0.95)");
+          ckpGrad.addColorStop(0.5, `rgba(${accentRGB},0.7)`);
+          ckpGrad.addColorStop(1, "rgba(0,0,0,0.2)");
+          ctx.fillStyle = ckpGrad;
           ctx.beginPath();
-          ctx.arc(px, PLAYER_Y - shipH * 0.35, 3, 0, Math.PI * 2);
+          ctx.arc(px, PLAYER_Y - shipH * 0.35, 3.5, 0, Math.PI * 2);
           ctx.fill();
-          // Engine trail
-          ctx.globalAlpha = 0.6;
-          ctx.fillStyle = "#e040fb";
-          ctx.beginPath();
-          ctx.ellipse(px, PLAYER_Y + 10, 5, 12 + Math.random()*4, 0, 0, Math.PI * 2);
-          ctx.fill();
+
+          // Engine exhaust (dual trails)
+          ctx.shadowBlur = 0;
+          for (const dx of [-4, 4]) {
+            const trailH = 10 + Math.random() * 6;
+            const exGrad = ctx.createRadialGradient(px + dx, PLAYER_Y + 10, 0, px + dx, PLAYER_Y + 10 + trailH / 2, 6);
+            exGrad.addColorStop(0, "rgba(224,64,251,0.8)");
+            exGrad.addColorStop(0.5, "rgba(224,64,251,0.3)");
+            exGrad.addColorStop(1, "rgba(224,64,251,0)");
+            ctx.fillStyle = exGrad;
+            ctx.beginPath();
+            ctx.ellipse(px + dx, PLAYER_Y + 10, 3.5, trailH, 0, 0, Math.PI * 2);
+            ctx.fill();
+          }
           ctx.restore();
         }
         if (st.collectFlash > 0) st.collectFlash--;
