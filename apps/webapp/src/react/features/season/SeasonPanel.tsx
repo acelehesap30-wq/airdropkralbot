@@ -42,6 +42,7 @@ export function SeasonPanel(props: SeasonPanelProps) {
   const dailyCap = Number((daily as any)?.daily_cap || 5);
   const seasonDay = daysLeft > 0 ? 30 - daysLeft + 1 : 1;
 
+  const [subView, setSubView] = useState<"play" | "season">("play");
   const [claimingTier, setClaimingTier] = useState<number | null>(null);
   const [claimResult, setClaimResult] = useState<{ msg: string; ok: boolean } | null>(null);
   const [claimedTiers, setClaimedTiers] = useState<Set<number>>(new Set());
@@ -160,217 +161,243 @@ export function SeasonPanel(props: SeasonPanelProps) {
         </div>
       </div>
 
-      {/* Stats grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
-        {[
-          { label: isTr ? "G\u00fcn" : "Day", value: `D${seasonDay}`, color: "#00d2ff" },
-          { label: isTr ? "Seri" : "Streak", value: `${streak}d`, color: "#ff4444" },
-          { label: isTr ? "G\u00f6rev" : "Tasks", value: `${tasksDone}/${dailyCap}`, color: "#00ff88" },
-          { label: "Tier", value: `T${tier}`, color: "#ffd700" }
-        ].map((s) => (
-          <div key={s.label} className="akrCard" style={{ textAlign: "center", padding: "8px 4px" }}>
-            <div style={{ fontSize: 9, opacity: 0.5, textTransform: "uppercase" }}>{s.label}</div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: s.color, fontFamily: "var(--font-mono, monospace)" }}>
-              {s.value}
-            </div>
-          </div>
+      {/* Sub-navigation tabs */}
+      <div style={{ display: "flex", gap: 4, padding: "8px 12px", background: "rgba(0,0,0,0.25)", borderBottom: "1px solid rgba(255,255,255,0.04)", marginBottom: 8 }}>
+        {([
+          { key: "play" as const, icon: "\ud83c\udfae", l: isTr ? "Oyunlar" : "Games" },
+          { key: "season" as const, icon: "\ud83c\udfc6", l: isTr ? "Sezon" : "Season" },
+        ]).map(tab => (
+          <button key={tab.key} onClick={() => setSubView(tab.key)} style={{
+            flex: 1, padding: "8px 4px", borderRadius: 8, border: "none",
+            background: subView === tab.key ? "rgba(255,215,0,0.12)" : "transparent",
+            color: subView === tab.key ? "#ffd700" : "rgba(255,255,255,0.35)",
+            fontSize: 11, fontWeight: 600, cursor: "pointer",
+            borderBottom: subView === tab.key ? "2px solid rgba(255,215,0,0.5)" : "2px solid transparent",
+          }}>
+            {tab.icon} {tab.l}
+          </button>
         ))}
       </div>
 
-      {/* Claim result flash */}
-      {claimResult && (
-        <div className="akrCard" style={{
-          borderColor: claimResult.ok ? "rgba(0,255,136,0.3)" : "rgba(255,68,68,0.3)",
-          textAlign: "center"
-        }}>
-          <div style={{
-            fontSize: 12, fontWeight: 600,
-            color: claimResult.ok ? "#00ff88" : "#ff6644",
-            fontFamily: "var(--font-mono, monospace)",
-            padding: "6px 0"
-          }}>
-            {claimResult.ok ? "\u2713 " : "\u2717 "}{claimResult.msg}
+      {subView === "play" && (
+        <>
+          {/* StreakChallenge — Featured Game */}
+          <div className="akrCard akrCardGlow">
+            <div className="akrFeaturedHeader">
+              <div className="akrFeaturedIcon">🎯</div>
+              <div>
+                <div className="akrFeaturedTitle">{props.lang === "tr" ? "Seri Mücadelesi" : "Streak Challenge"}</div>
+                <div className="akrFeaturedSub">{props.lang === "tr" ? "3D zamanlama halkası · 20 tur · SC kazan" : "3D timing ring · 20 rounds · Earn SC"}</div>
+                <div className="akrFeaturedBadge">⚡ STREAK</div>
+              </div>
+            </div>
+            <StreakChallenge lang={props.lang} />
           </div>
-        </div>
+
+          {/* Tournament Bracket — Blueprint §season_hall */}
+          <div className="akrCard akrCardGlow" style={{ marginTop: 12 }}>
+            <div className="akrFeaturedHeader">
+              <div className="akrFeaturedIcon">🏆</div>
+              <div>
+                <div className="akrFeaturedTitle">{props.lang === "tr" ? "Turnuva Bracketi" : "Tournament Bracket"}</div>
+                <div className="akrFeaturedSub">{props.lang === "tr" ? "Sezon turnuva ağacı · Sıralama" : "Season tournament tree · Rankings"}</div>
+                <div className="akrFeaturedBadge">🏆 SEASON</div>
+              </div>
+            </div>
+            <TournamentBracket lang={props.lang} auth={props.auth} />
+          </div>
+        </>
       )}
 
-      {/* Reward tiers */}
-      <div className="akrCard">
-        <div className="akrCardHeader">
-          <h3 className="akrCardTitle" style={{ fontSize: 13 }}>
-            {isTr ? "Sezon \u00d6d\u00fclleri" : "Season Rewards"}
-          </h3>
-        </div>
-        {TIERS.map((t) => {
-          const reached = points >= t.pts;
-          const claimed = claimedTiers.has(t.tier);
-          return (
-            <div key={t.tier} style={{
-              display: "flex", justifyContent: "space-between", alignItems: "center",
-              padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,0.05)",
-              opacity: reached ? 1 : 0.5
+      {subView === "season" && (
+        <>
+          {/* Stats grid */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+            {[
+              { label: isTr ? "G\u00fcn" : "Day", value: `D${seasonDay}`, color: "#00d2ff" },
+              { label: isTr ? "Seri" : "Streak", value: `${streak}d`, color: "#ff4444" },
+              { label: isTr ? "G\u00f6rev" : "Tasks", value: `${tasksDone}/${dailyCap}`, color: "#00ff88" },
+              { label: "Tier", value: `T${tier}`, color: "#ffd700" }
+            ].map((s) => (
+              <div key={s.label} className="akrCard" style={{ textAlign: "center", padding: "8px 4px" }}>
+                <div style={{ fontSize: 9, opacity: 0.5, textTransform: "uppercase" }}>{s.label}</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: s.color, fontFamily: "var(--font-mono, monospace)" }}>
+                  {s.value}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Claim result flash */}
+          {claimResult && (
+            <div className="akrCard" style={{
+              borderColor: claimResult.ok ? "rgba(0,255,136,0.3)" : "rgba(255,68,68,0.3)",
+              textAlign: "center"
             }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: "50%",
-                  background: reached ? `${t.color}15` : "rgba(255,255,255,0.03)",
-                  border: `2px solid ${reached ? t.color : "rgba(255,255,255,0.1)"}`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 16
-                }}>
-                  {reached ? t.icon : <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.3)" }}>{t.tier}</span>}
-                </div>
-                <div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: reached ? t.color : "inherit" }}>
-                    {isTr ? t.reward_tr : t.reward_en}
-                  </div>
-                  <div style={{ fontSize: 10, opacity: 0.5, fontFamily: "var(--font-mono, monospace)" }}>
-                    {t.pts.toLocaleString()} {isTr ? "puan" : "pts"}
-                    {reached && !claimed && (
-                      <span style={{ color: "#00ff88", marginLeft: 6 }}>{isTr ? "\u2022 Haz\u0131r" : "\u2022 Ready"}</span>
-                    )}
-                    {claimed && (
-                      <span style={{ color: "#ffd700", marginLeft: 6 }}>{isTr ? "\u2022 Topland\u0131" : "\u2022 Claimed"}</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-              {reached && !claimed && (
-                <button
-                  className="akrBtn akrBtnSm"
-                  style={{ fontSize: 10, minWidth: 64 }}
-                  disabled={claimingTier !== null}
-                  onClick={() => handleClaim(t.tier, t.mission_key)}
-                >
-                  {claimingTier === t.tier
-                    ? (isTr ? "\u0130\u015fleniyor..." : "Claiming...")
-                    : (isTr ? "Topla" : "Claim")}
-                </button>
-              )}
-              {claimed && (
-                <span style={{ fontSize: 10, color: "#ffd700", fontFamily: "var(--font-mono, monospace)" }}>
-                  \u2713
-                </span>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Daily challenge mini-section */}
-      <div className="akrCard">
-        <div className="akrCardHeader">
-          <h3 className="akrCardTitle" style={{ fontSize: 13 }}>
-            {isTr ? "G\u00fcnl\u00fck \u0130lerleme" : "Daily Progress"}
-          </h3>
-        </div>
-        <div style={{ padding: "8px 0" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-            <span style={{ fontSize: 11, opacity: 0.6 }}>
-              {isTr ? "G\u00f6revler" : "Tasks"}: {tasksDone}/{dailyCap}
-            </span>
-            <span style={{ fontSize: 11, color: tasksDone >= dailyCap ? "#00ff88" : "#00d2ff", fontFamily: "var(--font-mono, monospace)" }}>
-              {tasksDone >= dailyCap ? (isTr ? "Tamamland\u0131!" : "Complete!") : `${Math.round((tasksDone / dailyCap) * 100)}%`}
-            </span>
-          </div>
-          <div style={{ height: 6, borderRadius: 3, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
-            <div style={{
-              height: "100%", width: `${Math.min(100, (tasksDone / dailyCap) * 100)}%`,
-              borderRadius: 3, background: tasksDone >= dailyCap ? "#00ff88" : "#00d2ff",
-              transition: "width 0.3s ease"
-            }} />
-          </div>
-          <div style={{ fontSize: 10, opacity: 0.5, marginTop: 6 }}>
-            {isTr
-              ? `Streak ${streak} g\u00fcn \u2022 G\u00fcnl\u00fck g\u00f6rev tamamla ve sezon puan\u0131 kazan`
-              : `Streak ${streak} days \u2022 Complete daily tasks to earn season points`}
-          </div>
-        </div>
-      </div>
-
-      {/* Leaderboard */}
-      <div className="akrCard">
-        <div className="akrCardHeader">
-          <h3 className="akrCardTitle" style={{ fontSize: 13 }}>
-            {isTr ? "S\u0131ralama" : "Leaderboard"} — Top 10
-          </h3>
-        </div>
-        {lbLoading ? (
-          <div style={{ textAlign: "center", padding: 16, fontSize: 11, opacity: 0.5 }}>
-            {isTr ? "Y\u00fckleniyor..." : "Loading..."}
-          </div>
-        ) : leaderboard.length > 0 ? (
-          leaderboard.map((entry, i) => {
-            const isMe = rank > 0 && entry.rank === rank;
-            const medalColors = ["#ffd700", "#c0c0c0", "#cd7f32"];
-            return (
-              <div key={entry.rank} style={{
-                display: "flex", justifyContent: "space-between", alignItems: "center",
-                padding: isMe ? "6px 8px" : "6px 0",
-                borderBottom: i < leaderboard.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
-                background: isMe ? "rgba(0,210,255,0.06)" : "transparent",
-                borderRadius: isMe ? 4 : 0
+              <div style={{
+                fontSize: 12, fontWeight: 600,
+                color: claimResult.ok ? "#00ff88" : "#ff6644",
+                fontFamily: "var(--font-mono, monospace)",
+                padding: "6px 0"
               }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{
-                    fontSize: 12, fontWeight: 700, width: 24, textAlign: "center",
-                    color: i < 3 ? medalColors[i] : "rgba(255,255,255,0.4)"
-                  }}>
-                    {i < 3 ? ["🥇", "🥈", "🥉"][i] : `#${entry.rank}`}
-                  </span>
-                  <span style={{ fontSize: 12, fontWeight: isMe ? 700 : 400 }}>
-                    {entry.name}{isMe ? (isTr ? " (Sen)" : " (You)") : ""}
-                  </span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 10, opacity: 0.5 }}>T{entry.tier}</span>
-                  <span style={{ fontSize: 11, fontWeight: 600, fontFamily: "var(--font-mono, monospace)", color: "#00d2ff" }}>
-                    {entry.points.toLocaleString()}
-                  </span>
-                </div>
+                {claimResult.ok ? "\u2713 " : "\u2717 "}{claimResult.msg}
               </div>
-            );
-          })
-        ) : (
-          <div style={{ textAlign: "center", padding: 16, fontSize: 11, opacity: 0.5 }}>
-            {isTr ? "Hen\u00fcz s\u0131ralama verisi yok" : "No leaderboard data yet"}
-          </div>
-        )}
-        {rank > 0 && rank > 10 && (
-          <div style={{
-            textAlign: "center", padding: "8px 0", fontSize: 11, opacity: 0.6,
-            borderTop: "1px solid rgba(255,255,255,0.05)", marginTop: 4
-          }}>
-            {isTr ? `Senin s\u0131raman: #${rank}` : `Your rank: #${rank}`}
-          </div>
-        )}
-      </div>
+            </div>
+          )}
 
-      {/* StreakChallenge — Featured Game */}
-      <div className="akrCard akrCardGlow">
-        <div className="akrFeaturedHeader">
-          <div className="akrFeaturedIcon">🎯</div>
-          <div>
-            <div className="akrFeaturedTitle">{props.lang === "tr" ? "Seri Mücadelesi" : "Streak Challenge"}</div>
-            <div className="akrFeaturedSub">{props.lang === "tr" ? "3D zamanlama halkası · 20 tur · SC kazan" : "3D timing ring · 20 rounds · Earn SC"}</div>
-            <div className="akrFeaturedBadge">⚡ STREAK</div>
+          {/* Reward tiers */}
+          <div className="akrCard">
+            <div className="akrCardHeader">
+              <h3 className="akrCardTitle" style={{ fontSize: 13 }}>
+                {isTr ? "Sezon \u00d6d\u00fclleri" : "Season Rewards"}
+              </h3>
+            </div>
+            {TIERS.map((t) => {
+              const reached = points >= t.pts;
+              const claimed = claimedTiers.has(t.tier);
+              return (
+                <div key={t.tier} style={{
+                  display: "flex", justifyContent: "space-between", alignItems: "center",
+                  padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,0.05)",
+                  opacity: reached ? 1 : 0.5
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{
+                      width: 36, height: 36, borderRadius: "50%",
+                      background: reached ? `${t.color}15` : "rgba(255,255,255,0.03)",
+                      border: `2px solid ${reached ? t.color : "rgba(255,255,255,0.1)"}`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 16
+                    }}>
+                      {reached ? t.icon : <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.3)" }}>{t.tier}</span>}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: reached ? t.color : "inherit" }}>
+                        {isTr ? t.reward_tr : t.reward_en}
+                      </div>
+                      <div style={{ fontSize: 10, opacity: 0.5, fontFamily: "var(--font-mono, monospace)" }}>
+                        {t.pts.toLocaleString()} {isTr ? "puan" : "pts"}
+                        {reached && !claimed && (
+                          <span style={{ color: "#00ff88", marginLeft: 6 }}>{isTr ? "\u2022 Haz\u0131r" : "\u2022 Ready"}</span>
+                        )}
+                        {claimed && (
+                          <span style={{ color: "#ffd700", marginLeft: 6 }}>{isTr ? "\u2022 Topland\u0131" : "\u2022 Claimed"}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  {reached && !claimed && (
+                    <button
+                      className="akrBtn akrBtnSm"
+                      style={{ fontSize: 10, minWidth: 64 }}
+                      disabled={claimingTier !== null}
+                      onClick={() => handleClaim(t.tier, t.mission_key)}
+                    >
+                      {claimingTier === t.tier
+                        ? (isTr ? "\u0130\u015fleniyor..." : "Claiming...")
+                        : (isTr ? "Topla" : "Claim")}
+                    </button>
+                  )}
+                  {claimed && (
+                    <span style={{ fontSize: 10, color: "#ffd700", fontFamily: "var(--font-mono, monospace)" }}>
+                      \u2713
+                    </span>
+                  )}
+                </div>
+              );
+            })}
           </div>
-        </div>
-        <StreakChallenge lang={props.lang} />
-      </div>
 
-      {/* Tournament Bracket — Blueprint §season_hall */}
-      <div className="akrCard akrCardGlow" style={{ marginTop: 12 }}>
-        <div className="akrFeaturedHeader">
-          <div className="akrFeaturedIcon">🏆</div>
-          <div>
-            <div className="akrFeaturedTitle">{props.lang === "tr" ? "Turnuva Bracketi" : "Tournament Bracket"}</div>
-            <div className="akrFeaturedSub">{props.lang === "tr" ? "Sezon turnuva ağacı · Sıralama" : "Season tournament tree · Rankings"}</div>
-            <div className="akrFeaturedBadge">🏆 SEASON</div>
+          {/* Daily challenge mini-section */}
+          <div className="akrCard">
+            <div className="akrCardHeader">
+              <h3 className="akrCardTitle" style={{ fontSize: 13 }}>
+                {isTr ? "G\u00fcnl\u00fck \u0130lerleme" : "Daily Progress"}
+              </h3>
+            </div>
+            <div style={{ padding: "8px 0" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                <span style={{ fontSize: 11, opacity: 0.6 }}>
+                  {isTr ? "G\u00f6revler" : "Tasks"}: {tasksDone}/{dailyCap}
+                </span>
+                <span style={{ fontSize: 11, color: tasksDone >= dailyCap ? "#00ff88" : "#00d2ff", fontFamily: "var(--font-mono, monospace)" }}>
+                  {tasksDone >= dailyCap ? (isTr ? "Tamamland\u0131!" : "Complete!") : `${Math.round((tasksDone / dailyCap) * 100)}%`}
+                </span>
+              </div>
+              <div style={{ height: 6, borderRadius: 3, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+                <div style={{
+                  height: "100%", width: `${Math.min(100, (tasksDone / dailyCap) * 100)}%`,
+                  borderRadius: 3, background: tasksDone >= dailyCap ? "#00ff88" : "#00d2ff",
+                  transition: "width 0.3s ease"
+                }} />
+              </div>
+              <div style={{ fontSize: 10, opacity: 0.5, marginTop: 6 }}>
+                {isTr
+                  ? `Streak ${streak} g\u00fcn \u2022 G\u00fcnl\u00fck g\u00f6rev tamamla ve sezon puan\u0131 kazan`
+                  : `Streak ${streak} days \u2022 Complete daily tasks to earn season points`}
+              </div>
+            </div>
           </div>
-        </div>
-        <TournamentBracket lang={props.lang} auth={props.auth} />
-      </div>
+
+          {/* Leaderboard */}
+          <div className="akrCard">
+            <div className="akrCardHeader">
+              <h3 className="akrCardTitle" style={{ fontSize: 13 }}>
+                {isTr ? "S\u0131ralama" : "Leaderboard"} — Top 10
+              </h3>
+            </div>
+            {lbLoading ? (
+              <div style={{ textAlign: "center", padding: 16, fontSize: 11, opacity: 0.5 }}>
+                {isTr ? "Y\u00fckleniyor..." : "Loading..."}
+              </div>
+            ) : leaderboard.length > 0 ? (
+              leaderboard.map((entry, i) => {
+                const isMe = rank > 0 && entry.rank === rank;
+                const medalColors = ["#ffd700", "#c0c0c0", "#cd7f32"];
+                return (
+                  <div key={entry.rank} style={{
+                    display: "flex", justifyContent: "space-between", alignItems: "center",
+                    padding: isMe ? "6px 8px" : "6px 0",
+                    borderBottom: i < leaderboard.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
+                    background: isMe ? "rgba(0,210,255,0.06)" : "transparent",
+                    borderRadius: isMe ? 4 : 0
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{
+                        fontSize: 12, fontWeight: 700, width: 24, textAlign: "center",
+                        color: i < 3 ? medalColors[i] : "rgba(255,255,255,0.4)"
+                      }}>
+                        {i < 3 ? ["🥇", "🥈", "🥉"][i] : `#${entry.rank}`}
+                      </span>
+                      <span style={{ fontSize: 12, fontWeight: isMe ? 700 : 400 }}>
+                        {entry.name}{isMe ? (isTr ? " (Sen)" : " (You)") : ""}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 10, opacity: 0.5 }}>T{entry.tier}</span>
+                      <span style={{ fontSize: 11, fontWeight: 600, fontFamily: "var(--font-mono, monospace)", color: "#00d2ff" }}>
+                        {entry.points.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div style={{ textAlign: "center", padding: 16, fontSize: 11, opacity: 0.5 }}>
+                {isTr ? "Hen\u00fcz s\u0131ralama verisi yok" : "No leaderboard data yet"}
+              </div>
+            )}
+            {rank > 0 && rank > 10 && (
+              <div style={{
+                textAlign: "center", padding: "8px 0", fontSize: 11, opacity: 0.6,
+                borderTop: "1px solid rgba(255,255,255,0.05)", marginTop: 4
+              }}>
+                {isTr ? `Senin s\u0131raman: #${rank}` : `Your rank: #${rank}`}
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </section>
   );
 }

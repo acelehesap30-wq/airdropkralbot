@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { t, type Lang } from "../../i18n";
 import { buildPvpLiveViewModel } from "../../../core/player/pvpLiveViewModel.js";
 import { SHELL_ACTION_KEY } from "../../../core/navigation/shellActions.js";
@@ -26,6 +27,7 @@ type PvpPanelProps = {
 };
 
 export function PvpPanel(props: PvpPanelProps) {
+  const [subView, setSubView] = useState<"play" | "combat" | "detail">("play");
   const view = buildPvpLiveViewModel({
     pvpRuntime: props.pvpRuntime,
     leagueOverview: props.leagueOverview,
@@ -236,6 +238,40 @@ export function PvpPanel(props: PvpPanelProps) {
         </div>
       </div>
 
+      {/* ── Sub-navigation ── */}
+      <div style={{ display: "flex", gap: 4, padding: "8px 12px", background: "rgba(0,0,0,0.25)", borderBottom: "1px solid rgba(255,255,255,0.04)", marginBottom: 8 }}>
+        {([
+          { key: "play" as const, icon: "🎮", l: props.lang === "tr" ? "Arena Oyunu" : "Arena Game" },
+          { key: "combat" as const, icon: "⚔️", l: props.lang === "tr" ? "Savaş" : "Combat" },
+          { key: "detail" as const, icon: "📊", l: props.lang === "tr" ? "Detay" : "Detail" },
+        ]).map(tab => (
+          <button key={tab.key} onClick={() => setSubView(tab.key)} style={{
+            flex: 1, padding: "8px 4px", borderRadius: 8, border: "none",
+            background: subView === tab.key ? "rgba(0,214,255,0.12)" : "transparent",
+            color: subView === tab.key ? "#00d6ff" : "rgba(255,255,255,0.35)",
+            fontSize: 11, fontWeight: 600, cursor: "pointer",
+            borderBottom: subView === tab.key ? "2px solid rgba(0,214,255,0.5)" : "2px solid transparent",
+          }}>
+            {tab.icon} {tab.l}
+          </button>
+        ))}
+      </div>
+
+      {subView === "play" && (
+        <div className="akrCard akrCardGlow">
+          <div className="akrFeaturedHeader">
+            <div className="akrFeaturedIcon">⚔️</div>
+            <div>
+              <div className="akrFeaturedTitle">{props.lang === "tr" ? "Arena Mücadelesi" : "Arena Challenge"}</div>
+              <div className="akrFeaturedSub">{props.lang === "tr" ? "3 dalga · Drone imhası · Kombo puanı" : "3 waves · Drone destruction · Combo scoring"}</div>
+              <div className="akrFeaturedBadge">🎮 {props.lang === "tr" ? "CANLI" : "LIVE"}</div>
+            </div>
+          </div>
+          <ArenaChallenge lang={props.lang} />
+        </div>
+      )}
+
+      {subView === "combat" && (<>
       <section className="akrGameSpotlight" data-akr-panel-key="pvp" data-akr-focus-key="combat_route">
         <div className="akrGameSpotlightMain">
           <p className="akrKicker">
@@ -360,7 +396,9 @@ export function PvpPanel(props: PvpPanelProps) {
           <strong>{Math.floor(league.season_arc_boss.hp_pct)}%</strong>
         </div>
       </div>
+      </>)}
 
+      {subView === "detail" && (<>
       <div className="pvpObjectiveGrid">
         <article className={`pvpObjectiveCard ${league.daily_duel.win_rate_pct >= 55 ? "advantage pulse" : "neutral"}`} data-akr-focus-key="daily_duel">
           <p className="label">{copy.duelTitle}</p>
@@ -478,19 +516,7 @@ export function PvpPanel(props: PvpPanelProps) {
           </div>
         </section>
       </div>
-
-      {/* Arena Challenge — Featured Game */}
-      <div className="akrCard akrCardGlow">
-        <div className="akrFeaturedHeader">
-          <div className="akrFeaturedIcon">⚔️</div>
-          <div>
-            <div className="akrFeaturedTitle">{props.lang === "tr" ? "Arena Mücadelesi" : "Arena Challenge"}</div>
-            <div className="akrFeaturedSub">{props.lang === "tr" ? "3 dalga · Drone imhası · Kombo puanı" : "3 waves · Drone destruction · Combo scoring"}</div>
-            <div className="akrFeaturedBadge">🎮 {props.lang === "tr" ? "CANLI" : "LIVE"}</div>
-          </div>
-        </div>
-        <ArenaChallenge lang={props.lang} />
-      </div>
+      </>)}
 
       {props.advanced ? (
         <>

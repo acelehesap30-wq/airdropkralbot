@@ -30,7 +30,7 @@ function asText(value: unknown, fallback = "-") {
 }
 
 export function TasksPanel(props: TasksPanelProps) {
-  const [showGame, setShowGame] = useState(true);
+  const [subView, setSubView] = useState<"play" | "missions" | "detail">("play");
   const view = buildTasksViewModel({
     offers: props.offers,
     missions: props.missions,
@@ -242,6 +242,45 @@ export function TasksPanel(props: TasksPanelProps) {
         </div>
       </div>
 
+      {/* ── Sub-navigation ── */}
+      <div style={{ display: "flex", gap: 4, padding: "8px 12px", background: "rgba(0,0,0,0.25)", borderBottom: "1px solid rgba(255,255,255,0.04)", marginBottom: 8 }}>
+        {([
+          { key: "play" as const, icon: "🎮", l: props.lang === "tr" ? "Oyunlar" : "Games" },
+          { key: "missions" as const, icon: "📋", l: props.lang === "tr" ? "Görevler" : "Missions" },
+          { key: "detail" as const, icon: "📊", l: props.lang === "tr" ? "Detay" : "Detail" },
+        ]).map(tab => (
+          <button key={tab.key} onClick={() => setSubView(tab.key)} style={{
+            flex: 1, padding: "8px 4px", borderRadius: 8, border: "none",
+            background: subView === tab.key ? "rgba(0,214,255,0.12)" : "transparent",
+            color: subView === tab.key ? "#00d6ff" : "rgba(255,255,255,0.35)",
+            fontSize: 11, fontWeight: 600, cursor: "pointer",
+            borderBottom: subView === tab.key ? "2px solid rgba(0,214,255,0.5)" : "2px solid transparent",
+          }}>
+            {tab.icon} {tab.l}
+          </button>
+        ))}
+      </div>
+
+      {subView === "play" && (
+        <>
+          <div className="akrCard akrCardGlow">
+            <div className="akrFeaturedHeader">
+              <div className="akrFeaturedIcon">🪂</div>
+              <div>
+                <div className="akrFeaturedTitle">{props.lang === "tr" ? "Airdrop Avcısı" : "Airdrop Catcher"}</div>
+                <div className="akrFeaturedSub">{props.lang === "tr" ? "Düşen ödülleri yakala · SC kazan" : "Catch falling rewards · Earn SC"}</div>
+                <div className="akrFeaturedBadge">🎮 {props.lang === "tr" ? "OYNA" : "PLAY"}</div>
+              </div>
+            </div>
+            <AirdropCatcher lang={props.lang} auth={props.auth} onClose={() => {}} />
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <QuestChains lang={props.lang} auth={props.auth} />
+          </div>
+        </>
+      )}
+
+      {subView === "missions" && (<>
       <section className="akrGameSpotlight" data-akr-panel-key="tasks" data-akr-focus-key="mission_route">
         <div className="akrGameSpotlightMain">
           <p className="akrKicker">
@@ -393,6 +432,9 @@ export function TasksPanel(props: TasksPanelProps) {
         </div>
       </div>
 
+      </>)}
+
+      {subView === "detail" && (<>
       <div className="akrSplit">
         <section className="akrMiniPanel">
           <h4>{copy.laneOffers}</h4>
@@ -504,23 +546,7 @@ export function TasksPanel(props: TasksPanelProps) {
         </section>
       </div>
 
-      {/* Airdrop Catcher — Featured Game */}
-      <div className="akrCard akrCardGlow" style={{ marginTop: 16 }}>
-        <div className="akrFeaturedHeader">
-          <div className="akrFeaturedIcon">🪂</div>
-          <div>
-            <div className="akrFeaturedTitle">{props.lang === "tr" ? "Airdrop Avcısı" : "Airdrop Catcher"}</div>
-            <div className="akrFeaturedSub">{props.lang === "tr" ? "Düşen ödülleri yakala · SC kazan" : "Catch falling rewards · Earn SC"}</div>
-            <div className="akrFeaturedBadge">🎮 {props.lang === "tr" ? "OYNA" : "PLAY"}</div>
-          </div>
-        </div>
-        <AirdropCatcher lang={props.lang} auth={props.auth} onClose={() => setShowGame(false)} />
-      </div>
-
-      {/* Quest Chains — Blueprint §10 */}
-      <div style={{ marginTop: 12 }}>
-        <QuestChains lang={props.lang} auth={props.auth} />
-      </div>
+      </>)}
 
       {!view.has_data ? <p className="akrMuted">{t(props.lang, "tasks_empty")}</p> : null}
       {props.advanced ? <pre className="akrJsonBlock">{JSON.stringify({ offers: props.offers, missions: props.missions, attempts: props.attempts, daily: props.daily, taskResult: props.taskResult }, null, 2)}</pre> : null}

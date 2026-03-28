@@ -61,6 +61,7 @@ function shortStatus(value: string, onText: string, offText: string) {
 
 export function VaultPanel(props: VaultPanelProps) {
   const [showGame, setShowGame] = useState(true);
+  const [subView, setSubView] = useState<"play" | "vault">("play");
   const view = buildVaultViewModel({
     vaultData: props.vaultData
   });
@@ -264,6 +265,43 @@ export function VaultPanel(props: VaultPanelProps) {
         </div>
       </div>
 
+      {/* Sub-navigation tabs */}
+      <div style={{ display: "flex", gap: 4, padding: "8px 12px", background: "rgba(0,0,0,0.25)", borderBottom: "1px solid rgba(255,255,255,0.04)", marginBottom: 8 }}>
+        {([
+          { key: "play" as const, icon: "\ud83c\udfae", l: props.lang === "tr" ? "Oyunlar" : "Games" },
+          { key: "vault" as const, icon: "\ud83d\udd10", l: props.lang === "tr" ? "Kasa" : "Vault" },
+        ]).map(tab => (
+          <button key={tab.key} onClick={() => setSubView(tab.key)} style={{
+            flex: 1, padding: "8px 4px", borderRadius: 8, border: "none",
+            background: subView === tab.key ? "rgba(47,255,181,0.12)" : "transparent",
+            color: subView === tab.key ? "#2fffb5" : "rgba(255,255,255,0.35)",
+            fontSize: 11, fontWeight: 600, cursor: "pointer",
+            borderBottom: subView === tab.key ? "2px solid rgba(47,255,181,0.5)" : "2px solid transparent",
+          }}>
+            {tab.icon} {tab.l}
+          </button>
+        ))}
+      </div>
+
+      {subView === "play" && (
+        <>
+          {/* Hash Racer Mini Game — Featured Game */}
+          <div className="akrCard akrCardGlow" style={{ marginTop: 16 }}>
+            <div className="akrFeaturedHeader">
+              <div className="akrFeaturedIcon">⛏️</div>
+              <div>
+                <div className="akrFeaturedTitle">{props.lang === "tr" ? "Hash Yarışçısı" : "Hash Racer"}</div>
+                <div className="akrFeaturedSub">{props.lang === "tr" ? "3D matrix · Hash blokları kazan · SC ödülü" : "3D matrix · Mine hash blocks · Earn SC"}</div>
+                <div className="akrFeaturedBadge">⛏️ MINE</div>
+              </div>
+            </div>
+            <HashRacer lang={props.lang} onClose={() => setShowGame(false)} />
+          </div>
+        </>
+      )}
+
+      {subView === "vault" && (
+        <>
       <TonWalletConnect
         lang={props.lang}
         walletVerified={summary.wallet_active}
@@ -662,21 +700,10 @@ export function VaultPanel(props: VaultPanelProps) {
         </div>
       </details>
 
-      {/* Hash Racer Mini Game — Featured Game */}
-      <div className="akrCard akrCardGlow" style={{ marginTop: 16 }}>
-        <div className="akrFeaturedHeader">
-          <div className="akrFeaturedIcon">⛏️</div>
-          <div>
-            <div className="akrFeaturedTitle">{props.lang === "tr" ? "Hash Yarışçısı" : "Hash Racer"}</div>
-            <div className="akrFeaturedSub">{props.lang === "tr" ? "3D matrix · Hash blokları kazan · SC ödülü" : "3D matrix · Mine hash blocks · Earn SC"}</div>
-            <div className="akrFeaturedBadge">⛏️ MINE</div>
-          </div>
-        </div>
-        <HashRacer lang={props.lang} onClose={() => setShowGame(false)} />
-      </div>
-
       {!view.has_data ? <p className="akrMuted">{t(props.lang, "vault_empty")}</p> : null}
       {props.advanced ? <pre className="akrJsonBlock">{JSON.stringify(props.vaultData || {}, null, 2)}</pre> : null}
+        </>
+      )}
     </section>
   );
 }

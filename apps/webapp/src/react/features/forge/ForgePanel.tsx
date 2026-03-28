@@ -40,6 +40,7 @@ export function ForgePanel(props: ForgePanelProps) {
   const [craftResult, setCraftResult] = useState<{ msg: string; ok: boolean } | null>(null);
   const [craftLog, setCraftLog] = useState<CraftLog[]>([]);
   const [cooldowns, setCooldowns] = useState<Record<string, number>>({});
+  const [subView, setSubView] = useState<"play" | "craft" | "log">("play");
 
   const now = Date.now();
 
@@ -156,6 +157,53 @@ export function ForgePanel(props: ForgePanelProps) {
         </p>
       </div>
 
+      {/* ── Sub-navigation ── */}
+      <div style={{ display: "flex", gap: 4, padding: "8px 12px", background: "rgba(0,0,0,0.25)", borderBottom: "1px solid rgba(255,255,255,0.04)", marginBottom: 8 }}>
+        {([
+          { key: "play" as const, icon: "🎮", l: props.lang === "tr" ? "Oyunlar" : "Games" },
+          { key: "craft" as const, icon: "⚗️", l: props.lang === "tr" ? "Craft" : "Craft" },
+          { key: "log" as const, icon: "📋", l: props.lang === "tr" ? "Geçmiş" : "History" },
+        ]).map(tab => (
+          <button key={tab.key} onClick={() => setSubView(tab.key)} style={{
+            flex: 1, padding: "8px 4px", borderRadius: 8, border: "none",
+            background: subView === tab.key ? "rgba(255,136,0,0.12)" : "transparent",
+            color: subView === tab.key ? "#ff8800" : "rgba(255,255,255,0.35)",
+            fontSize: 11, fontWeight: 600, cursor: "pointer",
+            borderBottom: subView === tab.key ? "2px solid rgba(255,136,0,0.5)" : "2px solid transparent",
+          }}>
+            {tab.icon} {tab.l}
+          </button>
+        ))}
+      </div>
+
+      {subView === "play" && (
+        <>
+          <div className="akrCard akrCardGlow">
+            <div className="akrFeaturedHeader">
+              <div className="akrFeaturedIcon">🧩</div>
+              <div>
+                <div className="akrFeaturedTitle">{isTr ? "Kaynak Birleştir" : "Resource Merge"}</div>
+                <div className="akrFeaturedSub">{isTr ? "İzometrik 3D puzzle · Kaynakları birleştir · NXT kazan" : "Isometric 3D puzzle · Merge resources · Earn NXT"}</div>
+                <div className="akrFeaturedBadge">🧩 PUZZLE</div>
+              </div>
+            </div>
+            <ResourceMerge lang={props.lang} />
+          </div>
+          <div className="akrCard akrCardGlow" style={{ marginTop: 12 }}>
+            <div className="akrFeaturedHeader">
+              <div className="akrFeaturedIcon">📦</div>
+              <div>
+                <div className="akrFeaturedTitle">{isTr ? "Sandık Açılışı" : "Chest Reveal"}</div>
+                <div className="akrFeaturedSub">{isTr ? "Common · Rare · Epic — ödüller aç" : "Common · Rare · Epic — reveal rewards"}</div>
+                <div className="akrFeaturedBadge">🎁 LOOT</div>
+              </div>
+            </div>
+            <ChestReveal lang={props.lang} auth={props.auth} />
+          </div>
+        </>
+      )}
+
+      {subView === "craft" && (<>
       {/* Resource overview */}
       <div className="akrCard">
         <div className="akrCardHeader">
@@ -249,7 +297,9 @@ export function ForgePanel(props: ForgePanelProps) {
           </div>
         );
       })}
+      </>)}
 
+      {subView === "log" && (<>
       {/* Crafting history */}
       {craftLog.length > 0 && (
         <div className="akrCard">
@@ -276,30 +326,7 @@ export function ForgePanel(props: ForgePanelProps) {
           ))}
         </div>
       )}
-      {/* Chest Loot Reveal — Blueprint §forge:chests */}
-      <div className="akrCard akrCardGlow">
-        <div className="akrFeaturedHeader">
-          <div className="akrFeaturedIcon">📦</div>
-          <div>
-            <div className="akrFeaturedTitle">{isTr ? "Sandık Açılışı" : "Chest Reveal"}</div>
-            <div className="akrFeaturedSub">{isTr ? "Common · Rare · Epic — ödüller aç" : "Common · Rare · Epic — reveal rewards"}</div>
-            <div className="akrFeaturedBadge">🎁 {isTr ? "LOOT" : "LOOT"}</div>
-          </div>
-        </div>
-        <ChestReveal lang={props.lang} auth={props.auth} />
-      </div>
-
-      <div className="akrCard akrCardGlow" style={{ marginTop: 12 }}>
-        <div className="akrFeaturedHeader">
-          <div className="akrFeaturedIcon">🧩</div>
-          <div>
-            <div className="akrFeaturedTitle">{isTr ? "Kaynak Birleştir" : "Resource Merge"}</div>
-            <div className="akrFeaturedSub">{isTr ? "4×4 puzzle · Kaynakları birleştir · NXT kazan" : "4×4 puzzle · Merge resources · Earn NXT"}</div>
-            <div className="akrFeaturedBadge">🧩 PUZZLE</div>
-          </div>
-        </div>
-        <ResourceMerge lang={props.lang} />
-      </div>
+      </>)}
     </section>
   );
 }

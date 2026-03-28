@@ -67,6 +67,7 @@ export function EventsPanel(props: EventsPanelProps) {
   const liveOps = (props.data as any)?.live_ops || {};
   const campaigns = Array.isArray(liveOps?.campaigns) ? liveOps.campaigns : [];
 
+  const [subView, setSubView] = useState<"play" | "events">("play");
   const [joiningId, setJoiningId] = useState<string | null>(null);
   const [joinResult, setJoinResult] = useState<{ msg: string; ok: boolean } | null>(null);
   const [joinedEvents, setJoinedEvents] = useState<Set<string>>(new Set());
@@ -177,113 +178,139 @@ export function EventsPanel(props: EventsPanelProps) {
         </div>
       </div>
 
-      {/* Join result flash */}
-      {joinResult && (
-        <div className="akrCard" style={{
-          borderColor: joinResult.ok ? "rgba(0,255,136,0.3)" : "rgba(255,68,68,0.3)",
-          textAlign: "center"
-        }}>
-          <div style={{
-            fontSize: 12, fontWeight: 600,
-            color: joinResult.ok ? "#00ff88" : "#ff6644",
-            fontFamily: "var(--font-mono, monospace)",
-            padding: "6px 0"
+      {/* Sub-navigation tabs */}
+      <div style={{ display: "flex", gap: 4, padding: "8px 12px", background: "rgba(0,0,0,0.25)", borderBottom: "1px solid rgba(255,255,255,0.04)", marginBottom: 8 }}>
+        {([
+          { key: "play" as const, icon: "\ud83c\udfae", l: isTr ? "Oyunlar" : "Games" },
+          { key: "events" as const, icon: "\ud83c\udfaf", l: isTr ? "Etkinlikler" : "Events" },
+        ]).map(tab => (
+          <button key={tab.key} onClick={() => setSubView(tab.key)} style={{
+            flex: 1, padding: "8px 4px", borderRadius: 8, border: "none",
+            background: subView === tab.key ? "rgba(0,214,255,0.12)" : "transparent",
+            color: subView === tab.key ? "#00d6ff" : "rgba(255,255,255,0.35)",
+            fontSize: 11, fontWeight: 600, cursor: "pointer",
+            borderBottom: subView === tab.key ? "2px solid rgba(0,214,255,0.5)" : "2px solid transparent",
           }}>
-            {joinResult.ok ? "\u2713 " : "\u2717 "}{joinResult.msg}
-          </div>
-        </div>
-      )}
-
-      {/* Empty state */}
-      {events.length === 0 && (
-        <div className="akrCard" style={{ textAlign: "center", padding: "24px 16px" }}>
-          <div style={{ fontSize: 32, marginBottom: 8 }}>🎯</div>
-          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>
-            {isTr ? "Henüz aktif etkinlik yok" : "No active events yet"}
-          </div>
-          <div style={{ fontSize: 11, opacity: 0.5 }}>
-            {isTr
-              ? "Yeni etkinlikler otomatik olarak burada görünecek. Takipte kal!"
-              : "New events will appear here automatically. Stay tuned!"}
-          </div>
-        </div>
-      )}
-
-      {/* Active events */}
-      {active.length > 0 && (
-        <>
-          <div style={{ fontSize: 11, fontWeight: 700, opacity: 0.5, textTransform: "uppercase", padding: "8px 0 4px" }}>
-            {isTr ? "Aktif" : "Active"}
-          </div>
-          {active.map((event) => (
-            <EventCard
-              key={event.id}
-              event={event}
-              isTr={isTr}
-              joining={joiningId === event.id}
-              joined={event.joined || joinedEvents.has(event.id)}
-              onJoin={() => handleJoin(event.id, event.type)}
-              countdownTick={countdownTick}
-            />
-          ))}
-        </>
-      )}
-
-      {/* Upcoming events */}
-      {upcoming.length > 0 && (
-        <>
-          <div style={{ fontSize: 11, fontWeight: 700, opacity: 0.5, textTransform: "uppercase", padding: "8px 0 4px" }}>
-            {isTr ? "Yakla\u015fan" : "Upcoming"}
-          </div>
-          {upcoming.map((event) => (
-            <EventCard
-              key={event.id}
-              event={event}
-              isTr={isTr}
-              joining={joiningId === event.id}
-              joined={joinedEvents.has(event.id)}
-              onJoin={() => handleJoin(event.id, event.type)}
-              countdownTick={countdownTick}
-            />
-          ))}
-        </>
-      )}
-
-      {/* QuickMatch — Featured Game */}
-      <div className="akrCard akrCardGlow">
-        <div className="akrFeaturedHeader">
-          <div className="akrFeaturedIcon">🃏</div>
-          <div>
-            <div className="akrFeaturedTitle">{isTr ? "Hızlı Eşleşme" : "Quick Match"}</div>
-            <div className="akrFeaturedSub">{isTr ? "3D kartları eşle · Hafıza oyunu · SC kazan" : "Match 3D cards · Memory game · Earn SC"}</div>
-            <div className="akrFeaturedBadge">🧠 MEMORY</div>
-          </div>
-        </div>
-        <QuickMatch lang={props.lang} />
+            {tab.icon} {tab.l}
+          </button>
+        ))}
       </div>
 
-      {/* Event stats summary */}
-      <div className="akrCard">
-        <div className="akrCardHeader">
-          <h3 className="akrCardTitle" style={{ fontSize: 13 }}>
-            {isTr ? "Etkinlik \u00d6zeti" : "Event Summary"}
-          </h3>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, padding: "8px 0" }}>
-          {[
-            { label: isTr ? "Kat\u0131l\u0131nan" : "Joined", value: joinedEvents.size + events.filter((e) => e.joined).length, color: "#00ff88" },
-            { label: isTr ? "Toplam" : "Total", value: events.length, color: "#00d2ff" },
-            { label: isTr ? "Canl\u0131" : "Live", value: active.length, color: "#e040fb" }
-          ].map((s) => (
-            <div key={s.label} style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 9, opacity: 0.5, textTransform: "uppercase" }}>{s.label}</div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: s.color, fontFamily: "var(--font-mono, monospace)" }}>
-                {s.value}
+      {subView === "play" && (
+        <>
+          {/* QuickMatch — Featured Game */}
+          <div className="akrCard akrCardGlow">
+            <div className="akrFeaturedHeader">
+              <div className="akrFeaturedIcon">🃏</div>
+              <div>
+                <div className="akrFeaturedTitle">{isTr ? "Hızlı Eşleşme" : "Quick Match"}</div>
+                <div className="akrFeaturedSub">{isTr ? "3D kartları eşle · Hafıza oyunu · SC kazan" : "Match 3D cards · Memory game · Earn SC"}</div>
+                <div className="akrFeaturedBadge">🧠 MEMORY</div>
               </div>
             </div>
-          ))}
-        </div>
-      </div>
+            <QuickMatch lang={props.lang} />
+          </div>
+        </>
+      )}
+
+      {subView === "events" && (
+        <>
+          {/* Join result flash */}
+          {joinResult && (
+            <div className="akrCard" style={{
+              borderColor: joinResult.ok ? "rgba(0,255,136,0.3)" : "rgba(255,68,68,0.3)",
+              textAlign: "center"
+            }}>
+              <div style={{
+                fontSize: 12, fontWeight: 600,
+                color: joinResult.ok ? "#00ff88" : "#ff6644",
+                fontFamily: "var(--font-mono, monospace)",
+                padding: "6px 0"
+              }}>
+                {joinResult.ok ? "\u2713 " : "\u2717 "}{joinResult.msg}
+              </div>
+            </div>
+          )}
+
+          {/* Empty state */}
+          {events.length === 0 && (
+            <div className="akrCard" style={{ textAlign: "center", padding: "24px 16px" }}>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>🎯</div>
+              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>
+                {isTr ? "Henüz aktif etkinlik yok" : "No active events yet"}
+              </div>
+              <div style={{ fontSize: 11, opacity: 0.5 }}>
+                {isTr
+                  ? "Yeni etkinlikler otomatik olarak burada görünecek. Takipte kal!"
+                  : "New events will appear here automatically. Stay tuned!"}
+              </div>
+            </div>
+          )}
+
+          {/* Active events */}
+          {active.length > 0 && (
+            <>
+              <div style={{ fontSize: 11, fontWeight: 700, opacity: 0.5, textTransform: "uppercase", padding: "8px 0 4px" }}>
+                {isTr ? "Aktif" : "Active"}
+              </div>
+              {active.map((event) => (
+                <EventCard
+                  key={event.id}
+                  event={event}
+                  isTr={isTr}
+                  joining={joiningId === event.id}
+                  joined={event.joined || joinedEvents.has(event.id)}
+                  onJoin={() => handleJoin(event.id, event.type)}
+                  countdownTick={countdownTick}
+                />
+              ))}
+            </>
+          )}
+
+          {/* Upcoming events */}
+          {upcoming.length > 0 && (
+            <>
+              <div style={{ fontSize: 11, fontWeight: 700, opacity: 0.5, textTransform: "uppercase", padding: "8px 0 4px" }}>
+                {isTr ? "Yakla\u015fan" : "Upcoming"}
+              </div>
+              {upcoming.map((event) => (
+                <EventCard
+                  key={event.id}
+                  event={event}
+                  isTr={isTr}
+                  joining={joiningId === event.id}
+                  joined={joinedEvents.has(event.id)}
+                  onJoin={() => handleJoin(event.id, event.type)}
+                  countdownTick={countdownTick}
+                />
+              ))}
+            </>
+          )}
+
+          {/* Event stats summary */}
+          <div className="akrCard">
+            <div className="akrCardHeader">
+              <h3 className="akrCardTitle" style={{ fontSize: 13 }}>
+                {isTr ? "Etkinlik \u00d6zeti" : "Event Summary"}
+              </h3>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, padding: "8px 0" }}>
+              {[
+                { label: isTr ? "Kat\u0131l\u0131nan" : "Joined", value: joinedEvents.size + events.filter((e) => e.joined).length, color: "#00ff88" },
+                { label: isTr ? "Toplam" : "Total", value: events.length, color: "#00d2ff" },
+                { label: isTr ? "Canl\u0131" : "Live", value: active.length, color: "#e040fb" }
+              ].map((s) => (
+                <div key={s.label} style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 9, opacity: 0.5, textTransform: "uppercase" }}>{s.label}</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: s.color, fontFamily: "var(--font-mono, monospace)" }}>
+                    {s.value}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </section>
   );
 }

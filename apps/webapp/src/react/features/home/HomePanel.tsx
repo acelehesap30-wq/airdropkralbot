@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { buildHomeFeedViewModel } from "../../../core/player/homeFeedViewModel.js";
 import { resolvePlayerCommandHintNavigation } from "../../../core/player/commandHintNavigation.js";
 import { SHELL_ACTION_KEY } from "../../../core/navigation/shellActions.js";
@@ -26,6 +27,7 @@ type HomePanelProps = {
 };
 
 export function HomePanel(props: HomePanelProps) {
+  const [subView, setSubView] = useState<"play" | "overview" | "detail">("play");
   const view = buildHomeFeedViewModel({
     homeFeed: props.homeFeed,
     bootstrap: props.data
@@ -313,6 +315,34 @@ export function HomePanel(props: HomePanelProps) {
         </div>
       </div>
 
+      {/* ── Sub-navigation ── */}
+      <div style={{ display: "flex", gap: 4, padding: "8px 12px", background: "rgba(0,0,0,0.25)", borderBottom: "1px solid rgba(255,255,255,0.04)", marginBottom: 8 }}>
+        {([
+          { key: "play" as const, icon: "🎮", l: props.lang === "tr" ? "Oyunlar" : "Games" },
+          { key: "overview" as const, icon: "⚡", l: props.lang === "tr" ? "Aksiyon" : "Actions" },
+          { key: "detail" as const, icon: "📊", l: props.lang === "tr" ? "Detay" : "Detail" },
+        ]).map(tab => (
+          <button key={tab.key} onClick={() => setSubView(tab.key)} style={{
+            flex: 1, padding: "8px 4px", borderRadius: 8, border: "none",
+            background: subView === tab.key ? "rgba(0,214,255,0.12)" : "transparent",
+            color: subView === tab.key ? "#00d6ff" : "rgba(255,255,255,0.35)",
+            fontSize: 11, fontWeight: 600, cursor: "pointer",
+            borderBottom: subView === tab.key ? "2px solid rgba(0,214,255,0.5)" : "2px solid transparent",
+          }}>
+            {tab.icon} {tab.l}
+          </button>
+        ))}
+      </div>
+
+      {subView === "play" && (
+        <>
+          <MiniGames lang={props.lang} auth={props.auth} sc={Math.floor(summary.sc_earned || 0)} />
+          <div style={{ marginTop: 8 }}><DailyCheckin lang={props.lang} auth={props.auth} /></div>
+          <div style={{ marginTop: 8 }}><InviteWidget lang={props.lang} auth={props.auth} /></div>
+        </>
+      )}
+
+      {subView === "overview" && (<>
       <section className="akrGameSpotlight" data-akr-panel-key="status" data-akr-focus-key="next_move">
         <div className="akrGameSpotlightMain">
           <p className="akrKicker">
@@ -459,6 +489,9 @@ export function HomePanel(props: HomePanelProps) {
         </div>
       </div>
 
+      </>)}
+
+      {subView === "detail" && (<>
       <div className="akrGameFocusGrid">
         <section className="akrMiniPanel" data-akr-panel-key="status" data-akr-focus-key="mission_status">
           <h4>{copy.goalsTitle}</h4>
@@ -523,17 +556,7 @@ export function HomePanel(props: HomePanelProps) {
         </section>
       </div>
 
-      <MiniGames lang={props.lang} auth={props.auth} sc={Math.floor(summary.sc_earned || 0)} />
-
-      {/* Daily Streak Check-in — Blueprint §12-daily */}
-      <div style={{ marginTop: 8 }}>
-        <DailyCheckin lang={props.lang} auth={props.auth} />
-      </div>
-
-      {/* Invite Widget — Blueprint §11 */}
-      <div style={{ marginTop: 8 }}>
-        <InviteWidget lang={props.lang} auth={props.auth} />
-      </div>
+      </>)}
 
       <div className="akrActionRow akrHomeFooterActions">
         <button type="button" className="akrBtn akrBtnGhost" onClick={props.onRefresh}>
