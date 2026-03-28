@@ -55,10 +55,11 @@ export function NexusScene({ tab }: NexusSceneProps) {
     if (!ctx) return;
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const W = canvas.clientWidth;
-    const H = canvas.clientHeight;
-    canvas.width = W * dpr;
-    canvas.height = H * dpr;
+    const W = canvas.clientWidth || canvas.offsetWidth || 320;
+    const H = canvas.clientHeight || canvas.offsetHeight || 180;
+    if (W === 0 || H === 0) return; // canvas not laid out yet
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
     ctx.scale(dpr, dpr);
 
     const mkParticle = (): Particle => {
@@ -269,10 +270,16 @@ export function NexusScene({ tab }: NexusSceneProps) {
       ctx.fillText(theme.label, W / 2, H / 2 + 12);
       ctx.restore();
 
-      st.raf = requestAnimationFrame(render);
+      st.raf = requestAnimationFrame(loop);
     };
 
-    st.raf = requestAnimationFrame(render);
+    const loop = () => {
+      try { render(); } catch (e) {
+        console.warn("[NexusScene] render suppressed:", e);
+        st.raf = requestAnimationFrame(loop); // keep going on non-fatal errors
+      }
+    };
+    st.raf = requestAnimationFrame(loop);
 
     return () => {
       cancelAnimationFrame(st.raf);

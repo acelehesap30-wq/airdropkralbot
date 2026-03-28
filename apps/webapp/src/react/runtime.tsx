@@ -261,15 +261,43 @@ async function fetchBootstrapWithTimeout(auth: Parameters<typeof fetchBootstrapV
   }
 }
 
+/** Returns true for browser-level noise that should never kill the UI */
+function isBenignError(message: string): boolean {
+  const m = message.toLowerCase();
+  return (
+    m === "script error." ||
+    m === "script error" ||
+    m === "resizeobserver loop limit exceeded" ||
+    m === "resizeobserver loop completed with undelivered notifications." ||
+    m.includes("non-error promise rejection captured") ||
+    m.includes("cross-origin") ||
+    m.includes("cancelled") ||
+    // Telegram WebView scroll artifacts
+    m.includes("javaexception") ||
+    m.includes("evaluatescript")
+  );
+}
+
 export async function mountReactWebAppV1(): Promise<void> {
   document.body.classList.add("akrReactModeBody");
   window.addEventListener("error", (event) => {
+    // "Script error." = cross-origin browser security artifact — never kill the app for this
     const message = event?.error instanceof Error ? event.error.message : String(event?.message || "window_error");
+    if (isBenignError(message)) {
+      event.preventDefault();
+      console.warn("[akr] Suppressed benign window.onerror:", message);
+      return;
+    }
     mountFatal(`Unhandled error: ${message}`);
   });
   window.addEventListener("unhandledrejection", (event) => {
     const reason = event?.reason;
     const message = reason instanceof Error ? reason.message : String(reason || "unhandled_promise_rejection");
+    if (isBenignError(message)) {
+      event.preventDefault();
+      console.warn("[akr] Suppressed benign rejection:", message);
+      return;
+    }
     mountFatal(`Unhandled rejection: ${message}`);
   });
   const auth = readWebAppAuth();
