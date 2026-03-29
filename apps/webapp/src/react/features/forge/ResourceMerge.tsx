@@ -356,15 +356,17 @@ export function ResourceMerge({ lang }: ResourceMergeProps) {
     }
   };
 
-  /** Click handler — iso diamond hit-test (front→back) */
-  const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+  /** Click/touch handler — iso diamond hit-test (front→back) */
+  const handleInteract = useCallback((e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     const st = stRef.current;
     if (st.phase !== "playing") return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const mx = (e.clientX - rect.left) * (W_CV / rect.width);
-    const my = (e.clientY - rect.top) * (H_CV / rect.height);
+    const clientX = "touches" in e ? (e.touches[0]?.clientX ?? 0) : e.clientX;
+    const clientY = "touches" in e ? (e.touches[0]?.clientY ?? 0) : e.clientY;
+    const mx = (clientX - rect.left) * (W_CV / rect.width);
+    const my = (clientY - rect.top) * (H_CV / rect.height);
 
     // Front-to-back hit test: check nearest cells first
     let hitIdx = -1;
@@ -514,8 +516,8 @@ export function ResourceMerge({ lang }: ResourceMergeProps) {
       {/* Canvas */}
       <canvas
         ref={canvasRef} width={W_CV} height={H_CV}
-        onClick={handleClick}
-        style={{ display: phase === "playing" ? "block" : "none", width: "100%", cursor: "pointer" }}
+        onClick={handleInteract} onTouchStart={handleInteract}
+        style={{ display: phase === "playing" ? "block" : "none", width: "100%", cursor: "pointer", touchAction: "none" }}
       />
 
       {/* Done */}

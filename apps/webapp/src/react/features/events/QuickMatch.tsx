@@ -316,15 +316,17 @@ export function QuickMatch({ lang }: QuickMatchProps) {
     return () => { alive = false; cancelAnimationFrame(rafRef.current); };
   }, []);
 
-  const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleInteract = useCallback((e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     const st = stRef.current;
     if (st.phase !== "playing") return;
     if (performance.now() < st.lockUntil) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const mx = (e.clientX - rect.left) * (W_CV / rect.width);
-    const my = (e.clientY - rect.top) * (H_CV / rect.height);
+    const clientX = "touches" in e ? (e.touches[0]?.clientX ?? 0) : e.clientX;
+    const clientY = "touches" in e ? (e.touches[0]?.clientY ?? 0) : e.clientY;
+    const mx = (clientX - rect.left) * (W_CV / rect.width);
+    const my = (clientY - rect.top) * (H_CV / rect.height);
 
     for (let i = 0; i < 16; i++) {
       const col = i % COLS, row = Math.floor(i / COLS);
@@ -443,8 +445,8 @@ export function QuickMatch({ lang }: QuickMatchProps) {
 
       <canvas
         ref={canvasRef} width={W_CV} height={H_CV}
-        onClick={handleClick}
-        style={{ display: phase === "playing" ? "block" : "none", width: "100%", cursor: "pointer" }}
+        onClick={handleInteract} onTouchStart={handleInteract}
+        style={{ display: phase === "playing" ? "block" : "none", width: "100%", cursor: "pointer", touchAction: "none" }}
       />
 
       {phase === "done" && (

@@ -89,6 +89,12 @@ export function NexusScene({ tab }: NexusSceneProps) {
       particles.push(p);
     }
 
+    // Static star field (background depth layer)
+    const stars: { x: number; y: number; s: number; b: number }[] = [];
+    for (let i = 0; i < 40; i++) {
+      stars.push({ x: Math.random() * W, y: Math.random() * H, s: 0.3 + Math.random() * 1.2, b: Math.random() });
+    }
+
     const st = { particles, time: 0, raf: 0, w: W, h: H, theme };
     stRef.current = st;
 
@@ -145,6 +151,17 @@ export function NexusScene({ tab }: NexusSceneProps) {
       grad.addColorStop(1, `rgb(${Math.floor(bg[0] * 1.4)}, ${Math.floor(bg[1] * 1.4)}, ${Math.floor(bg[2] * 1.4)})`);
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, W, H);
+
+      // Twinkling star field (depth layer)
+      for (const star of stars) {
+        const twinkle = 0.3 + 0.7 * Math.abs(Math.sin(t * (0.8 + star.b * 1.5) + star.b * 10));
+        ctx.globalAlpha = twinkle * 0.5;
+        ctx.fillStyle = `rgb(${theme.primary[0] * 0.5 + 128},${theme.primary[1] * 0.5 + 128},${theme.primary[2] * 0.5 + 128})`;
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.s, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
 
       // Background grid
       drawGrid(t);

@@ -109,12 +109,13 @@ export function NexusRush({ lang, auth }: NexusRushProps) {
     }, 1000);
   }, [finishGame]);
 
-  // ── Tap handler: move left/right ──
-  const handleTap = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+  // ── Tap handler: move left/right (mouse + touch) ──
+  const handleTap = useCallback((e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     const st = stRef.current;
     if (st.phase !== "playing") return;
     const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
-    const x = e.clientX - rect.left;
+    const clientX = "touches" in e ? (e.touches[0]?.clientX ?? 0) : e.clientX;
+    const x = clientX - rect.left;
     const prevLane = st.lane;
     if (x < W_CV * 0.5) {
       st.lane = Math.max(0, st.lane - 1);
@@ -508,7 +509,7 @@ export function NexusRush({ lang, auth }: NexusRushProps) {
         style={{ width: "100%", borderRadius: 12, display: "block",
           cursor: phase === "playing" ? "pointer" : "default",
           boxShadow: phase === "playing" ? "0 0 24px rgba(0,210,255,0.18)" : undefined }}
-        onClick={handleTap}
+        onClick={handleTap} onTouchStart={handleTap}
       />
 
       {/* ── IDLE overlay ── */}
