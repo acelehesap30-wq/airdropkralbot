@@ -395,7 +395,7 @@ export function useAdminRuntimeController(options: AdminRuntimeControllerOptions
   );
 
   const runLiveOpsCampaignDispatch = useCallback(
-    async (dryRun = true) => {
+    async (dryRun = true, forceGateOverride = false) => {
       if (!options.adminQueryEnabled) return;
       if (!options.ensureAdminPanelEnabled("liveOps")) return;
       options.setLiveOpsCampaignDispatchError("");
@@ -418,7 +418,8 @@ export function useAdminRuntimeController(options: AdminRuntimeControllerOptions
         auth: options.activeAuth,
         dry_run: dryRun,
         reason: dryRun ? "webapp_admin_live_ops_campaign_dry_run" : "webapp_admin_live_ops_campaign_dispatch",
-        campaign: parsedDraft.campaign as Record<string, unknown>
+        campaign: parsedDraft.campaign as Record<string, unknown>,
+        force_gate_override: forceGateOverride === true
       })
         .unwrap()
         .catch(() => null);

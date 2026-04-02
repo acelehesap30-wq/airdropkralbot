@@ -88,7 +88,7 @@ type AdminPanelProps = {
   onApproveLiveOpsCampaign: () => void;
   onRevokeLiveOpsCampaignApproval: () => void;
   onDryRunLiveOpsCampaign: () => void;
-  onDispatchLiveOpsCampaign: () => void;
+  onDispatchLiveOpsCampaign: (forceGateOverride?: boolean) => void;
   runtimeFlagsData: Record<string, unknown> | null;
   runtimeFlagsDraft: string;
   runtimeFlagsError: string;

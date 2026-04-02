@@ -4547,7 +4547,7 @@ async function buildCampaignSnapshot(client, current) {
                     : "campaign_not_ready";
           return { ok: false, reason: reasonCode, campaign, version };
         }
-        if (dispatchSource === "scheduler" && sceneGate.ready_for_auto_dispatch !== true) {
+        if (dispatchSource === "scheduler" && sceneGate.ready_for_auto_dispatch !== true && input.forceGateOverride !== true) {
           return { ok: false, reason: sceneGate.scene_gate_reason || "scene_runtime_scheduler_blocked", campaign, version };
         }
       }

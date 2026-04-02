@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { t, type Lang } from "../../../i18n";
 import { SHELL_ACTION_KEY } from "../../../../core/navigation/shellActions.js";
 import { buildLiveOpsCampaignPreflight } from "../../../../core/admin/liveOpsCampaignPreflight.js";
@@ -21,7 +22,7 @@ type LiveOpsCampaignCardProps = {
   onApproveLiveOpsCampaign: () => void;
   onRevokeLiveOpsCampaignApproval: () => void;
   onDryRunLiveOpsCampaign: () => void;
-  onDispatchLiveOpsCampaign: () => void;
+  onDispatchLiveOpsCampaign: (forceGateOverride?: boolean) => void;
   onSurfaceAction: (sectionKey: string, slotKey: string, fallbackActionKey: string, sourcePanelKey?: string) => void;
 };
 
@@ -321,6 +322,7 @@ function QueryStrategyAdjustmentList(props: { title: string; rows: Array<Record<
 }
 
 export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
+  const [gateOverride, setGateOverride] = useState(false);
   const snapshot = asRecord(props.liveOpsCampaignData);
   const approvalSummary = asRecord(snapshot.approval_summary);
   const schedulerSummary = asRecord(snapshot.scheduler_summary);
@@ -386,11 +388,17 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
             <p className="akrMutedLine">
               {t(props.lang, "admin_live_ops_last_dispatch_label")}: {latestDispatch}
             </p>
+            {schedulerSummary.ready_for_dispatch !== true && (
+              <label className="akrMutedLine" style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", marginTop: 4 }}>
+                <input type="checkbox" checked={gateOverride} onChange={(e) => setGateOverride(e.target.checked)} />
+                {props.lang === "tr" ? "Gate zorla gec" : "Force gate override"}
+              </label>
+            )}
             <div className="akrActionRow">
               <button type="button" className="akrBtn akrBtnGhost" onClick={props.onRefreshLiveOpsCampaign}>
                 {t(props.lang, "admin_live_ops_refresh")}
               </button>
-              <button type="button" className="akrBtn akrBtnAccent" onClick={props.onDispatchLiveOpsCampaign} disabled={props.liveOpsCampaignDispatching}>
+              <button type="button" className="akrBtn akrBtnAccent" onClick={() => props.onDispatchLiveOpsCampaign(gateOverride)} disabled={props.liveOpsCampaignDispatching}>
                 {t(props.lang, "admin_live_ops_dispatch")}
               </button>
             </div>
@@ -567,10 +575,14 @@ export function LiveOpsCampaignCard(props: LiveOpsCampaignCardProps) {
         <button type="button" className="akrBtn akrBtnGhost" onClick={props.onDryRunLiveOpsCampaign} disabled={props.liveOpsCampaignDispatching}>
           {props.liveOpsCampaignDispatching ? t(props.lang, "admin_live_ops_dispatching") : t(props.lang, "admin_live_ops_dry_run")}
         </button>
-        <button type="button" className="akrBtn akrBtnAccent" onClick={props.onDispatchLiveOpsCampaign} disabled={props.liveOpsCampaignDispatching}>
+        <button type="button" className="akrBtn akrBtnAccent" onClick={() => props.onDispatchLiveOpsCampaign(gateOverride)} disabled={props.liveOpsCampaignDispatching}>
           {props.liveOpsCampaignDispatching ? t(props.lang, "admin_live_ops_dispatching") : t(props.lang, "admin_live_ops_dispatch")}
         </button>
       </div>
+      <label className="akrMutedLine" style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", marginBottom: 8 }}>
+        <input type="checkbox" checked={gateOverride} onChange={(e) => setGateOverride(e.target.checked)} />
+        {props.lang === "tr" ? "Scene gate zorla gec (alarm durumunda bile gonder)" : "Force scene gate override (dispatch even when alarm is active)"}
+      </label>
       <textarea
         className="akrTextarea"
         value={props.liveOpsCampaignDraft}

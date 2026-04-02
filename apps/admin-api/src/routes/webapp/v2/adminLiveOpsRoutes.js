@@ -224,7 +224,8 @@ function registerWebappV2AdminLiveOpsRoutes(fastify, deps = {}) {
             dry_run: { type: "boolean" },
             max_recipients: { type: "integer", minimum: 1, maximum: 500 },
             reason: { type: "string", maxLength: 240 },
-            campaign: { type: "object" }
+            campaign: { type: "object" },
+            force_gate_override: { type: "boolean" }
           }
         }
       }
@@ -250,7 +251,8 @@ function registerWebappV2AdminLiveOpsRoutes(fastify, deps = {}) {
         dryRun: request.body.dry_run !== false,
         maxRecipients: request.body.max_recipients,
         reason: request.body.reason,
-        campaign: request.body.campaign
+        campaign: request.body.campaign,
+        forceGateOverride: request.body.force_gate_override === true
       });
       if (!result?.ok) {
         const reason = String(result?.reason || "live_ops_campaign_dispatch_failed");

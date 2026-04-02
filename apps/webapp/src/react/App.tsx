@@ -1133,7 +1133,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
             onApproveLiveOpsCampaign={() => void updateLiveOpsCampaignApproval("approve")}
             onRevokeLiveOpsCampaignApproval={() => void updateLiveOpsCampaignApproval("revoke")}
             onDryRunLiveOpsCampaign={() => void runLiveOpsCampaignDispatch(true)}
-            onDispatchLiveOpsCampaign={() => void runLiveOpsCampaignDispatch(false)}
+            onDispatchLiveOpsCampaign={(forceGateOverride) => void runLiveOpsCampaignDispatch(false, forceGateOverride)}
             onRuntimeFlagsDraftChange={setRuntimeFlagsDraft}
             onRefreshRuntimeFlags={() => void refreshRuntimeFlags()}
             onSaveRuntimeFlags={() => void saveRuntimeFlags()}

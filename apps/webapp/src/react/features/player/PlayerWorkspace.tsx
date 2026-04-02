@@ -1,6 +1,34 @@
+import React from "react";
 import { HomePanel } from "../home/HomePanel";
 import type { Lang } from "../../i18n";
 import type { BootstrapV2Payload, TabKey } from "../../types";
+
+type PanelBoundaryState = { hasError: boolean; message: string };
+class PanelErrorBoundary extends React.Component<{ panelKey: string; children: React.ReactNode }, PanelBoundaryState> {
+  state: PanelBoundaryState = { hasError: false, message: "" };
+  static getDerivedStateFromError(err: unknown): PanelBoundaryState {
+    return { hasError: true, message: err instanceof Error ? err.message : "render_error" };
+  }
+  componentDidUpdate(prev: { panelKey: string }) {
+    if (prev.panelKey !== this.props.panelKey && this.state.hasError) {
+      this.setState({ hasError: false, message: "" });
+    }
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ margin: 16, padding: "16px 12px", borderRadius: 12, background: "rgba(255,68,68,0.08)", border: "1px solid rgba(255,68,68,0.2)", fontSize: 12 }}>
+          <div style={{ color: "#ff6b6b", fontWeight: 700, marginBottom: 4 }}>⚠ Panel yüklenemedi / Panel failed to load</div>
+          <div style={{ opacity: 0.5, fontFamily: "monospace", fontSize: 10 }}>{this.state.message}</div>
+          <button onClick={() => this.setState({ hasError: false, message: "" })} style={{ marginTop: 8, padding: "4px 12px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: "#fff", fontSize: 11, cursor: "pointer" }}>
+            Yenile / Retry
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 import { resolveShellActionTarget } from "../../../core/navigation/shellActions.js";
 import { usePlayerNavigationController } from "./usePlayerNavigationController";
 import { PlayerTabs } from "../shell/PlayerTabs";
@@ -199,6 +227,7 @@ export function PlayerWorkspace(props: PlayerWorkspaceProps) {
           />
         )}
         {props.tab === "vault" && (
+          <PanelErrorBoundary panelKey="vault">
           <VaultPanel
             lang={props.lang}
             advanced={props.advanced}
@@ -241,6 +270,7 @@ export function PlayerWorkspace(props: PlayerWorkspaceProps) {
             onWalletSignatureChange={props.onWalletSignatureChange}
             onPayoutCurrencyChange={props.onPayoutCurrencyChange}
           />
+          </PanelErrorBoundary>
         )}
         {props.tab === "forge" && (
           <ForgePanel
@@ -275,16 +305,18 @@ export function PlayerWorkspace(props: PlayerWorkspaceProps) {
           />
         )}
         {props.tab === "settings" && (
-          <SettingsPanel
-            lang={props.lang}
-            advanced={props.advanced}
-            data={props.data || null}
-            onToggleReducedMotion={props.onToggleReducedMotion}
-            onToggleLargeText={props.onToggleLargeText}
-            onToggleLanguage={props.onToggleLanguage}
-            onToggleNotification={props.onToggleNotification}
-            onShellAction={runShellAction}
-          />
+          <PanelErrorBoundary panelKey="settings">
+            <SettingsPanel
+              lang={props.lang}
+              advanced={props.advanced}
+              data={props.data || null}
+              onToggleReducedMotion={props.onToggleReducedMotion}
+              onToggleLargeText={props.onToggleLargeText}
+              onToggleLanguage={props.onToggleLanguage}
+              onToggleNotification={props.onToggleNotification}
+              onShellAction={runShellAction}
+            />
+          </PanelErrorBoundary>
         )}
       </main>
     </>

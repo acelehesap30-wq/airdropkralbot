@@ -440,29 +440,25 @@ export function StreakChallenge({ lang }: StreakChallengeProps) {
         </div>
       )}
 
+      {/* Single canvas — always in DOM so useEffect RAF can start immediately */}
+      <canvas
+        ref={canvasRef} width={W_CV} height={H_CV}
+        onClick={handleTap}
+        style={{ display: phase === "playing" ? "block" : "none", width: "100%", cursor: "pointer", touchAction: "none" }}
+      />
       {phase === "playing" && (
-        <>
-          <canvas
-            ref={canvasRef} width={W_CV} height={H_CV}
-            onClick={handleTap}
-            style={{ display: "block", width: "100%", cursor: "pointer", touchAction: "none" }}
-          />
-          <button
-            onClick={handleTap}
-            style={{
-              display: "block", width: "calc(100% - 32px)", margin: "0 16px 16px",
-              background: "linear-gradient(135deg,rgba(0,255,136,0.15),rgba(0,200,255,0.1))",
-              border: "1px solid rgba(0,255,136,0.35)", borderRadius: 14,
-              padding: "14px 0", fontSize: 18, fontWeight: 800, color: "#00ff88",
-              cursor: "pointer", letterSpacing: 4, fontFamily: "monospace",
-            }}
-          >
-            {isTr ? "DOKUN!" : "TAP!"}
-          </button>
-        </>
-      )}
-      {phase !== "playing" && (
-        <canvas ref={canvasRef} width={W_CV} height={H_CV} style={{ display: "none" }} />
+        <button
+          onClick={handleTap}
+          style={{
+            display: "block", width: "calc(100% - 32px)", margin: "0 16px 16px",
+            background: "linear-gradient(135deg,rgba(0,255,136,0.15),rgba(0,200,255,0.1))",
+            border: "1px solid rgba(0,255,136,0.35)", borderRadius: 14,
+            padding: "14px 0", fontSize: 18, fontWeight: 800, color: "#00ff88",
+            cursor: "pointer", letterSpacing: 4, fontFamily: "monospace",
+          }}
+        >
+          {isTr ? "DOKUN!" : "TAP!"}
+        </button>
       )}
 
       {phase === "done" && (
