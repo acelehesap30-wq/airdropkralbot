@@ -43,9 +43,11 @@ export function AirdropCatcher({ lang, auth, onClose }: Props) {
     phase:"idle", tokens:[] as Token3D[], particles:[] as Particle[],
     catcherX:0.5, score:0, combo:0, bestCombo:0, caught:{SC:0,HC:0,RC:0,NXT:0,SCAM:0},
     nextId:0, stars:[] as {x:number;y:number;b:number}[],
+    timeElapsed:0, wave:1,
   });
   const timerRef = useRef<ReturnType<typeof setInterval>|null>(null);
   const spawnRef = useRef<ReturnType<typeof setInterval>|null>(null);
+  const wave2Ref = useRef<ReturnType<typeof setTimeout>|null>(null);
   const rafRef   = useRef<number>(0);
 
   // Init stars
@@ -67,13 +69,18 @@ export function AirdropCatcher({ lang, auth, onClose }: Props) {
   const spawnToken = useCallback(() => {
     const st = stateRef.current;
     if (st.phase !== "playing") return;
-    const types: Array<Token3D["type"]> = ["SC","SC","SC","HC","HC","RC","NXT","SCAM","SCAM"];
+    // Wave 2 (after 10s): more SCAMs, faster tokens
+    const isWave2 = st.wave >= 2;
+    const types: Array<Token3D["type"]> = isWave2
+      ? ["SC","SC","HC","HC","RC","NXT","SCAM","SCAM","SCAM"]
+      : ["SC","SC","SC","HC","HC","RC","NXT","SCAM","SCAM"];
     const type = types[Math.floor(Math.random()*types.length)];
     const cfg = TCONF[type];
+    const speedMult = isWave2 ? 1.6 : 1.0;
     st.tokens.push({
       id: st.nextId++, type,
       x: 0.05+Math.random()*0.9, y:-0.05, z:0.3+Math.random()*0.7,
-      vy: 0.004+Math.random()*0.006, vz:0,
+      vy: (0.004+Math.random()*0.006) * speedMult, vz:0,
       r:cfg.r, g:cfg.g, b:cfg.b, label:cfg.label, pts:cfg.pts,
       spin:0, spinV:(Math.random()-0.5)*0.1,
     });
@@ -82,6 +89,7 @@ export function AirdropCatcher({ lang, auth, onClose }: Props) {
   const cleanup = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     if (spawnRef.current) clearInterval(spawnRef.current);
+    if (wave2Ref.current) clearTimeout(wave2Ref.current);
     cancelAnimationFrame(rafRef.current);
   }, []);
 
@@ -268,12 +276,13 @@ export function AirdropCatcher({ lang, auth, onClose }: Props) {
   const startGame = useCallback(() => {
     const st = stateRef.current;
     st.phase="playing"; st.score=0; st.combo=0; st.bestCombo=0; st.nextId=0;
-    st.tokens=[]; st.particles=[];
+    st.tokens=[]; st.particles=[]; st.timeElapsed=0; st.wave=1;
     st.caught={SC:0,HC:0,RC:0,NXT:0,SCAM:0};
     setPhase("playing"); setScore(0); setTimeLeft(20); setCombo(0); setBestCombo(0);
     setCaught({SC:0,HC:0,RC:0,NXT:0,SCAM:0}); setFlashMsg(null);
 
     timerRef.current = setInterval(()=> {
+      stateRef.current.timeElapsed++;
       setTimeLeft(prev => {
         if (prev<=1) {
           cleanup(); stateRef.current.phase="done"; setPhase("done");
@@ -282,7 +291,7 @@ export function AirdropCatcher({ lang, auth, onClose }: Props) {
           postJson("/webapp/api/v2/player/action",{...a,
             action_key:"game_airdrop_catcher",
             action_request_id:buildActionRequestId("game_airdrop_catcher"),
-            payload:{score:stateRef.current.score,reward_sc:reward,best_combo:stateRef.current.bestCombo,caught:stateRef.current.caught}
+            payload:{score:stateRef.current.score,reward_sc:reward,best_combo:stateRef.current.bestCombo,caught:stateRef.current.caught,wave:stateRef.current.wave}
           }).catch(()=>{});
           return 0;
         }
@@ -290,7 +299,17 @@ export function AirdropCatcher({ lang, auth, onClose }: Props) {
       });
     }, 1000);
     spawnRef.current = setInterval(spawnToken, 700);
-  }, [auth, cleanup, spawnToken]);
+
+    // Wave 2 kicks in after 10 seconds: faster spawn rate + speed boost
+    wave2Ref.current = setTimeout(() => {
+      if (stateRef.current.phase !== "playing") return;
+      stateRef.current.wave = 2;
+      if (spawnRef.current) clearInterval(spawnRef.current);
+      spawnRef.current = setInterval(spawnToken, 420);
+      setFlashMsg({ text: isTr ? "⚡ DALGA 2 — Hız Arttı!" : "⚡ WAVE 2 — Speed Up!", color: "#ff6060" });
+      setTimeout(() => setFlashMsg(null), 1800);
+    }, 10_000);
+  }, [auth, cleanup, spawnToken, isTr]);
 
   useEffect(()=>()=>cleanup(),[cleanup]);
 
@@ -337,10 +356,24 @@ export function AirdropCatcher({ lang, auth, onClose }: Props) {
       )}
 
       {phase==="playing" && (
-        <div style={{display:"flex",justifyContent:"space-between",padding:"8px 16px",background:"rgba(0,0,0,0.3)"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 16px",background:"rgba(0,0,0,0.3)"}}>
           <span style={{fontSize:12,color:"#ff6060",fontWeight:700,fontFamily:"monospace"}}>⏱ {String(timeLeft).padStart(2,"0")}s</span>
+          <span style={{fontSize:10,color:stateRef.current.wave>=2?"#ff6060":"rgba(0,214,255,0.6)",fontWeight:700,letterSpacing:1,background:stateRef.current.wave>=2?"rgba(255,60,60,0.15)":"rgba(0,214,255,0.08)",borderRadius:6,padding:"2px 6px"}}>
+            W{stateRef.current.wave}
+          </span>
           <span style={{fontSize:12,color:"#00d6ff",fontWeight:700,fontFamily:"monospace"}}>◈ {score}</span>
           <span style={{fontSize:12,color:combo>3?"#10ff90":"rgba(255,255,255,0.4)",fontWeight:700,fontFamily:"monospace"}}>⚡×{combo}</span>
+        </div>
+      )}
+      {/* Flash message overlay */}
+      {flashMsg && phase==="playing" && (
+        <div style={{position:"relative",height:0,overflow:"visible"}}>
+          <div style={{position:"absolute",top:-4,left:0,right:0,textAlign:"center",zIndex:10,
+            fontSize:14,fontWeight:800,color:flashMsg.color,
+            textShadow:`0 0 20px ${flashMsg.color}`,letterSpacing:2,
+            animation:"none",pointerEvents:"none"}}>
+            {flashMsg.text}
+          </div>
         </div>
       )}
       {/* Canvas always mounted so RAF loop captures it on first effect run */}
