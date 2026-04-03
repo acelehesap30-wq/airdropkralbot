@@ -1510,6 +1510,7 @@ const DICT = {
     forge_chest_reveal_desc: "Common · Rare · Epic — oduller ac",
 
     /* ── Exchange panel copy ── */
+    exchange_title: "Borsa",
     exchange_hero_body: "Oyun ici doviz cevir, NXT token al-sat, BTC'ye cekim yap.",
     exchange_price_label: "Fiyat",
     exchange_balances_label: "Bakiyeler",
@@ -1543,6 +1544,7 @@ const DICT = {
     season_points_label: "puan",
 
     /* ── Events panel copy ── */
+    events_title: "Canli Etkinlikler",
     events_hero_body: "Anomaliler, turnuvalar, savaslar ve flash droplar. Katil ve odul kazan.",
     events_active_badge: "aktif",
     events_upcoming_badge: "yaklasan",
@@ -1635,6 +1637,7 @@ const DICT = {
     vault_hash_racer_desc: "3D matrix · Hash bloklari kazan · SC odulu",
 
     /* ── Settings panel copy ── */
+    settings_title: "Ayarlar",
     settings_hero_body: "Profil, bildirimler ve arayuz tercihleri.",
     settings_built_from: "Blueprint'ten uretildi",
     settings_reduced_motion: "Azaltilmis Hareket",
@@ -3160,6 +3163,7 @@ const DICT = {
     forge_chest_reveal_desc: "Common · Rare · Epic — reveal rewards",
 
     /* ── Exchange panel copy ── */
+    exchange_title: "Exchange",
     exchange_hero_body: "Convert in-game currencies, trade NXT tokens, withdraw to BTC.",
     exchange_price_label: "Price",
     exchange_balances_label: "Balances",
@@ -3193,6 +3197,7 @@ const DICT = {
     season_points_label: "pts",
 
     /* ── Events panel copy ── */
+    events_title: "Live Events",
     events_hero_body: "Anomalies, tournaments, wars and flash drops. Join and earn rewards.",
     events_active_badge: "active",
     events_upcoming_badge: "upcoming",
@@ -3285,6 +3290,7 @@ const DICT = {
     vault_hash_racer_desc: "3D matrix · Mine hash blocks · Earn SC",
 
     /* ── Settings panel copy ── */
+    settings_title: "Settings",
     settings_hero_body: "Profile, notifications and UI preferences.",
     settings_built_from: "Built from Blueprint",
     settings_reduced_motion: "Reduced Motion",

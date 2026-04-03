@@ -138,12 +138,10 @@ export function ExchangePanel(props: ExchangePanelProps) {
     <section className="akrPanelSection">
       <div className="akrCard akrCardGlow">
         <div className="akrCardHeader">
-          <h2 className="akrCardTitle">{isTr ? "Borsa" : "Exchange"}</h2>
+          <h2 className="akrCardTitle">{t(props.lang, "exchange_title")}</h2>
         </div>
         <p className="akrCardBody" style={{ fontSize: 12, opacity: 0.7 }}>
-          {isTr
-            ? "Oyun i\u00e7i d\u00f6viz \u00e7evir, NXT token al-sat, BTC'ye \u00e7ekim yap."
-            : "Convert in-game currencies, trade NXT tokens, withdraw to BTC."}
+          {t(props.lang, "exchange_hero_body")}
         </p>
       </div>
 
@@ -172,8 +170,8 @@ export function ExchangePanel(props: ExchangePanelProps) {
             <div className="akrFeaturedHeader">
               <div className="akrFeaturedIcon">📈</div>
               <div>
-                <div className="akrFeaturedTitle">{isTr ? "Fiyat Tahmincisi" : "Price Predictor"}</div>
-                <div className="akrFeaturedSub">{isTr ? "NXT fiyatını tahmin et · SC kazan" : "Predict NXT price · Earn SC"}</div>
+                <div className="akrFeaturedTitle">{t(props.lang, "exchange_price_predictor_title")}</div>
+                <div className="akrFeaturedSub">{t(props.lang, "exchange_price_predictor_desc")}</div>
                 <div className="akrFeaturedBadge">📊 TRADE</div>
               </div>
             </div>

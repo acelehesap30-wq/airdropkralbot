@@ -154,25 +154,23 @@ export function EventsPanel(props: EventsPanelProps) {
       {/* Header */}
       <div className="akrCard akrCardGlow">
         <div className="akrCardHeader">
-          <h2 className="akrCardTitle">{isTr ? "Canl\u0131 Etkinlikler" : "Live Events"}</h2>
+          <h2 className="akrCardTitle">{t(props.lang, "events_title")}</h2>
         </div>
         <p className="akrCardBody" style={{ fontSize: 12, opacity: 0.7 }}>
-          {isTr
-            ? "Anomaliler, turnuvalar, sava\u015flar ve flash droplar. Kat\u0131l ve \u00f6d\u00fcl kazan."
-            : "Anomalies, tournaments, wars and flash drops. Join and earn rewards."}
+          {t(props.lang, "events_hero_body")}
         </p>
         <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
           <span className="akrBadge" style={{ background: "rgba(0,255,136,0.1)", color: "#00ff88", fontSize: 10 }}>
-            {active.length} {isTr ? "aktif" : "active"}
+            {active.length} {t(props.lang, "events_active_badge")}
           </span>
           {upcoming.length > 0 && (
             <span className="akrBadge" style={{ background: "rgba(255,215,0,0.1)", color: "#ffd700", fontSize: 10 }}>
-              {upcoming.length} {isTr ? "yakla\u015fan" : "upcoming"}
+              {upcoming.length} {t(props.lang, "events_upcoming_badge")}
             </span>
           )}
           {ended.length > 0 && (
             <span className="akrBadge" style={{ background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.4)", fontSize: 10 }}>
-              {ended.length} {isTr ? "biten" : "ended"}
+              {ended.length} {t(props.lang, "events_ended_badge")}
             </span>
           )}
         </div>
