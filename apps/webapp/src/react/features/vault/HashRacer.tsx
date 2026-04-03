@@ -322,8 +322,6 @@ export function HashRacer({ lang, auth, onClose }: Props) {
             </div>
           )}
 
-          <canvas ref={canvasRef} width={380} height={220} style={{display:"block",width:"100%"}}/>
-
           {phase==="mining"&&(
             <div style={{padding:"8px 16px 12px"}}>
               <button
@@ -349,6 +347,8 @@ export function HashRacer({ lang, auth, onClose }: Props) {
           )}
         </>
       )}
+      {/* Canvas always mounted so RAF loop captures ref on first effect run */}
+      <canvas ref={canvasRef} width={380} height={220} style={{display: (phase==="mining"||phase==="done") ? "block" : "none",width:"100%"}}/>
 
       {phase==="done"&&(
         <div style={{padding:"20px 16px",textAlign:"center"}}>

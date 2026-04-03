@@ -337,19 +337,18 @@ export function AirdropCatcher({ lang, auth, onClose }: Props) {
       )}
 
       {phase==="playing" && (
-        <>
-          <div style={{display:"flex",justifyContent:"space-between",padding:"8px 16px",background:"rgba(0,0,0,0.3)"}}>
-            <span style={{fontSize:12,color:"#ff6060",fontWeight:700,fontFamily:"monospace"}}>⏱ {String(timeLeft).padStart(2,"0")}s</span>
-            <span style={{fontSize:12,color:"#00d6ff",fontWeight:700,fontFamily:"monospace"}}>◈ {score}</span>
-            <span style={{fontSize:12,color:combo>3?"#10ff90":"rgba(255,255,255,0.4)",fontWeight:700,fontFamily:"monospace"}}>⚡×{combo}</span>
-          </div>
-          <canvas
-            ref={canvasRef} width={380} height={340}
-            onTouchMove={handleMove} onMouseMove={handleMove}
-            style={{display:"block",width:"100%",touchAction:"none"}}
-          />
-        </>
+        <div style={{display:"flex",justifyContent:"space-between",padding:"8px 16px",background:"rgba(0,0,0,0.3)"}}>
+          <span style={{fontSize:12,color:"#ff6060",fontWeight:700,fontFamily:"monospace"}}>⏱ {String(timeLeft).padStart(2,"0")}s</span>
+          <span style={{fontSize:12,color:"#00d6ff",fontWeight:700,fontFamily:"monospace"}}>◈ {score}</span>
+          <span style={{fontSize:12,color:combo>3?"#10ff90":"rgba(255,255,255,0.4)",fontWeight:700,fontFamily:"monospace"}}>⚡×{combo}</span>
+        </div>
       )}
+      {/* Canvas always mounted so RAF loop captures it on first effect run */}
+      <canvas
+        ref={canvasRef} width={380} height={340}
+        onTouchMove={handleMove} onMouseMove={handleMove}
+        style={{display: phase==="playing" ? "block" : "none", width:"100%", touchAction:"none"}}
+      />
 
       {phase==="done" && (
         <div style={{padding:"24px 16px",textAlign:"center"}}>
@@ -378,8 +377,6 @@ export function AirdropCatcher({ lang, auth, onClose }: Props) {
         </div>
       )}
 
-      {/* Keep canvas mounted while playing for rAF */}
-      {phase==="playing" && null}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import type { Lang } from "../../i18n";
 
 type Chain = "TON" | "ETH" | "BSC" | "SOL" | "BTC" | "TRX";
@@ -104,6 +104,19 @@ export function MultiChainWalletConnect(props: MultiChainWalletConnectProps) {
       setErrorMsg("");
     }
   }, [props.walletVerified, step]);
+
+  // Detect verify failure: loading went true→false without walletVerified becoming true
+  const prevAutoVerifyLoadingRef = useRef(false);
+  useEffect(() => {
+    const wasLoading = prevAutoVerifyLoadingRef.current;
+    prevAutoVerifyLoadingRef.current = props.autoVerifyLoading;
+    if (wasLoading && !props.autoVerifyLoading && !props.walletVerified && step === "verifying") {
+      setStep("error");
+      setErrorMsg(tr
+        ? "Doğrulama başarısız. Lütfen adresi kontrol edip tekrar deneyin."
+        : "Verification failed. Please check the address and try again.");
+    }
+  }, [props.autoVerifyLoading, props.walletVerified, step, tr]);
 
   const activeChainInfo = CHAINS.find((c) => c.key === selectedChain);
   const shortAddr = props.walletAddress

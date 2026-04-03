@@ -317,6 +317,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
   const [walletVerify, { isLoading: walletVerifyLoading }] = useWalletVerifyV2Mutation();
   const [walletUnlink, { isLoading: walletUnlinkLoading }] = useWalletUnlinkV2Mutation();
   const [payoutRequest, { isLoading: payoutRequestLoading }] = usePayoutRequestV2Mutation();
+  const [walletAutoVerifying, setWalletAutoVerifying] = useState(false);
   const { adminPanelVisibility, ensureAdminPanelEnabled, applySession, syncPrefs } = useShellSessionPrefsController({
     adminPanelsRuntimeFlags: (adminPanels?.runtime_flags as Record<string, unknown> | null) || null,
     runtimeFlagsQueryData: (adminRuntimeFlagsQuery.data as WebAppApiResponse | null | undefined) || null,
@@ -1029,7 +1030,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
             payoutCurrency={payoutCurrency}
             walletChallengeLoading={walletChallengeLoading}
             walletVerifyLoading={walletVerifyLoading}
-            walletAutoVerifyLoading={walletChallengeLoading || walletVerifyLoading}
+            walletAutoVerifyLoading={walletAutoVerifying}
             walletUnlinkLoading={walletUnlinkLoading}
             payoutRequestLoading={payoutRequestLoading}
             passPurchaseLoading={passPurchaseLoading}
@@ -1058,7 +1059,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
             onTokenSubmitTx={() => void handleTokenSubmitTx()}
             onWalletChallenge={() => void handleWalletChallenge()}
             onWalletVerify={() => void handleWalletVerify()}
-            onWalletAutoVerify={() => void handleWalletAutoVerify()}
+            onWalletAutoVerify={() => { setWalletAutoVerifying(true); void handleWalletAutoVerify().finally(() => setWalletAutoVerifying(false)); }}
             onWalletUnlink={() => void handleWalletUnlink()}
             onPayoutRequest={() => void handlePayoutRequest()}
             onPassPurchase={(passKey, paymentCurrency) => void handlePassPurchase(passKey, paymentCurrency)}
