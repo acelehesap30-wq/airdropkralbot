@@ -4,8 +4,9 @@ import type { WebAppAuth } from "../../types";
 
 type Props = { lang: "tr" | "en"; auth?: WebAppAuth | null; onClose: () => void };
 
+type TokenType = "SC"|"HC"|"RC"|"NXT"|"SCAM"|"MAGNET"|"SHIELD"|"MULTI";
 type Token3D = {
-  id: number; type: "SC"|"HC"|"RC"|"NXT"|"SCAM";
+  id: number; type: TokenType;
   x: number; y: number; z: number; // normalized 0-1
   vy: number; vz: number;
   r: number; g: number; b: number; label: string; pts: number;
@@ -14,13 +15,18 @@ type Token3D = {
 
 type Particle = { x:number; y:number; vx:number; vy:number; life:number; r:number; g:number; b:number; size:number };
 
-const TCONF = {
-  SC:   { r:255,g:215,b:0,   pts:5,  label:"SC" },
-  HC:   { r:0,  g:200,b:255, pts:15, label:"HC" },
-  RC:   { r:168,g:85, b:247, pts:25, label:"RC" },
-  NXT:  { r:16, g:255,b:145, pts:50, label:"NXT" },
-  SCAM: { r:255,g:60, b:80,  pts:-30,label:"SCAM" },
-} as const;
+type PowerUp = { type: ""|"MAGNET"|"SHIELD"|"MULTI"; until: number };
+
+const TCONF: Record<TokenType, { r:number; g:number; b:number; pts:number; label:string }> = {
+  SC:     { r:255,g:215,b:0,   pts:5,  label:"SC" },
+  HC:     { r:0,  g:200,b:255, pts:15, label:"HC" },
+  RC:     { r:168,g:85, b:247, pts:25, label:"RC" },
+  NXT:    { r:16, g:255,b:145, pts:50, label:"NXT" },
+  SCAM:   { r:255,g:60, b:80,  pts:-30,label:"SCAM" },
+  MAGNET: { r:80, g:160,b:255, pts:0,  label:"\ud83e\uddf2" },
+  SHIELD: { r:0,  g:255,b:120, pts:0,  label:"\ud83d\udee1" },
+  MULTI:  { r:255,g:200,b:0,   pts:0,  label:"x2" },
+};
 
 function authFields(auth?: WebAppAuth | null) {
   if (auth) return { uid:auth.uid, ts:auth.ts, sig:auth.sig };
@@ -44,6 +50,8 @@ export function AirdropCatcher({ lang, auth, onClose }: Props) {
     catcherX:0.5, score:0, combo:0, bestCombo:0, caught:{SC:0,HC:0,RC:0,NXT:0,SCAM:0},
     nextId:0, stars:[] as {x:number;y:number;b:number}[],
     timeElapsed:0, wave:1,
+    powerUp: { type: "", until: 0 } as PowerUp,
+    shieldHits: 0,
   });
   const timerRef = useRef<ReturnType<typeof setInterval>|null>(null);
   const spawnRef = useRef<ReturnType<typeof setInterval>|null>(null);
@@ -69,20 +77,28 @@ export function AirdropCatcher({ lang, auth, onClose }: Props) {
   const spawnToken = useCallback(() => {
     const st = stateRef.current;
     if (st.phase !== "playing") return;
-    // Wave 2 (after 10s): more SCAMs, faster tokens
     const isWave2 = st.wave >= 2;
-    const types: Array<Token3D["type"]> = isWave2
-      ? ["SC","SC","HC","HC","RC","NXT","SCAM","SCAM","SCAM"]
-      : ["SC","SC","SC","HC","HC","RC","NXT","SCAM","SCAM"];
-    const type = types[Math.floor(Math.random()*types.length)];
+
+    // 7% chance to spawn a power-up
+    let type: TokenType;
+    if (Math.random() < 0.07) {
+      const pups: TokenType[] = ["MAGNET","SHIELD","MULTI"];
+      type = pups[Math.floor(Math.random()*pups.length)];
+    } else {
+      const types: TokenType[] = isWave2
+        ? ["SC","SC","HC","HC","RC","NXT","SCAM","SCAM","SCAM"]
+        : ["SC","SC","SC","HC","HC","RC","NXT","SCAM","SCAM"];
+      type = types[Math.floor(Math.random()*types.length)];
+    }
     const cfg = TCONF[type];
     const speedMult = isWave2 ? 1.6 : 1.0;
+    const isPowerUp = type === "MAGNET" || type === "SHIELD" || type === "MULTI";
     st.tokens.push({
       id: st.nextId++, type,
-      x: 0.05+Math.random()*0.9, y:-0.05, z:0.3+Math.random()*0.7,
-      vy: (0.004+Math.random()*0.006) * speedMult, vz:0,
+      x: 0.05+Math.random()*0.9, y:-0.05, z: isPowerUp ? 0.8+Math.random()*0.2 : 0.3+Math.random()*0.7,
+      vy: isPowerUp ? 0.003*speedMult : (0.004+Math.random()*0.006)*speedMult, vz:0,
       r:cfg.r, g:cfg.g, b:cfg.b, label:cfg.label, pts:cfg.pts,
-      spin:0, spinV:(Math.random()-0.5)*0.1,
+      spin:0, spinV: isPowerUp ? 0.15 : (Math.random()-0.5)*0.1,
     });
   }, []);
 
@@ -160,21 +176,56 @@ export function AirdropCatcher({ lang, auth, onClose }: Props) {
         const py = tok.y*H;
         const sz = 14*perspective + 4;
 
+        // Magnet effect: attract tokens toward catcher
+        const now = performance.now();
+        if (st.powerUp.type === "MAGNET" && now < st.powerUp.until && tok.type !== "SCAM") {
+          const dx = st.catcherX - tok.x;
+          tok.x += dx * 0.04; // gentle pull
+        }
+
         // Check catch
         const catcherPx = st.catcherX*W;
         if (py >= catcherY-sz && py <= catcherY+sz*2 && Math.abs(px-catcherPx) < 55*perspective) {
           toRemove.add(tok.id);
+          // Power-up tokens
+          if (tok.type === "MAGNET" || tok.type === "SHIELD" || tok.type === "MULTI") {
+            if (tok.type === "MAGNET") {
+              st.powerUp = { type: "MAGNET", until: now + 3000 };
+              setFlashMsg({ text: isTr ? "\ud83e\uddf2 MIKNATISLA!" : "\ud83e\uddf2 MAGNET!", color: "#50a0ff" });
+            } else if (tok.type === "SHIELD") {
+              st.powerUp = { type: "SHIELD", until: now + 8000 };
+              st.shieldHits = 1;
+              setFlashMsg({ text: isTr ? "\ud83d\udee1 KALKAN!" : "\ud83d\udee1 SHIELD!", color: "#00ff78" });
+            } else {
+              st.powerUp = { type: "MULTI", until: now + 5000 };
+              setFlashMsg({ text: isTr ? "x2 \u00c7ARPAN!" : "x2 MULTIPLIER!", color: "#ffd700" });
+            }
+            setTimeout(() => setFlashMsg(null), 1500);
+            explode(px, py, tok.r, tok.g, tok.b, 25);
+            continue;
+          }
           const pts = tok.pts;
           if (tok.type==="SCAM") {
-            st.score += pts; st.combo=0;
-            explode(px, py, 255,60,80, 20);
+            // Shield blocks SCAM
+            if (st.powerUp.type === "SHIELD" && now < st.powerUp.until && st.shieldHits > 0) {
+              st.shieldHits--;
+              if (st.shieldHits <= 0) st.powerUp = { type: "", until: 0 };
+              explode(px, py, 0,255,120, 20);
+              setFlashMsg({ text: isTr ? "\ud83d\udee1 ENGELLENDI!" : "\ud83d\udee1 BLOCKED!", color: "#00ff78" });
+              setTimeout(() => setFlashMsg(null), 1000);
+            } else {
+              st.score += pts; st.combo=0;
+              explode(px, py, 255,60,80, 20);
+            }
           } else {
-            st.score = Math.max(0, st.score + Math.round(pts*(1+st.combo*0.1)));
+            const multiActive = st.powerUp.type === "MULTI" && now < st.powerUp.until;
+            const mult = multiActive ? 2 : 1;
+            st.score = Math.max(0, st.score + Math.round(pts*(1+st.combo*0.1)*mult));
             st.combo++;
             if (st.combo>st.bestCombo) st.bestCombo=st.combo;
             explode(px, py, tok.r, tok.g, tok.b, 15);
           }
-          st.caught = {...st.caught, [tok.type]: st.caught[tok.type]+1};
+          st.caught = {...st.caught, [tok.type]: (st.caught as any)[tok.type]+1 || 1};
           setScore(st.score); setCombo(st.combo); setBestCombo(st.bestCombo); setCaught({...st.caught});
           continue;
         }
@@ -247,6 +298,36 @@ export function AirdropCatcher({ lang, auth, onClose }: Props) {
       ctx.strokeStyle="rgba(0,214,255,0.6)"; ctx.lineWidth=2; ctx.stroke();
       ctx.restore();
 
+      // Power-up glow on catcher
+      const pNow = performance.now();
+      const puActive = st.powerUp.type && pNow < st.powerUp.until;
+      if (puActive) {
+        const puCol = st.powerUp.type === "MAGNET" ? "80,160,255"
+          : st.powerUp.type === "SHIELD" ? "0,255,120"
+          : "255,200,0";
+        const pulse = 0.5 + 0.5 * Math.sin(pNow * 0.008);
+        ctx.shadowBlur = 40;
+        ctx.shadowColor = `rgba(${puCol},${0.4+pulse*0.4})`;
+        ctx.strokeStyle = `rgba(${puCol},${0.6+pulse*0.3})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(cx, catcherY, barW/2+12, 0, Math.PI*2);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Power-up timer bar (top-left corner)
+        const remaining = Math.max(0, (st.powerUp.until - pNow) / (st.powerUp.type === "MAGNET" ? 3000 : st.powerUp.type === "SHIELD" ? 8000 : 5000));
+        ctx.fillStyle = `rgba(${puCol},0.15)`;
+        ctx.fillRect(8, 8, 80, 14);
+        ctx.fillStyle = `rgba(${puCol},0.8)`;
+        ctx.fillRect(8, 8, 80 * remaining, 14);
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 9px monospace";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
+        ctx.fillText(st.powerUp.type === "MAGNET" ? "\ud83e\uddf2" : st.powerUp.type === "SHIELD" ? "\ud83d\udee1" : "x2", 12, 15);
+      }
+
       // Scan beam from catcher
       const beamAlpha = 0.04 + 0.02*Math.sin(Date.now()*0.005);
       ctx.fillStyle = `rgba(0,214,255,${beamAlpha})`;
@@ -278,6 +359,7 @@ export function AirdropCatcher({ lang, auth, onClose }: Props) {
     st.phase="playing"; st.score=0; st.combo=0; st.bestCombo=0; st.nextId=0;
     st.tokens=[]; st.particles=[]; st.timeElapsed=0; st.wave=1;
     st.caught={SC:0,HC:0,RC:0,NXT:0,SCAM:0};
+    st.powerUp = { type: "", until: 0 }; st.shieldHits = 0;
     setPhase("playing"); setScore(0); setTimeLeft(20); setCombo(0); setBestCombo(0);
     setCaught({SC:0,HC:0,RC:0,NXT:0,SCAM:0}); setFlashMsg(null);
 

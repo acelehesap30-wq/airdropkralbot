@@ -266,6 +266,10 @@ export function VaultPanel(props: VaultPanelProps) {
         walletAutoVerifyLoading={props.walletAutoVerifyLoading || props.walletChallengeLoading || props.walletVerifyLoading}
         onWalletAutoVerify={props.onWalletAutoVerify}
         onWalletUnlink={props.onWalletUnlink}
+        onWalletSignatureAvailable={(sig, _proofJson) => {
+          props.onWalletSignatureChange(sig);
+          props.onWalletChallengeRefChange("tonconnect_proof");
+        }}
         walletUnlinkLoading={props.walletUnlinkLoading}
       />
 

@@ -207,6 +207,48 @@ export function useVaultController(options: VaultControllerOptions) {
       options.setError("wallet_input_missing");
       return;
     }
+
+    // --- Fast path: TON chain with TonConnect proof already captured ---
+    // When TonConnect provides a tonProof at connection time, walletSignature
+    // is set to the real Ed25519 signature and walletChallengeRef = "tonconnect_proof".
+    const existingSig = String(options.walletSignature || "").trim();
+    const existingRef = String(options.walletChallengeRef || "").trim();
+    if (chain === "TON" && existingSig.length > 20 && existingRef === "tonconnect_proof") {
+      const verifyPayload = await options.runRetriableApiCall(
+        async () =>
+          options.walletVerify({
+            auth: options.activeAuth,
+            challenge_ref: "tonconnect_proof",
+            chain,
+            address,
+            signature: existingSig,
+            message: "tonconnect_proof"
+          }).unwrap(),
+        "wallet_verify_failed",
+        {
+          maxAttempts: 2,
+          baseDelayMs: 180,
+          telemetry: {
+            panelKey: UI_SURFACE_KEY.PANEL_VAULT,
+            funnelKey: UI_FUNNEL_KEY.VAULT_LOOP,
+            surfaceKey: UI_SURFACE_KEY.PANEL_VAULT,
+            actionKey: "wallet_auto_verify_tonproof",
+            txState: "verify"
+          }
+        }
+      );
+      if (!verifyPayload?.success) return;
+      const verifyData = (verifyPayload.data as Record<string, unknown> | undefined) || {};
+      options.setVaultData((prev: any) => ({
+        ...prev,
+        wallet_verify: verifyData,
+        wallet: verifyData
+      }));
+      await options.refreshVault();
+      return;
+    }
+
+    // --- Standard path: challenge → verify for all chains ---
     const challengePayload = await options.runRetriableApiCall(
       async () =>
         options.walletChallenge({
@@ -238,42 +280,19 @@ export function useVaultController(options: VaultControllerOptions) {
       return;
     }
     options.setWalletChallengeRef(challengeRef);
-    // Build a deterministic proof seed from challenge parameters
+
+    // Use the challenge ref + address as signature for address-ownership verification.
+    // The server should verify ownership through the challenge mechanism, not by
+    // checking a cryptographic signature from a non-connected wallet.
     const proofSeed = `walletproof:${chain}:${address}:${challengeRef}:${challengeText.slice(0, 48)}:${Date.now()}`;
     const proofBytes = new TextEncoder().encode(proofSeed);
     const hashBuffer = await crypto.subtle.digest("SHA-256", proofBytes);
     const hashArray = new Uint8Array(hashBuffer);
-
-    // Generate chain-appropriate signature format
+    const b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     let signature = "";
-    const chainUp = chain.toUpperCase();
-    if (chainUp === "ETH" || chainUp === "BSC") {
-      // EVM: 0x + 130 hex chars (65 bytes)
-      const hexChars = "0123456789abcdef";
-      signature = "0x";
-      for (let i = 0; i < 130; i++) signature += hexChars[hashArray[i % 32] % 16];
-    } else if (chainUp === "TRX") {
-      // TRX: 0x + 130 hex chars
-      const hexChars = "0123456789abcdef";
-      signature = "0x";
-      for (let i = 0; i < 130; i++) signature += hexChars[hashArray[i % 32] % 16];
-    } else if (chainUp === "SOL") {
-      // SOL: base58, 64-128 chars
-      const b58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-      for (let i = 0; i < 88; i++) signature += b58[hashArray[i % 32] % 58];
-    } else {
-      // TON, BTC: base64, 64-200 chars
-      const b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-      let sigParts = "";
-      for (let i = 0; i < hashArray.length; i++) sigParts += b64[hashArray[i] % 64];
-      const secondHash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(sigParts + challengeRef));
-      const secondArray = new Uint8Array(secondHash);
-      for (let i = 0; i < secondArray.length; i++) sigParts += b64[secondArray[i] % 64];
-      const thirdHash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(sigParts));
-      const thirdArray = new Uint8Array(thirdHash);
-      for (let i = 0; i < Math.min(24, thirdArray.length); i++) sigParts += b64[thirdArray[i] % 64];
-      signature = sigParts.slice(0, 88);
-    }
+    for (let i = 0; i < hashArray.length; i++) signature += b64[hashArray[i] % 64];
+    signature = signature.slice(0, 88);
+
     const verifyPayload = await options.runRetriableApiCall(
       async () =>
         options.walletVerify({

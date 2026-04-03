@@ -12,6 +12,7 @@ type TonWalletConnectProps = {
   onWalletAutoVerify: () => void;
   onWalletUnlink: () => void;
   walletUnlinkLoading: boolean;
+  onWalletSignatureAvailable?: (signature: string, proofJson: string) => void;
 };
 
 export function TonWalletConnect(props: TonWalletConnectProps) {
@@ -23,11 +24,26 @@ export function TonWalletConnect(props: TonWalletConnectProps) {
   const [verifyStep, setVerifyStep] = useState<"idle" | "verifying" | "done" | "error">("idle");
   const [verifyError, setVerifyError] = useState<string>("");
 
-  const { onWalletConnected, onWalletDisconnected } = props;
+  const { onWalletConnected, onWalletDisconnected, onWalletSignatureAvailable } = props;
+
+  // Request tonProof when user connects — gives us a real Ed25519 signature
+  useEffect(() => {
+    tonConnectUI.setConnectRequestParameters({
+      state: "ready",
+      value: { tonProof: "AirdropKralBot_wallet_verify" }
+    });
+  }, [tonConnectUI]);
 
   useEffect(() => {
     if (address && address !== prevAddressRef.current) {
       prevAddressRef.current = address;
+      // Capture tonProof signature if wallet provided it
+      const proofItem = wallet?.connectItems?.tonProof;
+      if (proofItem && "proof" in proofItem) {
+        const sig = proofItem.proof.signature;
+        const proofJson = JSON.stringify(proofItem.proof);
+        onWalletSignatureAvailable?.(sig, proofJson);
+      }
       onWalletConnected("TON", address);
     }
     if (!address && prevAddressRef.current) {
@@ -36,7 +52,7 @@ export function TonWalletConnect(props: TonWalletConnectProps) {
       setVerifyError("");
       onWalletDisconnected();
     }
-  }, [address, onWalletConnected, onWalletDisconnected]);
+  }, [address, wallet, onWalletConnected, onWalletDisconnected, onWalletSignatureAvailable]);
 
   useEffect(() => {
     if (props.walletVerified) {

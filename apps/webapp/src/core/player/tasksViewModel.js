@@ -67,7 +67,8 @@ export function buildTasksViewModel(input = {}) {
   const missionsClaimed = allMissions.filter((row) => row.claimed).length;
   const missionsOpen = allMissions.filter((row) => !row.claimed && !row.can_claim).length;
   const dailyTasksDone = Math.max(0, toNum(daily.tasks_done || 0));
-  const dailyCap = Math.max(0, toNum(daily.daily_cap || 0));
+  const dailyCapRaw = toNum(daily.daily_cap || 0);
+  const dailyCap = Math.max(10, dailyCapRaw); // minimum cap of 10 so progress bar always renders
   const dailyPct = dailyCap > 0 ? Math.min(100, Math.round((dailyTasksDone / dailyCap) * 100)) : 0;
 
   return {
@@ -88,6 +89,6 @@ export function buildTasksViewModel(input = {}) {
     },
     offers,
     missions,
-    has_data: Boolean(allOffers.length || allMissions.length || Object.keys(activeAttempt).length || Object.keys(taskResult).length)
+    has_data: Boolean(allOffers.length || allMissions.length || Object.keys(activeAttempt).length || Object.keys(taskResult).length || dailyTasksDone > 0)
   };
 }
