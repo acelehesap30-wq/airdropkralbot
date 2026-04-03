@@ -65,6 +65,7 @@ export function buildHomeFeedViewModel(input = {}) {
   const monetizationQuick = asRecord(homeFeed.monetization_quick || bootstrap.monetization);
   const spendSummary = asRecord(monetizationQuick.spend_summary);
   const balances = asRecord(bootstrap.balances);
+  const tokenSummary = asRecord(homeFeed.token_summary || bootstrap.token_summary || bootstrap.token);
   const surfaceActionsSource = Object.keys(asRecord(homeFeed.surface_actions)).length
     ? asRecord(homeFeed.surface_actions)
     : buildPlayerSurfaceActions();
@@ -147,7 +148,10 @@ export function buildHomeFeedViewModel(input = {}) {
       active_pass_count: Math.max(0, toNum(monetizationQuick.active_pass_count || 0)),
       spend_sc: Math.max(0, toNum(spendSummary.SC || spendSummary.sc || 0)),
       spend_hc: Math.max(0, toNum(spendSummary.HC || spendSummary.hc || 0)),
-      spend_rc: Math.max(0, toNum(spendSummary.RC || spendSummary.rc || 0))
+      spend_rc: Math.max(0, toNum(spendSummary.RC || spendSummary.rc || 0)),
+      token_symbol: toText(tokenSummary.symbol || tokenSummary.token_symbol || "NXT"),
+      token_price_usd: Math.max(0, toNum(tokenSummary.price_usd || tokenSummary.quote_usd || 0)),
+      token_balance: Math.max(0, toNum(tokenSummary.balance || tokenSummary.amount || balances.NXT || 0))
     },
     mission_preview: missionPreview,
     surface_actions: surfaceActions,

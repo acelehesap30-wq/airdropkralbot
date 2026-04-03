@@ -250,6 +250,23 @@ export function HomePanel(props: HomePanelProps) {
           <span className="akrCurrencyChip" style={{ background: "rgba(0,255,136,0.08)", color: "#00ff88", fontSize: 9 }}>AUTO</span>
           <span className="akrCurrencyChip" style={{ background: "rgba(0,210,255,0.08)", color: "#00d2ff", fontSize: 9 }}>LIVE</span>
         </div>
+        {/* NXT Token Live Ticker */}
+        <div style={{ display: "flex", gap: 6, padding: "6px 0", overflow: "auto", scrollbarWidth: "none" }}>
+          <span style={{ padding: "3px 8px", borderRadius: 6, background: "rgba(16,255,145,0.08)", border: "1px solid rgba(16,255,145,0.15)", color: "#10ff91", fontSize: 10, fontWeight: 700, whiteSpace: "nowrap", letterSpacing: 0.5 }}>
+            NXT {summary.token_price_usd > 0 ? `$${summary.token_price_usd.toFixed(4)}` : "PRE-LAUNCH"}
+          </span>
+          <span style={{ padding: "3px 8px", borderRadius: 6, background: "rgba(0,214,255,0.06)", color: "rgba(0,214,255,0.7)", fontSize: 10, whiteSpace: "nowrap" }}>
+            TON {props.lang === "tr" ? "Ağı" : "Network"}
+          </span>
+          <span style={{ padding: "3px 8px", borderRadius: 6, background: "rgba(255,215,0,0.06)", color: "rgba(255,215,0,0.7)", fontSize: 10, whiteSpace: "nowrap" }}>
+            {summary.token_balance > 0 ? `${Math.floor(summary.token_balance)} NXT` : props.lang === "tr" ? "0 NXT bakiye" : "0 NXT balance"}
+          </span>
+          {summary.wallet_active && (
+            <span style={{ padding: "3px 8px", borderRadius: 6, background: "rgba(0,255,136,0.08)", color: "#00ff88", fontSize: 10, whiteSpace: "nowrap" }}>
+              {props.lang === "tr" ? "Cüzdan Aktif" : "Wallet Active"}
+            </span>
+          )}
+        </div>
         <div className="akrDailyProgress">
           <span className="akrDailyLabel">
             {Math.floor(summary.tasks_done)}/{Math.floor(summary.daily_cap)}
