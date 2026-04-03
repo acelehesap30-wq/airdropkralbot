@@ -1,0 +1,7 @@
+{
+  "name": "AirdropKral Nexus",
+  "symbol": "NXT",
+  "description": "NXT is the native utility token of the AirdropKral ecosystem. Earn NXT through tasks, games, and forging. Trade, stake, and unlock premium features.",
+  "decimals": "9",
+  "image": "https://raw.githubusercontent.com/acelehesap30-wq/airdropkralbot/main/packages/contracts-ton/metadata/nxt-logo.png"
+}
