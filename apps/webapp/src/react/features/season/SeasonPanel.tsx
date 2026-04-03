@@ -164,8 +164,8 @@ export function SeasonPanel(props: SeasonPanelProps) {
       {/* Sub-navigation tabs */}
       <div style={{ display: "flex", gap: 4, padding: "8px 12px", background: "rgba(0,0,0,0.25)", borderBottom: "1px solid rgba(255,255,255,0.04)", marginBottom: 8 }}>
         {([
-          { key: "play" as const, icon: "\ud83c\udfae", l: isTr ? "Oyunlar" : "Games" },
-          { key: "season" as const, icon: "\ud83c\udfc6", l: isTr ? "Sezon" : "Season" },
+          { key: "play" as const, icon: "\ud83c\udfae", l: t(props.lang, "sub_nav_games") },
+          { key: "season" as const, icon: "\ud83c\udfc6", l: t(props.lang, "sub_nav_season") },
         ]).map(tab => (
           <button key={tab.key} onClick={() => setSubView(tab.key)} style={{
             flex: 1, padding: "8px 4px", borderRadius: 8, border: "none",

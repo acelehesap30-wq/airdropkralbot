@@ -194,9 +194,9 @@ export function PvpPanel(props: PvpPanelProps) {
       {/* ── Sub-navigation ── */}
       <div style={{ display: "flex", gap: 4, padding: "8px 12px", background: "rgba(0,0,0,0.25)", borderBottom: "1px solid rgba(255,255,255,0.04)", marginBottom: 8 }}>
         {([
-          { key: "play" as const, icon: "🎮", l: props.lang === "tr" ? "Arena Oyunu" : "Arena Game" },
-          { key: "combat" as const, icon: "⚔️", l: props.lang === "tr" ? "Savaş" : "Combat" },
-          { key: "detail" as const, icon: "📊", l: props.lang === "tr" ? "Detay" : "Detail" },
+          { key: "play" as const, icon: "🎮", l: t(props.lang, "sub_nav_arena_game") },
+          { key: "combat" as const, icon: "⚔️", l: t(props.lang, "sub_nav_combat") },
+          { key: "detail" as const, icon: "📊", l: t(props.lang, "sub_nav_detail") },
         ]).map(tab => (
           <button key={tab.key} onClick={() => setSubView(tab.key)} style={{
             flex: 1, padding: "8px 4px", borderRadius: 8, border: "none",

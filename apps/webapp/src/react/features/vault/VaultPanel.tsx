@@ -268,8 +268,8 @@ export function VaultPanel(props: VaultPanelProps) {
       {/* Sub-navigation tabs */}
       <div style={{ display: "flex", gap: 4, padding: "8px 12px", background: "rgba(0,0,0,0.25)", borderBottom: "1px solid rgba(255,255,255,0.04)", marginBottom: 8 }}>
         {([
-          { key: "play" as const, icon: "\ud83c\udfae", l: props.lang === "tr" ? "Oyunlar" : "Games" },
-          { key: "vault" as const, icon: "\ud83d\udd10", l: props.lang === "tr" ? "Kasa" : "Vault" },
+          { key: "play" as const, icon: "\ud83c\udfae", l: t(props.lang, "sub_nav_games") },
+          { key: "vault" as const, icon: "\ud83d\udd10", l: t(props.lang, "sub_nav_vault") },
         ]).map(tab => (
           <button key={tab.key} onClick={() => setSubView(tab.key)} style={{
             flex: 1, padding: "8px 4px", borderRadius: 8, border: "none",

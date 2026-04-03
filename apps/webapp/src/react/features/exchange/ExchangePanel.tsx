@@ -150,8 +150,8 @@ export function ExchangePanel(props: ExchangePanelProps) {
       {/* Sub-navigation tabs */}
       <div style={{ display: "flex", gap: 4, padding: "8px 12px", background: "rgba(0,0,0,0.25)", borderBottom: "1px solid rgba(255,255,255,0.04)", marginBottom: 8 }}>
         {([
-          { key: "play" as const, icon: "\ud83c\udfae", l: isTr ? "Oyunlar" : "Games" },
-          { key: "exchange" as const, icon: "\ud83d\udcb1", l: isTr ? "Borsa" : "Exchange" },
+          { key: "play" as const, icon: "\ud83c\udfae", l: t(props.lang, "sub_nav_games") },
+          { key: "exchange" as const, icon: "\ud83d\udcb1", l: t(props.lang, "sub_nav_exchange") },
         ]).map(tab => (
           <button key={tab.key} onClick={() => setSubView(tab.key)} style={{
             flex: 1, padding: "8px 4px", borderRadius: 8, border: "none",

@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import type { Lang } from "../../i18n";
+import { t, type Lang } from "../../i18n";
 import { buildActionRequestId, postJson } from "../../api/common";
 
 type Props = { lang: Lang };
@@ -23,9 +23,9 @@ const PALETTE: [number, number, number][] = [
 ];
 
 const WAVES = [
-  { label: "WAVE 1", subEn: "Get ready!",   subTr: "Hazır ol!",    rgb: [0,214,255]   as [number,number,number], spawnMs: 660, ttl: 1850, maxOnScreen: 3 },
-  { label: "WAVE 2", subEn: "Speed up!",    subTr: "Hız arttı!",   rgb: [224,64,251]  as [number,number,number], spawnMs: 390, ttl: 1250, maxOnScreen: 5 },
-  { label: "WAVE 3", subEn: "FINAL WAVE!",  subTr: "SON DALGA!",   rgb: [255,80,80]   as [number,number,number], spawnMs: 200, ttl: 850,  maxOnScreen: 8 },
+  { label: "WAVE 1", i18nKey: "pvp_wave_1" as const, rgb: [0,214,255]   as [number,number,number], spawnMs: 660, ttl: 1850, maxOnScreen: 3 },
+  { label: "WAVE 2", i18nKey: "pvp_wave_2" as const, rgb: [224,64,251]  as [number,number,number], spawnMs: 390, ttl: 1250, maxOnScreen: 5 },
+  { label: "WAVE 3", i18nKey: "pvp_wave_3" as const, rgb: [255,80,80]   as [number,number,number], spawnMs: 200, ttl: 850,  maxOnScreen: 8 },
 ];
 
 export function ArenaChallenge({ lang }: Props) {
@@ -373,7 +373,7 @@ export function ArenaChallenge({ lang }: Props) {
     st.targets = []; st.hitFX = []; st.sparks = [];
     st.wave = 1; st.waveFlash = 90;
     st.waveRGB = WAVES[0].rgb; st.waveLabel = WAVES[0].label;
-    st.waveSubLabel = isTr ? WAVES[0].subTr : WAVES[0].subEn;
+    st.waveSubLabel = t(lang, WAVES[0].i18nKey);
     st.comboFlash = 0;
 
     setPhase("playing"); setScore(0); setHits(0); setTimeLeft(15);
@@ -409,7 +409,7 @@ export function ArenaChallenge({ lang }: Props) {
           stRef.current.waveFlash = 90;
           stRef.current.waveRGB = wDef.rgb;
           stRef.current.waveLabel = wDef.label;
-          stRef.current.waveSubLabel = isTr ? wDef.subTr : wDef.subEn;
+          stRef.current.waveSubLabel = t(lang, wDef.i18nKey);
           setWave(newWave);
         }
         return newTime;
@@ -431,7 +431,7 @@ export function ArenaChallenge({ lang }: Props) {
         <div>
           <div style={{ fontSize: 15, fontWeight: 700, color: "#00d6ff", letterSpacing: 2 }}>⬡ HOLO ARENA</div>
           <div style={{ fontSize: 10, color: "rgba(0,214,255,0.4)", marginTop: 1 }}>
-            {isTr ? "Holografik hedefleri vur · 3 Dalga" : "Destroy holographic targets · 3 Waves"}
+            {t(lang, "pvp_arena_desc")}
           </div>
         </div>
         <div style={{ display: "flex", gap: 10, fontFamily: "monospace", fontSize: 11 }}>
@@ -470,7 +470,7 @@ export function ArenaChallenge({ lang }: Props) {
             border: "none", borderRadius: 12, padding: "13px 36px", fontSize: 14,
             fontWeight: 700, cursor: "pointer", boxShadow: "0 0 30px rgba(0,214,255,0.3)",
           }}>
-            {isTr ? "ARENA'YA GİR" : "ENTER ARENA"}
+            {t(lang, "pvp_arena_enter")}
           </button>
         </div>
       )}
@@ -486,20 +486,20 @@ export function ArenaChallenge({ lang }: Props) {
       {phase === "done" && (
         <div style={{ padding: "24px 16px", textAlign: "center" }}>
           <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginBottom: 6, fontFamily: "monospace" }}>
-            {isTr ? "Arena Sonucu" : "Arena Result"}
+            {t(lang, "pvp_arena_result")}
           </div>
           <div style={{ fontSize: 36, fontWeight: 800, color: "#ffd700", marginBottom: 4, fontFamily: "monospace" }}>
             +{rewardSC} SC
           </div>
           <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginBottom: 20 }}>
-            {hits} {isTr ? "isabet" : "hits"} · {score} {isTr ? "puan" : "pts"} · {isTr ? "3 Dalga tamamlandı" : "3 Waves cleared"}
+            {hits} {t(lang, "pvp_arena_hits")} · {score} {t(lang, "pvp_arena_pts")} · {t(lang, "pvp_arena_waves_cleared")}
           </div>
           <button onClick={startGame} style={{
             background: "linear-gradient(135deg,#00d6ff,#8000ff)", color: "#fff",
             border: "none", borderRadius: 10, padding: "10px 24px", fontSize: 13,
             fontWeight: 700, cursor: "pointer",
           }}>
-            {isTr ? "Rematch" : "Rematch"}
+            Rematch
           </button>
         </div>
       )}
