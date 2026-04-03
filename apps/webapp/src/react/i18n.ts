@@ -1437,6 +1437,7 @@ const DICT = {
     tasks_route_title: "Sonraki gorev rotasi",
 
     /* ── Forge panel copy ── */
+    forge_title: "Forge Atolyesi",
     forge_hero_body: "Kaynaklari birlestir, boost craft et, tier atla ve NXT mint et.",
     forge_craft_success: "Craft basarili",
     forge_craft_failed: "Craft basarisiz",
@@ -2974,6 +2975,7 @@ const DICT = {
     tasks_route_title: "Next mission route",
 
     /* ── Forge panel copy ── */
+    forge_title: "Forge Workshop",
     forge_hero_body: "Combine resources, craft boosts, advance your tier and mint NXT.",
     forge_craft_success: "Craft success",
     forge_craft_failed: "Craft failed",

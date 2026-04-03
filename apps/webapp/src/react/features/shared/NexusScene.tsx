@@ -22,6 +22,8 @@ const THEMES: Record<string, Theme> = {
   exchange: { bg: [16, 14, 6],   primary: [255, 178, 94],  secondary: [0, 214, 255],  label: "EXCHANGE",       particleCount: 45 },
   season:   { bg: [14, 12, 6],   primary: [255, 215, 0],   secondary: [224, 64, 251], label: "SEASON HALL",    particleCount: 55 },
   events:   { bg: [6, 12, 24],   primary: [0, 214, 255],   secondary: [255, 60, 80],  label: "EVENTS",         particleCount: 65 },
+  vault:    { bg: [10, 8, 18],  primary: [128, 200, 255], secondary: [100, 255, 180], label: "VAULT",         particleCount: 40 },
+  settings: { bg: [12, 12, 16], primary: [160, 170, 200], secondary: [120, 140, 180], label: "SETTINGS",      particleCount: 30 },
 };
 
 type Particle = {
@@ -175,6 +177,92 @@ export function NexusScene({ tab }: NexusSceneProps) {
       const centerR = 30 + Math.sin(t * 1.5) * 5;
       drawOrb(W * 0.5, H * 0.45, centerR, theme.primary, 0.12 + Math.sin(t * 2) * 0.04);
 
+      // District silhouette — unique per tab
+      ctx.save();
+      ctx.globalAlpha = 0.06 + Math.sin(t * 0.8) * 0.015;
+      ctx.fillStyle = `rgb(${theme.primary.join(",")})`;
+      ctx.strokeStyle = `rgb(${theme.primary.join(",")})`;
+      ctx.lineWidth = 1.5;
+      const cx = W * 0.5, cy = H * 0.45;
+      if (tab === "home") {
+        // Tower silhouette
+        ctx.fillRect(cx - 8, cy - 30, 16, 40);
+        ctx.fillRect(cx - 16, cy + 10, 32, 8);
+        ctx.fillRect(cx - 4, cy - 38, 8, 10);
+        ctx.beginPath(); ctx.arc(cx, cy - 44, 4, 0, Math.PI * 2); ctx.fill();
+      } else if (tab === "pvp") {
+        // Arena ring
+        ctx.beginPath(); ctx.arc(cx, cy, 28, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(cx, cy, 18, 0, Math.PI * 2); ctx.stroke();
+        // Crossed swords
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(cx - 18, cy - 18); ctx.lineTo(cx + 18, cy + 18); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx + 18, cy - 18); ctx.lineTo(cx - 18, cy + 18); ctx.stroke();
+      } else if (tab === "tasks") {
+        // Scroll/checklist
+        ctx.fillRect(cx - 14, cy - 24, 28, 48);
+        ctx.globalAlpha = 0.15;
+        ctx.fillStyle = `rgb(${theme.bg.join(",")})`;
+        for (let i = 0; i < 4; i++) {
+          ctx.fillRect(cx - 8, cy - 16 + i * 12, 16, 2);
+        }
+      } else if (tab === "forge") {
+        // Anvil shape
+        ctx.beginPath();
+        ctx.moveTo(cx - 20, cy + 12); ctx.lineTo(cx - 12, cy - 12);
+        ctx.lineTo(cx + 12, cy - 12); ctx.lineTo(cx + 20, cy + 12);
+        ctx.closePath(); ctx.fill();
+        ctx.fillRect(cx - 6, cy - 22, 12, 12);
+        // Spark
+        ctx.fillStyle = `rgba(255,200,50,${0.1 + Math.sin(t * 4) * 0.05})`;
+        ctx.beginPath(); ctx.arc(cx, cy - 28, 5, 0, Math.PI * 2); ctx.fill();
+      } else if (tab === "exchange") {
+        // Chart bars
+        const bars = [0.4, 0.7, 0.5, 0.9, 0.6, 0.8, 1.0];
+        ctx.fillStyle = `rgb(${theme.primary.join(",")})`;
+        bars.forEach((h, i) => {
+          const bx = cx - 21 + i * 7;
+          ctx.fillRect(bx, cy + 20 - h * 40, 5, h * 40);
+        });
+      } else if (tab === "season") {
+        // Trophy cup
+        ctx.beginPath();
+        ctx.moveTo(cx - 16, cy - 16); ctx.quadraticCurveTo(cx - 20, cy + 4, cx - 8, cy + 12);
+        ctx.lineTo(cx + 8, cy + 12); ctx.quadraticCurveTo(cx + 20, cy + 4, cx + 16, cy - 16);
+        ctx.closePath(); ctx.fill();
+        ctx.fillRect(cx - 4, cy + 12, 8, 8);
+        ctx.fillRect(cx - 10, cy + 18, 20, 4);
+      } else if (tab === "events") {
+        // Lightning bolt
+        ctx.beginPath();
+        ctx.moveTo(cx + 4, cy - 24); ctx.lineTo(cx - 8, cy); ctx.lineTo(cx, cy);
+        ctx.lineTo(cx - 4, cy + 24); ctx.lineTo(cx + 8, cy); ctx.lineTo(cx, cy);
+        ctx.closePath(); ctx.fill();
+      } else if (tab === "vault") {
+        // Lock shape
+        ctx.beginPath(); ctx.arc(cx, cy - 10, 12, Math.PI, 0); ctx.stroke();
+        ctx.fillRect(cx - 16, cy - 2, 32, 24);
+        ctx.fillStyle = `rgb(${theme.bg.join(",")})`;
+        ctx.beginPath(); ctx.arc(cx, cy + 8, 5, 0, Math.PI * 2); ctx.fill();
+      } else if (tab === "settings") {
+        // Gear shape
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(cx, cy, 16, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(cx, cy, 8, 0, Math.PI * 2); ctx.stroke();
+        for (let i = 0; i < 8; i++) {
+          const a = (i / 8) * Math.PI * 2 + t * 0.5;
+          ctx.beginPath();
+          ctx.moveTo(cx + Math.cos(a) * 14, cy + Math.sin(a) * 14);
+          ctx.lineTo(cx + Math.cos(a) * 22, cy + Math.sin(a) * 22);
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+
+      // Parallax camera drift — deeper particles move slower
+      const driftX = Math.sin(t * 0.3) * 0.15;
+      const driftY = Math.cos(t * 0.25) * 0.1;
+
       // Particles
       for (let i = st.particles.length - 1; i >= 0; i--) {
         const p = st.particles[i];
@@ -184,8 +272,8 @@ export function NexusScene({ tab }: NexusSceneProps) {
           continue;
         }
 
-        p.x += p.vx * p.z;
-        p.y += p.vy * p.z;
+        p.x += p.vx * p.z + driftX * (1.2 - p.z);
+        p.y += p.vy * p.z + driftY * (1.2 - p.z);
         p.z += p.vz;
         if (p.z < 0.2) p.z = 0.2;
         if (p.z > 1.2) p.z = 1.2;

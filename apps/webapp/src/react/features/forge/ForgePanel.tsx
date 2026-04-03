@@ -63,18 +63,18 @@ export function ForgePanel(props: ForgePanelProps) {
 
       if (resp.success) {
         const reward = resp.data?.reward_text || label;
-        const msg = isTr ? `Craft basarili: ${reward}` : `Craft success: ${reward}`;
+        const msg = `${t(props.lang, "forge_craft_success")}: ${reward}`;
         setCraftResult({ msg, ok: true });
         setCraftLog((prev) => [{ id: recipeId, label, result: msg, ts: Date.now(), ok: true }, ...prev].slice(0, 10));
         // 60s cooldown per recipe
         setCooldowns((prev) => ({ ...prev, [recipeId]: Date.now() + 60_000 }));
       } else {
-        const errMsg = resp.error || (isTr ? "Craft basarisiz" : "Craft failed");
+        const errMsg = resp.error || t(props.lang, "forge_craft_failed");
         setCraftResult({ msg: errMsg, ok: false });
         setCraftLog((prev) => [{ id: recipeId, label, result: errMsg, ts: Date.now(), ok: false }, ...prev].slice(0, 10));
       }
     } catch (_) {
-      const errMsg = isTr ? "Baglanti hatasi" : "Connection error";
+      const errMsg = t(props.lang, "forge_connection_error");
       setCraftResult({ msg: errMsg, ok: false });
     } finally {
       setCraftingId(null);
@@ -148,21 +148,19 @@ export function ForgePanel(props: ForgePanelProps) {
     <section className="akrPanelSection">
       <div className="akrCard akrCardGlow">
         <div className="akrCardHeader">
-          <h2 className="akrCardTitle">{isTr ? "Forge At\u00f6lyesi" : "Forge Workshop"}</h2>
+          <h2 className="akrCardTitle">{t(props.lang, "forge_title")}</h2>
         </div>
         <p className="akrCardBody" style={{ fontSize: 12, opacity: 0.7 }}>
-          {isTr
-            ? "Kaynaklar\u0131n\u0131 birle\u015ftir, boost craft et, tier atla ve NXT mint et."
-            : "Combine resources, craft boosts, advance your tier and mint NXT."}
+          {t(props.lang, "forge_hero_body")}
         </p>
       </div>
 
       {/* ── Sub-navigation ── */}
       <div style={{ display: "flex", gap: 4, padding: "8px 12px", background: "rgba(0,0,0,0.25)", borderBottom: "1px solid rgba(255,255,255,0.04)", marginBottom: 8 }}>
         {([
-          { key: "play" as const, icon: "🎮", l: props.lang === "tr" ? "Oyunlar" : "Games" },
-          { key: "craft" as const, icon: "⚗️", l: props.lang === "tr" ? "Craft" : "Craft" },
-          { key: "log" as const, icon: "📋", l: props.lang === "tr" ? "Geçmiş" : "History" },
+          { key: "play" as const, icon: "🎮", l: t(props.lang, "sub_nav_games") },
+          { key: "craft" as const, icon: "⚗️", l: t(props.lang, "sub_nav_craft") },
+          { key: "log" as const, icon: "📋", l: t(props.lang, "sub_nav_history") },
         ]).map(tab => (
           <button key={tab.key} onClick={() => setSubView(tab.key)} style={{
             flex: 1, padding: "8px 4px", borderRadius: 8, border: "none",
@@ -182,8 +180,8 @@ export function ForgePanel(props: ForgePanelProps) {
             <div className="akrFeaturedHeader">
               <div className="akrFeaturedIcon">🧩</div>
               <div>
-                <div className="akrFeaturedTitle">{isTr ? "Kaynak Birleştir" : "Resource Merge"}</div>
-                <div className="akrFeaturedSub">{isTr ? "İzometrik 3D puzzle · Kaynakları birleştir · NXT kazan" : "Isometric 3D puzzle · Merge resources · Earn NXT"}</div>
+                <div className="akrFeaturedTitle">{t(props.lang, "forge_resource_merge_title")}</div>
+                <div className="akrFeaturedSub">{t(props.lang, "forge_resource_merge_desc")}</div>
                 <div className="akrFeaturedBadge">🧩 PUZZLE</div>
               </div>
             </div>
@@ -193,8 +191,8 @@ export function ForgePanel(props: ForgePanelProps) {
             <div className="akrFeaturedHeader">
               <div className="akrFeaturedIcon">📦</div>
               <div>
-                <div className="akrFeaturedTitle">{isTr ? "Sandık Açılışı" : "Chest Reveal"}</div>
-                <div className="akrFeaturedSub">{isTr ? "Common · Rare · Epic — ödüller aç" : "Common · Rare · Epic — reveal rewards"}</div>
+                <div className="akrFeaturedTitle">{t(props.lang, "forge_chest_reveal_title")}</div>
+                <div className="akrFeaturedSub">{t(props.lang, "forge_chest_reveal_desc")}</div>
                 <div className="akrFeaturedBadge">🎁 LOOT</div>
               </div>
             </div>
@@ -208,7 +206,7 @@ export function ForgePanel(props: ForgePanelProps) {
       <div className="akrCard">
         <div className="akrCardHeader">
           <h3 className="akrCardTitle" style={{ fontSize: 13 }}>
-            {isTr ? "Mevcut Kaynaklar" : "Available Resources"}
+            {t(props.lang, "forge_available_resources")}
           </h3>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, padding: "8px 0" }}>
@@ -288,9 +286,9 @@ export function ForgePanel(props: ForgePanelProps) {
                 onClick={() => handleCraft(recipe.id, isTr ? recipe.label_tr : recipe.label_en)}
               >
                 {craftingId === recipe.id
-                  ? (isTr ? "\u0130\u015fleniyor..." : "Crafting...")
+                  ? t(props.lang, "forge_processing")
                   : onCooldown
-                    ? (isTr ? "Bekleniyor" : "Cooldown")
+                    ? t(props.lang, "forge_cooldown")
                     : "Craft"}
               </button>
             </div>
@@ -305,7 +303,7 @@ export function ForgePanel(props: ForgePanelProps) {
         <div className="akrCard">
           <div className="akrCardHeader">
             <h3 className="akrCardTitle" style={{ fontSize: 13 }}>
-              {isTr ? "Son Craft \u0130\u015flemleri" : "Recent Crafts"}
+              {t(props.lang, "forge_recent_crafts")}
             </h3>
           </div>
           {craftLog.slice(0, 5).map((log, i) => (
