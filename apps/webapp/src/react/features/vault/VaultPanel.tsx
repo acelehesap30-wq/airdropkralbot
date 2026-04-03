@@ -193,15 +193,24 @@ export function VaultPanel(props: VaultPanelProps) {
           <p>{copy.body}</p>
         </div>
         <div className="akrGameHeroStats">
-          <span className="akrChip">{summary.token_symbol || "-"}</span>
-          <span className="akrChip">{summary.token_chain || "-"}</span>
+          <span className="akrChip">{summary.token_symbol || "NXT"}</span>
+          <span className="akrChip">{summary.token_chain || "TON"}</span>
           <span className="akrChip">{copy.balanceShort} {Math.floor(summary.token_balance)}</span>
           <span className="akrChip">{summary.wallet_chain || shortStatus(summary.wallet_active ? "1" : "", copy.walletOn, copy.walletOff)}</span>
           <span className="akrChip">{summary.premium_active ? copy.premium : copy.standard}</span>
         </div>
         <div className="akrCurrencyHud">
-          <span className="akrCurrencyChip akrCurrencySC">{summary.token_symbol || "TOK"} ${summary.token_price_usd.toFixed(4)}</span>
-          <span className="akrCurrencyChip akrCurrencyHC">{summary.payout_requestable_btc.toFixed(8)} BTC</span>
+          <span className="akrCurrencyChip akrCurrencySC">
+            {summary.token_symbol || "NXT"}{" "}
+            {summary.token_price_usd > 0
+              ? `$${summary.token_price_usd.toFixed(4)}`
+              : props.lang === "tr" ? "PRE-LAUNCH" : "PRE-LAUNCH"}
+          </span>
+          <span className="akrCurrencyChip akrCurrencyHC">
+            {summary.payout_requestable_btc > 0
+              ? `${summary.payout_requestable_btc.toFixed(8)} BTC`
+              : props.lang === "tr" ? "BTC beklemede" : "BTC pending"}
+          </span>
           <span className="akrCurrencyChip akrCurrencyRC">{routeStatusLabel}</span>
         </div>
       </div>

@@ -484,7 +484,26 @@ export function TasksPanel(props: TasksPanelProps) {
 
       </>)}
 
-      {!view.has_data ? <p className="akrMuted">{t(props.lang, "tasks_empty")}</p> : null}
+      {!view.has_data ? (
+        <div style={{ margin: "16px 0", padding: "16px 14px", borderRadius: 14, background: "rgba(0,214,255,0.05)", border: "1px solid rgba(0,214,255,0.12)", textAlign: "center" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "rgba(0,214,255,0.8)", marginBottom: 6 }}>
+            {props.lang === "tr" ? "Görev desteni hazır" : "Task deck ready"}
+          </div>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 12, lineHeight: 1.6 }}>
+            {props.lang === "tr"
+              ? "Aktif görev yok. Yeni görevler almak için Reroll yap ya da oyunları oyna."
+              : "No active tasks. Reroll to get new tasks or play games to earn."}
+          </div>
+          <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+            <button type="button" className="akrBtn akrBtnAccent" onClick={props.onReroll} style={{ fontSize: 12 }}>
+              {t(props.lang, "tasks_reroll")}
+            </button>
+            <button type="button" className="akrBtn akrBtnGhost" onClick={() => setSubView("play")} style={{ fontSize: 12 }}>
+              {t(props.lang, "sub_nav_games")}
+            </button>
+          </div>
+        </div>
+      ) : null}
       {props.advanced ? <pre className="akrJsonBlock">{JSON.stringify({ offers: props.offers, missions: props.missions, attempts: props.attempts, daily: props.daily, taskResult: props.taskResult }, null, 2)}</pre> : null}
     </section>
   );
