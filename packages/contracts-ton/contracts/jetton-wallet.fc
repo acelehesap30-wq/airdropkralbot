@@ -1,3 +1,5 @@
+#pragma version >=0.4.0;
+
 ;; ═══════════════════════════════════════════════════════════════════
 ;; NXT Jetton Wallet — TEP-74
 ;; Each NXT holder gets one of these automatically
@@ -6,6 +8,7 @@
 ;;   balance:Coins owner_address:MsgAddr jetton_master_address:MsgAddr jetton_wallet_code:^Cell
 ;; ═══════════════════════════════════════════════════════════════════
 
+#include "stdlib.fc";
 #include "op-codes.fc";
 #include "jetton-utils.fc";
 
@@ -241,6 +244,6 @@ const int gas_consumption      = 10000000;   ;; 0.01 TON
 
 ;; ─── GET methods ───
 
-int get_wallet_data() method_id {
-  return get_data();
+(int, slice, slice, cell) get_wallet_data() method_id {
+  return load_data();
 }

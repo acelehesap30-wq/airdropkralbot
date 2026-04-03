@@ -1,3 +1,5 @@
+#pragma version >=0.4.0;
+
 ;; ═══════════════════════════════════════════════════════════════════
 ;; NXT Jetton Minter — TEP-74 + TEP-89 (Discoverable)
 ;; AirdropKral Nexus Token on TON
@@ -6,6 +8,7 @@
 ;;   total_supply:Coins admin_address:MsgAddr content:^Cell jetton_wallet_code:^Cell
 ;; ═══════════════════════════════════════════════════════════════════
 
+#include "stdlib.fc";
 #include "op-codes.fc";
 #include "jetton-utils.fc";
 
