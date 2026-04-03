@@ -146,10 +146,7 @@ export function HomePanel(props: HomePanelProps) {
     if (summary.mission_ready > 0) {
       return {
         kicker: copy.missionHint,
-        title:
-          props.lang === "tr"
-            ? `${Math.floor(summary.mission_ready)} gorev claim bekliyor`
-            : `${Math.floor(summary.mission_ready)} missions are ready to claim`,
+        title: `${Math.floor(summary.mission_ready)} ${t(props.lang, "home_missions_ready_msg")}`,
         body: nextMission?.title ? `${nextMission.title} | ${copy.nextMoveBodyMissions}` : copy.nextMoveBodyMissions,
         label: copy.nextMoveLabelMissions,
         cta: t(props.lang, "shell_panel_go_tasks"),
@@ -159,7 +156,7 @@ export function HomePanel(props: HomePanelProps) {
     if (!summary.wallet_active) {
       return {
         kicker: copy.vaultHint,
-        title: props.lang === "tr" ? "Wallet hattını bağla" : "Open the wallet route",
+        title: t(props.lang, "home_wallet_open_msg"),
         body: copy.nextMoveBodyVault,
         label: copy.nextMoveLabelVault,
         cta: t(props.lang, "shell_panel_go_vault"),
@@ -264,14 +261,42 @@ export function HomePanel(props: HomePanelProps) {
             />
           </div>
         </div>
+        {/* Achievement badges */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+          {summary.streak >= 7 && (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 8px", borderRadius: 8, fontSize: 10, fontWeight: 700, background: "rgba(255,215,0,0.12)", color: "#ffd700", border: "1px solid rgba(255,215,0,0.2)" }}>
+              {summary.streak >= 30 ? "LEGEND" : summary.streak >= 14 ? "VETERAN" : "DEDICATED"} {Math.floor(summary.streak)}d
+            </span>
+          )}
+          {summary.kingdom_tier >= 2 && (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 8px", borderRadius: 8, fontSize: 10, fontWeight: 700, background: "rgba(224,64,251,0.12)", color: "#e040fb", border: "1px solid rgba(224,64,251,0.2)" }}>
+              T{Math.floor(summary.kingdom_tier)} RANK
+            </span>
+          )}
+          {(summary.sc_earned || 0) >= 10000 && (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 8px", borderRadius: 8, fontSize: 10, fontWeight: 700, background: "rgba(0,255,136,0.12)", color: "#00ff88", border: "1px solid rgba(0,255,136,0.2)" }}>
+              SC WHALE
+            </span>
+          )}
+          {summary.wallet_active && (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 8px", borderRadius: 8, fontSize: 10, fontWeight: 700, background: "rgba(0,214,255,0.12)", color: "#00d6ff", border: "1px solid rgba(0,214,255,0.2)" }}>
+              VERIFIED
+            </span>
+          )}
+          {summary.tasks_done >= summary.daily_cap && summary.daily_cap > 0 && (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 8px", borderRadius: 8, fontSize: 10, fontWeight: 700, background: "rgba(255,60,80,0.12)", color: "#ff3c50", border: "1px solid rgba(255,60,80,0.2)" }}>
+              CAP FULL
+            </span>
+          )}
+        </div>
       </div>
 
       {/* ── Sub-navigation ── */}
       <div style={{ display: "flex", gap: 4, padding: "8px 12px", background: "rgba(0,0,0,0.25)", borderBottom: "1px solid rgba(255,255,255,0.04)", marginBottom: 8 }}>
         {([
-          { key: "play" as const, icon: "🎮", l: props.lang === "tr" ? "Oyunlar" : "Games" },
-          { key: "overview" as const, icon: "⚡", l: props.lang === "tr" ? "Aksiyon" : "Actions" },
-          { key: "detail" as const, icon: "📊", l: props.lang === "tr" ? "Detay" : "Detail" },
+          { key: "play" as const, icon: "🎮", l: t(props.lang, "sub_nav_games") },
+          { key: "overview" as const, icon: "⚡", l: t(props.lang, "sub_nav_actions") },
+          { key: "detail" as const, icon: "📊", l: t(props.lang, "sub_nav_detail") },
         ]).map(tab => (
           <button key={tab.key} onClick={() => setSubView(tab.key)} style={{
             flex: 1, padding: "8px 4px", borderRadius: 8, border: "none",
