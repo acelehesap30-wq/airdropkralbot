@@ -13,7 +13,7 @@ import { JettonMinter } from "../wrappers/JettonMinter";
  *   NXT_JETTON_MINTER - minter contract address (from deploy step)
  */
 // Deployed mainnet minter — 2026-04-04
-const MAINNET_MINTER = "EQCb-sIWT2PmHdcuenhplHqEWWDecvPN_8ONoZ2J9A0WLkC_";
+const MAINNET_MINTER = "EQCb-sIwT2PmHdcuenhplHqEWWDecvPN_8ONoZ2J9A0WLkC_";
 
 export async function run(provider: NetworkProvider) {
   const minterAddress = (process.env.NXT_JETTON_MINTER || MAINNET_MINTER).trim();

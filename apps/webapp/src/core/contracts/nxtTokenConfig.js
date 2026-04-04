@@ -13,12 +13,12 @@ const NXT_TOKEN_CONFIG = Object.freeze({
   initial_supply: 10_000_000,
 
   // Mainnet Jetton Minter contract
-  jetton_minter: "EQCb-sIWT2PmHdcuenhplHqEWWDecvPN_8ONoZ2J9A0WLkC_",
+  jetton_minter: "EQCb-sIwT2PmHdcuenhplHqEWWDecvPN_8ONoZ2J9A0WLkC_",
   admin_wallet: "EQD8w9rfuxbtdl30ybCIwPi5uNl-17ynIM2oyxGviEyuKs8j",
 
   // Explorer links
-  explorer_url: "https://tonviewer.com/EQCb-sIWT2PmHdcuenhplHqEWWDecvPN_8ONoZ2J9A0WLkC_",
-  tonscan_url: "https://tonscan.org/address/EQCb-sIWT2PmHdcuenhplHqEWWDecvPN_8ONoZ2J9A0WLkC_",
+  explorer_url: "https://tonviewer.com/EQCb-sIwT2PmHdcuenhplHqEWWDecvPN_8ONoZ2J9A0WLkC_",
+  tonscan_url: "https://tonscan.org/address/EQCb-sIwT2PmHdcuenhplHqEWWDecvPN_8ONoZ2J9A0WLkC_",
 
   // Standards
   standard: "TEP-74 / TEP-89",

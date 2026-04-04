@@ -216,7 +216,7 @@ export function VaultPanel(props: VaultPanelProps) {
         {/* NXT on-chain contract badge */}
         <div style={{ display: "flex", gap: 6, padding: "4px 12px", flexWrap: "wrap" }}>
           <a
-            href="https://tonviewer.com/EQCb-sIWT2PmHdcuenhplHqEWWDecvPN_8ONoZ2J9A0WLkC_"
+            href="https://tonviewer.com/EQCb-sIwT2PmHdcuenhplHqEWWDecvPN_8ONoZ2J9A0WLkC_"
             target="_blank" rel="noopener noreferrer"
             style={{ fontSize: 10, color: "rgba(0,214,255,0.6)", textDecoration: "none", background: "rgba(0,214,255,0.06)", borderRadius: 6, padding: "2px 8px", border: "1px solid rgba(0,214,255,0.1)" }}
           >
