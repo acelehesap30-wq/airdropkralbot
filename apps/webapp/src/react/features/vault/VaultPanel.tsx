@@ -213,6 +213,19 @@ export function VaultPanel(props: VaultPanelProps) {
           </span>
           <span className="akrCurrencyChip akrCurrencyRC">{routeStatusLabel}</span>
         </div>
+        {/* NXT on-chain contract badge */}
+        <div style={{ display: "flex", gap: 6, padding: "4px 12px", flexWrap: "wrap" }}>
+          <a
+            href="https://tonviewer.com/EQCb-sIWT2PmHdcuenhplHqEWWDecvPN_8ONoZ2J9A0WLkC_"
+            target="_blank" rel="noopener noreferrer"
+            style={{ fontSize: 10, color: "rgba(0,214,255,0.6)", textDecoration: "none", background: "rgba(0,214,255,0.06)", borderRadius: 6, padding: "2px 8px", border: "1px solid rgba(0,214,255,0.1)" }}
+          >
+            NXT Jetton · TON Mainnet · TEP-74
+          </a>
+          <span style={{ fontSize: 10, color: "rgba(255,255,255,0.2)", padding: "2px 0" }}>
+            EQCb-s...WLkC_
+          </span>
+        </div>
       </div>
 
       {/* Sub-navigation tabs */}
