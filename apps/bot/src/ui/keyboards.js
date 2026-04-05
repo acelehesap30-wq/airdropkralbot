@@ -353,46 +353,46 @@ function buildTaskKeyboard(offers, lang = "tr", miniAppUrl = "") {
 function buildStartKeyboard(lang = "tr", gameState = {}, miniAppUrl = "") {
   const hasReveal = Boolean(gameState.hasReveal);
   const hasActive = Boolean(gameState.hasActive);
+  const isTr = lang === "tr";
   const rows = [];
 
-  // ── PRIORITY CTA (full-width, high-contrast) ──
+  // ── PRIORITY CTA (only if user has pending action) ──
   if (hasReveal) {
-    rows.push([Markup.button.callback("🎁 " + (lang === "tr" ? "LOOT AÇ — Ganimet Hazır!" : "OPEN LOOT — Reward Ready!"), "GUIDE_REVEAL")]);
+    rows.push([Markup.button.callback(isTr ? "🎁 LOOT AÇ" : "🎁 OPEN LOOT", "GUIDE_REVEAL")]);
   } else if (hasActive) {
-    rows.push([Markup.button.callback("⚡ " + (lang === "tr" ? "GÖREVİ TAMAMLA" : "COMPLETE TASK"), "GUIDE_FINISH_BALANCED")]);
+    rows.push([Markup.button.callback(isTr ? "⚡ GÖREVİ BİTİR" : "⚡ FINISH TASK", "GUIDE_FINISH_BALANCED")]);
   }
 
-  // ── 3D WEBAPP LAUNCH ──
+  // ── WEBAPP (full-width) ──
   const launchBtn = miniAppUrl ? buildLaunchButton(
-    lang === "tr" ? "🌐 3D Nexus Arena" : "🌐 3D Nexus Arena",
+    "🌐 Nexus Arena",
     miniAppUrl
   ) : null;
   if (launchBtn) {
     rows.push([launchBtn]);
   }
 
-  // ── 🎮 GAME SECTION ──
+  // ── CORE (2x2 grid — clean, no section headers) ──
   rows.push(
-    [Markup.button.callback(uiText(lang, "section_game"), "NOOP")],
-    [Markup.button.callback(uiText(lang, "nav_tasks"), "OPEN_TASKS"), Markup.button.callback(uiText(lang, "nav_arena"), "ARENA_RAID:balanced")],
-    [Markup.button.callback(uiText(lang, "nav_missions"), "OPEN_MISSIONS"), Markup.button.callback(uiText(lang, "nav_forge"), "OPEN_FORGE")]
+    [
+      Markup.button.callback(isTr ? "📋 Görevler" : "📋 Tasks", "OPEN_TASKS"),
+      Markup.button.callback(isTr ? "⚔️ PvP" : "⚔️ PvP", "ARENA_RAID:balanced"),
+    ],
+    [
+      Markup.button.callback(isTr ? "💰 Cüzdan" : "💰 Wallet", "OPEN_WALLET"),
+      Markup.button.callback(isTr ? "🏦 Vault" : "🏦 Vault", "OPEN_PAYOUT"),
+    ],
+    [
+      Markup.button.callback(isTr ? "🎯 Misyonlar" : "🎯 Missions", "OPEN_MISSIONS"),
+      Markup.button.callback(isTr ? "🪙 NXT Token" : "🪙 NXT Token", "OPEN_TOKEN"),
+    ],
+    [
+      Markup.button.callback(isTr ? "⚙️ Ayarlar" : "⚙️ Settings", "OPEN_SETTINGS"),
+      Markup.button.callback(isTr ? "➕ Daha Fazla" : "➕ More", "OPEN_HOME_MENU"),
+    ]
   );
 
-  // ── 💰 ECONOMY SECTION ──
-  rows.push(
-    [Markup.button.callback(uiText(lang, "section_economy"), "NOOP")],
-    [Markup.button.callback(uiText(lang, "nav_exchange"), "OPEN_TOKEN"), Markup.button.callback(uiText(lang, "nav_vault"), "OPEN_PAYOUT")],
-    [Markup.button.callback(uiText(lang, "wallet"), "OPEN_WALLET"), Markup.button.callback(uiText(lang, "nav_season"), "OPEN_SEASON")]
-  );
-
-  // ── ⚙️ META SECTION ──
-  rows.push(
-    [Markup.button.callback(uiText(lang, "section_meta"), "NOOP")],
-    [Markup.button.callback(uiText(lang, "nav_hub"), "OPEN_NEXUS"), Markup.button.callback(uiText(lang, "nav_events"), "OPEN_EVENTS")],
-    [Markup.button.callback(uiText(lang, "nav_settings"), "OPEN_SETTINGS"), Markup.button.callback(uiText(lang, "more"), "OPEN_HOME_MENU")]
-  );
-
-  return Markup.inlineKeyboard(rows, { columns: 2 });
+  return Markup.inlineKeyboard(rows);
 }
 
 function buildContextualNextMoveKeyboard(gameState = {}, lang = "tr") {

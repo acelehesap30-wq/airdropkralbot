@@ -138,12 +138,15 @@ export function resolveLiveOpsSceneGate(sceneRuntimeSummary, campaign) {
   const total24h = Math.max(0, Number(safeSummary.total_24h || 0));
 
   if (alarmState === "alert") {
+    // Alert state: cap recipients to 10 instead of full block.
+    // Full block was preventing all dispatch even after bug fixes.
+    const alertCap = Math.min(configuredRecipients, 10);
     return {
       scene_gate_state: "alert",
-      scene_gate_effect: "blocked",
-      scene_gate_reason: "scene_runtime_alert_blocked",
-      scene_gate_recipient_cap: 0,
-      ready_for_auto_dispatch: false
+      scene_gate_effect: "capped",
+      scene_gate_reason: "scene_runtime_alert_capped",
+      scene_gate_recipient_cap: alertCap,
+      ready_for_auto_dispatch: true
     };
   }
 
