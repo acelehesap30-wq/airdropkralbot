@@ -139,19 +139,13 @@ function formatStart(profile, balances, season, anomaly, contract, options = {})
   const dailyPct = Math.round((tasksDone / Math.max(1, dailyCap)) * 100);
 
   return (
-    `🏰 *AIRDROPKRAL NEXUS*\n` +
-    `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n` +
-    `${badge} *${publicName}*  ·  ${tierName}\n` +
-    `${streakIcon} Streak *${streak}* ${tr ? "gün" : "days"}  ·  x${streakMult} ${tr ? "çarpan" : "mult"}\n` +
-    `${progressBar(streak, 14, 12)}\n\n` +
-    `💰 \`${compactNum(sc)} SC\`  💎 \`${compactNum(hc)} HC\`  🌀 \`${rc} RC\`\n` +
-    `🪙 \`${nxt.toFixed(2)} NXT\`` +
-    (payout > 0 ? `  ₿ \`${payout.toFixed(6)} BTC\`` : '') +
-    `\n` +
+    `${badge} *${publicName}* · ${tierName}\n` +
+    `${streakIcon} *${streak}* ${tr ? "gün seri" : "day streak"} · x${streakMult}\n` +
+    `💰 \`${compactNum(sc)} SC\` 💎 \`${compactNum(hc)} HC\` 🌀 \`${rc} RC\` 🪙 \`${nxt.toFixed(2)} NXT\`` +
+    (payout > 0 ? `\n₿ \`${payout.toFixed(6)} BTC\`` : '') +
     seasonLine + anomalyLine + contractLine +
-    `\n\n` +
-    `${nextIcon} *${tr ? "Sıradaki Hamle" : "Next Move"}:* ${nextMove}\n\n` +
-    `📊 ${tr ? "Bugün" : "Today"} *${tasksDone}*/*${dailyCap}* ${progressBar(tasksDone, dailyCap, 8)} ${dailyPct}%`
+    `\n\n${nextIcon} *${nextMove}*\n` +
+    `📊 ${tr ? "Bugün" : "Today"} *${tasksDone}*/${dailyCap} ${progressBar(tasksDone, dailyCap, 8)} ${dailyPct}%`
   );
 }
 

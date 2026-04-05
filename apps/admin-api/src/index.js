@@ -9347,13 +9347,24 @@ fastify.post(
         reward = { ...config.reward };
       }
 
+      // NXT bonus for specific games
+      let nxtBonus = 0;
+      if (actionKey === "game_airdrop_catcher" && Number(payload.caught?.NXT || 0) > 0) {
+        nxtBonus = Number(payload.caught.NXT) * 0.01; // 0.01 NXT per catch
+      } else if (actionKey === "game_hash_racer" && payload.perfect) {
+        nxtBonus = 0.05; // bonus for mining all blocks
+      } else if (actionKey === "game_resource_merge" && Number(payload.nxt_created || 0) > 0) {
+        nxtBonus = Number(payload.nxt_created) * 0.01;
+      }
+      reward.nxt = Math.min(nxtBonus, 1.0); // cap at 1 NXT per game
+
       // Ensure minimum reward
-      if (reward.sc === 0 && reward.hc === 0 && reward.rc === 0) {
+      if (reward.sc === 0 && reward.hc === 0 && reward.rc === 0 && !reward.nxt) {
         reward.sc = 1;
       }
 
       // Skip negative rewards (coin flip loss) from crediting, but still track
-      const creditReward = { sc: Math.max(0, reward.sc), hc: Math.max(0, reward.hc), rc: Math.max(0, reward.rc) };
+      const creditReward = { sc: Math.max(0, reward.sc), hc: Math.max(0, reward.hc), rc: Math.max(0, reward.rc), nxt: Math.max(0, reward.nxt || 0) };
       const claimRef = `action_${actionKey}_${auth.uid}_${Date.now()}`;
 
       if (creditReward.sc > 0 || creditReward.hc > 0 || creditReward.rc > 0) {
@@ -9378,10 +9389,11 @@ fastify.post(
 
       const resultData = {
         action_key: actionKey,
-        reward_text: `+${creditReward.sc} SC${creditReward.hc ? ` +${creditReward.hc} HC` : ""}${creditReward.rc ? ` +${creditReward.rc} RC` : ""}`,
+        reward_text: `+${creditReward.sc} SC${creditReward.hc ? ` +${creditReward.hc} HC` : ""}${creditReward.rc ? ` +${creditReward.rc} RC` : ""}${creditReward.nxt ? ` +${creditReward.nxt.toFixed(2)} NXT` : ""}`,
         reward_sc: creditReward.sc,
         reward_hc: creditReward.hc,
         reward_rc: creditReward.rc,
+        reward_nxt: creditReward.nxt || 0,
         won: reward.sc >= 0,
         result_side: actionKey === "game_coin_flip" ? (reward.sc >= 0 ? payload.choice : (payload.choice === "heads" ? "tails" : "heads")) : undefined,
         server_tick: Date.now()

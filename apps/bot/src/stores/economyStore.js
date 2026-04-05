@@ -183,6 +183,7 @@ async function creditReward(db, { userId, reward, reason, meta, refEventIds }) {
   const sc = reward.sc || 0;
   const hc = reward.hc || 0;
   const rc = reward.rc || 0;
+  const nxt = reward.nxt || 0;
 
   const results = {
     SC: await creditCurrency(db, {
@@ -208,7 +209,15 @@ async function creditReward(db, { userId, reward, reason, meta, refEventIds }) {
       reason,
       meta,
       refEventId: refEventIds?.RC || null
-    })
+    }),
+    NXT: nxt > 0 ? await creditCurrency(db, {
+      userId,
+      currency: "NXT",
+      amount: nxt,
+      reason,
+      meta,
+      refEventId: refEventIds?.NXT || null
+    }) : { credited: false }
   };
   return results;
 }
