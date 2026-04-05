@@ -49,8 +49,8 @@ export async function run(provider: NetworkProvider) {
   await minter.sendMint(provider.sender(), {
     toAddress: adminAddress,
     jettonAmount,
-    forwardTonAmount: toNano("0.05"),
-    totalTonAmount: toNano("0.15"),
+    forwardTonAmount: toNano("0.01"),
+    totalTonAmount: toNano("0.3"),
   });
 
   console.log("⏳ Waiting for confirmation...");
