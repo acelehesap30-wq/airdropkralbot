@@ -99,3 +99,9 @@ services:
         value: "72"
       - key: RUNTIME_GUARD_BASE_URL
         value: https://webapp.k99-exchange.xyz
+      - key: NXT_JETTON_MINTER
+        value: "EQCb-sIwT2PmHdcuenhplHqEWWDecvPN_8ONoZ2J9A0WLkC_"
+      - key: TON_NETWORK
+        value: mainnet
+      - key: BOT_WEBHOOK_URL
+        value: https://webapp.k99-exchange.xyz/api/bot/webhook
