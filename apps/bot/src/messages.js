@@ -314,7 +314,6 @@ function formatProfile(profile, balances, options = {}) {
   const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
   const sc = Number(balances?.SC || 0);
   const hc = Number(balances?.HC || 0);
-  const rc = Number(balances?.RC || 0);
   const nxt = Number(balances?.NXT || 0);
   const streakMult = (1 + Math.min(streak, 30) * 0.05).toFixed(2);
 
@@ -324,22 +323,14 @@ function formatProfile(profile, balances, options = {}) {
   const progressPct = Math.round((progressVal / progressMax) * 100);
 
   return (
-    `👤 *${tr ? "PROFİL KARTI" : "PROFILE CARD"}*\n` +
-    `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n` +
     `${badge} *${publicName}*\n` +
-    `⚔️ *${tierName}* · Tier ${tier}  ·  🏅 Prestige *${prestige}*\n\n` +
-    `*${tr ? "İstatistikler" : "Statistics"}*\n` +
-    `⭐ ${tr ? "İtibar" : "Reputation"}: *${rep.toLocaleString()}*\n` +
-    `🔥 Streak: *${streak}* ${tr ? "gün" : "days"} (${tr ? "en iyi" : "best"}: *${bestStreak}*)\n` +
-    `⚡ ${tr ? "Çarpan" : "Multiplier"}: *x${streakMult}*\n` +
-    `🏆 ${tr ? "Sezon Sırası" : "Season Rank"}: *${seasonRank > 0 ? `#${seasonRank}` : (tr ? "Yerleşmedi" : "Unranked")}*\n` +
-    `⚔️ PvP: *${wins}W/${losses}L* (${winRate}% ${tr ? "galibiyet" : "win rate"})\n\n` +
-    `*${tr ? "Hazine" : "Treasury"}*\n` +
-    `💰 \`${compactNum(sc)} SC\`  💎 \`${compactNum(hc)} HC\`\n` +
-    `🌀 \`${rc} RC\`  🪙 \`${nxt.toFixed(2)} NXT\`\n\n` +
-    `📊 ${tr ? "Tier İlerlemesi" : "Tier Progress"}\n` +
-    `${progressBar(progressVal, progressMax, 14)} *${progressPct}%*\n` +
-    `\`${progressVal.toLocaleString()} / ${progressMax.toLocaleString()}\``
+    `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n` +
+    `⚔️ *${tierName}* T${tier} · 🏅 P${prestige} · �� ${seasonRank > 0 ? `#${seasonRank}` : (tr ? "Sırasız" : "Unranked")}\n\n` +
+    `🔥 Streak: *${streak}d* (${tr ? "max" : "best"} ${bestStreak}) · x${streakMult}\n` +
+    `⚔️ PvP: *${wins}W/${losses}L* · ${winRate}%\n` +
+    `⭐ ${tr ? "İtibar" : "Rep"}: *${compactNum(rep)}*\n\n` +
+    `💰 *${compactNum(sc)}* SC  💎 *${compactNum(hc)}* HC  🪙 *${nxt.toFixed(2)}* NXT\n\n` +
+    `${progressBar(progressVal, progressMax, 12)} *${progressPct}%* → ${tr ? "Sonraki Tier" : "Next Tier"}`
   );
 }
 
@@ -520,74 +511,59 @@ function formatWallet(profile, balances, daily, anomaly, contract, options = {})
   const payout = Number(balances?.payout_available || 0);
   const dailyCap = Number(daily?.dailyCap || 5);
   const tasksDone = Number(daily?.tasksDone || 0);
-  const earnedSc = Number(daily?.scEarned || 0);
   const streak = Number(profile.current_streak || 0);
   const streakMult = (1 + Math.min(streak, 30) * 0.05).toFixed(2);
-  const productivity = dailyCap > 0 ? Math.min(1, tasksDone / dailyCap) : 0;
-  const scCap = Number(daily?.scDailyCap || 5000);
-  const hcCap = Number(daily?.hcDailyCap || 20);
 
-  const anomalyLine = anomaly
-    ? `\n🌀 *${tr ? "ANOMALI AKTIF" : "ANOMALY ACTIVE"}:* ${escapeMarkdown(anomaly.title)}\n   SC x${Number(anomaly.sc_multiplier || 1).toFixed(1)} │ HC x${Number(anomaly.hc_multiplier || 1).toFixed(1)}`
-    : "";
-  const contractLine = contract
-    ? `\n📜 *${tr ? "Kontrat" : "Contract"}:* ${escapeMarkdown(contract.title)} [${escapeMarkdown(contract.required_mode)}]`
-    : "";
+  const nxtLine = nxt > 0
+    ? `🪙 NXT: *${nxt.toFixed(2)}* · [tonviewer](https://tonviewer.com/EQCb-sIwT2PmHdcuenhplHqEWWDecvPN_8ONoZ2J9A0WLkC_)\n`
+    : `🪙 NXT: *0* · \`/mint\` ${tr ? "ile dönüştür" : "to convert"}\n`;
+  const btcLine = payout > 0 ? `₿ BTC: *${payout.toFixed(8)}*\n` : '';
 
   return (
-    `💰 *${tr ? "EKONOMİ HUD" : "ECONOMY HUD"}*\n` +
+    `💰 *${tr ? "CÜZDAN" : "WALLET"}*\n` +
     `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n` +
-    `*${tr ? "Bakiyeler" : "Balances"}*\n` +
-    `${currencyBar("SC", sc, scCap, "💰", 8)}\n` +
-    `${currencyBar("HC", hc, hcCap, "💎", 8)}\n` +
-    `🌀 RC: *${rc.toLocaleString()}*\n` +
-    `🪙 NXT: *${nxt.toFixed(4)}*\n` +
-    (payout > 0 ? `₿ BTC: *${payout.toFixed(8)}*\n` : '') +
+    `💰 SC: *${compactNum(sc)}*  ·  💎 HC: *${compactNum(hc)}*\n` +
+    `🌀 RC: *${rc}*\n` +
+    nxtLine +
+    btcLine +
     `\n` +
-    `*${tr ? "Günlük Rapor" : "Daily Report"}*\n` +
-    `📋 ${tr ? "Görev" : "Tasks"}: *${tasksDone}/${dailyCap}* ${progressBar(tasksDone, dailyCap, 8)}\n` +
-    `💰 ${tr ? "Kazanılan" : "Earned"}: *${earnedSc.toLocaleString()} SC*\n` +
-    `📈 ${tr ? "Verimlilik" : "Productivity"}: *${pct(productivity)}*\n` +
-    `🔥 Streak: *${streak}* ${tr ? "gün" : "days"} (x${streakMult})\n` +
-    `⚔️ Kingdom: *Tier ${profile.kingdom_tier}* ${tierBadge(profile.kingdom_tier)}` +
-    `${anomalyLine}${contractLine}\n\n` +
-    `💡 ${tr ? "Günlük SC kazanç potansiyeli" : "Daily SC earning potential"}: ~*${Math.round((dailyCap - tasksDone) * 80 * Number(streakMult))} SC*`
+    `📋 ${tr ? "Bugün" : "Today"}: *${tasksDone}/${dailyCap}* ${progressBar(tasksDone, dailyCap, 8)}\n` +
+    `🔥 Streak: *${streak}* ${tr ? "gün" : "days"} (x${streakMult}) ${tierBadge(profile.kingdom_tier)}\n` +
+    (anomaly ? `\n🌀 ${escapeMarkdown(anomaly.title)} — SC x${Number(anomaly.sc_multiplier || 1).toFixed(1)}` : '') +
+    (contract ? `\n📜 ${escapeMarkdown(contract.title)} [${escapeMarkdown(contract.required_mode)}]` : '')
   );
 }
 
 function formatTokenWallet(profile, view) {
-  const lines = (view.chains || [])
-    .map((chain) => `${chain.chain.toUpperCase()}: \`${chain.enabled ? chain.address : "tanimsiz"}\``)
-    .join("\n");
+  const balance = Number(view.balance || 0);
+  const mintCapacity = Number(view.equivalentToken || 0);
+  const spotUsd = Number(view.spotUsd || 0);
+  const decimals = Math.min(view.tokenConfig?.decimals || 2, 4);
+  const symbol = view.symbol || "NXT";
+
+  const NXT_CONTRACT = "EQCb\\-sIwT2PmHdcuenhplHqEWWDecvPN\\_8ONoZ2J9A0WLkC\\_";
+  const explorerUrl = "https://tonviewer.com/EQCb-sIwT2PmHdcuenhplHqEWWDecvPN_8ONoZ2J9A0WLkC_";
 
   const requests = (view.requests || [])
-    .slice(0, 4)
+    .slice(0, 3)
     .map((req) => {
       const status = String(req.status || "").toUpperCase();
-      const tx = req.tx_hash ? ` | tx ${escapeMarkdown(String(req.tx_hash).slice(0, 14))}...` : "";
-      return `#${req.id} ${Number(req.usd_amount || 0)} USD -> ${Number(req.token_amount || 0)} ${view.symbol} [${status}]${tx}`;
+      return `  #${req.id} · ${Number(req.token_amount || 0).toFixed(2)} ${symbol} · ${status}`;
     })
     .join("\n");
 
-  const onchain = view.tokenConfig?.onchain || {};
-  const onchainLine = onchain.enabled && onchain.contract_address
-    ? `\n🔗 *On\\-Chain (${escapeMarkdown(onchain.chain)})*\n` +
-      `   Kontrat: \`${escapeMarkdown(String(onchain.contract_address).slice(0, 20))}...\`\n` +
-      (onchain.explorer_url ? `   [BscScan'de Gör](${onchain.explorer_url})\n` : '')
-    : '';
-
   return (
-    `🪙 *TOKEN TREASURY*\n` +
+    `🪙 *${symbol} TOKEN*\n` +
     `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n` +
-    `👤 *${escapeMarkdown(profile.public_name)}*\n` +
-    `Token: *${view.symbol}*  ·  Spot: *$${Number(view.spotUsd || 0).toFixed(6)}*\n\n` +
-    `💰 Bakiye: *${Number(view.balance || 0).toFixed(view.tokenConfig.decimals)} ${view.symbol}*\n` +
-    `⛏️ Mint Kapasitesi: *${Number(view.equivalentToken || 0).toFixed(view.tokenConfig.decimals)} ${view.symbol}*\n` +
-    `📊 Unified Units: *${Number(view.unifiedUnits || 0).toFixed(2)}*\n` +
-    onchainLine +
-    `\n*Zincir Adresleri:*\n${lines || "Tanımlı adres yok"}\n\n` +
-    `*Son Talepler:*\n${escapeMarkdown(requests || "Kayıt yok")}\n\n` +
-    `💡 /mint \\[miktar\\], /buytoken <usd> <chain>, /tx <id> <txHash>`
+    `💰 Bakiye: *${balance.toFixed(decimals)} ${symbol}*\n` +
+    `⛏️ Mint: *${mintCapacity.toFixed(decimals)} ${symbol}*\n` +
+    (spotUsd > 0 ? `📊 Fiyat: *$${spotUsd.toFixed(6)}*\n` : `📊 Fiyat: *PRE\\-LAUNCH*\n`) +
+    `\n` +
+    `🔗 *TON Mainnet*\n` +
+    `\`${NXT_CONTRACT}\`\n` +
+    `[Tonviewer'da Gor](${explorerUrl})\n` +
+    (requests ? `\n*Son Talepler:*\n${requests}\n` : '') +
+    `\n💡 \`/mint\` · \`/buytoken <usd> <chain>\``
   );
 }
 
@@ -773,13 +749,38 @@ function formatLeaderboard(season, rows, options = {}) {
   }
   const medals = ['🥇', '🥈', '🥉'];
   const lines = rows.map((row, idx) => {
-    const prefix = medals[idx] || `${idx + 1}.`;
-    return `${prefix} *${escapeMarkdown(row.public_name)}* — ${Number(row.season_points || 0)} ${tr ? "puan" : "pts"}`;
+    const prefix = medals[idx] || `\`${String(idx + 1).padStart(2)}\``;
+    const pts = compactNum(Number(row.season_points || 0));
+    const badge = tierBadge(row.kingdom_tier || 0);
+    return `${prefix} ${badge} *${escapeMarkdown(row.public_name)}* — ${pts} ${tr ? "puan" : "pts"}`;
   });
+  const userRank = Number(options.userRank || 0);
+  const userLine = userRank > 0
+    ? `\n\n${tr ? "Senin sıran" : "Your rank"}: *#${userRank}*`
+    : '';
   return (
     `🏆 *S${season.seasonId} ${tr ? "LİDERLİK TABLOSU" : "LEADERBOARD"}*\n` +
+    `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n` +
+    `📅 ${season.daysLeft} ${tr ? "gün kaldı" : "days left"}\n\n` +
+    `${lines.join("\n")}` +
+    userLine
+  );
+}
+
+function formatGames(options = {}) {
+  const lang = resolveLang(options);
+  const tr = lang === "tr";
+  return (
+    `🎮 *${tr ? "OYUNLAR" : "GAMES"}*\n` +
     `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n` +
-    `${lines.join("\n")}`
+    `🎯 *Airdrop Catcher*\n` +
+    `${tr ? "Paraşütleri yakala, SCAM'lerden kaç. Wave 2'de hızlanır!" : "Catch airdrops, dodge SCAMs. Wave 2 gets faster!"}\n` +
+    `💎 ${tr ? "Ödül" : "Reward"}: 0.1\\-0.25 NXT\n\n` +
+    `🏎️ *Hash Racer*\n` +
+    `${tr ? "Blokları birleştir, hash gücünü artır. Hız yarışı!" : "Merge blocks, boost hash power. Speed race!"}\n` +
+    `💎 ${tr ? "Ödül" : "Reward"}: 0.15 NXT\n\n` +
+    `🪙 ${tr ? "Oyunları oyna, gerçek NXT token kazan!" : "Play games, earn real NXT tokens!"}\n` +
+    `${tr ? "Günlük limit" : "Daily cap"}: *5 NXT*`
   );
 }
 
@@ -1637,27 +1638,18 @@ function formatAdminPanel(snapshot, isAdmin) {
       : "  Bekleyen token talebi yok";
 
   return (
-    `╔══════════════════════════╗\n` +
-    `║  🛡️ *ADMIN KONTROL MERKEZI* ║\n` +
-    `╚══════════════════════════╝\n\n` +
-    `${statusIcon} Durum: *${statusLabel}*\n` +
-    `🆔 Admin: *${snapshot.adminTelegramId}*\n` +
-    `❄️ Freeze: *${freeze.freeze ? "ON" : "OFF"}*` +
-    (freeze.reason ? ` — ${escapeMarkdown(freeze.reason)}` : "") +
-    `\n\n┌─── SISTEM METRIKLERI ──────┐\n` +
-    `│ 👥 Kullanici: *${totalUsers.toLocaleString()}*\n` +
-    `│ 🎮 Aktif Deneme: *${activeAttempts}*\n` +
-    `│ 📋 Kuyruk: *${totalQ}* (💎 ${payoutQ} + 🪙 ${tokenQ})\n` +
-    `│ 🪙 Supply: *${supply.toFixed(2)} ${escapeMarkdown(token.symbol || "NXT")}*\n` +
-    `│ 💹 Spot: *$${spotUsd.toFixed(6)}* │ Cap: *$${marketCap.toFixed(2)}*\n` +
-    `│ 🚪 Gate: *${gate.allowed ? "ACIK" : "KAPALI"}*` +
-    (gate.current ? ` (${Number(gate.current).toFixed(2)}/${Number(gate.min || 0).toFixed(2)})` : "") +
-    `\n└──────────────────────────┘\n\n` +
-    `📋 *Bekleyen Payoutlar:*\n${payoutLines}\n\n` +
-    `🪙 *Bekleyen Token Talepleri:*\n${tokenLines}\n\n` +
-    `⚡ *Hizli Komutlar:*\n` +
-    `/admin\\_queue │ /admin\\_payouts │ /admin\\_tokens\n` +
-    `/admin\\_metrics │ /admin\\_config │ /admin\\_freeze`
+    `🛡️ *ADMIN PANEL*\n` +
+    `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n` +
+    `${statusIcon} *${statusLabel}*${freeze.freeze ? ` — ${escapeMarkdown(freeze.reason || "")}` : ""}\n\n` +
+    `👥 *${compactNum(totalUsers)}* kullanici · 🎮 *${activeAttempts}* aktif\n` +
+    `📋 Kuyruk: 💎 *${payoutQ}* payout + 🪙 *${tokenQ}* token\n\n` +
+    `🪙 *NXT Token*\n` +
+    `Supply: *${compactNum(supply)}* · Spot: *${spotUsd > 0 ? `$${spotUsd.toFixed(6)}` : "PRE\\-LAUNCH"}*\n` +
+    `Cap: *$${compactNum(marketCap)}* · Gate: *${gate.allowed ? "ACIK" : "KAPALI"}*\n` +
+    `Chain: TON · [Tonviewer](https://tonviewer.com/EQCb-sIwT2PmHdcuenhplHqEWWDecvPN_8ONoZ2J9A0WLkC_)\n\n` +
+    (payoutQ > 0 ? `💎 *Payoutlar:*\n${payoutLines}\n\n` : "") +
+    (tokenQ > 0 ? `🪙 *Token Talepleri:*\n${tokenLines}\n\n` : "") +
+    `⚡ /admin\\_queue · /admin\\_metrics · /admin\\_config`
   );
 }
 
@@ -1920,6 +1912,7 @@ module.exports = {
   formatDaily,
   formatSeason,
   formatLeaderboard,
+  formatGames,
   formatShop,
   formatPurchaseResult,
   formatMissions,

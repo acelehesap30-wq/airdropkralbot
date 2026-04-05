@@ -383,11 +383,11 @@ function buildStartKeyboard(lang = "tr", gameState = {}, miniAppUrl = "") {
       Markup.button.callback(isTr ? "🏦 Vault" : "🏦 Vault", "OPEN_PAYOUT"),
     ],
     [
-      Markup.button.callback(isTr ? "🎯 Misyonlar" : "🎯 Missions", "OPEN_MISSIONS"),
+      Markup.button.callback(isTr ? "🎮 Oyunlar" : "🎮 Games", "OPEN_GAMES"),
       Markup.button.callback(isTr ? "🪙 NXT Token" : "🪙 NXT Token", "OPEN_TOKEN"),
     ],
     [
-      Markup.button.callback(isTr ? "⚙️ Ayarlar" : "⚙️ Settings", "OPEN_SETTINGS"),
+      Markup.button.callback(isTr ? "🎯 Misyonlar" : "🎯 Missions", "OPEN_MISSIONS"),
       Markup.button.callback(isTr ? "➕ Daha Fazla" : "➕ More", "OPEN_HOME_MENU"),
     ]
   );
@@ -633,11 +633,45 @@ function buildPlayKeyboard(url, lang = "tr") {
 }
 
 function buildWalletKeyboard(url, lang = "tr") {
+  const isTr = lang === "tr";
+  const rows = [
+    [
+      Markup.button.callback(isTr ? "🪙 NXT Token" : "🪙 NXT Token", "OPEN_TOKEN"),
+      Markup.button.callback(isTr ? "🏦 Vault" : "🏦 Vault", "OPEN_PAYOUT")
+    ],
+    [
+      Markup.button.callback(isTr ? "📋 Görevler" : "📋 Tasks", "OPEN_TASKS"),
+      Markup.button.callback(isTr ? "🎮 Oyunlar" : "🎮 Games", "OPEN_GAMES")
+    ]
+  ];
   const launchButton = buildLaunchButton(uiText(lang, "open_wallet_panel"), url);
-  if (!launchButton) {
-    return undefined;
+  if (launchButton) {
+    rows.push([launchButton]);
   }
-  return Markup.inlineKeyboard([[launchButton]], { columns: 1 });
+  return Markup.inlineKeyboard(rows);
+}
+
+function buildGamesKeyboard(miniAppUrl, lang = "tr") {
+  const isTr = lang === "tr";
+  const rows = [];
+  const launchButton = buildLaunchButton(
+    isTr ? "🎮 Oyunları Aç" : "🎮 Open Games",
+    miniAppUrl
+  );
+  if (launchButton) {
+    rows.push([launchButton]);
+  }
+  rows.push(
+    [
+      Markup.button.callback(isTr ? "📋 Görevler" : "📋 Tasks", "OPEN_TASKS"),
+      Markup.button.callback(isTr ? "💰 Cüzdan" : "💰 Wallet", "OPEN_WALLET")
+    ],
+    [
+      Markup.button.callback(isTr ? "🏆 Sıralama" : "🏆 Leaderboard", "OPEN_LEADERBOARD"),
+      Markup.button.callback(isTr ? "🪙 NXT" : "🪙 NXT", "OPEN_TOKEN")
+    ]
+  );
+  return Markup.inlineKeyboard(rows);
 }
 
 function buildProfileKeyboard(profileUrl, walletUrl, lang = "tr") {
@@ -936,6 +970,7 @@ module.exports = {
   buildTokenKeyboard,
   buildPlayKeyboard,
   buildWalletKeyboard,
+  buildGamesKeyboard,
   buildProfileKeyboard,
   buildStatusKeyboard,
   buildRewardsKeyboard,

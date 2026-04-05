@@ -68,6 +68,7 @@ const {
   buildTokenKeyboard,
   buildPlayKeyboard,
   buildWalletKeyboard,
+  buildGamesKeyboard,
   buildProfileKeyboard,
   buildStatusKeyboard,
   buildRewardsKeyboard,
@@ -4892,6 +4893,23 @@ async function sendPlay(ctx, pool, appConfig) {
   );
 }
 
+async function sendGames(ctx, pool, appConfig) {
+  const profile = await ensureProfile(pool, ctx);
+  const lang = resolvePreferredLanguage(profile, ctx, "tr");
+  let miniAppUrl = "";
+  try {
+    const launchBaseUrl = await resolveWebAppLaunchBaseUrl(pool, appConfig, ctx.from?.id);
+    miniAppUrl = buildSignedWebAppUrl(appConfig, ctx.from?.id, launchBaseUrl, {
+      routeKey: CANONICAL_ROUTE_KEY.MISSIONS,
+      panelKey: "games"
+    }) || "";
+  } catch (_) { /* best-effort */ }
+  await ctx.replyWithMarkdown(
+    messages.formatGames({ lang }),
+    buildGamesKeyboard(miniAppUrl, lang)
+  );
+}
+
 async function sendLauncherMenu(ctx, pool, appConfig) {
   const freeze = await withTransaction(pool, (db) => systemStore.getFreezeState(db));
   if (freeze.freeze) {
@@ -5173,6 +5191,25 @@ async function handleWebAppAction(ctx, pool, appConfig, simpleWebAppActionHandle
     return;
   }
 
+  if (action === "game_complete") {
+    const gameId = String(payload.game_id || payload.gameId || "");
+    const score = Number(payload.score || 0);
+    const wave = Number(payload.wave || 1);
+    if (!gameId) {
+      await ctx.replyWithMarkdown("*Oyun Hatasi*\ngame_id eksik.");
+      return;
+    }
+    const profile = await ensureProfile(pool, ctx);
+    const lang = resolvePreferredLanguage(profile, ctx, "tr");
+    const isTr = lang === "tr";
+    await ctx.replyWithMarkdown(
+      isTr
+        ? `🎮 *Oyun Tamamlandı!*\n🎯 ${escapeMarkdownText(gameId)} · Skor: *${score}*${wave > 1 ? ` · Wave ${wave}` : ""}\n\n💡 NXT ödüllerin otomatik cüzdanına eklenir.`
+        : `🎮 *Game Complete!*\n🎯 ${escapeMarkdownText(gameId)} · Score: *${score}*${wave > 1 ? ` · Wave ${wave}` : ""}\n\n💡 NXT rewards are added to your wallet automatically.`
+    );
+    return;
+  }
+
   await ctx.replyWithMarkdown(`*WebApp Aksiyon Bilinmiyor*\n${escapeMarkdownText(action)}`);
 }
 
@@ -5205,6 +5242,7 @@ function buildSimpleBotActionHandlers({ pool, appConfig }) {
     home_menu: async (ctx) => sendLauncherMenu(ctx, pool, appConfig),
     guide_finish_balanced: async (ctx) => completeLatestAttemptFromCommand(ctx, pool, appConfig, "balanced"),
     guide_reveal: async (ctx) => revealLatestFromCommand(ctx, pool, appConfig),
+    games: async (ctx) => sendGames(ctx, pool, appConfig),
     play: async (ctx) => sendPlay(ctx, pool, appConfig),
     arena_rank: async (ctx) => sendArenaRank(ctx, pool),
     token_mint: async (ctx) => mintToken(ctx, pool, appConfig),
@@ -6158,6 +6196,7 @@ function buildCommandHandlerMap({ pool, appConfig }) {
   });
   map.set("arena_rank", async (ctx) => sendArenaRank(ctx, pool));
   map.set("play", async (ctx) => sendPlay(ctx, pool, appConfig));
+  map.set("games", async (ctx) => sendGames(ctx, pool, appConfig));
   map.set("finish", async (ctx) => {
     const mode = extractModeArg(ctx);
     await completeLatestAttemptFromCommand(ctx, pool, appConfig, mode);

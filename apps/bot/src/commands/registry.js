@@ -103,6 +103,16 @@ const RAW_COMMAND_REGISTRY = Object.freeze([
     primary: true
   },
   {
+    key: "games",
+    aliases: ["oyunlar", "minigame"],
+    description_tr: "Mini oyunlar — Airdrop Catcher, Hash Racer ile NXT token kazan",
+    description_en: "Mini games — Earn NXT tokens with Airdrop Catcher, Hash Racer",
+    intents: ["games", "oyunlar", "minigame", "mini game", "oyna", "play games", "game list", "oyun listesi"],
+    scenarios: ["/games", "oyunlar", "mini games", "game list"],
+    outcomes: ["oyun listesini goster", "NXT odul tablosunu goster", "webapp oyun deeplink sun"],
+    primary: true
+  },
+  {
     key: "story",
     aliases: ["guide", "rehber"],
     description_tr: "Nexus rehberi — oyun hikayesi, mekanikler ve akis adimlari",

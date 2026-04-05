@@ -26,6 +26,7 @@ const SIMPLE_BOT_ACTION_CATALOG = Object.freeze([
   Object.freeze({ handlerKey: "home_menu", callbackAction: "OPEN_HOME_MENU" }),
   Object.freeze({ handlerKey: "guide_finish_balanced", callbackAction: "GUIDE_FINISH_BALANCED" }),
   Object.freeze({ handlerKey: "guide_reveal", callbackAction: "GUIDE_REVEAL" }),
+  Object.freeze({ handlerKey: "games", callbackAction: "OPEN_GAMES", webAppAction: "open_games" }),
   Object.freeze({ handlerKey: "play", callbackAction: "OPEN_PLAY", webAppAction: "open_play" }),
   Object.freeze({ handlerKey: "arena_rank", callbackAction: "OPEN_ARENA_RANK" }),
   Object.freeze({ handlerKey: "token_mint", callbackAction: "TOKEN_MINT", webAppAction: "mint_token" }),

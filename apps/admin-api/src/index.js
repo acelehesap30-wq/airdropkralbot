@@ -68,6 +68,8 @@ const { registerWebappV2InviteRoutes } = require("./routes/webapp/v2/inviteRoute
 const { registerWebappV2DailyCheckinRoutes } = require("./routes/webapp/v2/dailyCheckinRoutes");
 const { registerWebappV2TournamentRoutes } = require("./routes/webapp/v2/tournamentRoutes");
 const { registerWebappV2ChestRoutes } = require("./routes/webapp/v2/chestRoutes");
+const { registerGameRoutes } = require("./routes/webapp/v2/gameRoutes");
+const { registerNxtPriceRoutes } = require("./routes/webapp/admin/nxtPriceRoutes");
 const { registerAdminRuntimeRoutes } = require("./routes/admin/runtimeRoutes");
 const { registerAdminSystemOpsRoutes } = require("./routes/admin/systemOpsRoutes");
 const { registerAdminTokenPolicyRoutes } = require("./routes/admin/tokenPolicyRoutes");
@@ -7103,6 +7105,63 @@ fastify.get("/webapp/api/v2/admin/bootstrap", async (request, reply) => {
   });
 });
 
+// ── Admin Dashboard KPI (clean, focused) ──
+fastify.get("/webapp/api/v2/admin/dashboard", async (request, reply) => {
+  const auth = verifyWebAppAuth(request.query.uid, request.query.ts, request.query.sig);
+  if (!auth.ok) { reply.code(401).send({ success: false, error: auth.reason }); return; }
+  const client = await pool.connect();
+  try {
+    const profile = await requireWebAppAdmin(client, reply, auth.uid);
+    if (!profile) return;
+
+    // KPI queries
+    const [usersR, active24hR, tasksR, payoutsR, nxtR] = await Promise.all([
+      client.query(`SELECT COUNT(*)::int AS c FROM users`),
+      client.query(`SELECT COUNT(DISTINCT user_id)::int AS c FROM task_attempts WHERE created_at > NOW() - INTERVAL '24 hours'`).catch(() => ({ rows: [{ c: 0 }] })),
+      client.query(`SELECT COUNT(*)::int AS c FROM task_attempts WHERE created_at > NOW() - INTERVAL '24 hours'`).catch(() => ({ rows: [{ c: 0 }] })),
+      client.query(`SELECT COUNT(*)::int AS c FROM payout_requests WHERE status = 'requested'`).catch(() => ({ rows: [{ c: 0 }] })),
+      client.query(`SELECT COALESCE(SUM(amount), 0)::numeric AS total FROM economy_ledger WHERE currency = 'NXT' AND reason LIKE 'game_reward_%' AND created_at > NOW() - INTERVAL '24 hours'`).catch(() => ({ rows: [{ total: 0 }] }))
+    ]);
+
+    // Bot runtime
+    const botState = await readBotRuntimeState(client, { stateKey: botRuntimeStore.DEFAULT_STATE_KEY, limit: 1 }).catch(() => ({}));
+    const botHealth = projectBotRuntimeHealth(botState);
+
+    // Freeze state
+    const freeze = await getFreezeState(client);
+
+    reply.send({
+      success: true,
+      data: {
+        kpi: {
+          total_users: usersR.rows[0]?.c || 0,
+          active_24h: active24hR.rows[0]?.c || 0,
+          tasks_24h: tasksR.rows[0]?.c || 0,
+          pending_payouts: payoutsR.rows[0]?.c || 0,
+          nxt_distributed_24h: Number(nxtR.rows[0]?.total || 0),
+        },
+        bot: {
+          status: botHealth?.alive ? "online" : "offline",
+          mode: botState?.state?.mode || "unknown",
+          uptime: botState?.state?.started_at || null,
+        },
+        system: {
+          freeze: freeze.freeze || false,
+          freeze_reason: freeze.reason || null,
+        },
+        nxt: {
+          symbol: "NXT",
+          chain: "TON",
+          minter: "EQCb-sIwT2PmHdcuenhplHqEWWDecvPN_8ONoZ2J9A0WLkC_",
+          explorer: "https://tonviewer.com/EQCb-sIwT2PmHdcuenhplHqEWWDecvPN_8ONoZ2J9A0WLkC_",
+        },
+      },
+    });
+  } finally {
+    client.release();
+  }
+});
+
 fastify.get("/webapp/api/v2/admin/users/recent", async (request, reply) => {
   const auth = verifyWebAppAuth(request.query.uid, request.query.ts, request.query.sig);
   if (!auth.ok) {
@@ -13090,6 +13149,19 @@ registerWebappV2ChestRoutes(fastify, {
   pool,
   verifyWebAppAuth,
   getProfileByTelegram,
+});
+
+// ── Game completion + NXT reward routes ──
+registerGameRoutes(fastify, {
+  pool,
+  verifyWebAppAuth,
+  economyStore,
+});
+
+// ── NXT price admin routes ──
+registerNxtPriceRoutes(fastify, {
+  pool,
+  requireWebAppAdmin,
 });
 
 // ── CORS support for webapp cross-origin requests ──
