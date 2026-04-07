@@ -38,7 +38,8 @@ test("payout keyboard appends payout screen launch button when url is provided",
 test("wallet keyboard builds a dedicated Mini App launch button", () => {
   const keyboard = buildWalletKeyboard("https://example.com/app?route_key=exchange", "en");
   const rows = keyboard?.reply_markup?.inline_keyboard || [];
-  const launchButton = rows[0]?.[0];
+  const lastRow = rows.at(-1) || [];
+  const launchButton = lastRow[0];
 
   assert.equal(launchButton.text, "💰 Wallet Panel");
   assert.equal(launchButton.web_app?.url, "https://example.com/app?route_key=exchange");

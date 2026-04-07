@@ -120,7 +120,8 @@ const HELP_CATEGORY_BY_COMMAND = Object.freeze({
   share: "progression",
   news: "progression",
   quests: "progression",
-  forge: "economy"
+  forge: "economy",
+  games: "core_loop"
 });
 
 const HELP_RELATIONS = Object.freeze({
@@ -188,7 +189,8 @@ const HELP_RELATIONS = Object.freeze({
   share: Object.freeze(["profile", "invite", "leaderboard"]),
   news: Object.freeze(["events", "season", "discover"]),
   quests: Object.freeze(["missions", "tasks", "rewards"]),
-  chests: Object.freeze(["reveal", "rewards", "tasks"])
+  chests: Object.freeze(["reveal", "rewards", "tasks"]),
+  games: Object.freeze(["play", "tasks", "wallet"])
 });
 
 const HELP_COPY_OVERRIDES = Object.freeze({
