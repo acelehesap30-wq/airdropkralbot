@@ -336,51 +336,75 @@ export function HomePanel(props: HomePanelProps) {
       )}
 
       {subView === "overview" && (<>
-      <section className="akrGameSpotlight" data-akr-panel-key="status" data-akr-focus-key="next_move">
-        <div className="akrGameSpotlightMain">
-          <p className="akrKicker">
-            {copy.nextMoveTitle} | {nextMove.kicker}
+      <section className="t21-glass-panel t21-animate-fade-in" style={{ marginBottom: 24, textAlign: "center" }}>
+        <div className="t21-card-decoration"></div>
+        <div style={{ position: "relative", zIndex: 1 }}>
+          <h2 className="t21-gradient-text" style={{ fontSize: "2rem", margin: "0 0 8px 0" }}>
+            AirdropKralBot'a Hoş Geldin
+          </h2>
+          <p style={{ color: "var(--21st-text-muted)", fontSize: "1.1rem", marginBottom: 24 }}>
+            Cüzdanını bağla, görevleri tamamla ve NXT tokenlarını anında kazan.
           </p>
-          <h3>{nextMove.title}</h3>
-          <p>{nextMove.body}</p>
-          <div className="akrChipRow">
-            <span className="akrChip akrChipInfo">{nextMove.label}</span>
-            <span className="akrChip">
-              {Math.floor(summary.mission_ready)}/{Math.floor(summary.mission_total)} {copy.readyWord}
-            </span>
-            <span className="akrChip">{summary.wallet_active ? copy.walletLive : copy.walletIdle}</span>
-          </div>
-          <div className="akrActionRow">
-            <button type="button" className="akrBtn akrBtnAccent" onClick={nextMove.onPress}>
-              {nextMove.cta}
-            </button>
-            <button type="button" className="akrBtn akrBtnGhost" onClick={openArena}>
-              {t(props.lang, "shell_panel_go_pvp")}
+          <div style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap" }}>
+            {summary.wallet_active ? (
+              <button type="button" className="t21-button-primary t21-wallet-connect" onClick={openVault}>
+                <span className="t21-icon-container" style={{ width: 32, height: 32 }}>💳</span>
+                Cüzdan Yönetimi & NXT İşlemleri
+              </button>
+            ) : (
+              <button type="button" className="t21-button-primary" onClick={openVault}>
+                <span className="t21-icon-container" style={{ width: 32, height: 32, background: "rgba(255,255,255,0.1)" }}>🔗</span>
+                Cüzdanını Bağla
+              </button>
+            )}
+            <button type="button" className="t21-button-primary t21-wallet-connect" style={{ background: "rgba(255,255,255,0.05)" }} onClick={props.onRefresh}>
+              <span className="t21-icon-container" style={{ width: 32, height: 32 }}>🔄</span>
+              Bakiyeyi Yenile
             </button>
           </div>
         </div>
-        <div className="akrGameSpotlightAside">
-          <h4>{copy.hintTitle}</h4>
-          <p className="akrMuted akrMiniPanelBody">{copy.hintBody}</p>
-          <div className="akrQuickHintGrid">
-            {quickHints.length ? (
-              quickHints.map((row) => (
-                <button
-                  type="button"
-                  key={String(row.key || row.description || "hint")}
-                  className="akrQuickHintCard"
-                  onClick={() => runCommandHint(row)}
-                >
-                  <span className="akrKicker">{String(row.key || "route").replace(/^\/+/, "")}</span>
-                  <strong>{String(row.description || row.key || t(props.lang, "home_action_discover_title"))}</strong>
-                </button>
-              ))
-            ) : (
-              <div className="akrQuickHintCard isEmpty">
-                <span className="akrKicker">{copy.discoverHint}</span>
-                <strong>{t(props.lang, "home_action_discover_body")}</strong>
-              </div>
-            )}
+      </section>
+
+      <section className="akrGameSpotlight" data-akr-panel-key="status" data-akr-focus-key="next_move">
+        <div className="t21-glass-panel" style={{ display: "flex", flexWrap: "wrap", gap: 24, padding: "24px 32px" }}>
+          <div style={{ flex: "1 1 300px" }}>
+            <p className="akrKicker" style={{ color: "var(--21st-accent)" }}>
+              {copy.nextMoveTitle} | {nextMove.kicker}
+            </p>
+            <h3 style={{ margin: "8px 0", fontSize: "1.4rem" }}>{nextMove.title}</h3>
+            <p style={{ color: "var(--21st-text-muted)" }}>{nextMove.body}</p>
+            <div style={{ marginTop: 24, display: "flex", gap: 12 }}>
+              <button type="button" className="t21-button-primary" onClick={nextMove.onPress}>
+                {nextMove.cta}
+              </button>
+              <button type="button" className="t21-button-primary t21-wallet-connect" onClick={openArena}>
+                {t(props.lang, "shell_panel_go_pvp")}
+              </button>
+            </div>
+          </div>
+          
+          <div style={{ flex: "1 1 200px", paddingLeft: 24, borderLeft: "1px solid var(--21st-glass-border)" }}>
+            <h4 style={{ margin: "0 0 12px 0" }}>{copy.hintTitle}</h4>
+            <div style={{ display: "grid", gap: 8 }}>
+              {quickHints.length ? (
+                quickHints.map((row) => (
+                  <button
+                    type="button"
+                    key={String(row.key || row.description || "hint")}
+                    className="akrQuickHintCard"
+                    onClick={() => runCommandHint(row)}
+                    style={{ background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 12, padding: "12px 16px", textAlign: "left", cursor: "pointer" }}
+                  >
+                    <span className="akrKicker" style={{ color: "var(--21st-accent)", fontSize: "0.7rem", display: "block" }}>{String(row.key || "route").replace(/^\/+/, "")}</span>
+                    <strong style={{ color: "#fff" }}>{String(row.description || row.key || t(props.lang, "home_action_discover_title"))}</strong>
+                  </button>
+                ))
+              ) : (
+                <div style={{ opacity: 0.5, fontSize: "0.85rem" }}>
+                  <strong>{t(props.lang, "home_action_discover_body")}</strong>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </section>

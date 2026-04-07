@@ -351,44 +351,32 @@ function buildTaskKeyboard(offers, lang = "tr", miniAppUrl = "") {
 }
 
 function buildStartKeyboard(lang = "tr", gameState = {}, miniAppUrl = "") {
-  const hasReveal = Boolean(gameState.hasReveal);
-  const hasActive = Boolean(gameState.hasActive);
   const isTr = lang === "tr";
   const rows = [];
 
-  // ── PRIORITY CTA (only if user has pending action) ──
-  if (hasReveal) {
-    rows.push([Markup.button.callback(isTr ? "🎁 LOOT AÇ" : "🎁 OPEN LOOT", "GUIDE_REVEAL")]);
-  } else if (hasActive) {
-    rows.push([Markup.button.callback(isTr ? "⚡ GÖREVİ BİTİR" : "⚡ FINISH TASK", "GUIDE_FINISH_BALANCED")]);
-  }
-
-  // ── WEBAPP (full-width) ──
-  const launchBtn = miniAppUrl ? buildLaunchButton(
-    "🌐 Nexus Arena",
+  // ── 21st.dev / Mini App First Approach ──
+  const mainLaunch = miniAppUrl ? buildLaunchButton(
+    isTr ? "🎮 OYNA (Nexus Arena 3D)" : "🎮 PLAY (Nexus Arena 3D)",
     miniAppUrl
   ) : null;
-  if (launchBtn) {
-    rows.push([launchBtn]);
+  
+  const walletLaunch = miniAppUrl ? buildLaunchButton(
+    isTr ? "💰 Cüzdan & Borsa" : "💰 Wallet & Exchange",
+    miniAppUrl + (miniAppUrl.includes('?') ? '&' : '?') + "tab=vault"
+  ) : null;
+
+  if (mainLaunch) {
+    rows.push([mainLaunch]); // Massive Play Button
+  }
+  if (walletLaunch) {
+    rows.push([walletLaunch]); // Wallet Button
   }
 
-  // ── CORE (2x2 grid — clean, no section headers) ──
+  // ── Quick Text Actions (Fallback/Quick Play) ──
   rows.push(
     [
-      Markup.button.callback(isTr ? "📋 Görevler" : "📋 Tasks", "OPEN_TASKS"),
-      Markup.button.callback(isTr ? "⚔️ PvP" : "⚔️ PvP", "ARENA_RAID:balanced"),
-    ],
-    [
-      Markup.button.callback(isTr ? "💰 Cüzdan" : "💰 Wallet", "OPEN_WALLET"),
-      Markup.button.callback(isTr ? "🏦 Vault" : "🏦 Vault", "OPEN_PAYOUT"),
-    ],
-    [
-      Markup.button.callback(isTr ? "🎮 Oyunlar" : "🎮 Games", "OPEN_GAMES"),
-      Markup.button.callback(isTr ? "🪙 NXT Token" : "🪙 NXT Token", "OPEN_TOKEN"),
-    ],
-    [
-      Markup.button.callback(isTr ? "🎯 Misyonlar" : "🎯 Missions", "OPEN_MISSIONS"),
-      Markup.button.callback(isTr ? "➕ Daha Fazla" : "➕ More", "OPEN_HOME_MENU"),
+      Markup.button.callback(isTr ? "📋 Görev & Ödül" : "📋 Task & Reward", "OPEN_TASKS"),
+      Markup.button.callback(isTr ? "⚔️ Hızlı Raid" : "⚔️ Quick Raid", "ARENA_RAID:balanced"),
     ]
   );
 

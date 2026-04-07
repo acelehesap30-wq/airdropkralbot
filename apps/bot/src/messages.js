@@ -87,65 +87,23 @@ function resolveLang(options) {
 function formatStart(profile, balances, season, anomaly, contract, options = {}) {
   const lang = resolveLang(options);
   const publicName = escapeMarkdown(profile.public_name);
-  const tier = Number(profile.kingdom_tier || 0);
-  const streak = Number(profile.current_streak || 0);
-  const streakMult = (1 + Math.min(streak, 30) * 0.05).toFixed(2);
   const sc = Number(balances?.SC || 0);
-  const hc = Number(balances?.HC || 0);
-  const rc = Number(balances?.RC || 0);
   const nxt = Number(balances?.NXT || 0);
-  const payout = Number(balances?.payout_available || 0);
-  const badge = tierBadge(tier);
-  const tierNames_tr = ['Çırak', 'Asker', 'Şövalye', 'Kaptan', 'Komutan', 'General', 'Lord', 'Kral'];
-  const tierNames_en = ['Apprentice', 'Soldier', 'Knight', 'Captain', 'Commander', 'General', 'Lord', 'King'];
-  const tierName = lang === "en" ? (tierNames_en[tier] || `T${tier}`) : (tierNames_tr[tier] || `T${tier}`);
-
-  // Next best move engine
+  
   const daily = options.daily || {};
   const tasksDone = Number(daily.tasksDone || 0);
   const dailyCap = Number(daily.dailyCap || 5);
   const remaining = Math.max(0, dailyCap - tasksDone);
-  const hasReveal = Boolean(options.hasReveal);
-  const hasActive = Boolean(options.hasActive);
-  let nextMove, nextIcon;
-  if (hasReveal) {
-    nextMove = lang === "en" ? "Loot chest is ready — open it!" : "Ganimet kasası hazır — aç!";
-    nextIcon = "🎁";
-  } else if (hasActive) {
-    nextMove = lang === "en" ? "Complete your active mission" : "Aktif görevini tamamla";
-    nextIcon = "⚡";
-  } else if (remaining > 0) {
-    nextMove = lang === "en" ? `${remaining} tasks left (+${remaining * 80}–${remaining * 160} SC)` : `${remaining} görev kaldı (+${remaining * 80}–${remaining * 160} SC)`;
-    nextIcon = "📋";
-  } else {
-    nextMove = lang === "en" ? "Arena PvP — earn HC & climb ranks" : "Arena PvP — HC kazan ve sırala";
-    nextIcon = "⚔️";
-  }
 
   const tr = lang === "tr";
 
-  const seasonLine = season
-    ? `\n📅  *S${season.seasonId}* ${tr ? "Sezon" : "Season"} — *${season.daysLeft}* ${tr ? "gün kaldı" : "days left"}`
-    : "";
-  const anomalyLine = anomaly
-    ? `\n🌀  *${escapeMarkdown(anomaly.title)}* ${progressBar(Number(anomaly.pressure_pct || 0), 100, 6)} ${anomaly.pressure_pct}%`
-    : "";
-  const contractLine = contract
-    ? `\n📜  *${escapeMarkdown(contract.title)}* \\[${escapeMarkdown(contract.required_mode)}\\]`
-    : "";
-
-  // Streak danger indicator
-  const streakIcon = streak >= 14 ? '🔥' : streak >= 7 ? '🔥' : streak >= 3 ? '🟠' : streak > 0 ? '🟡' : '⚪';
-  const dailyPct = Math.round((tasksDone / Math.max(1, dailyCap)) * 100);
-
   return (
-    `${badge} *${publicName}* · ${tierName}\n` +
-    `${streakIcon} *${streak}* ${tr ? "gün seri" : "day streak"} · x${streakMult}\n` +
-    `💰 \`${compactNum(sc)} SC\` 💎 \`${compactNum(hc)} HC\` 🌀 \`${rc} RC\` 🪙 \`${nxt.toFixed(2)} NXT\`` +
-    (payout > 0 ? `\n₿ \`${payout.toFixed(6)} BTC\`` : '') +
-    seasonLine + anomalyLine + contractLine +
-    `\n\n${nextIcon} *${nextMove}*\n` +
-    `📊 ${tr ? "Bugün" : "Today"} *${tasksDone}*/${dailyCap} ${progressBar(tasksDone, dailyCap, 8)} ${dailyPct}%`
+    `🌟 *AirdropKralBot Komut Merkezi*\n\n` +
+    `Hoş geldin *${publicName}*!\n` +
+    `💰 \`${compactNum(sc)} SC\` 🪙 \`${nxt.toFixed(2)} NXT\`\n\n` +
+    `🎮 *Mini App'e Geçiş Yapın*\n` +
+    `${tr ? "Tüm oyun, cüzdan işlemleri ve görevler için aşağıdaki" : "For games, wallets and tasks, use the"} *${tr ? "OYNA" : "PLAY"}* ${tr ? "butonuna tıkla!" : "button below!"}\n\n` +
+    `📊 ${tr ? "Bugün Görev Durumu" : "Today Task Status"}: *${tasksDone}*/${dailyCap}`
   );
 }
 
@@ -257,40 +215,22 @@ function formatOnboard(payload = {}, options = {}) {
     ? "en"
     : "tr";
   const profile = payload.profile || {};
-  const balances = payload.balances || {};
-  const daily = payload.daily || {};
-  const season = payload.season || {};
-  const token = payload.token || {};
-  const symbol = String(token.symbol || "NXT").toUpperCase();
-  const remaining = Math.max(0, Number(daily.dailyCap || 0) - Number(daily.tasksDone || 0));
+  const publicName = escapeMarkdown(profile.public_name || (lang === "tr" ? "oyuncu" : "player"));
+
   if (lang === "en") {
     return (
-      `🚀 *ONBOARD — 3 Steps*\n` +
-      `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n` +
-      `👤 *${escapeMarkdown(profile.public_name || "player")}*  ·  Tier *${profile.kingdom_tier || 0}*  ·  S*${Number(season.seasonId || 0)}* (${Number(season.daysLeft || 0)} days)\n` +
-      `💰 \`${Number(balances.SC || 0)} SC\`  💎 \`${Number(balances.HC || 0)} HC\`  🌀 \`${Number(balances.RC || 0)} RC\`\n\n` +
-      `1️⃣ Pick a task → */tasks*\n` +
-      `2️⃣ Complete run → */finish balanced*\n` +
-      `3️⃣ Open reward → */reveal*\n\n` +
-      `📊 Today *${Number(daily.tasksDone || 0)}*/*${Number(daily.dailyCap || 0)}* tasks  ·  Remaining: *${remaining}*\n` +
-      `🪙 Token: *${Number(token.balance || 0).toFixed(4)} ${symbol}*\n\n` +
-      `Then: */play* → */wallet* → */token*\n` +
-      `Need help? → */help*`
+      `🚀 *Welcome to AirdropKralBot, ${publicName}!*\n\n` +
+      `We're thrilled to have you here. Your journey to earn NXT and dominate the arena starts now.\n\n` +
+      `👇 *Tap the "PLAY" button below* to launch the WebApp, connect your wallet, and start earning instantly!\n\n` +
+      `_P.S. We've simplified everything into our shiny new Mini App._ ✨`
     );
   }
 
   return (
-    `🚀 *ONBOARD — 3 Adım*\n` +
-    `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n` +
-    `👤 *${escapeMarkdown(profile.public_name || "oyuncu")}*  ·  Tier *${profile.kingdom_tier || 0}*  ·  S*${Number(season.seasonId || 0)}* (${Number(season.daysLeft || 0)} gün)\n` +
-    `💰 \`${Number(balances.SC || 0)} SC\`  💎 \`${Number(balances.HC || 0)} HC\`  🌀 \`${Number(balances.RC || 0)} RC\`\n\n` +
-    `1️⃣ Görev seç → */tasks*\n` +
-    `2️⃣ Denemeyi kapat → */finish dengeli*\n` +
-    `3️⃣ Ödülü aç → */reveal*\n\n` +
-    `📊 Bugün *${Number(daily.tasksDone || 0)}*/*${Number(daily.dailyCap || 0)}* görev  ·  Kalan: *${remaining}*\n` +
-    `🪙 Token: *${Number(token.balance || 0).toFixed(4)} ${symbol}*\n\n` +
-    `Sonra: */play* → */wallet* → */token*\n` +
-    `Takıldığında → */help*`
+    `🚀 *AirdropKralBot'a Hoş Geldin, ${publicName}!*\n\n` +
+    `NXT kazanmaya ve arenaya hükmetmeye hazır mısın? Dev macera başlıyor.\n\n` +
+    `👇 *Hemen aşağıdaki "OYNA" (PLAY) butonuna tıkla*, WebApp'i açarak cüzdanını bağla ve anında kazanmaya başla!\n\n` +
+    `_Not: Artık tüm karmaşık komutlar yerine yepyeni ve harika Mini App'imizi (WebApp) kullanıyoruz._ ✨`
   );
 }
 

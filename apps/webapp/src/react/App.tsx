@@ -99,6 +99,7 @@ import {
 import { navigationActions, sceneActions } from "./redux/slices/shellSlices";
 import { lazyRetry } from "./utils/lazyRetry";
 import "./styles.css";
+import "./styles_21st.css";
 
 const PlayerWorkspace = lazy(async () => {
   const mod = await lazyRetry(() => import("./features/player/PlayerWorkspace"), "player-workspace");

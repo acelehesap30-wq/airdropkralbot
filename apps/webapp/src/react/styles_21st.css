@@ -1,0 +1,118 @@
+/* 21st.dev UI Inspired Tokens & Glassmorphism Components */
+:root {
+  --21st-bg-color: #030712; /* Very dark slate */
+  --21st-glass-bg: rgba(17, 24, 39, 0.6);
+  --21st-glass-border: rgba(255, 255, 255, 0.08);
+  --21st-glass-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  --21st-accent: #38bdf8;
+  --21st-accent-glow: rgba(56, 189, 248, 0.4);
+  --21st-text-primary: #f8fafc;
+  --21st-text-muted: #94a3b8;
+  --21st-ring: rgba(56, 189, 248, 0.5);
+}
+
+.t21-glass-panel {
+  background: var(--21st-glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--21st-glass-border);
+  box-shadow: var(--21st-glass-shadow);
+  border-radius: 24px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+}
+
+.t21-glass-panel::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  opacity: 0.5;
+}
+
+.t21-glass-panel:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2), 0 0 20px var(--21st-accent-glow);
+}
+
+.t21-button-primary {
+  background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+  color: #fff;
+  font-weight: 600;
+  border-radius: 9999px;
+  padding: 12px 28px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(14, 165, 233, 0.4);
+  transition: all 0.2s ease;
+  font-family: inherit;
+  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.t21-button-primary:hover {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 6px 20px rgba(14, 165, 233, 0.6);
+  filter: brightness(1.1);
+}
+
+.t21-button-primary:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.t21-gradient-text {
+  background: linear-gradient(to right, #e0e7ff, #38bdf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 800;
+}
+
+.t21-card-decoration {
+  position: absolute;
+  top: -50%; right: -50%;
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, var(--21st-accent-glow) 0%, transparent 60%);
+  filter: blur(24px);
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.t21-animate-fade-in {
+  animation: t21-fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes t21-fadeInUp {
+  0% { opacity: 0; transform: translateY(16px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Add wallet-specific connect button glow */
+.t21-wallet-connect {
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: inset 0 1px 1px rgba(255,255,255,0.05), 0 4px 12px rgba(0,0,0,0.2);
+}
+.t21-wallet-connect:hover {
+  border-color: #38bdf8;
+  box-shadow: inset 0 1px 1px rgba(255,255,255,0.05), 0 0 15px rgba(56,189,248,0.3);
+}
+
+.t21-icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.05);
+  backdrop-filter: blur(8px);
+}
