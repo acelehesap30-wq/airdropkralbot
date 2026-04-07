@@ -1597,7 +1597,7 @@ async function hasWalletAuthTables(db) {
         status VARCHAR(20) NOT NULL DEFAULT 'pending',
         issued_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         expires_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '5 minutes'),
-        resolved_at TIMESTAMPTZ,
+        consumed_at TIMESTAMPTZ,
         payload_json JSONB DEFAULT '{}',
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         PRIMARY KEY (challenge_ref, user_id),
@@ -1733,7 +1733,7 @@ async function insertWalletChallenge(db, payload = {}) {
 
 async function readWalletChallengeForUpdate(db, challengeRef, userId) {
   const result = await db.query(
-    `SELECT challenge_ref, user_id, chain, address_norm, nonce, challenge_text, issued_at, expires_at, status, resolved_at, payload_json
+    `SELECT challenge_ref, user_id, chain, address_norm, nonce, challenge_text, issued_at, expires_at, status, consumed_at, payload_json
      FROM v5_wallet_challenges
      WHERE challenge_ref = $1
        AND user_id = $2
@@ -1748,11 +1748,11 @@ async function markWalletChallengeStatus(db, challengeRef, userId, status, meta 
   const result = await db.query(
     `UPDATE v5_wallet_challenges
      SET status = $3,
-         resolved_at = CASE WHEN $3 IN ('verified', 'rejected', 'expired') THEN now() ELSE resolved_at END,
+         consumed_at = CASE WHEN $3 IN ('verified', 'rejected', 'expired') THEN now() ELSE consumed_at END,
          payload_json = COALESCE(payload_json, '{}'::jsonb) || $4::jsonb
      WHERE challenge_ref = $1
        AND user_id = $2
-     RETURNING challenge_ref, status, resolved_at;`,
+     RETURNING challenge_ref, status, consumed_at;`,
     [String(challengeRef || ""), Number(userId || 0), String(status || "pending"), JSON.stringify(meta || {})]
   );
   return result.rows?.[0] || null;
@@ -1888,7 +1888,7 @@ async function listWalletLinks(db, userId) {
      FROM v5_wallet_links
      WHERE user_id = $1
        AND unlinked_at IS NULL
-     ORDER BY is_primary DESC, updated_at DESC, wallet_link_id DESC
+     ORDER BY is_primary DESC, updated_at DESC, address_norm DESC
      LIMIT 12;`,
     [Number(userId || 0)]
   );
@@ -1938,7 +1938,7 @@ async function unlinkWalletLinks(db, userId, options = {}) {
          AND chain = $2
          AND address_norm = $3
          AND unlinked_at IS NULL
-       RETURNING wallet_link_id;`,
+       RETURNING id;`,
       [Number(userId || 0), chain, addressNorm, JSON.stringify({ unlink_reason: String(options.reason || "wallet_unlink") })]
     );
     return result.rowCount || 0;
@@ -1950,7 +1950,7 @@ async function unlinkWalletLinks(db, userId, options = {}) {
          metadata_json = COALESCE(metadata_json, '{}'::jsonb) || $2::jsonb
      WHERE user_id = $1
        AND unlinked_at IS NULL
-     RETURNING wallet_link_id;`,
+     RETURNING id;`,
     [Number(userId || 0), JSON.stringify({ unlink_reason: String(options.reason || "wallet_unlink_all") })]
   );
   return result.rowCount || 0;
