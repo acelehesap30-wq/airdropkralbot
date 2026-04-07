@@ -103,18 +103,19 @@ export function ExchangePanel(props: ExchangePanelProps) {
           return;
         }
         const convertAmount = Math.floor(hc / HC_TO_NXT_RATE);
-        const resp = await fetch("/webapp/api/v2/token/mint", {
+        const resp = await fetch("/webapp/api/v2/player/action", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             uid, ts, sig,
-            action_request_id: `mint_nxt_${uid}_${Date.now()}`,
-            amount: convertAmount
+            action_key: "convert_hc_to_nxt",
+            action_request_id: `convert_hc_nxt_${uid}_${Date.now()}`,
+            payload: { hc_amount: convertAmount * HC_TO_NXT_RATE, nxt_amount: convertAmount }
           })
         });
         const data = await resp.json();
         if (data.success) {
-          setConvertResult(isTr ? `${convertAmount * HC_TO_NXT_RATE} HC → ${convertAmount} NXT` : `${convertAmount * HC_TO_NXT_RATE} HC → ${convertAmount} NXT`);
+          setConvertResult(isTr ? `${convertAmount * HC_TO_NXT_RATE} HC → ${convertAmount} NXT ✅` : `${convertAmount * HC_TO_NXT_RATE} HC → ${convertAmount} NXT ✅`);
         } else {
           setConvertResult(data.error || (isTr ? "Mint başarısız" : "Mint failed"));
         }

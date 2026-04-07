@@ -1733,7 +1733,7 @@ async function insertWalletChallenge(db, payload = {}) {
 
 async function readWalletChallengeForUpdate(db, challengeRef, userId) {
   const result = await db.query(
-    `SELECT id, challenge_ref, user_id, chain, address_norm, nonce, challenge_text, issued_at, expires_at, status, consumed_at, payload_json
+    `SELECT challenge_ref, user_id, chain, address_norm, nonce, challenge_text, issued_at, expires_at, status, resolved_at, payload_json
      FROM v5_wallet_challenges
      WHERE challenge_ref = $1
        AND user_id = $2
@@ -1748,11 +1748,11 @@ async function markWalletChallengeStatus(db, challengeRef, userId, status, meta 
   const result = await db.query(
     `UPDATE v5_wallet_challenges
      SET status = $3,
-         consumed_at = CASE WHEN $3 IN ('verified', 'rejected', 'expired') THEN now() ELSE consumed_at END,
+         resolved_at = CASE WHEN $3 IN ('verified', 'rejected', 'expired') THEN now() ELSE resolved_at END,
          payload_json = COALESCE(payload_json, '{}'::jsonb) || $4::jsonb
      WHERE challenge_ref = $1
        AND user_id = $2
-     RETURNING challenge_ref, status, consumed_at;`,
+     RETURNING challenge_ref, status, resolved_at;`,
     [String(challengeRef || ""), Number(userId || 0), String(status || "pending"), JSON.stringify(meta || {})]
   );
   return result.rows?.[0] || null;
@@ -1888,7 +1888,7 @@ async function listWalletLinks(db, userId) {
      FROM v5_wallet_links
      WHERE user_id = $1
        AND unlinked_at IS NULL
-     ORDER BY is_primary DESC, updated_at DESC, id DESC
+     ORDER BY is_primary DESC, updated_at DESC, wallet_link_id DESC
      LIMIT 12;`,
     [Number(userId || 0)]
   );
@@ -1938,7 +1938,7 @@ async function unlinkWalletLinks(db, userId, options = {}) {
          AND chain = $2
          AND address_norm = $3
          AND unlinked_at IS NULL
-       RETURNING id;`,
+       RETURNING wallet_link_id;`,
       [Number(userId || 0), chain, addressNorm, JSON.stringify({ unlink_reason: String(options.reason || "wallet_unlink") })]
     );
     return result.rowCount || 0;
@@ -1950,7 +1950,7 @@ async function unlinkWalletLinks(db, userId, options = {}) {
          metadata_json = COALESCE(metadata_json, '{}'::jsonb) || $2::jsonb
      WHERE user_id = $1
        AND unlinked_at IS NULL
-     RETURNING id;`,
+     RETURNING wallet_link_id;`,
     [Number(userId || 0), JSON.stringify({ unlink_reason: String(options.reason || "wallet_unlink_all") })]
   );
   return result.rowCount || 0;
@@ -9294,6 +9294,8 @@ const PLAYER_ACTION_REWARDS = {
   forge_rc_craft:    { cost: { rc: 10 },   reward: { sc: 50 }, cooldown_ms: 60000 },
   forge_tier_forge:  { cost: { sc: 500 },  reward: { sc: 0 },  cooldown_ms: 120000 },
   forge_nxt_compound:{ cost: { sc: 100, hc: 1, rc: 1 }, reward: { sc: 0 }, cooldown_ms: 120000 },
+  convert_sc_to_hc:  { cost: {},           reward: { sc: 0 },  cooldown_ms: 3000,  dynamic: true },
+  convert_hc_to_nxt: { cost: {},           reward: { sc: 0 },  cooldown_ms: 3000,  dynamic: true },
   game_tap_blitz:    { cost: {},           reward: { sc: 0 },  cooldown_ms: 15000, dynamic: true },
   game_coin_flip:    { cost: {},           reward: { sc: 0 },  cooldown_ms: 5000,  dynamic: true },
   game_daily_spin:   { cost: {},           reward: { sc: 0 },  cooldown_ms: 86400000, dynamic: true },
@@ -9303,7 +9305,9 @@ const PLAYER_ACTION_REWARDS = {
   game_arena_reflex:    { cost: {},        reward: { sc: 0 },  cooldown_ms: 20000,  dynamic: true },
   game_streak_challenge:{ cost: {},        reward: { sc: 0 },  cooldown_ms: 30000,  dynamic: true },
   game_resource_merge:  { cost: {},        reward: { sc: 0 },  cooldown_ms: 45000,  dynamic: true },
-  game_quick_match:     { cost: {},        reward: { sc: 0 },  cooldown_ms: 20000,  dynamic: true }
+  game_quick_match:     { cost: {},        reward: { sc: 0 },  cooldown_ms: 20000,  dynamic: true },
+  game_nexus_vault:     { cost: {},        reward: { sc: 0 },  cooldown_ms: 30000,  dynamic: true },
+  game_sniper:          { cost: {},        reward: { sc: 0 },  cooldown_ms: 20000,  dynamic: true }
 };
 
 fastify.post(
@@ -9375,8 +9379,61 @@ fastify.post(
       // Calculate reward
       let reward = { sc: 0, hc: 0, rc: 0 };
       if (config.dynamic) {
-        // Mini-game rewards from payload
-        if (actionKey === "game_tap_blitz") {
+        // ── Currency conversions ──
+        if (actionKey === "convert_sc_to_hc") {
+          const SC_TO_HC_RATE = 1000;
+          const scAmount = Math.floor(Math.min(Math.max(Number(payload.sc_amount || 0), SC_TO_HC_RATE), 100000));
+          const hcAmount = Math.floor(scAmount / SC_TO_HC_RATE);
+          if (scAmount < SC_TO_HC_RATE || hcAmount < 1) {
+            await client.query("ROLLBACK");
+            reply.code(400).send({ success: false, error: "insufficient_sc", min_required: SC_TO_HC_RATE });
+            return;
+          }
+          // Check balance
+          const balResult = await client.query(
+            `SELECT COALESCE(SUM(CASE WHEN currency='SC' THEN amount ELSE 0 END),0)::numeric AS sc_bal FROM currency_ledger WHERE user_id = $1`,
+            [profile.user_id]
+          );
+          const scBal = Number(balResult.rows[0]?.sc_bal || 0);
+          if (scBal < scAmount) {
+            await client.query("ROLLBACK");
+            reply.code(400).send({ success: false, error: "insufficient_balance", available: scBal, required: scAmount });
+            return;
+          }
+          // Debit SC
+          await economyStore.debitCurrency(client, {
+            userId: profile.user_id, currency: "SC", amount: scAmount,
+            reason: "convert_sc_to_hc", meta: { hc_amount: hcAmount }
+          });
+          // Credit HC
+          reward = { sc: 0, hc: hcAmount, rc: 0 };
+        } else if (actionKey === "convert_hc_to_nxt") {
+          const HC_TO_NXT_RATE = 10;
+          const hcAmount = Math.floor(Math.min(Math.max(Number(payload.hc_amount || 0), HC_TO_NXT_RATE), 10000));
+          const nxtAmount = Math.floor(hcAmount / HC_TO_NXT_RATE);
+          if (hcAmount < HC_TO_NXT_RATE || nxtAmount < 1) {
+            await client.query("ROLLBACK");
+            reply.code(400).send({ success: false, error: "insufficient_hc", min_required: HC_TO_NXT_RATE });
+            return;
+          }
+          const balResult = await client.query(
+            `SELECT COALESCE(SUM(CASE WHEN currency='HC' THEN amount ELSE 0 END),0)::numeric AS hc_bal FROM currency_ledger WHERE user_id = $1`,
+            [profile.user_id]
+          );
+          const hcBal = Number(balResult.rows[0]?.hc_bal || 0);
+          if (hcBal < hcAmount) {
+            await client.query("ROLLBACK");
+            reply.code(400).send({ success: false, error: "insufficient_balance", available: hcBal, required: hcAmount });
+            return;
+          }
+          await economyStore.debitCurrency(client, {
+            userId: profile.user_id, currency: "HC", amount: hcAmount,
+            reason: "convert_hc_to_nxt", meta: { nxt_amount: nxtAmount }
+          });
+          reward = { sc: 0, hc: 0, rc: 0 };
+          reward.nxt = nxtAmount;
+        // ── Mini-game rewards ──
+        } else if (actionKey === "game_tap_blitz") {
           const taps = Math.min(Number(payload.taps || 0), 150);
           reward.sc = taps * 2;
         } else if (actionKey === "game_coin_flip") {
@@ -9401,6 +9458,10 @@ fastify.post(
           reward.sc = Math.min(Math.max(Number(payload.reward_sc || 0), 0), 500);
         } else if (actionKey === "game_quick_match") {
           reward.sc = Math.min(Math.max(Number(payload.reward_sc || 0), 0), 200);
+        } else if (actionKey === "game_nexus_vault") {
+          reward.sc = Math.min(Math.max(Number(payload.reward_sc || 0), 0), 500);
+        } else if (actionKey === "game_sniper") {
+          reward.sc = Math.min(Math.max(Number(payload.reward_sc || 0), 0), 300);
         }
       } else {
         reward = { ...config.reward };
