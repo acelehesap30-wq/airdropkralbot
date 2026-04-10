@@ -26,6 +26,8 @@ const { sendWallet: sendWalletV2, handleWalletDeposit, handleWalletWithdraw } = 
 const { sendDuel, handleDuelAccept, handleDuelCancel } = require("./commands/handlers/duel");
 const { sendMarket } = require("./commands/handlers/market");
 const { handleAdminSweep, handleAdminTonStatus } = require("./commands/handlers/adminSweep");
+const { sendRef } = require("./commands/handlers/ref");
+const { sendTop } = require("./commands/handlers/top");
 const botRuntimeStore = require("./stores/botRuntimeStore");
 const taskCatalog = require("./taskCatalog");
 const messages = require("./messages");
@@ -6158,6 +6160,8 @@ function buildCommandHandlerMap({ pool, appConfig }) {
   map.set("wallet", async (ctx) => sendWalletV2(ctx, pool, appConfig));
   map.set("duel", async (ctx) => sendDuel(ctx, pool, appConfig));
   map.set("market", async (ctx) => sendMarket(ctx, pool, appConfig));
+  map.set("ref", async (ctx) => sendRef(ctx, pool, appConfig));
+  map.set("leaderboard", async (ctx) => sendTop(ctx, pool));
   map.set("token", async (ctx) => sendToken(ctx, pool, appConfig));
   map.set("mint", async (ctx) => {
     const amount = extractCommandArgs(ctx);

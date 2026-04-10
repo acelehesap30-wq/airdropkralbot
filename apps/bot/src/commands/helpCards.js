@@ -180,6 +180,7 @@ const HELP_RELATIONS = Object.freeze({
   reject_payout: Object.freeze(["admin_payouts", "pay", "admin_queue"]),
   approve_token: Object.freeze(["admin_tokens", "reject_token", "admin_queue"]),
   reject_token: Object.freeze(["admin_tokens", "approve_token", "admin_queue"]),
+  ref: Object.freeze(["wallet", "leaderboard", "help"]),
   duel: Object.freeze(["wallet", "pvp", "market"]),
   market: Object.freeze(["wallet", "token", "duel"]),
   games: Object.freeze(["play", "duel", "wallet"]),

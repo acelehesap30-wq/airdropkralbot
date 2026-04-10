@@ -135,6 +135,16 @@ const RAW_COMMAND_REGISTRY = Object.freeze([
     outcomes: ["onboard adimlarini acikla", "kontrat ve anomaly mekaniklerini anlat", "pity sistemi ve combo carpanini acikla"]
   },
   {
+    key: "ref",
+    aliases: ["referral"],
+    description_tr: "Referral linki — arkadasini davet et, NXT komisyon kazan",
+    description_en: "Referral link — invite friends, earn NXT commission",
+    intents: ["ref", "referral", "arkadas", "friend", "link"],
+    scenarios: ["/ref", "davet linki", "referral link", "arkadasimi davet et"],
+    outcomes: ["referral linkini goster", "davet istatistiklerini belirt", "NXT komisyon kazancini goster"],
+    primary: true
+  },
+  {
     key: "help",
     aliases: ["yardim"],
     description_tr: "Detayli komut kartlari — kategori bazli help index ve kisayollar",
