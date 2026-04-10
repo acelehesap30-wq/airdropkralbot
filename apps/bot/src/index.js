@@ -18,6 +18,14 @@ const payoutStore = require("./stores/payoutStore");
 const arenaStore = require("./stores/arenaStore");
 const tokenStore = require("./stores/tokenStore");
 const webappStore = require("./stores/webappStore");
+const tonStore = require("./stores/tonStore");
+const tonService = require("./services/tonService");
+const depositPoller = require("./services/depositPoller");
+const coldWalletSweep = require("./services/coldWalletSweep");
+const { sendWallet: sendWalletV2, handleWalletDeposit, handleWalletWithdraw } = require("./commands/handlers/wallet");
+const { sendDuel, handleDuelAccept, handleDuelCancel } = require("./commands/handlers/duel");
+const { sendMarket } = require("./commands/handlers/market");
+const { handleAdminSweep, handleAdminTonStatus } = require("./commands/handlers/adminSweep");
 const botRuntimeStore = require("./stores/botRuntimeStore");
 const taskCatalog = require("./taskCatalog");
 const messages = require("./messages");
@@ -28,8 +36,19 @@ const arenaEngine = require("./services/arenaEngine");
 const arenaService = require("./services/arenaService");
 const tokenEngine = require("./services/tokenEngine");
 const txVerifier = require("./services/txVerifier");
-const nexusEventEngine = require("./services/nexusEventEngine");
-const nexusContractEngine = require("./services/nexusContractEngine");
+// nexusEventEngine and nexusContractEngine removed — no-op stubs
+const nexusEventEngine = {
+  resolveDailyAnomaly: () => ({ id: "none", label: "none", effects: [] }),
+  publicAnomalyView: (a) => a || { id: "none", label: "none", effects: [] },
+  applyRiskShift: (risk) => risk,
+  applyAnomalyToReward: (reward) => ({ reward })
+};
+const nexusContractEngine = {
+  resolveDailyContract: () => ({ id: "none", label: "none", objectives: [] }),
+  publicContractView: (c) => c || { id: "none", label: "none", objectives: [] },
+  evaluateAttempt: () => ({ matched: false, bonus: 0 }),
+  applyContractToReward: (reward) => ({ reward })
+};
 const {
   evaluateAdminPolicy,
   buildAdminActionSignature: buildAdminPolicySignature
@@ -6139,7 +6158,9 @@ function buildCommandHandlerMap({ pool, appConfig }) {
   map.set("profile", async (ctx) => sendProfile(ctx, pool, appConfig));
   map.set("rewards", async (ctx) => sendRewards(ctx, pool, appConfig));
   map.set("tasks", async (ctx) => sendTasks(ctx, pool, appConfig));
-  map.set("wallet", async (ctx) => sendWallet(ctx, pool, appConfig));
+  map.set("wallet", async (ctx) => sendWalletV2(ctx, pool, appConfig));
+  map.set("duel", async (ctx) => sendDuel(ctx, pool, appConfig));
+  map.set("market", async (ctx) => sendMarket(ctx, pool, appConfig));
   map.set("token", async (ctx) => sendToken(ctx, pool, appConfig));
   map.set("mint", async (ctx) => {
     const amount = extractCommandArgs(ctx);
@@ -6231,6 +6252,14 @@ function buildCommandHandlerMap({ pool, appConfig }) {
   map.set("chests", async (ctx) => sendChests(ctx, pool, appConfig));
   map.set("hub", async (ctx) => sendLauncherMenu(ctx, pool, appConfig));
 
+  map.set("sweep", async (ctx) => {
+    if (!(await ensureAdminCtx(ctx, appConfig))) return;
+    await handleAdminSweep(ctx, pool);
+  });
+  map.set("ton_status", async (ctx) => {
+    if (!(await ensureAdminCtx(ctx, appConfig))) return;
+    await handleAdminTonStatus(ctx, pool);
+  });
   map.set("admin", async (ctx) => sendAdminPanel(ctx, pool, appConfig));
   map.set("admin_live", async (ctx) => sendAdminLive(ctx, pool, appConfig));
   map.set("admin_live_ops", async (ctx) => sendAdminLiveOps(ctx, pool, appConfig));
@@ -6489,6 +6518,16 @@ async function start() {
 
   // Section separator buttons — silent ack, no action
   bot.action("NOOP", async (ctx) => { await ctx.answerCbQuery(); });
+
+  // ── TON Wallet & Duel callback handlers ──────────────────────
+  bot.action("wallet_deposit", async (ctx) => { await ctx.answerCbQuery(); await handleWalletDeposit(ctx, pool); });
+  bot.action("wallet_withdraw", async (ctx) => { await ctx.answerCbQuery(); await handleWalletWithdraw(ctx, pool); });
+  bot.action("wallet_back", async (ctx) => { await ctx.answerCbQuery(); await sendWalletV2(ctx, pool, appConfig); });
+  bot.action("wallet_market", async (ctx) => { await ctx.answerCbQuery(); await sendMarket(ctx, pool, appConfig); });
+  bot.action("wallet_history", async (ctx) => { await ctx.answerCbQuery(); await sendWalletV2(ctx, pool, appConfig); });
+  bot.action("market_duel", async (ctx) => { await ctx.answerCbQuery(); await sendDuel(ctx, pool, appConfig); });
+  bot.action(/^duel_accept:(.+)$/, async (ctx) => { await ctx.answerCbQuery(); await handleDuelAccept(ctx, pool, ctx.match[1]); });
+  bot.action(/^duel_cancel:(.+)$/, async (ctx) => { await ctx.answerCbQuery(); await handleDuelCancel(ctx, ctx.match[1]); });
 
   registerPlayerActionHandlers(bot, [
     {
@@ -6893,6 +6932,18 @@ async function start() {
 
   bot.launch();
   console.log("Bot running...");
+
+  // ── TON Services Startup ─────────────────────────────────────
+  try {
+    await tonService.init();
+    const runtimeCfg = configService.getRuntimeConfig();
+    depositPoller.start(pool, bot, runtimeCfg);
+    coldWalletSweep.start(pool, bot);
+    console.log("[TON] Services initialized (deposit poller + cold wallet sweep)");
+  } catch (err) {
+    console.error("[TON] Service init warning:", err.message);
+    // Non-fatal — bot continues without TON features if wallet not configured
+  }
   let shuttingDown = false;
   let heartbeatInFlight = false;
   await appendBotRuntimeEvent(pool, {
@@ -6919,6 +6970,10 @@ async function start() {
       return;
     }
     shuttingDown = true;
+    try {
+      depositPoller.stop();
+      coldWalletSweep.stop();
+    } catch {}
     try {
       if (heartbeatTimer) {
         clearInterval(heartbeatTimer);

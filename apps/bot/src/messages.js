@@ -89,157 +89,69 @@ function formatStart(profile, balances, season, anomaly, contract, options = {})
   const publicName = escapeMarkdown(profile.public_name);
   const sc = Number(balances?.SC || 0);
   const nxt = Number(balances?.NXT || 0);
-  
   const daily = options.daily || {};
   const tasksDone = Number(daily.tasksDone || 0);
   const dailyCap = Number(daily.dailyCap || 5);
-  const remaining = Math.max(0, dailyCap - tasksDone);
-
   const tr = lang === "tr";
+  const streak = Number(profile.current_streak || 0);
+  const tier = Number(profile.kingdom_tier || 0);
+  const badge = tierBadge(tier);
 
   return (
-    `🌟 *AirdropKralBot Komut Merkezi*\n\n` +
-    `Hoş geldin *${publicName}*!\n` +
-    `💰 \`${compactNum(sc)} SC\` 🪙 \`${nxt.toFixed(2)} NXT\`\n\n` +
-    `🎮 *Mini App'e Geçiş Yapın*\n` +
-    `${tr ? "Tüm oyun, cüzdan işlemleri ve görevler için aşağıdaki" : "For games, wallets and tasks, use the"} *${tr ? "OYNA" : "PLAY"}* ${tr ? "butonuna tıkla!" : "button below!"}\n\n` +
-    `📊 ${tr ? "Bugün Görev Durumu" : "Today Task Status"}: *${tasksDone}*/${dailyCap}`
+    `━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `⬡ *AirdropKral Nexus*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `${badge} ${publicName}\n\n` +
+    `💎 NXT  \`${nxt.toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\`\n` +
+    `🪙 SC   \`${compactNum(sc)}\`\n` +
+    `📊 ${tr ? "Görev" : "Tasks"}: ${tasksDone}/${dailyCap} · ${tr ? "Seri" : "Streak"}: ${streak}g\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━`
   );
 }
 
 function formatGuide(snapshot, options = {}) {
-  const lang = String(options.lang || "tr")
-    .trim()
-    .toLowerCase()
-    .startsWith("en")
-    ? "en"
-    : "tr";
+  const lang = String(options.lang || "tr").trim().toLowerCase().startsWith("en") ? "en" : "tr";
   const profile = snapshot?.profile || {};
   const daily = snapshot?.daily || {};
   const attempts = snapshot?.attempts || {};
   const offers = snapshot?.offers || [];
   const balances = snapshot?.balances || {};
-  const anomaly = snapshot?.anomaly || null;
-  const contract = snapshot?.contract || null;
-  const pvpContent = snapshot?.pvpContent || null;
-  const pvpDaily = pvpContent?.daily_duel || {};
-  const pvpWeekly = pvpContent?.weekly_ladder || {};
-  const pvpArc = pvpContent?.season_arc_boss || {};
   const hasActive = Boolean(attempts.active);
   const hasReveal = Boolean(attempts.revealable);
-  const nextStep =
-    lang === "en"
-      ? hasReveal
-        ? "1) Open your current chest with /reveal."
-        : hasActive
-          ? "1) Complete the active run with /finish balanced."
-          : offers.length > 0
-            ? "1) Pick a task from /tasks."
-            : Number(balances.RC || 0) > 0
-              ? "1) Open /tasks and use Refresh Panel if needed."
-              : "1) Start the task loop to earn RC."
-      : hasReveal
-        ? "1) /reveal ile mevcut kasayi ac."
-        : hasActive
-          ? "1) /finish dengeli ile denemeyi tamamla."
-          : offers.length > 0
-            ? "1) /tasks ile panelden bir gorev sec."
-            : Number(balances.RC || 0) > 0
-              ? "1) /tasks ac, gerekirse Panel Yenile kullan."
-              : "1) RC kazanmak icin gorev dongusunu ac.";
-  const pvpLine = pvpContent
-    ? lang === "en"
-      ? `\nPvP Flow: Daily *${Number(pvpDaily.wins || 0)}/${Number(pvpDaily.target_wins || 0)}* | Weekly *${Number(
-          pvpWeekly.points || 0
-        )}/${Number(pvpWeekly.next_milestone_points || pvpWeekly.target_points || 0)}* | Arc *W${Number(
-          pvpArc.wave_index || 1
-        )}/${Number(pvpArc.wave_total || 1)}*`
-      : `\nPvP Akis: Gunluk *${Number(pvpDaily.wins || 0)}/${Number(pvpDaily.target_wins || 0)}* | Haftalik *${Number(
-          pvpWeekly.points || 0
-        )}/${Number(pvpWeekly.next_milestone_points || pvpWeekly.target_points || 0)}* | Arc *W${Number(
-          pvpArc.wave_index || 1
-        )}/${Number(pvpArc.wave_total || 1)}*`
-    : "";
-  if (lang === "en") {
-    return (
-      `📖 *NEXUS GUIDE*\n` +
-      `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n` +
-      `👤 *${escapeMarkdown(profile.public_name || "player")}*  ·  Tier *${profile.kingdom_tier || 0}*  ·  🔥 *${profile.current_streak || 0} days*\n` +
-      `📋 Daily: *${Number(daily.tasksDone || 0)}/${Number(daily.dailyCap || 0)} tasks*` +
-      (anomaly ? `\n🌀 *${escapeMarkdown(anomaly.title || "-")}* (${anomaly.preferred_mode || "balanced"})` : "") +
-      (contract ? `\n📜 *${escapeMarkdown(contract.title || "-")}* \\[${escapeMarkdown(contract.required_mode || "balanced")}\\]` : "") +
-      pvpLine +
-      `\n\n` +
-      `⚡ *Next Move:* ${nextStep}\n\n` +
-      `*Standard Flow*\n` +
-      `· /tasks → accept a task\n` +
-      `· /finish \\[safe|balanced|aggressive\\] → result\n` +
-      `· /reveal → final reward\n` +
-      `· /missions · /daily → extra rewards\n` +
-      `· /play → Nexus Arena 3D\n\n` +
-      `*Commands*\n` +
-      `· Economy: /wallet · /vault · /token\n` +
-      `· Meta: /season · /leaderboard · /nexus\n` +
-      `· Utility: /status · /lang · /help`
-    );
-  }
+  const tr = lang === "tr";
+
+  const nextStep = hasReveal
+    ? (tr ? "/reveal ile kasayı aç" : "Open chest with /reveal")
+    : hasActive
+      ? (tr ? "/finish ile görevi tamamla" : "Finish task with /finish")
+      : offers.length > 0
+        ? (tr ? "/tasks ile görev seç" : "Pick a task from /tasks")
+        : (tr ? "Görev döngüsünü başlat" : "Start the task loop");
 
   return (
-    `📖 *NEXUS REHBER*\n` +
-    `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n` +
-    `👤 *${escapeMarkdown(profile.public_name || "oyuncu")}*  ·  Tier *${profile.kingdom_tier || 0}*  ·  🔥 *${profile.current_streak || 0} gün*\n` +
-    `📋 Günlük: *${Number(daily.tasksDone || 0)}/${Number(daily.dailyCap || 0)} görev*` +
-    (anomaly ? `\n🌀 *${escapeMarkdown(anomaly.title || "-")}* (${anomaly.preferred_mode || "balanced"})` : "") +
-    (contract ? `\n📜 *${escapeMarkdown(contract.title || "-")}* \\[${escapeMarkdown(contract.required_mode || "balanced")}\\]` : "") +
-    pvpLine +
-    `\n\n` +
-    `⚡ *Sıradaki Hamle:* ${nextStep}\n\n` +
-    `*Standart Akış*\n` +
-    `· /tasks → görev kabul et\n` +
-    `· /finish \\[safe|balanced|aggressive\\] → sonuç\n` +
-    `· /reveal → kesin ödül\n` +
-    `· /missions · /daily → ek ödüller\n` +
-    `· /play → Nexus Arena 3D\n\n` +
-    `*Komutlar*\n` +
-    `· Ekonomi: /wallet · /vault · /token\n` +
-    `· Meta: /season · /leaderboard · /nexus\n` +
-    `· Yardımcı: /status · /lang · /help`
+    `*${tr ? "Rehber" : "Guide"}*\n\n` +
+    `${escapeMarkdown(profile.public_name || (tr ? "oyuncu" : "player"))} · Tier ${profile.kingdom_tier || 0} · ${profile.current_streak || 0} ${tr ? "gün seri" : "day streak"}\n` +
+    `${tr ? "Görev" : "Tasks"}: ${Number(daily.tasksDone || 0)}/${Number(daily.dailyCap || 0)}\n\n` +
+    `➜ *${nextStep}*\n\n` +
+    `${tr ? "Akış" : "Flow"}: /tasks → /finish → /reveal\n` +
+    `${tr ? "Ekonomi" : "Economy"}: /wallet · /token\n` +
+    `${tr ? "Diğer" : "Other"}: /help · /lang · /status`
   );
 }
 
 function formatOnboard(payload = {}, options = {}) {
-  const lang = String(options.lang || "tr")
-    .trim()
-    .toLowerCase()
-    .startsWith("en")
-    ? "en"
-    : "tr";
+  const lang = String(options.lang || "tr").trim().toLowerCase().startsWith("en") ? "en" : "tr";
   const profile = payload.profile || {};
   const publicName = escapeMarkdown(profile.public_name || (lang === "tr" ? "oyuncu" : "player"));
-
-  if (lang === "en") {
-    return (
-      `🚀 *Welcome to AirdropKralBot, ${publicName}!*\n\n` +
-      `We're thrilled to have you here. Your journey to earn NXT and dominate the arena starts now.\n\n` +
-      `👇 *Tap the "PLAY" button below* to launch the WebApp, connect your wallet, and start earning instantly!\n\n` +
-      `_P.S. We've simplified everything into our shiny new Mini App._ ✨`
-    );
-  }
+  const tr = lang === "tr";
 
   return (
-    `🚀 *AirdropKralBot'a Hoş Geldin, ${publicName}!*\n\n` +
-    `NXT kazanmaya ve arenaya hükmetmeye hazır mısın? Dev macera başlıyor.\n\n` +
-    `👇 *Hemen aşağıdaki "OYNA" (PLAY) butonuna tıkla*, WebApp'i açarak cüzdanını bağla ve anında kazanmaya başla!\n\n` +
-    `_Not: Artık tüm karmaşık komutlar yerine yepyeni ve harika Mini App'imizi (WebApp) kullanıyoruz._ ✨`
-  );
-}
-
-function formatProfile(profile, balances, options = {}) {
+    `*${tr ? "Hoş geldin" : "Welcome"},* ${publicName}\n\n` +
+    `${tr ? "NXT token kazan, görevleri tamamla, arenadafunction formatProfile(profile, balances, options = {}) {
   const lang = resolveLang(options);
   const tr = lang === "tr";
   const publicName = escapeMarkdown(profile.public_name);
   const tier = Number(profile.kingdom_tier || 0);
-  const badge = tierBadge(tier);
   const tierNames_tr = ['Çırak', 'Asker', 'Şövalye', 'Kaptan', 'Komutan', 'General', 'Lord', 'Kral'];
   const tierNames_en = ['Apprentice', 'Soldier', 'Knight', 'Captain', 'Commander', 'General', 'Lord', 'King'];
   const tierName = tr ? (tierNames_tr[tier] || `T${tier}`) : (tierNames_en[tier] || `T${tier}`);
@@ -255,7 +167,6 @@ function formatProfile(profile, balances, options = {}) {
   const sc = Number(balances?.SC || 0);
   const hc = Number(balances?.HC || 0);
   const nxt = Number(balances?.NXT || 0);
-  const streakMult = (1 + Math.min(streak, 30) * 0.05).toFixed(2);
 
   const tierProgress = options.tierProgress || {};
   const progressVal = Number(tierProgress.progressValue || rep);
@@ -263,12 +174,16 @@ function formatProfile(profile, balances, options = {}) {
   const progressPct = Math.round((progressVal / progressMax) * 100);
 
   return (
-    `${badge} *${publicName}*\n` +
-    `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n` +
-    `⚔️ *${tierName}* T${tier} · 🏅 P${prestige} · �� ${seasonRank > 0 ? `#${seasonRank}` : (tr ? "Sırasız" : "Unranked")}\n\n` +
-    `🔥 Streak: *${streak}d* (${tr ? "max" : "best"} ${bestStreak}) · x${streakMult}\n` +
-    `⚔️ PvP: *${wins}W/${losses}L* · ${winRate}%\n` +
-    `⭐ ${tr ? "İtibar" : "Rep"}: *${compactNum(rep)}*\n\n` +
+    `*${publicName}*\n\n` +
+    `${tierName} · Tier ${tier} · P${prestige}\n` +
+    `${tr ? "Sıralama" : "Rank"}: ${seasonRank > 0 ? `#${seasonRank}` : (tr ? "Sırasız" : "Unranked")}\n\n` +
+    `${tr ? "Seri" : "Streak"}: ${streak} ${tr ? "gün" : "days"} (${tr ? "en iyi" : "best"} ${bestStreak})\n` +
+    `PvP: ${wins}W/${losses}L · ${winRate}%\n` +
+    `${tr ? "İtibar" : "Rep"}: ${compactNum(rep)}\n\n` +
+    `SC: \`${compactNum(sc)}\` · HC: \`${compactNum(hc)}\` · NXT: \`${nxt.toFixed(2)}\`\n\n` +
+    `${tr ? "Tier ilerlemesi" : "Tier progress"}: ${progressPct}%`
+  );
+}" : "Rep"}: *${compactNum(rep)}*\n\n` +
     `💰 *${compactNum(sc)}* SC  💎 *${compactNum(hc)}* HC  🪙 *${nxt.toFixed(2)}* NXT\n\n` +
     `${progressBar(progressVal, progressMax, 12)} *${progressPct}%* → ${tr ? "Sonraki Tier" : "Next Tier"}`
   );

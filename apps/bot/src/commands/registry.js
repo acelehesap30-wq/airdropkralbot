@@ -54,10 +54,10 @@ const RAW_COMMAND_REGISTRY = Object.freeze([
   },
   {
     key: "pvp",
-    aliases: ["raid", "duel"],
+    aliases: ["raid"],
     description_tr: "PvP raid baslat — ELO eslesme, kontrat puani ve ladder ilerlemesi",
     description_en: "Start PvP raid — ELO matching, contract scoring and ladder progression",
-    intents: ["pvp", "raid", "arena raid", "duel", "duello", "saldiri", "maclar", "eslesme"],
+    intents: ["pvp", "raid", "arena raid", "saldiri", "maclar", "eslesme"],
     scenarios: ["/pvp", "raid aggressive", "duel baslat", "/pvp safe", "pvp dengeli"],
     outcomes: ["pvp oturumu baslat", "ELO eslesmesi yap", "kontrat/progression metriklerini ilerlet", "daily/weekly PvP sayacini artir"],
     primary: true
@@ -75,11 +75,11 @@ const RAW_COMMAND_REGISTRY = Object.freeze([
   {
     key: "wallet",
     aliases: ["cuzdan", "bakiye"],
-    description_tr: "SC/HC/RC/NXT bakiye, gunluk cap, streak carpani ve verimlilik paneli",
-    description_en: "SC/HC/RC/NXT balances, daily caps, streak multiplier and productivity panel",
-    intents: ["wallet", "cuzdan", "balance", "balances", "bakiye", "param", "ne kadar", "economy"],
-    scenarios: ["wallet", "cuzdan", "balance", "/wallet", "bakiyem"],
-    outcomes: ["SC/HC/RC/NXT ve gunluk cap durumunu goster", "streak carpanini hesapla", "bugunku verimlilik oranini belirt"],
+    description_tr: "NXT ve TON bakiye, yatirim, cekim ve islem gecmisi",
+    description_en: "NXT and TON balance, deposit, withdraw and transaction history",
+    intents: ["wallet", "cuzdan", "balance", "balances", "bakiye", "param", "ne kadar", "economy", "deposit", "yatir", "withdraw", "cek"],
+    scenarios: ["wallet", "cuzdan", "balance", "/wallet", "bakiyem", "ton yatir", "nxt cek"],
+    outcomes: ["NXT ve TON bakiyesini goster", "yatirim adresi ve memo goster", "son islemleri listele"],
     primary: true
   },
   {
@@ -110,6 +110,26 @@ const RAW_COMMAND_REGISTRY = Object.freeze([
     intents: ["games", "oyunlar", "minigame", "mini game", "oyna", "play games", "game list", "oyun listesi"],
     scenarios: ["/games", "oyunlar", "mini games", "game list"],
     outcomes: ["oyun listesini goster", "NXT odul tablosunu goster", "webapp oyun deeplink sun"],
+    primary: true
+  },
+  {
+    key: "duel",
+    aliases: ["duello"],
+    description_tr: "1v1 NXT duello — bahis koy, rakiple savastir, gercek NXT kazan",
+    description_en: "1v1 NXT duel — place bets, fight opponents, win real NXT",
+    intents: ["duel", "duello", "1v1", "bahis", "bet", "challenge", "meydan oku"],
+    scenarios: ["/duel 100", "/duel", "duello ac", "100 nxt bahis"],
+    outcomes: ["duello olustur veya lobiye katil", "NXT escrow yap", "kazanana odul dagit", "house fee kes"],
+    primary: true
+  },
+  {
+    key: "market",
+    aliases: ["piyasa", "fiyat"],
+    description_tr: "NXT piyasa — anlik fiyat, 24s hacim ve alim-satim",
+    description_en: "NXT market — live price, 24h volume and buy/sell",
+    intents: ["market", "piyasa", "fiyat", "price", "kac", "ne kadar", "nxt fiyat", "ton fiyat"],
+    scenarios: ["/market", "piyasa", "nxt fiyati", "fiyat ne"],
+    outcomes: ["NXT/TON fiyatini goster", "24s istatistikleri belirt", "alim-satim butonlari sun"],
     primary: true
   },
   {
@@ -225,6 +245,8 @@ const RAW_COMMAND_REGISTRY = Object.freeze([
   { key: "perf", aliases: ["performans"], description_tr: "Performans raporu — FPS, API latency, bundle size ve health check", description_en: "Performance report — FPS, API latency, bundle size and health check", intents: ["perf", "performans", "fps", "hiz", "performance"], scenarios: ["/perf", "performans raporu"], outcomes: ["FPS ve API latency goster", "bundle size bilgisi sun", "saglik kontrolu ozeti ver"] },
   { key: "raid_contract", aliases: [], description_tr: "Raid kontrat paneli — hedef, bonus carpan, wave ilerleme ve oduller", description_en: "Raid contract panel — target, bonus multiplier, wave progress and rewards", intents: ["raid contract", "raid kontrat", "kontrat hedefi", "raid bonus"], scenarios: ["/raid_contract", "raid kontrat durumu"], outcomes: ["aktif kontrat hedefini goster", "bonus carpani belirt", "wave ilerlemesini ozetle"] },
   { key: "whoami", aliases: [], description_tr: "Telegram ID ve admin eslesme kontrolu — kimlik dogrulama", description_en: "Telegram ID and admin matching check — identity verification", intents: ["whoami", "ben kimim", "who am i"], scenarios: ["/whoami", "ben kimim"], outcomes: ["Telegram ID goster", "admin eslesmesini kontrol et"] },
+  { key: "sweep", aliases: [], description_tr: "Cold wallet sweep — hot wallet TON bakiyesini soguk cuzdana transfer et", description_en: "Cold wallet sweep — transfer hot wallet TON balance to cold wallet", intents: ["sweep"], adminOnly: true },
+  { key: "ton_status", aliases: [], description_tr: "TON sistem durumu — hot/cold wallet bakiye, SDK durumu ve aktivite", description_en: "TON system status — hot/cold wallet balance, SDK status and activity", intents: ["ton status", "ton durum"], adminOnly: true },
   { key: "admin", aliases: [], description_tr: "Admin ana paneli — canli kuyruk, metrikler ve system kontrol", description_en: "Admin main panel — live queue, metrics and system control", intents: ["admin", "yonetim"], adminOnly: true },
   { key: "admin_live", aliases: [], description_tr: "Admin canli izleme paneli — telemetry ve real-time metrikler", description_en: "Admin live monitoring — telemetry and real-time metrics", intents: ["admin live"], adminOnly: true },
   { key: "admin_live_ops", aliases: [], description_tr: "Live ops campaign push — segment hedefleme, dry-run ve dispatch", description_en: "Live ops campaign push — segment targeting, dry-run and dispatch", intents: ["admin live ops"], adminOnly: true },

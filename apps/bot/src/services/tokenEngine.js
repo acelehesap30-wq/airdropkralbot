@@ -4,17 +4,16 @@ const DEFAULT_TOKEN_CONFIG = {
   decimals: 4,
   usd_price: 0.001,
   onchain: {
-    enabled: false,
-    chain: "BSC",
-    chain_id: 56,
-    contract_address: "",
-    explorer_url: "",
-    treasury_address: "",
-    rpc_url: "https://bsc-dataseed1.bnbchain.org",
-    testnet_rpc_url: "https://data-seed-prebsc-1-s1.bnbchain.org:8545",
-    decimals: 18,
-    max_supply: "1000000000",
-    initial_supply: "10000000"
+    enabled: true,
+    chain: "TON",
+    chain_id: -239,
+    contract_address: "EQCb-sIwT2PmHdcuenhplHqEWWDecvPN_8ONoZ2J9A0WLkC_",
+    explorer_url: "https://tonscan.org/jetton/EQCb-sIwT2PmHdcuenhplHqEWWDecvPN_8ONoZ2J9A0WLkC_",
+    treasury_address: process.env.TON_HOT_WALLET_ADDRESS || "",
+    rpc_url: "https://toncenter.com/api/v2",
+    decimals: 9,
+    max_supply: "20000000",
+    initial_supply: "20000000"
   },
   curve: {
     enabled: true,

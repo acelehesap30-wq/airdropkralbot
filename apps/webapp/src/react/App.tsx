@@ -98,6 +98,7 @@ import {
 } from "./redux/api/webappApi";
 import { navigationActions, sceneActions } from "./redux/slices/shellSlices";
 import { lazyRetry } from "./utils/lazyRetry";
+import "./design-system.css";
 import "./styles.css";
 import "./styles_21st.css";
 
@@ -244,7 +245,7 @@ export function ReactWebAppV1(props: ReactWebAppV1Props) {
   const effectiveOnboardingVisible = effectiveWorkspace === "player" && onboardingVisible;
   const enableDistrictScene = false; // disabled — game content lives inside panels, not as 3D background
   const tabs = useMemo<TabKey[]>(
-    () => (Array.isArray(data?.ui_shell?.tabs) && data?.ui_shell?.tabs.length ? data.ui_shell.tabs : ["home", "pvp", "tasks", "forge", "exchange", "season", "events", "vault", "settings"]),
+    () => (Array.isArray(data?.ui_shell?.tabs) && data?.ui_shell?.tabs.length ? data.ui_shell.tabs : ["home", "pvp", "vault", "settings"]),
     [data?.ui_shell?.tabs]
   );
   const activeAuth = useMemo<WebAppAuth>(() => {

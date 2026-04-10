@@ -9,8 +9,19 @@ const userStore = require("../stores/userStore");
 const pvpProgressionStore = require("../stores/pvpProgressionStore");
 const antiAbuseEngine = require("./antiAbuseEngine");
 const arenaEngine = require("./arenaEngine");
-const nexusEventEngine = require("./nexusEventEngine");
-const nexusContractEngine = require("./nexusContractEngine");
+// nexusEventEngine and nexusContractEngine removed — no-op stubs
+const nexusEventEngine = {
+  resolveDailyAnomaly: () => ({ id: "none", label: "none", effects: [] }),
+  publicAnomalyView: (a) => a || { id: "none", label: "none", effects: [] },
+  applyRiskShift: (risk) => risk,
+  applyAnomalyToReward: (reward) => ({ reward })
+};
+const nexusContractEngine = {
+  resolveDailyContract: () => ({ id: "none", label: "none", objectives: [] }),
+  publicContractView: (c) => c || { id: "none", label: "none", objectives: [] },
+  evaluateAttempt: () => ({ matched: false, bonus: 0 }),
+  applyContractToReward: (reward) => ({ reward })
+};
 
 function deterministicUuid(input) {
   const hex = crypto.createHash("sha1").update(String(input)).digest("hex").slice(0, 32).split("");

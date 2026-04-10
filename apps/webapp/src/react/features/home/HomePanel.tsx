@@ -244,10 +244,11 @@ export function HomePanel(props: HomePanelProps) {
           </span>
         </div>
         <div className="akrCurrencyHud">
+          <span className="akrCurrencyChip" style={{ background: "rgba(16,255,145,0.12)", color: "#10ff91", fontWeight: 700, fontSize: 12 }}>
+            NXT {Number(summary.nxt_balance || 0).toLocaleString("en", { maximumFractionDigits: 2 })}
+          </span>
           <span className="akrCurrencyChip akrCurrencySC">SC {Math.floor(summary.sc_earned || 0)}</span>
           <span className="akrCurrencyChip akrCurrencyHC">HC {Math.floor(summary.hc_earned || 0)}</span>
-          <span className="akrCurrencyChip akrCurrencyRC">RC {Math.floor(summary.rc_earned || 0)}</span>
-          <span className="akrCurrencyChip" style={{ background: "rgba(0,255,136,0.08)", color: "#00ff88", fontSize: 9 }}>AUTO</span>
           <span className="akrCurrencyChip" style={{ background: "rgba(0,210,255,0.08)", color: "#00d2ff", fontSize: 9 }}>LIVE</span>
         </div>
         {/* NXT Token Live Ticker */}

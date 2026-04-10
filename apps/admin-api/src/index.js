@@ -26,8 +26,19 @@ const arenaEngine = require("../../bot/src/services/arenaEngine");
 const arenaService = require("../../bot/src/services/arenaService");
 const tokenEngine = require("../../bot/src/services/tokenEngine");
 const txVerifier = require("../../bot/src/services/txVerifier");
-const nexusEventEngine = require("../../bot/src/services/nexusEventEngine");
-const nexusContractEngine = require("../../bot/src/services/nexusContractEngine");
+// nexusEventEngine and nexusContractEngine removed — no-op stubs
+const nexusEventEngine = {
+  resolveDailyAnomaly: () => ({ id: "none", label: "none", effects: [] }),
+  publicAnomalyView: (a) => a || { id: "none", label: "none", effects: [] },
+  applyRiskShift: (risk) => risk,
+  applyAnomalyToReward: (reward) => ({ reward })
+};
+const nexusContractEngine = {
+  resolveDailyContract: () => ({ id: "none", label: "none", objectives: [] }),
+  publicContractView: (c) => c || { id: "none", label: "none", objectives: [] },
+  evaluateAttempt: () => ({ matched: false, bonus: 0 }),
+  applyContractToReward: (reward) => ({ reward })
+};
 const { getCommandRegistry, getPrimaryCommands } = require("../../bot/src/commands/registry");
 const contractsV2 = require("../../../packages/shared/src/contracts");
 const { normalizeLanguage } = require("../../../packages/shared/src/localeContract");
