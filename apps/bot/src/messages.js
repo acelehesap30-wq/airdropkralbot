@@ -134,8 +134,8 @@ function formatGuide(snapshot, options = {}) {
     `${tr ? "Görev" : "Tasks"}: ${Number(daily.tasksDone || 0)}/${Number(daily.dailyCap || 0)}\n\n` +
     `➜ *${nextStep}*\n\n` +
     `${tr ? "Akış" : "Flow"}: /tasks → /finish → /reveal\n` +
-    `${tr ? "Ekonomi" : "Economy"}: /wallet · /token\n` +
-    `${tr ? "Diğer" : "Other"}: /help · /lang · /status`
+    `${tr ? "Ekonomi" : "Economy"}: /wallet · /market\n` +
+    `${tr ? "Diğer" : "Other"}: /top · /ref · /help`
   );
 }
 
@@ -164,8 +164,6 @@ function formatOnboard(payload = {}, options = {}) {
   const losses = Number(profile.losses || 0);
   const total = wins + losses;
   const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
-  const sc = Number(balances?.SC || 0);
-  const hc = Number(balances?.HC || 0);
   const nxt = Number(balances?.NXT || 0);
 
   const tierProgress = options.tierProgress || {};
@@ -180,7 +178,7 @@ function formatOnboard(payload = {}, options = {}) {
     `${tr ? "Seri" : "Streak"}: ${streak} ${tr ? "gün" : "days"} (${tr ? "en iyi" : "best"} ${bestStreak})\n` +
     `PvP: ${wins}W/${losses}L · ${winRate}%\n` +
     `${tr ? "İtibar" : "Rep"}: ${compactNum(rep)}\n\n` +
-    `SC: \`${compactNum(sc)}\` · HC: \`${compactNum(hc)}\` · NXT: \`${nxt.toFixed(2)}\`\n\n` +
+    `💎 NXT: \`${nxt.toLocaleString("en", {minimumFractionDigits:2, maximumFractionDigits:2})}\`\n\n` +
     `${tr ? "Tier ilerlemesi" : "Tier progress"}: ${progressPct}%`
   );
 }" : "Rep"}: *${compactNum(rep)}*\n\n` +
@@ -297,9 +295,6 @@ function formatTaskComplete(result, probabilities, details, options = {}) {
 function formatLootReveal(lootTier, rewardLine, pityAfter, pityCap, balances, seasonPoints = 0, meta, options = {}) {
   const lang = resolveLang(options);
   const tr = lang === "tr";
-  const sc = Number(balances?.SC || 0);
-  const hc = Number(balances?.HC || 0);
-  const rc = Number(balances?.RC || 0);
   const tierLower = String(lootTier).toLowerCase();
   const tierEmoji = { common: '📦', uncommon: '🎁', rare: '💜', epic: '🌟', legendary: '👑' };
   const tierColor = { common: '⬜', uncommon: '🟩', rare: '🟦', epic: '🟪', legendary: '🟨' };
@@ -332,7 +327,7 @@ function formatLootReveal(lootTier, rewardLine, pityAfter, pityCap, balances, se
     `${tColor} ${tr ? "Seviye" : "Tier"}: *${tLabel}*\n` +
     `💎 ${tr ? "Kazanç" : "Reward"}: *${rewardLine}*\n\n` +
     `${pityLine}${modeLine}${comboLine}${boostLine}${hiddenLine}${seasonLine}${warLine}${anomalyLine}${contractLine}\n\n` +
-    `💰 \`${compactNum(sc)} SC\`  💎 \`${compactNum(hc)} HC\`  🌀 \`${rc} RC\``
+    `💎 NXT: \`${Number(balances?.NXT || 0).toLocaleString("en", {minimumFractionDigits:2, maximumFractionDigits:2})}\``
   );
 }
 

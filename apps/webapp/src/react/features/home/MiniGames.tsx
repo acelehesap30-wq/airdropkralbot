@@ -260,7 +260,7 @@ function TapBlitz({ lang, auth }: { lang:Lang; auth?:WebAppAuth|null }) {
           clearInterval(timerRef.current!);
           stRef.current.phase="done"; setPhase("done");
           const earned=stRef.current.taps*2; setReward(earned);
-          postJson("/webapp/api/v2/player/action",{...authFields(auth),action_key:"game_tap_blitz",action_request_id:buildActionRequestId("game_tap_blitz"),payload:{taps:stRef.current.taps,reward_sc:earned}}).catch(()=>{});
+          postJson("/webapp/api/v2/player/action",{...authFields(auth),action_key:"game_tap_blitz",action_request_id:buildActionRequestId("game_tap_blitz"),payload:{taps:stRef.current.taps,reward_nxt:earned}}).catch(()=>{});
           return 0;
         }
         return prev-1;
@@ -279,7 +279,7 @@ function TapBlitz({ lang, auth }: { lang:Lang; auth?:WebAppAuth|null }) {
           <div style={{fontSize:10,opacity:0.5}}>{isTr?"10s · Çekirdeği patlat · Combo kazan":"10s · Blast the core · Build combos"}</div>
         </div>
         {phase==="playing"&&<span style={{fontSize:13,color:timeLeft<=3?"#ff4444":"#e040fb",fontFamily:"monospace",fontWeight:700}}>{timeLeft}s</span>}
-        {phase==="done"&&<span style={{fontSize:12,color:"#ffd700",fontFamily:"monospace"}}>+{reward} SC</span>}
+        {phase==="done"&&<span style={{fontSize:12,color:"#10ff91",fontFamily:"monospace"}}>+{reward} NXT</span>}
       </div>
       <div style={{position:"relative",cursor:phase==="playing"?"crosshair":"default"}} onClick={phase==="playing"?tapCore:undefined}>
         <canvas ref={canvasRef} width={340} height={155} style={{display:"block",width:"100%"}}/>
@@ -293,7 +293,7 @@ function TapBlitz({ lang, auth }: { lang:Lang; auth?:WebAppAuth|null }) {
         {phase==="done"&&(
           <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"rgba(6,0,16,0.78)"}}>
             <div style={{fontSize:16,fontWeight:800,color:"#e040fb",fontFamily:"monospace",textShadow:"0 0 14px #e040fb"}}>{taps} {isTr?"vuruş":"hits"} · {tapRank}</div>
-            <div style={{fontSize:12,color:"#ffd700",marginTop:4}}>+{reward} SC</div>
+            <div style={{fontSize:12,color:"#10ff91",marginTop:4}}>+{reward} NXT</div>
             <button onClick={e=>{e.stopPropagation();stRef.current.phase="idle";stRef.current.combo=0;setPhase("idle");setTaps(0);setReward(null);}} style={{marginTop:10,background:"rgba(224,64,251,0.15)",border:"1px solid rgba(224,64,251,0.4)",color:"#e040fb",borderRadius:8,padding:"7px 22px",fontSize:12,cursor:"pointer"}}>
               {isTr?"Tekrar":"Replay"}
             </button>
@@ -478,10 +478,10 @@ function CoinFlip({ lang, auth, sc }: { lang:Lang; auth?:WebAppAuth|null; sc:num
     let resolvedWon=false,resolvedAmount=0;
     try{
       const a=authFields(auth);
-      const resp=await postJson<{success:boolean;data:{result_side?:"heads"|"tails";won?:boolean;reward_sc?:number}}>(
-        "/webapp/api/v2/player/action",{...a,action_key:"game_coin_flip",action_request_id:buildActionRequestId("game_coin_flip"),payload:{bet_sc:bet,choice}});
+      const resp=await postJson<{success:boolean;data:{result_side?:"heads"|"tails";won?:boolean;reward_nxt?:number}}>(
+        "/webapp/api/v2/player/action",{...a,action_key:"game_coin_flip",action_request_id:buildActionRequestId("game_coin_flip"),payload:{bet_nxt:bet,choice}});
       if(resp.success&&resp.data){
-        resolvedSide=resp.data.result_side||resolvedSide;resolvedWon=!!resp.data.won;resolvedAmount=Number(resp.data.reward_sc||0);
+        resolvedSide=resp.data.result_side||resolvedSide;resolvedWon=!!resp.data.won;resolvedAmount=Number(resp.data.reward_nxt||0);
       } else { resolvedSide=Math.random()>0.5?"heads":"tails";resolvedWon=resolvedSide===choice;resolvedAmount=resolvedWon?Math.floor(bet*1.8):0; }
     }catch{ resolvedSide=Math.random()>0.5?"heads":"tails";resolvedWon=resolvedSide===choice;resolvedAmount=resolvedWon?Math.floor(bet*1.8):0; }
     st.targetFace=resolvedSide;
@@ -493,16 +493,16 @@ function CoinFlip({ lang, auth, sc }: { lang:Lang; auth?:WebAppAuth|null; sc:num
       <div style={{padding:"10px 12px 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <div>
           <div style={{fontSize:13,fontWeight:700,color:"#ffd700"}}>🪙 {isTr?"Yazı Tura":"Coin Flip"}</div>
-          <div style={{fontSize:10,opacity:0.5}}>{isTr?"SC bahis koy · x1.8 ödül":"Bet SC · x1.8 reward"}</div>
+          <div style={{fontSize:10,opacity:0.5}}>{isTr?"NXT bahis · x1.8 ödül":"Bet NXT · x1.8 reward"}</div>
         </div>
-        {flipResult&&<span style={{fontSize:13,fontWeight:800,color:flipResult.won?"#00ff88":"#ff4444",fontFamily:"monospace"}}>{flipResult.won?`+${flipResult.amount}`:`-${bet}`} SC</span>}
+        {flipResult&&<span style={{fontSize:13,fontWeight:800,color:flipResult.won?"#00ff88":"#ff4444",fontFamily:"monospace"}}>{flipResult.won?`+${flipResult.amount}`:`-${bet}`} NXT</span>}
       </div>
       <canvas ref={canvasRef} width={340} height={125} style={{display:"block",width:"100%"}}/>
       <div style={{padding:"6px 12px 12px"}}>
         <div style={{display:"flex",gap:6,marginBottom:8,justifyContent:"center"}}>
           {[10,25,50,100].map(v=>(
             <button key={v} className="akrBtn akrBtnSm" onClick={()=>setBet(v)}
-              style={{opacity:bet===v?1:0.4,border:bet===v?"1px solid #ffd700":"1px solid transparent",fontSize:10}}>{v} SC</button>
+              style={{opacity:bet===v?1:0.4,border:bet===v?"1px solid #ffd700":"1px solid transparent",fontSize:10}}>{v} NXT</button>
           ))}
         </div>
         <div style={{display:"flex",gap:8,marginBottom:8}}>
@@ -517,7 +517,7 @@ function CoinFlip({ lang, auth, sc }: { lang:Lang; auth?:WebAppAuth|null; sc:num
         </div>
         <button className="akrBtn akrBtnAccent" onClick={flip} disabled={!choice||phase==="flipping"||sc<bet}
           style={{width:"100%",opacity:(!choice||phase==="flipping"||sc<bet)?0.4:1}}>
-          {phase==="flipping"?(isTr?"Uçuyor...":"Flipping..."):sc<bet?(isTr?"Yetersiz SC":"Not enough SC"):(isTr?`${bet} SC Bahis`:`Flip ${bet} SC`)}
+          {phase==="flipping"?(isTr?"Uçuyor...":"Flipping..."):sc<bet?(isTr?"Yetersiz NXT":"Not enough NXT"):(isTr?`${bet} NXT Bahis`:`Flip ${bet} NXT`)}
         </button>
         {phase==="done"&&<button className="akrBtn" onClick={()=>{stRef.current.phase="idle";setPhase("idle");setFlipResult(null);setChoice(null);}} style={{width:"100%",marginTop:6,fontSize:12,opacity:0.7}}>{isTr?"Yeni Oyun":"New Game"}</button>}
       </div>
@@ -529,14 +529,14 @@ function CoinFlip({ lang, auth, sc }: { lang:Lang; auth?:WebAppAuth|null; sc:num
 // GAME 3 — DAILY SPIN (3D Tilted Wheel · physics-correct landing)
 // ═══════════════════════════════════════════════════════════════════════════════
 const WHEEL_PRIZES=[
-  {label:"10 SC",  value:10,  color:"#00ff88",weight:30},
-  {label:"25 SC",  value:25,  color:"#00d2ff",weight:25},
-  {label:"50 SC",  value:50,  color:"#e040fb",weight:15},
-  {label:"1 HC",   value:100, color:"#ffd700",weight:10},
-  {label:"100 SC", value:100, color:"#ff8800",weight:8},
-  {label:"x2 SC",  value:200, color:"#ff4444",weight:5},
-  {label:"3 HC",   value:300, color:"#00ffaa",weight:4},
-  {label:"500 SC", value:500, color:"#ff00ff",weight:3},
+  {label:"10 NXT",  value:10,  color:"#00ff88",weight:30},
+  {label:"25 NXT",  value:25,  color:"#00d2ff",weight:25},
+  {label:"50 NXT",  value:50,  color:"#e040fb",weight:15},
+  {label:"1 HC",    value:100, color:"#ffd700",weight:10},
+  {label:"100 NXT", value:100, color:"#ff8800",weight:8},
+  {label:"x2 NXT",  value:200, color:"#ff4444",weight:5},
+  {label:"3 HC",    value:300, color:"#00ffaa",weight:4},
+  {label:"500 NXT", value:500, color:"#ff00ff",weight:3},
 ];
 
 function DailySpin({lang,auth}:{lang:Lang;auth?:WebAppAuth|null}){
@@ -603,7 +603,7 @@ function DailySpin({lang,auth}:{lang:Lang;auth?:WebAppAuth|null}){
             // burst particles
             const prize=WHEEL_PRIZES[ws.prizeIdx];
             const [pr,pg,pb]=hexToRgb(prize.color);
-            const isJackpot=ws.prizeIdx>=5; // x2 SC, 3 HC, 500 SC
+            const isJackpot=ws.prizeIdx>=5; // x2 NXT, 3 HC, 500 NXT
             const burstCount=isJackpot?90:38;
             for(let i=0;i<burstCount;i++){
               const a=Math.random()*Math.PI*2,spd=(isJackpot?3:2)+Math.random()*(isJackpot?10:7);
@@ -753,7 +753,7 @@ function DailySpin({lang,auth}:{lang:Lang;auth?:WebAppAuth|null}){
 
     postJson("/webapp/api/v2/player/action",{...authFields(auth),
       action_key:"game_daily_spin",action_request_id:buildActionRequestId("game_daily_spin"),
-      payload:{prize_label:prize.label,prize_value:prize.value}}).catch(()=>{});
+      payload:{prize_label:prize.label,prize_value:prize.value,reward_nxt:prize.value}}).catch(()=>{});
   },[spinning,canSpin,auth]);
 
   return(
@@ -963,7 +963,7 @@ function NexusVault({lang,auth,sc:_sc}:{lang:Lang;auth?:WebAppAuth|null;sc:numbe
     }
     if(!isGem){
       vt.phase="lost"; vt.revealed=Array(9).fill(true); setGamePhase("lost");
-      postJson("/webapp/api/v2/player/action",{...authFields(auth),action_key:"game_nexus_vault",action_request_id:buildActionRequestId("game_nexus_vault"),payload:{gems_found:vt.gemsFound,reward_sc:0,busted:true}}).catch(()=>{});
+      postJson("/webapp/api/v2/player/action",{...authFields(auth),action_key:"game_nexus_vault",action_request_id:buildActionRequestId("game_nexus_vault"),payload:{gems_found:vt.gemsFound,reward_nxt:0,busted:true}}).catch(()=>{});
     } else {
       vt.gemsFound++; setGemsFound(vt.gemsFound);
       if(vt.gemsFound>=5){
@@ -978,7 +978,7 @@ function NexusVault({lang,auth,sc:_sc}:{lang:Lang;auth?:WebAppAuth|null;sc:numbe
     const vt=vRef.current;
     if(vt.phase!=="playing"||vt.gemsFound===0) return;
     vt.phase="cashout"; setGamePhase("cashout");
-    postJson("/webapp/api/v2/player/action",{...authFields(auth),action_key:"game_nexus_vault",action_request_id:buildActionRequestId("game_nexus_vault"),payload:{gems_found:vt.gemsFound,reward_sc:VAULT_GEM_REWARD*vt.gemsFound,busted:false}}).catch(()=>{});
+    postJson("/webapp/api/v2/player/action",{...authFields(auth),action_key:"game_nexus_vault",action_request_id:buildActionRequestId("game_nexus_vault"),payload:{gems_found:vt.gemsFound,reward_nxt:VAULT_GEM_REWARD*vt.gemsFound,busted:false}}).catch(()=>{});
   },[auth]);
 
   const handleCanvasClick=useCallback((e:React.MouseEvent<HTMLCanvasElement>)=>{
@@ -1012,7 +1012,7 @@ function NexusVault({lang,auth,sc:_sc}:{lang:Lang;auth?:WebAppAuth|null;sc:numbe
         </div>
         <div style={{textAlign:"right"}}>
           <div style={{fontSize:11,color:"#00ff88",fontFamily:"monospace",fontWeight:700}}>💎 {gemsFound}/5</div>
-          {gemsFound>0&&gamePhase==="playing"&&<div style={{fontSize:10,color:"#ffd700",fontFamily:"monospace"}}>+{earned} SC</div>}
+          {gemsFound>0&&gamePhase==="playing"&&<div style={{fontSize:10,color:"#ffd700",fontFamily:"monospace"}}>+{earned} NXT</div>}
         </div>
       </div>
       <div style={{position:"relative"}}>
@@ -1037,11 +1037,11 @@ function NexusVault({lang,auth,sc:_sc}:{lang:Lang;auth?:WebAppAuth|null;sc:numbe
                     setBonusPicked(idx);
                     const totalReward=VAULT_GEM_REWARD*5+200+val;
                     vRef.current.phase="won"; setGamePhase("won");
-                    postJson("/webapp/api/v2/player/action",{...authFields(auth),action_key:"game_nexus_vault",action_request_id:buildActionRequestId("game_nexus_vault"),payload:{gems_found:5,reward_sc:totalReward,busted:false,bonus:val}}).catch(()=>{});
+                    postJson("/webapp/api/v2/player/action",{...authFields(auth),action_key:"game_nexus_vault",action_request_id:buildActionRequestId("game_nexus_vault"),payload:{gems_found:5,reward_nxt:totalReward,busted:false,bonus:val}}).catch(()=>{});
                   }}
                     style={{width:72,height:72,borderRadius:14,fontSize:28,cursor:bonusPicked===null?"pointer":"default",border:`2px solid ${bonusPicked===null?"rgba(255,215,0,0.5)":bonusPicked===idx?"#ffd700":"rgba(255,255,255,0.12)"}`,background:bonusPicked===idx?"rgba(255,215,0,0.18)":"rgba(255,255,255,0.04)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",transition:"all 0.2s",boxShadow:bonusPicked===null?"0 0 14px rgba(255,215,0,0.18)":"none"}}>
                     <span>{bonusPicked===idx?`+${val}`:"📦"}</span>
-                    {bonusPicked===idx&&<span style={{fontSize:8,color:"#ffd700",marginTop:2}}>SC</span>}
+                    {bonusPicked===idx&&<span style={{fontSize:8,color:"#ffd700",marginTop:2}}>NXT</span>}
                   </button>
                 ))}
               </div>
@@ -1049,13 +1049,13 @@ function NexusVault({lang,auth,sc:_sc}:{lang:Lang;auth?:WebAppAuth|null;sc:numbe
             {gamePhase==="won"&&<>
               <div style={{fontSize:32,marginBottom:8}}>🏆</div>
               <div style={{fontSize:18,fontWeight:800,color:"#ffd700",fontFamily:"monospace",textShadow:"0 0 16px #ffd700"}}>{isTr?"TAM KAZANIM!":"JACKPOT!"}</div>
-              <div style={{fontSize:14,color:"#00ff88",marginTop:6,fontFamily:"monospace",fontWeight:700}}>+{VAULT_GEM_REWARD*5+200+(bonusPicked!==null?bonusChests[bonusPicked]:0)} SC</div>
-              {bonusPicked!==null&&<div style={{fontSize:11,color:"#ffd700",opacity:0.8}}>💎 +{bonusChests[bonusPicked]} SC {isTr?"bonus":"bonus"}</div>}
+              <div style={{fontSize:14,color:"#00ff88",marginTop:6,fontFamily:"monospace",fontWeight:700}}>+{VAULT_GEM_REWARD*5+200+(bonusPicked!==null?bonusChests[bonusPicked]:0)} NXT</div>
+              {bonusPicked!==null&&<div style={{fontSize:11,color:"#ffd700",opacity:0.8}}>💎 +{bonusChests[bonusPicked]} NXT {isTr?"bonus":"bonus"}</div>}
             </>}
             {(gamePhase==="cashout")&&<>
               <div style={{fontSize:32,marginBottom:8}}>💰</div>
               <div style={{fontSize:18,fontWeight:800,color:"#00ff88",fontFamily:"monospace",textShadow:"0 0 16px #00ff88"}}>{isTr?"ÇIKARILDI!":"CASHED OUT!"}</div>
-              <div style={{fontSize:14,color:"#ffd700",marginTop:6,fontFamily:"monospace",fontWeight:700}}>+{earned} SC</div>
+              <div style={{fontSize:14,color:"#ffd700",marginTop:6,fontFamily:"monospace",fontWeight:700}}>+{earned} NXT</div>
             </>}
             {gamePhase!=="bonus"&&(
               <button onClick={()=>setRoundKey(k=>k+1)}
@@ -1070,7 +1070,7 @@ function NexusVault({lang,auth,sc:_sc}:{lang:Lang;auth?:WebAppAuth|null;sc:numbe
         <div style={{padding:"4px 12px 12px"}}>
           <button className="akrBtn" onClick={cashOut} disabled={gemsFound===0}
             style={{width:"100%",opacity:gemsFound===0?0.3:1,border:"1px solid rgba(0,255,136,0.4)",color:"#00ff88",fontSize:12,fontWeight:700}}>
-            {gemsFound===0?(isTr?"Kristal seç":"Pick a crystal"):(isTr?`${earned} SC Çıkar`:`Cash Out ${earned} SC`)}
+            {gemsFound===0?(isTr?"Kristal seç":"Pick a crystal"):(isTr?`${earned} NXT Çıkar`:`Cash Out ${earned} NXT`)}
           </button>
           <div style={{fontSize:10,textAlign:"center",opacity:0.35,marginTop:5}}>{isTr?"Tuzağa basssan her şeyi kaybedersin":"Hit a trap and lose everything"}</div>
         </div>
@@ -1175,7 +1175,7 @@ function NexusSniper({lang,auth}:{lang:Lang;auth?:WebAppAuth|null}){
         // HUD
         ctx.font="bold 11px monospace"; ctx.textBaseline="top";
         ctx.textAlign="left"; ctx.fillStyle="rgba(255,102,0,0.85)"; ctx.fillText(`🎯 ${sn.shotsLeft}`,10,8);
-        ctx.textAlign="right"; ctx.fillStyle="rgba(255,200,100,0.85)"; ctx.fillText(`${sn.totalScore} SC`,W-10,8);
+        ctx.textAlign="right"; ctx.fillStyle="rgba(255,200,100,0.85)"; ctx.fillText(`${sn.totalScore} NXT`,W-10,8);
         // shot accuracy hint bar
         const hintX=cx-40, hintW=80, hintY=H-18;
         ctx.fillStyle="rgba(255,255,255,0.05)"; ctx.fillRect(hintX,hintY,hintW,4);
@@ -1227,7 +1227,7 @@ function NexusSniper({lang,auth}:{lang:Lang;auth?:WebAppAuth|null}){
     setTotalScore(sn.totalScore); setShotsLeft(sn.shotsLeft);
     if(sn.shotsLeft<=0){
       sn.phase="done"; setPhase("done");
-      postJson("/webapp/api/v2/player/action",{...authFields(auth),action_key:"game_nexus_sniper",action_request_id:buildActionRequestId("game_nexus_sniper"),payload:{shots:5,score_sc:sn.totalScore}}).catch(()=>{});
+      postJson("/webapp/api/v2/player/action",{...authFields(auth),action_key:"game_nexus_sniper",action_request_id:buildActionRequestId("game_nexus_sniper"),payload:{shots:5,score_nxt:sn.totalScore}}).catch(()=>{});
     }
   },[auth]);
 
@@ -1244,10 +1244,10 @@ function NexusSniper({lang,auth}:{lang:Lang;auth?:WebAppAuth|null}){
       <div style={{padding:"10px 12px 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <div>
           <div style={{fontSize:13,fontWeight:700,color:"#ff6600"}}>🎯 {isTr?"Nexus Nişancı":"Nexus Sniper"}</div>
-          <div style={{fontSize:10,opacity:0.5}}>{isTr?"5 atış · Hedefe tam vur · SC kazan":"5 shots · Hit the mark · Earn SC"}</div>
+          <div style={{fontSize:10,opacity:0.5}}>{isTr?"5 atış · Hedefe tam vur · NXT kazan":"5 shots · Hit the mark · Earn NXT"}</div>
         </div>
-        {phase==="playing"&&<span style={{fontSize:12,color:"#ff6600",fontFamily:"monospace",fontWeight:700}}>{shotsLeft} 🎯 · {totalScore} SC</span>}
-        {phase==="done"&&<span style={{fontSize:12,color:"#ffd700",fontFamily:"monospace",fontWeight:700}}>+{totalScore} SC</span>}
+        {phase==="playing"&&<span style={{fontSize:12,color:"#ff6600",fontFamily:"monospace",fontWeight:700}}>{shotsLeft} 🎯 · {totalScore} NXT</span>}
+        {phase==="done"&&<span style={{fontSize:12,color:"#ffd700",fontFamily:"monospace",fontWeight:700}}>+{totalScore} NXT</span>}
       </div>
       <div style={{position:"relative",cursor:phase==="playing"?"crosshair":"default"}}>
         <canvas ref={canvasRef} width={340} height={170} style={{display:"block",width:"100%"}}
@@ -1262,7 +1262,7 @@ function NexusSniper({lang,auth}:{lang:Lang;auth?:WebAppAuth|null}){
         {phase==="done"&&(
           <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"rgba(2,0,16,0.85)"}}>
             <div style={{fontSize:18,fontWeight:800,color:"#ff6600",fontFamily:"monospace",textShadow:"0 0 14px #ff6600"}}>{rank}</div>
-            <div style={{fontSize:14,color:"#ffd700",marginTop:6,fontFamily:"monospace",fontWeight:700}}>+{totalScore} SC</div>
+            <div style={{fontSize:14,color:"#ffd700",marginTop:6,fontFamily:"monospace",fontWeight:700}}>+{totalScore} NXT</div>
             <button onClick={e=>{e.stopPropagation();snRef.current.phase="idle";setPhase("idle");}} style={{marginTop:12,background:"rgba(255,102,0,0.15)",border:"1px solid rgba(255,102,0,0.4)",color:"#ff6600",borderRadius:8,padding:"8px 24px",fontSize:12,cursor:"pointer"}}>
               {isTr?"Tekrar":"Replay"}
             </button>
@@ -1287,7 +1287,7 @@ export function MiniGames(props: MiniGamesProps) {
           <span style={{ fontSize: 18 }}>🎮</span>
           <div>
             <div style={{ fontSize: 14, fontWeight: 700 }}>{isTr ? "Mini Oyunlar" : "Mini Games"}</div>
-            <div style={{ fontSize: 10, opacity: 0.5 }}>{isTr ? "6 × 3D arena · SC/HC kazan" : "6 × 3D arena · Earn SC/HC"}</div>
+            <div style={{ fontSize: 10, opacity: 0.5 }}>{isTr ? "6 × 3D arena · NXT/HC kazan" : "6 × 3D arena · Earn NXT/HC"}</div>
           </div>
         </div>
       </div>

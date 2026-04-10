@@ -29,8 +29,7 @@ const RAW_COMMAND_REGISTRY = Object.freeze([
     description_en: "Task pool — full panel with timer, rewards, archetypes and risk weights",
     intents: ["tasks", "task", "gorev", "gorevler", "quest", "quests", "gorev havuzu", "task pool", "misson"],
     scenarios: ["gorev", "tasks", "quest list", "/tasks", "gorev havuzunu ac", "yeni gorev"],
-    outcomes: ["aktif gorev havuzunu goster", "kabul edilebilir offerlari listele", "her gorev icin sure/odul/arketip karti goster", "anomaly ve kontrat etkisini belirt"],
-    primary: true
+    outcomes: ["aktif gorev havuzunu goster", "kabul edilebilir offerlari listele", "her gorev icin sure/odul/arketip karti goster", "anomaly ve kontrat etkisini belirt"]
   },
   {
     key: "finish",
@@ -39,8 +38,7 @@ const RAW_COMMAND_REGISTRY = Object.freeze([
     description_en: "Finish active task — risk-reward calculation with safe/balanced/aggressive mode",
     intents: ["finish", "bitir", "tamamla", "complete", "kapat", "end", "bitti", "sonlandir"],
     scenarios: ["bitir dengeli", "/finish aggressive", "/finish safe", "bitir guvenli", "bitir saldirgan"],
-    outcomes: ["aktif denemeyi kapat", "sonuc ve olasilik ozeti goster", "combo ve momentum carpanini hesapla", "anomaly etkisini uygula"],
-    primary: true
+    outcomes: ["aktif denemeyi kapat", "sonuc ve olasilik ozeti goster", "combo ve momentum carpanini hesapla", "anomaly etkisini uygula"]
   },
   {
     key: "reveal",
@@ -49,8 +47,7 @@ const RAW_COMMAND_REGISTRY = Object.freeze([
     description_en: "Reveal reward of latest completed run — update pity, balance and season points",
     intents: ["reveal", "revealnow", "loot", "open loot", "kasa", "kasa ac", "odul ac", "kutu ac"],
     scenarios: ["reveal", "kasa ac", "open loot", "/reveal", "odulu goster"],
-    outcomes: ["son biten denemenin odulunu dagit", "pity counter guncelle", "bakiye guncelle", "sezon puani ekle", "hidden bonus kontrolu yap"],
-    primary: true
+    outcomes: ["son biten denemenin odulunu dagit", "pity counter guncelle", "bakiye guncelle", "sezon puani ekle", "hidden bonus kontrolu yap"]
   },
   {
     key: "pvp",
@@ -59,8 +56,7 @@ const RAW_COMMAND_REGISTRY = Object.freeze([
     description_en: "Start PvP raid — ELO matching, contract scoring and ladder progression",
     intents: ["pvp", "raid", "arena raid", "saldiri", "maclar", "eslesme"],
     scenarios: ["/pvp", "raid aggressive", "duel baslat", "/pvp safe", "pvp dengeli"],
-    outcomes: ["pvp oturumu baslat", "ELO eslesmesi yap", "kontrat/progression metriklerini ilerlet", "daily/weekly PvP sayacini artir"],
-    primary: true
+    outcomes: ["pvp oturumu baslat", "ELO eslesmesi yap", "kontrat/progression metriklerini ilerlet", "daily/weekly PvP sayacini artir"]
   },
   {
     key: "arena_rank",
@@ -69,8 +65,7 @@ const RAW_COMMAND_REGISTRY = Object.freeze([
     description_en: "Arena rating, rank, ELO and ladder summary — personal and global",
     intents: ["arena rank", "rank", "arena siralama", "leaderboard arena", "elo", "rating", "pvp siralama"],
     scenarios: ["arena rank", "/arena_rank", "pvp leaderboard", "siralamam"],
-    outcomes: ["rating, rank ve leaderboard verisini goster", "ELO degisim trendini goster", "season arc boss ilerlemesini belirt"],
-    primary: true
+    outcomes: ["rating, rank ve leaderboard verisini goster", "ELO degisim trendini goster", "season arc boss ilerlemesini belirt"]
   },
   {
     key: "wallet",
@@ -89,8 +84,7 @@ const RAW_COMMAND_REGISTRY = Object.freeze([
     description_en: "Vault BTC payout panel — gate status, cooldown, KYC and request flow",
     intents: ["vault", "payout", "cekim", "withdraw", "cashout", "btc", "para cek", "kasa"],
     scenarios: ["vault", "payout", "withdraw", "/vault", "cekim yap", "btc cek"],
-    outcomes: ["payout lock durumunu goster", "talep uygunlugunu kontrol et", "gate/cooldown/KYC durumunu belirt", "son odeme gecmisini listele"],
-    primary: true
+    outcomes: ["payout lock durumunu goster", "talep uygunlugunu kontrol et", "gate/cooldown/KYC durumunu belirt", "son odeme gecmisini listele"]
   },
   {
     key: "token",
@@ -99,8 +93,7 @@ const RAW_COMMAND_REGISTRY = Object.freeze([
     description_en: "NXT token wallet — spot price, quote, mint/buy status and chain addresses",
     intents: ["token", "jeton", "coin", "treasury", "nxt", "token bakiye", "token fiyat"],
     scenarios: ["/token", "token wallet", "jeton bakiyesi", "nxt fiyat"],
-    outcomes: ["token bakiye, quote ve talep durumunu goster", "spot fiyat ve piyasa degisimini belirt", "zincir adreslerini listele"],
-    primary: true
+    outcomes: ["token bakiye, quote ve talep durumunu goster", "spot fiyat ve piyasa degisimini belirt", "zincir adreslerini listele"]
   },
   {
     key: "games",
@@ -139,8 +132,7 @@ const RAW_COMMAND_REGISTRY = Object.freeze([
     description_en: "Nexus guide — game story, mechanics and flow steps",
     intents: ["story", "guide", "rehber", "yardim", "help me", "nasil", "ne yapmaliyim", "how to"],
     scenarios: ["story", "guide", "rehber", "/story", "ne yapayim"],
-    outcomes: ["onboard adimlarini acikla", "kontrat ve anomaly mekaniklerini anlat", "pity sistemi ve combo carpanini acikla"],
-    primary: true
+    outcomes: ["onboard adimlarini acikla", "kontrat ve anomaly mekaniklerini anlat", "pity sistemi ve combo carpanini acikla"]
   },
   {
     key: "help",
@@ -186,7 +178,7 @@ const RAW_COMMAND_REGISTRY = Object.freeze([
   { key: "daily", aliases: ["gunluk"], description_tr: "Gunluk kontrol paneli — haklar, cap, streak carpani, misyon tablosu", description_en: "Daily control panel — rights, caps, streak multiplier, mission board", intents: ["daily", "gunluk", "today", "bugun", "gunluk durum"], scenarios: ["/daily", "gunluk", "bugun ne var"], outcomes: ["gunluk gorev/cap durumunu goster", "streak carpanini hesapla", "bekleyen mission odullerini belirt"] },
   { key: "kingdom", aliases: ["tier"], description_tr: "Kingdom tier paneli — reputation, avantajlar, gecmis ve sonraki esik", description_en: "Kingdom tier panel — reputation, perks, history and next threshold", intents: ["kingdom", "tier", "kraliyet", "seviye", "level", "rank"], scenarios: ["/kingdom", "tier durumum", "kaçıncı seviyeyim"], outcomes: ["tier/reputation ozetini goster", "mevcut avantajlari listele", "sonraki tier esigini belirt"] },
   { key: "season", aliases: ["sezon"], description_tr: "Sezon durumu — puan, kalan gun, hedefler ve milestone", description_en: "Season status — points, days left, goals and milestones", intents: ["season", "sezon", "season status", "sezon durumu"], scenarios: ["/season", "sezon durumu"], outcomes: ["sezon puan ve siralamasini goster", "kalan gun ve milestone'lari belirt"] },
-  { key: "leaderboard", aliases: ["siralama", "top"], description_tr: "Lider tablosu — sezon puani bazli top siralama", description_en: "Leaderboard — season point based top ranking", intents: ["leaderboard", "siralama", "top", "en iyiler", "ranking"], scenarios: ["/leaderboard", "siralama goster"], outcomes: ["top 10 oyuncuyu goster", "kisisel siralamayi belirt"] },
+  { key: "leaderboard", aliases: ["siralama", "top"], description_tr: "Lider tablosu — sezon puani bazli top siralama", description_en: "Leaderboard — season point based top ranking", intents: ["leaderboard", "siralama", "top", "en iyiler", "ranking"], scenarios: ["/leaderboard", "siralama goster"], outcomes: ["top 10 oyuncuyu goster", "kisisel siralamayi belirt"], primary: true },
   {
     key: "events",
     aliases: ["event", "etkinlikler", "etkinlik"],
