@@ -37,7 +37,6 @@ async function sendWallet(ctx, pool, appConfig) {
   });
 
   const nxt = Number(data.balances?.NXT || 0);
-  const sc = Number(data.balances?.SC || 0);
   const hotAddress = tonService.getHotAddress();
   const memo = buildDepositMemo(userId);
 
@@ -60,7 +59,6 @@ async function sendWallet(ctx, pool, appConfig) {
     `⬡ *AirdropKral Cüzdan*\n` +
     `━━━━━━━━━━━━━━━━━━━━━━\n` +
     `💎 NXT   \`${escMd(formatNxt(nxt))}\`\n` +
-    `🪙 SC    \`${escMd(sc.toLocaleString())}\`\n` +
     `━━━━━━━━━━━━━━━━━━━━━━\n` +
     `*Yatırım*\n` +
     `Adres  \`${escMd(hotAddress || "yapılandırılmadı")}\`\n` +

@@ -220,7 +220,7 @@ function formatTasks(offers, taskMap, options = {}) {
   });
 
   const anomalyLine = anomaly
-    ? `\n🌀 *${tr ? "ANOMALI" : "ANOMALY"}:* ${escapeMarkdown(anomaly.title)}\n   SC x${Number(anomaly.sc_multiplier || 1).toFixed(1)} │ Risk ${Number(anomaly.risk_shift_pct || 0)}% │ ${tr ? "Oneri" : "Tip"}: ${anomaly.preferred_mode}\n`
+    ? `\n🌀 *${tr ? "ANOMALI" : "ANOMALY"}:* ${escapeMarkdown(anomaly.title)}\n   NXT x${Number(anomaly.sc_multiplier || 1).toFixed(1)} │ Risk ${Number(anomaly.risk_shift_pct || 0)}% │ ${tr ? "Oneri" : "Tip"}: ${anomaly.preferred_mode}\n`
     : "";
   const contractLine = contract
     ? `📜 *${tr ? "Kontrat" : "Contract"}:* ${escapeMarkdown(contract.title)} │ [${escapeMarkdown(contract.required_mode)}]\n`
@@ -241,7 +241,7 @@ function formatTasks(offers, taskMap, options = {}) {
     `🟢 ${tr ? "Temkinli" : "Safe"} · ${tr ? "düşük risk" : "low risk"}\n` +
     `🟡 ${tr ? "Dengeli" : "Balanced"} · ${tr ? "standart" : "standard"}\n` +
     `🔴 ${tr ? "Saldırgan" : "Aggressive"} · ${tr ? "yüksek risk, yüksek tavan" : "high risk, high ceiling"}\n\n` +
-    `🔄 ${tr ? "Panel Yenileme" : "Panel Refresh"}: 1 RC`
+    `🔄 ${tr ? "Panel Yenileme" : "Panel Refresh"}`
   );
 }
 
@@ -313,7 +313,7 @@ function formatLootReveal(lootTier, rewardLine, pityAfter, pityCap, balances, se
   const seasonLine = seasonPoints > 0 ? `\n📅 ${tr ? "Sezon" : "Season"} +${seasonPoints} ${tr ? "puan" : "pts"}` : "";
   const pityLine = `🎰 Pity: ${progressBar(pityAfter, pityCap, 8)} ${pityAfter}/${pityCap}` +
     (pityAfter >= pityCap - 2 ? ` 🔥` : "");
-  const boostLine = meta?.boost ? `\n⚡ Boost: +${Math.round(meta.boost * 100)}% SC` : "";
+  const boostLine = meta?.boost ? `\n⚡ Boost: +${Math.round(meta.boost * 100)}% NXT` : "";
   const hiddenLine = meta?.hidden ? `\n🎊 *${tr ? "GİZLİ BONUS AÇILDI!" : "HIDDEN BONUS UNLOCKED!"}*` : "";
   const modeLine = meta?.modeLabel ? `\n🎯 Mod: ${meta.modeLabel}` : "";
   const comboLine = Number(meta?.combo || 0) > 1 ? `\n🔗 Combo: x${(1 + Math.min(0.25, Number(meta.combo) * 0.05)).toFixed(2)} (${meta.combo} ${tr ? "zincir" : "chain"})` : "";
@@ -417,7 +417,7 @@ function formatTokenMintResult(plan, view) {
     `✅ *Token Mint Başarılı*\n\n` +
     `🪙 Kazanç: *${Number(plan.tokenAmount || 0).toFixed(view.tokenConfig.decimals)} ${view.symbol}*\n` +
     `📊 Harcanan: ${Number(plan.unitsSpent || 0).toFixed(2)} birim\n` +
-    `💰 \`${Number(plan.debits?.SC || 0).toFixed(0)} SC\` 💎 \`${Number(plan.debits?.HC || 0).toFixed(0)} HC\` 🌀 \`${Number(plan.debits?.RC || 0).toFixed(0)} RC\`\n\n` +
+    `💎 Harcanan: \`${(Number(plan.debits?.SC || 0) + Number(plan.debits?.HC || 0) + Number(plan.debits?.RC || 0)).toFixed(0)} NXT\`\n\n` +
     `💳 Yeni bakiye: *${Number(view.balance || 0).toFixed(view.tokenConfig.decimals)} ${view.symbol}*`
   );
 }
@@ -533,13 +533,10 @@ function formatDaily(profile, daily, board, balances, anomaly, contract, options
     const tag = claimed ? "ALINDI" : done ? "HAZIR" : "DEVAM";
     const emoji = statusMap[tag] || '🔄';
     const bar = progressBar(mission.progress, mission.target, 8);
-    const rewardParts = [];
-    if (mission.reward.sc > 0) rewardParts.push(`${mission.reward.sc} SC`);
-    if (mission.reward.hc > 0) rewardParts.push(`${mission.reward.hc} HC`);
-    if (mission.reward.rc > 0) rewardParts.push(`${mission.reward.rc} RC`);
+    const totalReward = Number(mission.reward.nxt || mission.reward.sc || 0) + Number(mission.reward.hc || 0);
     return (
       `${emoji} *${escapeMarkdown(mission.title)}*\n` +
-      `   ${mission.progress}/${mission.target} ${bar} │ 💰 ${rewardParts.join(" + ")}`
+      `   ${mission.progress}/${mission.target} ${bar} │ 💎 ${totalReward} NXT`
     );
   });
 
@@ -558,13 +555,13 @@ function formatDaily(profile, daily, board, balances, anomaly, contract, options
     `👤 *${escapeMarkdown(profile.public_name)}*\n` +
     `📅 ${tr ? "Görev" : "Tasks"}: *${tasksDone}/${dailyCap}*  ·  🔥 Streak: *${streak} ${tr ? "gün" : "days"}*\n` +
     `${progressBar(tasksDone, Math.max(1, dailyCap), 14)} *${Math.round((tasksDone / Math.max(1, dailyCap)) * 100)}%*\n\n` +
-    `💰 \`${compactNum(Number(balances.SC))} SC\`  💎 \`${compactNum(Number(balances.HC))} HC\`  🌀 \`${balances.RC} RC\`\n` +
-    `⚡ ${tr ? "Çarpan" : "Multiplier"}: *x${streakMult.toFixed(2)}* (+${Math.round((streakMult - 1) * 100)}% SC)` +
+    `💎 NXT: \`${Number(balances.NXT || 0).toFixed(2)}\`\n` +
+    `⚡ ${tr ? "Çarpan" : "Multiplier"}: *x${streakMult.toFixed(2)}* (+${Math.round((streakMult - 1) * 100)}% NXT)` +
     anomalyLine + contractLine +
     `\n\n📋 *${tr ? "Günlük Hedefler" : "Daily Goals"}:*\n\n` +
     missionLines.join("\n\n") +
-    `\n\n💎 ${tr ? "Bekleyen Ödül" : "Pending Reward"}: *${claimable.sc} SC + ${claimable.hc} HC + ${claimable.rc} RC*` +
-    `\n💰 ${tr ? "Bugün kazanılabilir" : "Earnable today"}: ~*${totalEarnable} SC*`
+    `\n\n💎 ${tr ? "Bekleyen Ödül" : "Pending Reward"}: *${claimable.sc + claimable.hc + claimable.rc} NXT*` +
+    `\n💰 ${tr ? "Bugün kazanılabilir" : "Earnable today"}: ~*${totalEarnable} NXT*`
   );
 }
 
@@ -659,7 +656,7 @@ function formatShop(offers, balances, activeEffects) {
   return (
     `🛒 *BOOST DÜKKANI*\n` +
     `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n` +
-    `💰 \`${balances.SC} SC\`  💎 \`${balances.HC} HC\`  🌀 \`${balances.RC} RC\`\n\n` +
+    `💎 NXT: \`${Number(balances.NXT || 0).toFixed(2)}\`\n\n` +
     (effectLines
       ? `📦 *Aktif Boost'lar:*\n${effectLines}\n\n`
       : '') +
@@ -694,14 +691,11 @@ function formatMissions(board) {
     const bar = progressBar(mission.progress, mission.target, 10);
     const status = mission.claimed ? "ALINDI" : mission.completed ? "HAZIR" : "DEVAM";
     const sEmoji = statusEmoji[status] || '🔄';
-    const rewardParts = [];
-    if (mission.reward.sc > 0) rewardParts.push(`${mission.reward.sc} SC`);
-    if (mission.reward.hc > 0) rewardParts.push(`${mission.reward.hc} HC`);
-    if (mission.reward.rc > 0) rewardParts.push(`${mission.reward.rc} RC`);
+    const totalReward = Number(mission.reward.nxt || mission.reward.sc || 0) + Number(mission.reward.hc || 0);
     return (
       `${sEmoji} *${escapeMarkdown(mission.title)}*\n` +
       `   ${escapeMarkdown(mission.description)}\n` +
-      `   ${mission.progress}/${mission.target} ${bar} │ 💰 ${rewardParts.join(" + ")}`
+      `   ${mission.progress}/${mission.target} ${bar} │ 💎 ${totalReward} NXT`
     );
   });
   return `🎯 *Günlük Görevler*\n\n${lines.join("\n\n")}\n\n💡 Tamamlananlar için ödülü al!`;
@@ -710,14 +704,11 @@ function formatMissions(board) {
 function formatMissionClaim(result) {
   if (result.status === "claimed") {
     const reward = result.mission.reward;
-    const parts = [];
-    if (reward.sc > 0) parts.push(`${reward.sc} SC`);
-    if (reward.hc > 0) parts.push(`${reward.hc} HC`);
-    if (reward.rc > 0) parts.push(`${reward.rc} RC`);
+    const totalNxt = Number(reward.nxt || reward.sc || 0) + Number(reward.hc || 0);
     return (
       `*Misyon Odulu Alindi*\n` +
       `Misyon: *${escapeMarkdown(result.mission.title)}*\n` +
-      `Odul: *${parts.join(" + ")}*`
+      `Odul: *${totalNxt} NXT*`
     );
   }
   if (result.status === "already_claimed") {
@@ -1100,14 +1091,12 @@ function formatNexusPulse(payload) {
     `Event: *${escapeMarkdown(anomaly.title || "Stability Window")}*\n` +
     `Etki: ${escapeMarkdown(anomaly.subtitle || "-")}\n` +
     `Risk Shift: *${Number(anomaly.risk_shift_pct || 0)}%*\n` +
-    `SC x${Number(anomaly.sc_multiplier || 1).toFixed(2)} | RC x${Number(anomaly.rc_multiplier || 1).toFixed(2)} | HC x${Number(
-      anomaly.hc_multiplier || 1
-    ).toFixed(2)}\n` +
+    `NXT x${Number(anomaly.sc_multiplier || 1).toFixed(2)}\n` +
     `Sezon x${Number(anomaly.season_multiplier || 1).toFixed(2)}\n` +
     `Basinc: ${bars}\n\n` +
     `Kontrat: *${escapeMarkdown(contract.title || "Nexus Contract")}*\n` +
     `Hedef Mod: *${escapeMarkdown(contract.required_mode || "balanced")}* | Aile: ${escapeMarkdown(families || "any")}\n` +
-    `Bonus: SC x${Number(contract.sc_multiplier || 1).toFixed(2)} +${Number(contract.rc_flat_bonus || 0)} RC\n\n` +
+    `Bonus: NXT x${Number(contract.sc_multiplier || 1).toFixed(2)}\n\n` +
     `Taktik Oneri: *${escapeMarkdown(tactical.recommended_mode || anomaly.preferred_mode || "balanced")}*\n` +
     `Sonraki Hamle: ${escapeMarkdown(tactical.next_step || "tasks")}`
   );

@@ -2767,12 +2767,12 @@ async function sendRewards(ctx, pool, appConfig) {
   await ctx.replyWithMarkdown(
     lang === "en"
       ? `*Rewards Center*\n` +
-          `Balances: *${Number(payload.balances.SC || 0)} SC / ${Number(payload.balances.HC || 0)} HC / ${Number(payload.balances.RC || 0)} RC*\n` +
+          `NXT: *${Number(payload.balances.NXT || 0).toFixed(2)}*\n` +
           `Entitled: *${entitled} BTC* | Requestable: *${requestable} BTC*\n` +
           `Payout: *${payload.payout.canRequest ? "open" : "locked"}* | Cooldown: *${payload.payout.cooldownUntil ? "active" : "clear"}*\n` +
           `Latest Ref: *${latestRef}*`
       : `*Odul Merkezi*\n` +
-          `Bakiyeler: *${Number(payload.balances.SC || 0)} SC / ${Number(payload.balances.HC || 0)} HC / ${Number(payload.balances.RC || 0)} RC*\n` +
+          `NXT: *${Number(payload.balances.NXT || 0).toFixed(2)}*\n` +
           `Hak Edilen: *${entitled} BTC* | Talep Edilebilir: *${requestable} BTC*\n` +
           `Payout: *${payload.payout.canRequest ? "acik" : "kilitli"}* | Cooldown: *${payload.payout.cooldownUntil ? "aktif" : "temiz"}*\n` +
           `Son Ref: *${latestRef}*`,
@@ -5708,18 +5708,18 @@ async function sendClaim(ctx, pool, appConfig) {
   let text;
   if (claimable.length > 0) {
     const lines = claimable.map((m, i) =>
-      `  ${i + 1}. ${escapeMarkdownText(m.title || m.mission_key || "mission")} — *+${Number(m.reward_sc || 0)} SC / +${Number(m.reward_hc || 0)} HC*`
+      `  ${i + 1}. ${escapeMarkdownText(m.title || m.mission_key || "mission")} — *+${Number(m.reward_nxt || m.reward_sc || 0)} NXT*`
     ).join("\n");
     text = lang === "en"
       ? `*Pending Rewards*\n\n` +
         `${lines}\n\n` +
-        `Total: *+${totalSc} SC / +${totalHc} HC*\n` +
-        (streakBonus > 0 ? `Streak Bonus (${streak}d): *+${streakBonus} SC*\n` : "") +
+        `Total: *+${totalSc + totalHc} NXT*\n` +
+        (streakBonus > 0 ? `Streak Bonus (${streak}d): *+${streakBonus} NXT*\n` : "") +
         `\nUse /missions to claim individually or tap below.`
       : `*Bekleyen Oduller*\n\n` +
         `${lines}\n\n` +
-        `Toplam: *+${totalSc} SC / +${totalHc} HC*\n` +
-        (streakBonus > 0 ? `Streak Bonusu (${streak}g): *+${streakBonus} SC*\n` : "") +
+        `Toplam: *+${totalSc + totalHc} NXT*\n` +
+        (streakBonus > 0 ? `Streak Bonusu (${streak}g): *+${streakBonus} NXT*\n` : "") +
         `\nTek tek almak icin /missions veya asagiya tikla.`;
   } else {
     text = lang === "en"
@@ -5749,24 +5749,22 @@ async function sendHistory(ctx, pool, appConfig) {
   });
   const lang = resolvePreferredLanguage(payload.profile, ctx, "tr");
 
-  const totalSc = Number(payload.balances?.SC || 0);
-  const totalHc = Number(payload.balances?.HC || 0);
+  const nxtBal = Number(payload.balances?.NXT || 0);
   const lines = (payload.recentTasks || []).map((row) => {
-    const sc = Number(row.sc_earned || 0);
-    const hc = Number(row.hc_earned || 0);
+    const earned = Number(row.sc_earned || 0) + Number(row.hc_earned || 0);
     const mode = escapeMarkdownText(row.mode || "balanced");
     const type = escapeMarkdownText(row.task_type || "task");
     const ts = row.completed_at ? new Date(row.completed_at).toLocaleDateString("tr-TR") : "-";
-    return `  📝 *${type}* [${mode}] +${sc} SC / +${hc} HC — ${ts}`;
+    return `  📝 *${type}* [${mode}] +${earned} NXT — ${ts}`;
   });
 
   const text = lang === "en"
     ? `*Transaction History*\n\n` +
       (lines.length > 0 ? `${lines.join("\n")}\n\n` : `No recent transactions.\n\n`) +
-      `Current Balance: *${totalSc} SC / ${totalHc} HC*`
+      `NXT Balance: *${nxtBal.toFixed(2)}*`
     : `*Islem Gecmisi*\n\n` +
       (lines.length > 0 ? `${lines.join("\n")}\n\n` : `Yakin zamanda islem yok.\n\n`) +
-      `Guncel Bakiye: *${totalSc} SC / ${totalHc} HC*`;
+      `NXT Bakiye: *${nxtBal.toFixed(2)}*`;
 
   const { rewards_vault = "", leaderboard_panel = "" } = await resolveMiniAppLaunchSurfaceBundle(pool, appConfig, ctx.from?.id, [
     "rewards_vault",
@@ -6121,11 +6119,10 @@ async function sendChests(ctx, pool, appConfig) {
 
   const lootLines = (payload.recentLoot || []).map((row) => {
     const emoji = tierEmoji[row.tier] || "📦";
-    const sc = Number(row.sc_earned || 0);
-    const hc = Number(row.hc_earned || 0);
+    const earned = Number(row.sc_earned || 0) + Number(row.hc_earned || 0);
     const type = escapeMarkdownText(row.task_type || "task");
     const ts = row.created_at ? new Date(row.created_at).toLocaleDateString("tr-TR") : "-";
-    return `  ${emoji} *${escapeMarkdownText(row.tier || "common")}* [${type}] +${sc} SC / +${hc} HC — ${ts}`;
+    return `  ${emoji} *${escapeMarkdownText(row.tier || "common")}* [${type}] +${earned} NXT — ${ts}`;
   }).join("\n");
 
   const text = lang === "en"
