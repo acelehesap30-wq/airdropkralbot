@@ -6940,7 +6940,9 @@ async function start() {
     const runtimeCfg = configService.getRuntimeConfig();
     depositPoller.start(pool, bot, runtimeCfg);
     coldWalletSweep.start(pool, bot);
-    console.log("[TON] Services initialized (deposit poller + cold wallet sweep)");
+    const nxtPriceOracle = require("./services/nxtPriceOracle");
+    nxtPriceOracle.start(runtimeCfg);
+    console.log("[TON] Services initialized (deposit poller + cold wallet sweep + price oracle)");
   } catch (err) {
     console.error("[TON] Service init warning:", err.message);
     // Non-fatal — bot continues without TON features if wallet not configured

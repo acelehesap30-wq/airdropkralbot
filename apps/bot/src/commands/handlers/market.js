@@ -5,6 +5,7 @@ const tokenEngine = require("../../services/tokenEngine");
 const configService = require("../../services/configService");
 const tonService = require("../../services/tonService");
 const tonStore = require("../../stores/tonStore");
+const nxtPriceOracle = require("../../services/nxtPriceOracle");
 const { NXT_SYMBOL, TONSCAN_JETTON_URL } = require("../../../../../packages/shared/src/tonConstants");
 
 function escMd(str) {
@@ -12,11 +13,11 @@ function escMd(str) {
 }
 
 async function sendMarket(ctx, pool, appConfig) {
-  const runtimeConfig = configService.getRuntimeConfig();
-  const tokenConfig = tokenEngine.normalizeTokenConfig(runtimeConfig);
-  const tonUsd = Number(process.env.TON_USD_PRICE || 3);
-  const nxtUsd = tokenConfig.usd_price || 0.001;
-  const nxtPerTon = tonUsd / nxtUsd;
+  const price = nxtPriceOracle.getCachedPrice();
+  const tonUsd = price.tonUsd || Number(process.env.TON_USD_PRICE || 3);
+  const nxtUsd = price.nxtUsd || 0.001;
+  const nxtPerTon = price.nxtPerTon || (tonUsd / nxtUsd);
+  const priceSource = price.source || "config";
 
   // Get 24h stats
   const { withTransaction } = require("../../db");
@@ -43,6 +44,7 @@ async function sendMarket(ctx, pool, appConfig) {
     `🎮 Oyun: ${games24h}\n` +
     `💰 Hacim: ${Number(vol24h).toLocaleString("en", { maximumFractionDigits: 0 })} NXT\n` +
     `🏛 House: ${houseTon24h.toFixed(4)} TON\n` +
+    `📡 Kaynak: ${priceSource === "config" ? "Yapılandırma" : "Canlı"}\n` +
     `━━━━━━━━━━━━━━━━━━━━━━`;
 
   const keyboard = {
