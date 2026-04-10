@@ -87,7 +87,6 @@ function resolveLang(options) {
 function formatStart(profile, balances, season, anomaly, contract, options = {}) {
   const lang = resolveLang(options);
   const publicName = escapeMarkdown(profile.public_name);
-  const sc = Number(balances?.SC || 0);
   const nxt = Number(balances?.NXT || 0);
   const daily = options.daily || {};
   const tasksDone = Number(daily.tasksDone || 0);
@@ -103,7 +102,6 @@ function formatStart(profile, balances, season, anomaly, contract, options = {})
     `━━━━━━━━━━━━━━━━━━━━━━\n` +
     `${badge} ${publicName}\n\n` +
     `💎 NXT  \`${nxt.toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\`\n` +
-    `🪙 SC   \`${compactNum(sc)}\`\n` +
     `📊 ${tr ? "Görev" : "Tasks"}: ${tasksDone}/${dailyCap} · ${tr ? "Seri" : "Streak"}: ${streak}g\n` +
     `━━━━━━━━━━━━━━━━━━━━━━`
   );
@@ -147,7 +145,14 @@ function formatOnboard(payload = {}, options = {}) {
 
   return (
     `*${tr ? "Hoş geldin" : "Welcome"},* ${publicName}\n\n` +
-    `${tr ? "NXT token kazan, görevleri tamamla, arenadafunction formatProfile(profile, balances, options = {}) {
+    `${tr ? "NXT token kazan, görevleri tamamla, arenada savaş." : "Earn NXT tokens, complete tasks, battle in the arena."}\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `/wallet · /play · /duel · /market\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━`
+  );
+}
+
+function formatProfile(profile, balances, options = {}) {
   const lang = resolveLang(options);
   const tr = lang === "tr";
   const publicName = escapeMarkdown(profile.public_name);
@@ -180,10 +185,6 @@ function formatOnboard(payload = {}, options = {}) {
     `${tr ? "İtibar" : "Rep"}: ${compactNum(rep)}\n\n` +
     `💎 NXT: \`${nxt.toLocaleString("en", {minimumFractionDigits:2, maximumFractionDigits:2})}\`\n\n` +
     `${tr ? "Tier ilerlemesi" : "Tier progress"}: ${progressPct}%`
-  );
-}" : "Rep"}: *${compactNum(rep)}*\n\n` +
-    `💰 *${compactNum(sc)}* SC  💎 *${compactNum(hc)}* HC  🪙 *${nxt.toFixed(2)}* NXT\n\n` +
-    `${progressBar(progressVal, progressMax, 12)} *${progressPct}%* → ${tr ? "Sonraki Tier" : "Next Tier"}`
   );
 }
 
@@ -354,9 +355,6 @@ function formatStreak(profile, options = {}) {
 function formatWallet(profile, balances, daily, anomaly, contract, options = {}) {
   const lang = resolveLang(options);
   const tr = lang === "tr";
-  const sc = Number(balances?.SC || 0);
-  const hc = Number(balances?.HC || 0);
-  const rc = Number(balances?.RC || 0);
   const nxt = Number(balances?.NXT || 0);
   const payout = Number(balances?.payout_available || 0);
   const dailyCap = Number(daily?.dailyCap || 5);
@@ -364,22 +362,19 @@ function formatWallet(profile, balances, daily, anomaly, contract, options = {})
   const streak = Number(profile.current_streak || 0);
   const streakMult = (1 + Math.min(streak, 30) * 0.05).toFixed(2);
 
-  const nxtLine = nxt > 0
-    ? `🪙 NXT: *${nxt.toFixed(2)}* · [tonviewer](https://tonviewer.com/EQCb-sIwT2PmHdcuenhplHqEWWDecvPN_8ONoZ2J9A0WLkC_)\n`
-    : `🪙 NXT: *0* · \`/mint\` ${tr ? "ile dönüştür" : "to convert"}\n`;
+  const nxtLine = `💎 NXT: *${nxt.toLocaleString("en", {minimumFractionDigits:2, maximumFractionDigits:2})}*\n`;
   const btcLine = payout > 0 ? `₿ BTC: *${payout.toFixed(8)}*\n` : '';
 
   return (
-    `💰 *${tr ? "CÜZDAN" : "WALLET"}*\n` +
-    `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n` +
-    `💰 SC: *${compactNum(sc)}*  ·  💎 HC: *${compactNum(hc)}*\n` +
-    `🌀 RC: *${rc}*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `⬡ *${tr ? "CÜZDAN" : "WALLET"}*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
     nxtLine +
     btcLine +
     `\n` +
     `📋 ${tr ? "Bugün" : "Today"}: *${tasksDone}/${dailyCap}* ${progressBar(tasksDone, dailyCap, 8)}\n` +
     `🔥 Streak: *${streak}* ${tr ? "gün" : "days"} (x${streakMult}) ${tierBadge(profile.kingdom_tier)}\n` +
-    (anomaly ? `\n🌀 ${escapeMarkdown(anomaly.title)} — SC x${Number(anomaly.sc_multiplier || 1).toFixed(1)}` : '') +
+    (anomaly ? `\n🌀 ${escapeMarkdown(anomaly.title)}` : '') +
     (contract ? `\n📜 ${escapeMarkdown(contract.title)} [${escapeMarkdown(contract.required_mode)}]` : '')
   );
 }
