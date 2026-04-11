@@ -26,6 +26,7 @@ const { sendWallet: sendWalletV2, handleWalletDeposit, handleWalletWithdraw } = 
 const { sendDuel, handleDuelAccept, handleDuelCancel } = require("./commands/handlers/duel");
 const { sendMarket } = require("./commands/handlers/market");
 const { handleAdminSweep, handleAdminTonStatus } = require("./commands/handlers/adminSweep");
+const { handleDashboard } = require("./commands/handlers/dashboard");
 const { sendRef } = require("./commands/handlers/ref");
 const { sendTop } = require("./commands/handlers/top");
 const { handleWithdraw } = require("./commands/handlers/withdraw");
@@ -6264,6 +6265,10 @@ function buildCommandHandlerMap({ pool, appConfig }) {
   map.set("ton_status", async (ctx) => {
     if (!(await ensureAdminCtx(ctx, appConfig))) return;
     await handleAdminTonStatus(ctx, pool);
+  });
+  map.set("dashboard", async (ctx) => {
+    if (!(await ensureAdminCtx(ctx, appConfig))) return;
+    await handleDashboard(ctx, pool);
   });
   map.set("admin", async (ctx) => sendAdminPanel(ctx, pool, appConfig));
   map.set("admin_live", async (ctx) => sendAdminLive(ctx, pool, appConfig));

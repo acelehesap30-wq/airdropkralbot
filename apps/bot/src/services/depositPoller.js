@@ -9,12 +9,25 @@ const economyStore = require("../stores/economyStore");
 const tokenEngine = require("./tokenEngine");
 const { NXT_DECIMALS, MIN_DEPOSIT_TON } = require("../../../../packages/shared/src/tonConstants");
 
-const POLL_INTERVAL_MS = 30_000;
+const BASE_INTERVAL_MS = 30_000;   // 30s when active
+const MAX_INTERVAL_MS = 300_000;   // 5min when idle
+const BACKOFF_FACTOR = 1.5;        // multiply each idle tick
+let _currentInterval = BASE_INTERVAL_MS;
+let _idleTicks = 0;
 let _timer = null;
 let _running = false;
 let _db = null;
 let _bot = null;
 let _runtimeConfig = null;
+
+function _scheduleNext() {
+  if (_timer) clearTimeout(_timer);
+  _timer = setTimeout(() => {
+    tick().catch(err => {
+      console.error("[depositPoller] tick error:", err.message);
+    }).finally(() => _scheduleNext());
+  }, _currentInterval);
+}
 
 function start(db, bot, runtimeConfig) {
   if (_timer) return;
@@ -22,10 +35,8 @@ function start(db, bot, runtimeConfig) {
   _bot = bot;
   _runtimeConfig = runtimeConfig;
 
-  console.log("[depositPoller] Starting — polling every 30s");
-  _timer = setInterval(() => tick().catch(err => {
-    console.error("[depositPoller] tick error:", err.message);
-  }), POLL_INTERVAL_MS);
+  console.log(`[depositPoller] Starting — base interval ${BASE_INTERVAL_MS / 1000}s, backoff up to ${MAX_INTERVAL_MS / 1000}s`);
+  _scheduleNext();
 
   // Initial tick after 5s
   setTimeout(() => tick().catch(err => {
@@ -35,9 +46,11 @@ function start(db, bot, runtimeConfig) {
 
 function stop() {
   if (_timer) {
-    clearInterval(_timer);
+    clearTimeout(_timer);
     _timer = null;
   }
+  _currentInterval = BASE_INTERVAL_MS;
+  _idleTicks = 0;
   console.log("[depositPoller] Stopped");
 }
 
@@ -67,7 +80,14 @@ async function tick() {
     }
 
     if (credited > 0) {
-      console.log(`[depositPoller] Credited ${credited} new deposit(s)`);
+      // Activity detected → reset to fast polling
+      _idleTicks = 0;
+      _currentInterval = BASE_INTERVAL_MS;
+      console.log(`[depositPoller] Credited ${credited} new deposit(s) — interval reset to ${BASE_INTERVAL_MS / 1000}s`);
+    } else {
+      // No new deposits → backoff
+      _idleTicks++;
+      _currentInterval = Math.min(MAX_INTERVAL_MS, Math.round(BASE_INTERVAL_MS * Math.pow(BACKOFF_FACTOR, _idleTicks)));
     }
   } finally {
     _running = false;

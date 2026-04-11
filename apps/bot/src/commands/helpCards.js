@@ -73,6 +73,8 @@ const HELP_CATEGORY_BY_COMMAND = Object.freeze({
   buytoken: "economy",
   tx: "economy",
   daily: "economy",
+  checkin: "economy",
+  withdraw: "economy",
   shop: "economy",
   rewards: "economy",
   chests: "economy",
