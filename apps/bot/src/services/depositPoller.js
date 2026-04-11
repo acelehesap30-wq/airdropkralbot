@@ -7,6 +7,7 @@ const tonService = require("./tonService");
 const tonStore = require("../stores/tonStore");
 const economyStore = require("../stores/economyStore");
 const tokenEngine = require("./tokenEngine");
+const nxtPriceOracle = require("./nxtPriceOracle");
 const { NXT_DECIMALS, MIN_DEPOSIT_TON } = require("../../../../packages/shared/src/tonConstants");
 
 const BASE_INTERVAL_MS = 30_000;   // 30s when active
@@ -134,9 +135,21 @@ async function processDeposit(tx) {
     });
   } catch (err) {
     console.error(`[depositPoller] creditCurrency failed for user ${tx.userId}:`, err.message);
-    // Deposit is recorded but credit failed — admin can reconcile
     return null;
   }
+
+  // XP + first_deposit achievement
+  try {
+    const achievementStore = require("../stores/achievementStore");
+    await achievementStore.addXp(_db, tx.userId, 50);
+    const ach = await achievementStore.unlockAchievement(_db, tx.userId, "first_deposit");
+    if (ach && ach.reward_nxt > 0) {
+      await economyStore.creditCurrency(_db, {
+        userId: tx.userId, currency: "NXT", amount: ach.reward_nxt,
+        reason: "achievement_reward", meta: { achievement: "first_deposit" }
+      });
+    }
+  } catch { /* non-critical */ }
 
   // Notify user via bot
   if (_bot) {
@@ -161,10 +174,10 @@ async function processDeposit(tx) {
 }
 
 function getNxtPerTon(tokenConfig) {
-  // Use curve price if available, otherwise fallback
   const usdPrice = Math.max(0.00001, tokenConfig?.usd_price || 0.001);
-  // Assume 1 TON ≈ $3 (will be replaced with oracle)
-  const tonUsd = Number(process.env.TON_USD_PRICE || 3);
+  // Use live oracle price, fallback to env/default
+  const cached = nxtPriceOracle.getCachedPrice();
+  const tonUsd = cached.tonUsd > 0 ? cached.tonUsd : Number(process.env.TON_USD_PRICE || 3);
   return roundTo(tonUsd / usdPrice, NXT_DECIMALS);
 }
 

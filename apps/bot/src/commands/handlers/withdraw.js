@@ -6,11 +6,13 @@
 const tonService = require("../../services/tonService");
 const tonStore = require("../../stores/tonStore");
 const economyStore = require("../../stores/economyStore");
+const rateLimiter = require("../../services/rateLimiter");
 const { withTransaction } = require("../../db");
 const { NXT_DECIMALS } = require("../../../../../packages/shared/src/tonConstants");
 
 const MIN_WITHDRAW_NXT = 100;
-const FEE_NXT = 5; // flat gas fee deducted from user's amount
+const FEE_NXT = 5;
+const DAILY_WITHDRAW_LIMIT = 5; // max 5 withdrawals per day
 
 function escMd(str) {
   return String(str || "").replace(/([_*[\]()~`>#+\-=|{}.!\\])/g, "\\$1");
@@ -29,6 +31,13 @@ function isValidTonAddress(addr) {
 async function handleWithdraw(ctx, pool) {
   const userId = ctx.from?.id;
   if (!userId) return;
+
+  // Rate limit
+  const rl = rateLimiter.check(userId, "withdraw");
+  if (!rl.allowed) {
+    await ctx.reply(`⏳ ${rl.remainSec}s bekle\\.`, { parse_mode: "MarkdownV2" });
+    return;
+  }
 
   // Parse args from text: /withdraw <amount> <address>
   const text = ctx.message?.text || "";
@@ -87,6 +96,17 @@ async function handleWithdraw(ctx, pool) {
   let transferRecord;
   try {
     const result = await withTransaction(pool, async (db) => {
+      // Daily withdrawal limit
+      const dailyCount = await db.query(
+        `SELECT COUNT(*) AS cnt FROM nxt_transfers
+         WHERE user_id = $1 AND created_at > CURRENT_DATE
+         AND type = 'withdraw' AND status != 'failed';`,
+        [userId]
+      );
+      if (Number(dailyCount.rows[0]?.cnt || 0) >= DAILY_WITHDRAW_LIMIT) {
+        return { ok: false, reason: "daily_limit" };
+      }
+
       const debit = await economyStore.debitCurrency(db, {
         userId,
         currency: "NXT",
@@ -112,7 +132,12 @@ async function handleWithdraw(ctx, pool) {
     });
 
     if (!result.ok) {
-      if (result.reason === "insufficient_balance") {
+      if (result.reason === "daily_limit") {
+        await ctx.reply(
+          `❌ Günlük çekim limitine ulaştın \\(max ${DAILY_WITHDRAW_LIMIT}/gün\\)\\.\nYarın tekrar dene\\.`,
+          { parse_mode: "MarkdownV2" }
+        );
+      } else if (result.reason === "insufficient_balance") {
         await ctx.reply(
           `❌ Yetersiz bakiye\\.\nMevcut: *${escMd(Number(result.balance || 0).toFixed(2))} NXT*\nGerekli: *${escMd(totalDeduction.toFixed(2))} NXT*`,
           { parse_mode: "MarkdownV2" }

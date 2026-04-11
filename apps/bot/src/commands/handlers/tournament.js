@@ -7,6 +7,8 @@ const crypto = require("crypto");
 const economyStore = require("../../stores/economyStore");
 const tonStore = require("../../stores/tonStore");
 const userStore = require("../../stores/userStore");
+const achievementStore = require("../../stores/achievementStore");
+const rateLimiter = require("../../services/rateLimiter");
 const { withTransaction } = require("../../db");
 
 // In-memory tournament store (single active tournament)
@@ -62,6 +64,13 @@ async function handleTournament(ctx, pool) {
 
 async function joinTournament(ctx, pool) {
   const userId = ctx.from?.id;
+
+  const rl = rateLimiter.check(userId, "tournament");
+  if (!rl.allowed) {
+    await ctx.replyWithMarkdown(`⏳ ${rl.remainSec}s bekle.`);
+    return;
+  }
+
   if (!_active) {
     await ctx.replyWithMarkdown("⚠️ Aktif turnuva yok.");
     return;
@@ -212,6 +221,25 @@ async function handleTournamentEnd(ctx, pool) {
         });
       }
     }
+
+    // XP: 1st=100, 2nd=60, 3rd=40, others=20
+    const xpAmounts = [100, 60, 40];
+    for (let i = 0; i < t.players.length; i++) {
+      const xp = i < xpAmounts.length ? xpAmounts[i] : 20;
+      await achievementStore.addXp(db, t.players[i].dbId, xp);
+    }
+
+    // Achievement: tournament_victor for 1st place
+    if (t.players.length > 0) {
+      const ach = await achievementStore.unlockAchievement(db, t.players[0].dbId, "tournament_victor");
+      if (ach && ach.reward_nxt > 0) {
+        await economyStore.creditCurrency(db, {
+          userId: t.players[0].dbId, currency: "NXT", amount: ach.reward_nxt,
+          reason: "achievement_reward", meta: { achievement: "tournament_victor" }
+        });
+      }
+    }
+
     await tonStore.recordHouseEarning(db, {
       source: "tournament", nxtAmount: houseFee,
       note: `tournament ${t.id} house fee (${t.players.length} players)`

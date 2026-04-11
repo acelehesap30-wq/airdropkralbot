@@ -5,6 +5,7 @@
 
 const economyStore = require("../../stores/economyStore");
 const userStore = require("../../stores/userStore");
+const achievementStore = require("../../stores/achievementStore");
 const { withTransaction } = require("../../db");
 
 const BASE_REWARD_NXT = 50;
@@ -93,6 +94,29 @@ async function handleCheckin(ctx, pool) {
 
     const newBalance = credit.balance || 0;
 
+    // XP: 10 per checkin
+    const xpResult = await achievementStore.addXp(db, profile.user_id, 10);
+
+    // Achievement checks
+    const unlocked = [];
+    if (newStreak >= 7) {
+      const a = await achievementStore.unlockAchievement(db, profile.user_id, "lucky_seven");
+      if (a) unlocked.push(a);
+    }
+    if (newStreak >= 30) {
+      const a = await achievementStore.unlockAchievement(db, profile.user_id, "streak_king");
+      if (a) unlocked.push(a);
+    }
+    // Award NXT for newly unlocked achievements
+    for (const ach of unlocked) {
+      if (ach.reward_nxt > 0) {
+        await economyStore.creditCurrency(db, {
+          userId: profile.user_id, currency: "NXT", amount: ach.reward_nxt,
+          reason: "achievement_reward", meta: { achievement: ach.key }
+        });
+      }
+    }
+
     return {
       ok: true,
       streak: newStreak,
@@ -100,7 +124,9 @@ async function handleCheckin(ctx, pool) {
       label,
       multiplier,
       newBalance,
-      userId: profile.user_id
+      userId: profile.user_id,
+      xpResult,
+      unlocked
     };
   });
 

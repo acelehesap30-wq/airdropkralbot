@@ -8,6 +8,8 @@ const economyStore = require("../../stores/economyStore");
 const arenaStore = require("../../stores/arenaStore");
 const tonStore = require("../../stores/tonStore");
 const { HOUSE_FEE_PCT } = require("../../../../../packages/shared/src/tonConstants");
+const achievementStore = require("../../stores/achievementStore");
+const rateLimiter = require("../../services/rateLimiter");
 
 // Active duel challenges (in-memory, short-lived)
 const PENDING_DUELS = new Map();
@@ -28,6 +30,13 @@ async function sendDuel(ctx, pool, appConfig) {
   // No args → show open duel lobby
   if (args.length === 0) {
     return sendDuelLobby(ctx, pool);
+  }
+
+  // Rate limit
+  const rl = rateLimiter.check(userId, "duel");
+  if (!rl.allowed) {
+    await ctx.replyWithMarkdown(`⏳ ${rl.remainSec}s bekle.`);
+    return;
   }
 
   // Quick duel: /duel <amount>
@@ -279,6 +288,38 @@ async function handleDuelAccept(ctx, pool, duelId) {
     const escrows = await tonStore.getLockedEscrows(db, gameRef);
     for (const esc of escrows) {
       await tonStore.releaseEscrow(db, esc.id);
+    }
+
+    // XP: winner 25, loser 10
+    await achievementStore.addXp(db, winnerId, 25);
+    await achievementStore.addXp(db, loserId, 10);
+
+    // Achievement: duel_champion (10 wins) — check win count
+    const winCount = await db.query(
+      `SELECT COUNT(*) AS cnt FROM currency_ledger WHERE user_id = $1 AND reason = 'duel_win';`,
+      [winnerId]
+    );
+    if (Number(winCount.rows[0]?.cnt || 0) >= 10) {
+      const ach = await achievementStore.unlockAchievement(db, winnerId, "duel_champion");
+      if (ach && ach.reward_nxt > 0) {
+        await economyStore.creditCurrency(db, {
+          userId: winnerId, currency: "NXT", amount: ach.reward_nxt,
+          reason: "achievement_reward", meta: { achievement: "duel_champion" }
+        });
+      }
+    }
+
+    // Achievement: high_roller (5000+ bet)
+    if (challenge.amount >= 5000) {
+      for (const pid of [challenge.challengerDbId, acceptorProfile.user_id]) {
+        const ach = await achievementStore.unlockAchievement(db, pid, "high_roller");
+        if (ach && ach.reward_nxt > 0) {
+          await economyStore.creditCurrency(db, {
+            userId: pid, currency: "NXT", amount: ach.reward_nxt,
+            reason: "achievement_reward", meta: { achievement: "high_roller" }
+          });
+        }
+      }
     }
 
     return {

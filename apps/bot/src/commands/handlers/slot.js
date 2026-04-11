@@ -179,6 +179,17 @@ async function handleSlot(ctx, pool) {
     // XP: 5 per spin
     const xpResult = await achievementStore.addXp(db, profile.user_id, 5);
 
+    // Achievements
+    if (bet >= 5000) {
+      const ach = await achievementStore.unlockAchievement(db, profile.user_id, "high_roller");
+      if (ach && ach.reward_nxt > 0) {
+        await economyStore.creditCurrency(db, {
+          userId: profile.user_id, currency: "NXT", amount: ach.reward_nxt,
+          reason: "achievement_reward", meta: { achievement: "high_roller" }
+        });
+      }
+    }
+
     return { ok: true, newBalance, profileId: profile.user_id, xpResult };
   });
 
