@@ -77,6 +77,7 @@ const HELP_CATEGORY_BY_COMMAND = Object.freeze({
   withdraw: "economy",
   slot: "economy",
   tournament: "economy",
+  lootbox: "economy",
   shop: "economy",
   rewards: "economy",
   chests: "economy",
@@ -204,7 +205,8 @@ const HELP_RELATIONS = Object.freeze({
   checkin: Object.freeze(["daily", "wallet", "ref"]),
   withdraw: Object.freeze(["wallet", "vault", "ref"]),
   slot: Object.freeze(["duel", "games", "wallet"]),
-  tournament: Object.freeze(["duel", "leaderboard", "wallet"])
+  tournament: Object.freeze(["duel", "leaderboard", "wallet"]),
+  lootbox: Object.freeze(["slot", "wallet", "games"])
 });
 
 const HELP_COPY_OVERRIDES = Object.freeze({
@@ -333,6 +335,7 @@ const HELP_SYNTAX_OVERRIDES = Object.freeze({
   withdraw: Object.freeze(["/withdraw <miktar> <ton_adresi>", "/withdraw 500 EQD...", "/withdraw 100 EQ..."]),
   slot: Object.freeze(["/slot <bahis>", "/slot 100", "/slot 500"]),
   tournament: Object.freeze(["/tournament", "/tournament join", "/tournament_create 500 8"]),
+  lootbox: Object.freeze(["/lootbox <bronze|silver|gold>", "/lootbox gold", "/lootbox bronze"]),
   kingdom: Object.freeze(["/kingdom", "kingdom", "tier"]),
   season: Object.freeze(["/season", "sezon", "season"]),
   leaderboard: Object.freeze(["/leaderboard", "siralama", "leaderboard"]),

@@ -6,6 +6,8 @@
 const economyStore = require("../../stores/economyStore");
 const tonStore = require("../../stores/tonStore");
 const userStore = require("../../stores/userStore");
+const achievementStore = require("../../stores/achievementStore");
+const rateLimiter = require("../../services/rateLimiter");
 const { withTransaction } = require("../../db");
 
 const SYMBOLS = ["💎", "⚡", "🔥", "🎯", "⬡"];
@@ -67,6 +69,14 @@ async function handleSlot(ctx, pool) {
 
   const text = ctx.message?.text || "";
   const args = text.trim().split(/\s+/).slice(1);
+
+  if (args.length > 0) {
+    const rl = rateLimiter.check(userId, "slot");
+    if (!rl.allowed) {
+      await ctx.replyWithMarkdown(`⏳ ${rl.remainSec}s bekle.`);
+      return;
+    }
+  }
 
   if (args.length === 0) {
     await ctx.replyWithMarkdown(
@@ -166,7 +176,10 @@ async function handleSlot(ctx, pool) {
       }
     }
 
-    return { ok: true, newBalance, profileId: profile.user_id };
+    // XP: 5 per spin
+    const xpResult = await achievementStore.addXp(db, profile.user_id, 5);
+
+    return { ok: true, newBalance, profileId: profile.user_id, xpResult };
   });
 
   if (!txResult.ok) {
