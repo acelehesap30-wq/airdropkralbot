@@ -28,6 +28,8 @@ const { sendMarket } = require("./commands/handlers/market");
 const { handleAdminSweep, handleAdminTonStatus } = require("./commands/handlers/adminSweep");
 const { sendRef } = require("./commands/handlers/ref");
 const { sendTop } = require("./commands/handlers/top");
+const { handleWithdraw } = require("./commands/handlers/withdraw");
+const { handleCheckin } = require("./commands/handlers/checkin");
 const botRuntimeStore = require("./stores/botRuntimeStore");
 const taskCatalog = require("./taskCatalog");
 const messages = require("./messages");
@@ -6191,6 +6193,8 @@ function buildCommandHandlerMap({ pool, appConfig }) {
     await submitTokenTx(ctx, pool, appConfig, parts[0], parts.slice(1).join(" "));
   });
   map.set("daily", async (ctx) => sendDaily(ctx, pool, appConfig));
+  map.set("checkin", async (ctx) => handleCheckin(ctx, pool));
+  map.set("withdraw", async (ctx) => handleWithdraw(ctx, pool));
   map.set("kingdom", async (ctx) => sendKingdom(ctx, pool));
   map.set("season", async (ctx) => sendSeason(ctx, pool, appConfig));
   map.set("leaderboard", async (ctx) => sendLeaderboard(ctx, pool, appConfig));

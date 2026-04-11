@@ -13,7 +13,13 @@ test("intent router resolves TR text and mode aliases", () => {
 
 test("intent router resolves EN text for vault and admin queue", () => {
   const index = buildIntentIndex(getCommandRegistry());
-  const vaultIntent = resolveIntent("withdraw now", index);
+  // "withdraw now" → resolves to the /withdraw NXT command (added Sprint D)
+  // Vault is reached via /vault or "payout"
+  const withdrawIntent = resolveIntent("withdraw now", index);
+  assert.ok(withdrawIntent);
+  assert.equal(withdrawIntent.commandKey, "withdraw");
+
+  const vaultIntent = resolveIntent("payout vault", index);
   assert.ok(vaultIntent);
   assert.equal(vaultIntent.commandKey, "vault");
 

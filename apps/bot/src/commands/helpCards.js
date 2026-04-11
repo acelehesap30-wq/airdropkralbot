@@ -196,7 +196,9 @@ const HELP_RELATIONS = Object.freeze({
   news: Object.freeze(["events", "season", "discover"]),
   quests: Object.freeze(["missions", "tasks", "rewards"]),
   chests: Object.freeze(["reveal", "rewards", "tasks"]),
-  games: Object.freeze(["play", "tasks", "wallet"])
+  games: Object.freeze(["play", "tasks", "wallet"]),
+  checkin: Object.freeze(["daily", "wallet", "ref"]),
+  withdraw: Object.freeze(["wallet", "vault", "ref"])
 });
 
 const HELP_COPY_OVERRIDES = Object.freeze({
@@ -321,6 +323,8 @@ const HELP_SYNTAX_OVERRIDES = Object.freeze({
   buytoken: Object.freeze(["/buytoken <usd> <chain>", "/buytoken 5 TON", "/buytoken 25 TRX"]),
   tx: Object.freeze(["/tx <requestId> <txHash>", "/tx 104 0xabc123...", "/tx 88 <hash>"]),
   daily: Object.freeze(["/daily", "/gunluk", "daily"]),
+  checkin: Object.freeze(["/checkin", "/checkin (gunluk bonus)", "/checkin (streak)"]),
+  withdraw: Object.freeze(["/withdraw <miktar> <ton_adresi>", "/withdraw 500 EQD...", "/withdraw 100 EQ..."]),
   kingdom: Object.freeze(["/kingdom", "kingdom", "tier"]),
   season: Object.freeze(["/season", "sezon", "season"]),
   leaderboard: Object.freeze(["/leaderboard", "siralama", "leaderboard"]),

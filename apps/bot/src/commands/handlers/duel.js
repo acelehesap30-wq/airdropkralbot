@@ -237,12 +237,42 @@ async function handleDuelAccept(ctx, pool, duelId) {
       refEventId: `duel_win:${duelId}`
     });
 
-    // Record house fee
+    // Referral commission: 10% of house fee per referred player
+    const REFERRAL_COMMISSION_PCT = 0.10;
+    let referralPaid = 0;
+    for (const playerId of [challenge.challengerDbId, acceptorProfile.user_id]) {
+      const refRow = await db.query(
+        `SELECT referred_by FROM users WHERE id = $1;`,
+        [playerId]
+      );
+      const referrerId = refRow.rows[0]?.referred_by;
+      if (referrerId && referrerId !== playerId) {
+        const commission = Math.floor(houseFee * REFERRAL_COMMISSION_PCT * 100) / 100;
+        if (commission > 0) {
+          await economyStore.creditCurrency(db, {
+            userId: referrerId,
+            currency: "NXT",
+            amount: commission,
+            reason: "referral_commission",
+            meta: { gameRef, sourcePlayer: playerId, duelId }
+          });
+          await tonStore.recordHouseEarning(db, {
+            source: "referral",
+            gameRef: String(referrerId),
+            nxtAmount: commission,
+            note: `referral commission duel ${duelId} from player ${playerId}`
+          });
+          referralPaid += commission;
+        }
+      }
+    }
+
+    // Record net house fee (after referral payouts)
     await tonStore.recordHouseEarning(db, {
       source: "duel",
       gameRef,
-      nxtAmount: houseFee,
-      note: `duel ${duelId} house fee`
+      nxtAmount: houseFee - referralPaid,
+      note: `duel ${duelId} house fee (referral deducted: ${referralPaid})`
     });
 
     // Release escrows
