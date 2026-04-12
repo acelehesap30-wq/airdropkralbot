@@ -80,6 +80,8 @@ const HELP_CATEGORY_BY_COMMAND = Object.freeze({
   lootbox: "economy",
   achievements: "progression",
   flip: "economy",
+  crash: "economy",
+  stake: "economy",
   shop: "economy",
   rewards: "economy",
   chests: "economy",
@@ -211,6 +213,8 @@ const HELP_RELATIONS = Object.freeze({
   lootbox: Object.freeze(["slot", "wallet", "games"]),
   achievements: Object.freeze(["checkin", "duel", "slot"]),
   flip: Object.freeze(["slot", "duel", "wallet"]),
+  crash: Object.freeze(["slot", "flip", "wallet"]),
+  stake: Object.freeze(["wallet", "checkin", "achievements"]),
   admin_config: Object.freeze(["admin", "dashboard", "admin_metrics"])
 });
 
@@ -343,6 +347,8 @@ const HELP_SYNTAX_OVERRIDES = Object.freeze({
   lootbox: Object.freeze(["/lootbox <bronze|silver|gold>", "/lootbox gold", "/lootbox bronze"]),
   achievements: Object.freeze(["/achievements", "/basarimlar", "basarimlarim"]),
   flip: Object.freeze(["/flip <heads|tails> <bahis>", "/flip heads 100", "/flip tails 50"]),
+  crash: Object.freeze(["/crash <bahis> [hedef]", "/crash 100", "/crash 200 3.5"]),
+  stake: Object.freeze(["/stake <miktar> [gun]", "/stake 1000", "/unstake"]),
   admin_config: Object.freeze(["/admin_config", "/admin_config <key>", "/admin_config <key> {json}"]),
   kingdom: Object.freeze(["/kingdom", "kingdom", "tier"]),
   season: Object.freeze(["/season", "sezon", "season"]),
