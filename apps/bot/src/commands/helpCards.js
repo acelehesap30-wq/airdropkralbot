@@ -78,6 +78,7 @@ const HELP_CATEGORY_BY_COMMAND = Object.freeze({
   slot: "economy",
   tournament: "economy",
   lootbox: "economy",
+  achievements: "progression",
   shop: "economy",
   rewards: "economy",
   chests: "economy",
@@ -206,7 +207,8 @@ const HELP_RELATIONS = Object.freeze({
   withdraw: Object.freeze(["wallet", "vault", "ref"]),
   slot: Object.freeze(["duel", "games", "wallet"]),
   tournament: Object.freeze(["duel", "leaderboard", "wallet"]),
-  lootbox: Object.freeze(["slot", "wallet", "games"])
+  lootbox: Object.freeze(["slot", "wallet", "games"]),
+  achievements: Object.freeze(["checkin", "duel", "slot"])
 });
 
 const HELP_COPY_OVERRIDES = Object.freeze({
@@ -336,6 +338,7 @@ const HELP_SYNTAX_OVERRIDES = Object.freeze({
   slot: Object.freeze(["/slot <bahis>", "/slot 100", "/slot 500"]),
   tournament: Object.freeze(["/tournament", "/tournament join", "/tournament_create 500 8"]),
   lootbox: Object.freeze(["/lootbox <bronze|silver|gold>", "/lootbox gold", "/lootbox bronze"]),
+  achievements: Object.freeze(["/achievements", "/basarimlar", "basarimlarim"]),
   kingdom: Object.freeze(["/kingdom", "kingdom", "tier"]),
   season: Object.freeze(["/season", "sezon", "season"]),
   leaderboard: Object.freeze(["/leaderboard", "siralama", "leaderboard"]),

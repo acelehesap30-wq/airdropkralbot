@@ -30,9 +30,26 @@ async function sendRef(ctx, pool, appConfig) {
       [String(profile.user_id)]
     ).catch(() => ({ rows: [{ total: 0 }] }));
 
+    const referralCount = Number(refResult.rows[0]?.cnt || 0);
+
+    // Achievement: referral_boss (10+ referrals)
+    if (referralCount >= 10) {
+      try {
+        const achievementStore = require("../../stores/achievementStore");
+        const economyStore = require("../../stores/economyStore");
+        const ach = await achievementStore.unlockAchievement(db, profile.user_id, "referral_boss");
+        if (ach && ach.reward_nxt > 0) {
+          await economyStore.creditCurrency(db, {
+            userId: profile.user_id, currency: "NXT", amount: ach.reward_nxt,
+            reason: "achievement_reward", meta: { achievement: "referral_boss" }
+          });
+        }
+      } catch { /* non-critical */ }
+    }
+
     return {
       profile,
-      referralCount: Number(refResult.rows[0]?.cnt || 0),
+      referralCount,
       nxtEarned: Number(earnResult.rows[0]?.total || 0)
     };
   });

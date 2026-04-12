@@ -7,6 +7,7 @@ const economyStore = require("../../stores/economyStore");
 const tonStore = require("../../stores/tonStore");
 const userStore = require("../../stores/userStore");
 const achievementStore = require("../../stores/achievementStore");
+const configStore = require("../../stores/configStore");
 const rateLimiter = require("../../services/rateLimiter");
 const { withTransaction } = require("../../db");
 
@@ -23,9 +24,8 @@ const PAYOUTS = {
   "⬡":  [2, 0.8]
 };
 
-const MIN_BET = 10;
-const MAX_BET = 10000;
-const HOUSE_FEE_PCT = 0.08;
+// Defaults — overridden by game_configs table at runtime
+const DEFAULTS = { min_bet: 10, max_bet: 10000, house_fee_pct: 0.08 };
 
 function spin() {
   const reels = [];
@@ -66,6 +66,18 @@ function fmtNxt(n) {
 async function handleSlot(ctx, pool) {
   const userId = ctx.from?.id;
   if (!userId) return;
+
+  // Load config from DB (cached 1min)
+  let cfg = DEFAULTS;
+  try {
+    const { withTransaction: wt } = require("../../db");
+    const dbCfg = await wt(pool, (db) => configStore.getGameConfig(db, "slot"));
+    cfg = { ...DEFAULTS, ...dbCfg };
+  } catch { /* use defaults */ }
+
+  const MIN_BET = cfg.min_bet;
+  const MAX_BET = cfg.max_bet;
+  const HOUSE_FEE_PCT = cfg.house_fee_pct;
 
   const text = ctx.message?.text || "";
   const args = text.trim().split(/\s+/).slice(1);
@@ -180,15 +192,27 @@ async function handleSlot(ctx, pool) {
     const xpResult = await achievementStore.addXp(db, profile.user_id, 5);
 
     // Achievements
-    if (bet >= 5000) {
-      const ach = await achievementStore.unlockAchievement(db, profile.user_id, "high_roller");
-      if (ach && ach.reward_nxt > 0) {
-        await economyStore.creditCurrency(db, {
-          userId: profile.user_id, currency: "NXT", amount: ach.reward_nxt,
-          reason: "achievement_reward", meta: { achievement: "high_roller" }
-        });
-      }
-    }
+    const _aw = async (key) => {
+      const a = await achievementStore.unlockAchievement(db, profile.user_id, key);
+      if (a && a.reward_nxt > 0) await economyStore.creditCurrency(db, {
+        userId: profile.user_id, currency: "NXT", amount: a.reward_nxt,
+        reason: "achievement_reward", meta: { achievement: key }
+      });
+    };
+    if (bet >= 5000) await _aw("high_roller");
+
+    // slot_master: 100 slot games
+    const slotCount = await db.query(
+      `SELECT COUNT(*) AS cnt FROM currency_ledger WHERE user_id = $1 AND reason = 'slot_bet';`,
+      [profile.user_id]
+    );
+    if (Number(slotCount.rows[0]?.cnt || 0) >= 100) await _aw("slot_master");
+
+    // centurion: level 100
+    if (xpResult?.newLevel >= 100) await _aw("centurion");
+
+    // whale: balance >= 50K
+    if (newBalance >= 50000) await _aw("whale");
 
     return { ok: true, newBalance, profileId: profile.user_id, xpResult };
   });

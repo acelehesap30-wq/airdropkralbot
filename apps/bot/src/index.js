@@ -34,6 +34,7 @@ const { handleCheckin } = require("./commands/handlers/checkin");
 const { handleSlot } = require("./commands/handlers/slot");
 const { handleTournament, handleTournamentCreate, handleTournamentEnd } = require("./commands/handlers/tournament");
 const { handleLootbox } = require("./commands/handlers/lootbox");
+const { sendAchievements } = require("./commands/handlers/achievements");
 const botRuntimeStore = require("./stores/botRuntimeStore");
 const taskCatalog = require("./taskCatalog");
 const messages = require("./messages");
@@ -6201,6 +6202,7 @@ function buildCommandHandlerMap({ pool, appConfig }) {
   map.set("withdraw", async (ctx) => handleWithdraw(ctx, pool));
   map.set("slot", async (ctx) => handleSlot(ctx, pool));
   map.set("lootbox", async (ctx) => handleLootbox(ctx, pool));
+  map.set("achievements", async (ctx) => sendAchievements(ctx, pool));
   map.set("tournament", async (ctx) => handleTournament(ctx, pool));
   map.set("tournament_create", async (ctx) => {
     if (!(await ensureAdminCtx(ctx, appConfig))) return;

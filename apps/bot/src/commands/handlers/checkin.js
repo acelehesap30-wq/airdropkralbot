@@ -6,10 +6,12 @@
 const economyStore = require("../../stores/economyStore");
 const userStore = require("../../stores/userStore");
 const achievementStore = require("../../stores/achievementStore");
+const configStore = require("../../stores/configStore");
 const { withTransaction } = require("../../db");
 
-const BASE_REWARD_NXT = 50;
-const MAX_REWARD_NXT = 300;
+// Defaults — overridden by game_configs table
+let BASE_REWARD_NXT = 50;
+let MAX_REWARD_NXT = 300;
 
 // Streak → reward mapping (milestone days)
 const STREAK_MILESTONES = [
@@ -37,6 +39,13 @@ function escMd(str) {
 async function handleCheckin(ctx, pool) {
   const userId = ctx.from?.id;
   if (!userId) return;
+
+  // Load config
+  try {
+    const cfg = await withTransaction(pool, (db) => configStore.getGameConfig(db, "checkin"));
+    if (cfg.base_reward) BASE_REWARD_NXT = cfg.base_reward;
+    if (cfg.max_reward) MAX_REWARD_NXT = cfg.max_reward;
+  } catch { /* defaults */ }
 
   const result = await withTransaction(pool, async (db) => {
     const profile = await userStore.getOrCreateProfile(db, {

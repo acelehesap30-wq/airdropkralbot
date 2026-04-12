@@ -7,12 +7,13 @@ const tonService = require("../../services/tonService");
 const tonStore = require("../../stores/tonStore");
 const economyStore = require("../../stores/economyStore");
 const rateLimiter = require("../../services/rateLimiter");
+const configStore = require("../../stores/configStore");
 const { withTransaction } = require("../../db");
 const { NXT_DECIMALS } = require("../../../../../packages/shared/src/tonConstants");
 
-const MIN_WITHDRAW_NXT = 100;
-const FEE_NXT = 5;
-const DAILY_WITHDRAW_LIMIT = 5; // max 5 withdrawals per day
+// Defaults — overridden by game_configs table
+const WD_DEFAULTS = { min_nxt: 100, fee_nxt: 5, daily_limit: 5 };
+let _wdCfg = WD_DEFAULTS;
 
 function escMd(str) {
   return String(str || "").replace(/([_*[\]()~`>#+\-=|{}.!\\])/g, "\\$1");
@@ -31,6 +32,15 @@ function isValidTonAddress(addr) {
 async function handleWithdraw(ctx, pool) {
   const userId = ctx.from?.id;
   if (!userId) return;
+
+  // Load config
+  try {
+    const dbCfg = await withTransaction(pool, (db) => configStore.getGameConfig(db, "withdraw"));
+    _wdCfg = { ...WD_DEFAULTS, ...dbCfg };
+  } catch { /* defaults */ }
+  const MIN_WITHDRAW_NXT = _wdCfg.min_nxt;
+  const FEE_NXT = _wdCfg.fee_nxt;
+  const DAILY_WITHDRAW_LIMIT = _wdCfg.daily_limit;
 
   // Rate limit
   const rl = rateLimiter.check(userId, "withdraw");
