@@ -51,13 +51,8 @@ const arenaEngine = require("./services/arenaEngine");
 const arenaService = require("./services/arenaService");
 const tokenEngine = require("./services/tokenEngine");
 const txVerifier = require("./services/txVerifier");
-// nexusEventEngine and nexusContractEngine removed — no-op stubs
-const nexusEventEngine = {
-  resolveDailyAnomaly: () => ({ id: "none", label: "none", effects: [] }),
-  publicAnomalyView: (a) => a || { id: "none", label: "none", effects: [] },
-  applyRiskShift: (risk) => risk,
-  applyAnomalyToReward: (reward) => ({ reward })
-};
+const nexusEventEngine = require("./services/nexusEventEngineV2");
+const { handleAdminEvent } = require("./commands/handlers/adminEvent");
 const nexusContractEngine = {
   resolveDailyContract: () => ({ id: "none", label: "none", objectives: [] }),
   publicContractView: (c) => c || { id: "none", label: "none", objectives: [] },
@@ -6301,6 +6296,10 @@ function buildCommandHandlerMap({ pool, appConfig }) {
   map.set("admin_config", async (ctx) => {
     if (!(await ensureAdminCtx(ctx, appConfig))) return;
     await handleAdminConfig(ctx, pool);
+  });
+  map.set("admin_event", async (ctx) => {
+    if (!(await ensureAdminCtx(ctx, appConfig))) return;
+    await handleAdminEvent(ctx);
   });
   map.set("admin", async (ctx) => sendAdminPanel(ctx, pool, appConfig));
   map.set("admin_live", async (ctx) => sendAdminLive(ctx, pool, appConfig));

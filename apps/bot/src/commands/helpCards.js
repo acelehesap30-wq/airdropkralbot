@@ -219,7 +219,8 @@ const HELP_RELATIONS = Object.freeze({
   stake: Object.freeze(["wallet", "checkin", "achievements"]),
   battlepass: Object.freeze(["achievements", "season", "checkin"]),
   clan: Object.freeze(["leaderboard", "wallet", "achievements"]),
-  admin_config: Object.freeze(["admin", "dashboard", "admin_metrics"])
+  admin_config: Object.freeze(["admin", "dashboard", "admin_metrics"]),
+  admin_event: Object.freeze(["admin", "admin_config", "dashboard"])
 });
 
 const HELP_COPY_OVERRIDES = Object.freeze({
