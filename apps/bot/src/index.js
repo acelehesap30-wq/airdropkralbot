@@ -42,6 +42,8 @@ const { handleStake, handleUnstake } = require("./commands/handlers/stake");
 const { handleBattlePass } = require("./commands/handlers/battlepass");
 const { handleClan } = require("./commands/handlers/clan");
 const { handlePredict } = require("./commands/handlers/predict");
+const { handleStats } = require("./commands/handlers/stats");
+const notificationService = require("./services/notificationService");
 const botRuntimeStore = require("./stores/botRuntimeStore");
 const taskCatalog = require("./taskCatalog");
 const messages = require("./messages");
@@ -6211,6 +6213,7 @@ function buildCommandHandlerMap({ pool, appConfig }) {
   map.set("battlepass", async (ctx) => handleBattlePass(ctx, pool));
   map.set("clan", async (ctx) => handleClan(ctx, pool));
   map.set("predict", async (ctx) => handlePredict(ctx, pool));
+  map.set("stats", async (ctx) => handleStats(ctx, pool));
   map.set("achievements", async (ctx) => sendAchievements(ctx, pool));
   map.set("tournament", async (ctx) => handleTournament(ctx, pool));
   map.set("tournament_create", async (ctx) => {
