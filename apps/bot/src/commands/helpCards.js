@@ -83,6 +83,7 @@ const HELP_CATEGORY_BY_COMMAND = Object.freeze({
   crash: "economy",
   stake: "economy",
   battlepass: "progression",
+  predict: "economy",
   clan: "progression",
   shop: "economy",
   rewards: "economy",
@@ -219,6 +220,7 @@ const HELP_RELATIONS = Object.freeze({
   stake: Object.freeze(["wallet", "checkin", "achievements"]),
   battlepass: Object.freeze(["achievements", "season", "checkin"]),
   clan: Object.freeze(["leaderboard", "wallet", "achievements"]),
+  predict: Object.freeze(["crash", "market", "wallet"]),
   admin_config: Object.freeze(["admin", "dashboard", "admin_metrics"]),
   admin_event: Object.freeze(["admin", "admin_config", "dashboard"])
 });
@@ -356,6 +358,7 @@ const HELP_SYNTAX_OVERRIDES = Object.freeze({
   stake: Object.freeze(["/stake <miktar> [gun]", "/stake 1000", "/unstake"]),
   battlepass: Object.freeze(["/battlepass", "/battlepass claim 5", "/battlepass premium"]),
   clan: Object.freeze(["/clan create <isim> <TAG>", "/clan join NXW", "/clan donate 500"]),
+  predict: Object.freeze(["/predict <up|down> <bahis>", "/predict up 100", "/predict down 50"]),
   admin_config: Object.freeze(["/admin_config", "/admin_config <key>", "/admin_config <key> {json}"]),
   kingdom: Object.freeze(["/kingdom", "kingdom", "tier"]),
   season: Object.freeze(["/season", "sezon", "season"]),
